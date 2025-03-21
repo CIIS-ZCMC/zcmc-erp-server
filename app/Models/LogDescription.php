@@ -19,4 +19,9 @@ class LogDescription extends Model
     {
         return $this->hasMany( TransactionLog::class);
     }
+    
+    public function logs()
+    {
+        return $this->morphMany(TransactionLog::class, 'referrence');
+    }
 }

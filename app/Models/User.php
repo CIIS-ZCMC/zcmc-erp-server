@@ -45,4 +45,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function logs()
+    {
+        return $this->morphMany(TransactionLog::class, 'referrence');
+    }
 }

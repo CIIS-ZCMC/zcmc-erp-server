@@ -26,4 +26,9 @@ class ItemClassification extends Model
     {
         return $this->belongsTo(ItemCategory::class);
     }
+    
+    public function logs()
+    {
+        return $this->morphMany(TransactionLog::class, 'referrence');
+    }
 }

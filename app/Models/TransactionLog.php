@@ -35,11 +35,8 @@ class TransactionLog extends Model
         return $this->belongsTo(User::class);
     }
     
-    /**
-     * Get the referenced model.
-     */
-    public function referrence()
+    public function logs()
     {
-        return $this->morphTo();
+        return $this->morphMany(TransactionLog::class, 'referrence');
     }
 }

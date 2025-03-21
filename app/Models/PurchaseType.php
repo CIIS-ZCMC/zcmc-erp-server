@@ -20,4 +20,9 @@ class PurchaseType extends Model
     // {
     //   return $this->hasMany(Resource::class);
     // }
+    
+    public function logs()
+    {
+        return $this->morphMany(TransactionLog::class, 'referrence');
+    }
 }

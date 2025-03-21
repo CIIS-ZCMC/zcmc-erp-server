@@ -19,4 +19,9 @@ class TypeOfFunction extends Model
     // {
     //     return $this->hasMany(FunctionObjective::class);
     // }
+    
+    public function logs()
+    {
+        return $this->morphMany(TransactionLog::class, 'referrence');
+    }
 }
