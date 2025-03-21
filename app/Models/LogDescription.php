@@ -10,6 +10,7 @@ class LogDescription extends Model
 
     public $fillable = [
         'title',
+        'code',
         'description'
     ];
 
@@ -18,10 +19,5 @@ class LogDescription extends Model
     public function transactionLogs()
     {
         return $this->hasMany( TransactionLog::class);
-    }
-    
-    public function logs()
-    {
-        return $this->morphMany(TransactionLog::class, 'referrence');
     }
 }

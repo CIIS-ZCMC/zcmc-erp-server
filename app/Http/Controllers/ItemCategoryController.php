@@ -3,15 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\PaginationHelper;
-use App\Http\Requests\ItemUnitRequest;
-use App\Models\ItemUnit;
+use App\Http\Requests\ItemCategoryRequest;
+use App\Models\ItemCategory;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class ItemUnitController extends Controller
+class ItemCategoryController extends Controller
 {
     private $is_development = env("APP_DEBUG") ?? true;
-    private $module = 'item-units';
+    private $module = 'item-categories';
 
     public function import(Request $request)
     {
@@ -34,10 +34,9 @@ class ItemUnitController extends Controller
                     "message" => "No parameters found.",
                     "metadata" => [
                         "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
                         "formats" => [
                             env("SERVER_DOMAIN")."/api/".self::$module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".self::$module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                            env("SERVER_DOMAIN")."/api/".self::$module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection"
                         ],
                     ]
                 ];
@@ -48,7 +47,7 @@ class ItemUnitController extends Controller
 
         // Handle return for selection record
         if($mode === 'selection'){
-            $item_units = ItemUnit::select('id','name','code')->where("deleted_at", NULL)->get();
+            $item_units = ItemCategory::select('id','name','code')->where("deleted_at", NULL)->get();
 
             $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
 
@@ -63,13 +62,13 @@ class ItemUnitController extends Controller
             ], Response::HTTP_OK);
         }
         
-        $total_page = ItemUnit::all()->pluck('id')->chunk($per_page);
-        $item_units = ItemUnit::limit($per_page)->offset($page * $per_page)->get();
+        $total_page = ItemCategory::all()->pluck('id')->chunk($per_page);
+        $item_categories = ItemCategory::limit($per_page)->offset($page * $per_page)->get();
         
         $pagination_helper = new PaginationHelper( module: self::$module,page: $page, per_page: $per_page, total_page: $total_page > 10 ? 10: $total_page);
 
         return response()->json([
-            "data" => $item_units,
+            "data" => $item_categories,
             "metadata" => [
                 "methods" => "[GET, POST, PUT, DELETE]",
                 "pagination" => $pagination_helper->create(),
@@ -79,9 +78,9 @@ class ItemUnitController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function store(ItemUnitRequest $request)
+    public function store(ItemCategoryRequest $request)
     {
-        $new_item = ItemUnit::create([
+        $new_item = ItemCategory::create([
             "name" => strip_tags($request->name),
             "code" => strip_tags($request->code),
             "description" => strip_tags($request->description),
@@ -97,10 +96,10 @@ class ItemUnitController extends Controller
 
     public function update(Request $request):Response    
     {
-        $item_unit_id = $request->query('id') ?? null;
+        $item_category_id = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
 
-        if(!$item_unit_id && !$query){
+        if(!$item_category_id && !$query){
             $response = ["message" => "Invalid request."];
 
             if(self::$is_development){
@@ -120,25 +119,25 @@ class ItemUnitController extends Controller
             return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if($item_unit_id){
-            $item_unit = ItemUnit::find($item_unit_id);    
+        if($item_category_id){
+            $item_category = ItemCategory::find($item_category_id);    
         }
 
-        if(!$item_unit_id && $query){
-            $item_units = ItemUnit::where($query)->get();
+        if(!$item_category_id && $query){
+            $item_categorys = ItemCategory::where($query)->get();
             
             // Check result is has many records
-            if(count($item_unit) > 1){
+            if(count($item_category) > 1){
                 return response()->json([
-                    'data' => $item_units,
+                    'data' => $item_categorys,
                     'message' => "Request has multiple record."
                 ], Response::HTTP_CONFLICT);
             }
 
-            $item_unit = $item_units->first();
+            $item_category = $item_categorys->first();
         }
 
-        $item_unit->update([
+        $item_category->update([
             "name" => strip_tags($request->input("name")),
             "code" => strip_tags($request->code),
             "description" => $request->description
@@ -158,17 +157,17 @@ class ItemUnitController extends Controller
         }
 
         return response()->json([
-            "data" => $item_unit,
+            "data" => $item_category,
             "metadata" => $metadata
         ], Response::HTTP_OK);
     }
 
     public function destroy(Request $request): Response
     {
-        $item_unit_id = $request->query('id') ?? null;
+        $item_category_id = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
 
-        if(!$item_unit_id && !$query){
+        if(!$item_category_id && !$query){
 
             $response = ["message" => "Invalid request."];
 
@@ -189,25 +188,25 @@ class ItemUnitController extends Controller
             return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if($item_unit_id){
-            $item_unit = ItemUnit::find($item_unit_id);    
+        if($item_category_id){
+            $item_category = ItemCategory::find($item_category_id);    
         }
 
-        if(!$item_unit_id && $query){
-            $item_units = ItemUnit::where($query)->get();
+        if(!$item_category_id && $query){
+            $item_categories = ItemCategory::where($query)->get();
             
             // Check result is has many records
-            if(count($item_unit) > 1){
+            if(count($item_categories) > 1){
                 return response()->json([
-                    'data' => $item_units,
+                    'data' => $item_categories,
                     'message' => "Request has multiple record."
                 ], Response::HTTP_CONFLICT);
             }
 
-            $item_unit = $item_units->first();
+            $item_category = $item_categories->first();
         }
 
-        if(!$item_unit){
+        if(!$item_category){
             $response = ["message" => "No record found."];
 
             if(self::$is_development){
@@ -227,7 +226,7 @@ class ItemUnitController extends Controller
             return response()->json($response, Response::HTTP_NOT_FOUND);
         }
 
-        $item_unit->update(['deleted_at' => now()]);
+        $item_category->update(['deleted_at' => now()]);
 
         $response = [];
 
