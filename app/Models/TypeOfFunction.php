@@ -1,0 +1,22 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class TypeOfFunction extends Model
+{
+    protected $table = "type_of_functions";
+
+    public $fillable = [
+        'type'
+    ];
+
+    public $timestamps = true;
+
+    //Uncomment once the Function Object Model already exist
+    // public function functionObjectives()
+    // {
+    //     return $this->hasMany(FunctionObjective::class);
+    // }
+}
