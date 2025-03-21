@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreign('log_description_id')->references('id')->on('log_descriptions');
             $table->string('user_name')->nullable();
             $table->unsignedBigInteger('referrence_id')->nullable();
-            $table->string('referrence_table');
+            $table->string('referrence_type')->nullable();
             $table->string('ip');
             $table->json('metadata')->nullable();
             $table->json('issue')->nullable();

@@ -13,10 +13,33 @@ class TransactionLog extends Model
         'log_description_id',
         'user_name',
         'referrence_id',
-        'referrance_table',
+        'referrance_type',
         'metadata',
         'issue'
     ];
 
     public $timestamps = true;
+
+    protected $casts = [
+        'metadata' => 'json',
+        'issue' => 'json'
+    ];
+
+    public function logDescription()
+    {
+        return $this->belongsTo(LogDescription::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+    
+    /**
+     * Get the referenced model.
+     */
+    public function referrence()
+    {
+        return $this->morphTo();
+    }
 }
