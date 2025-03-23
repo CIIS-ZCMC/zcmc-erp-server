@@ -21,22 +21,42 @@ class PaginationHelper
 
     private function baseLink()
     {
-        return "http://".env("APP_URL")."/api/".self::$module;
+        return "http://".env("APP_URL")."/api/".$this->module;
     }
 
-    private function generatePaginationObject($page, $active = false)
+    private function generatePageLink($page)
     {
-        return [
+        return $this->baseLink() . "?per_page=" . $this->per_page . "&page=" . $page;
+    }
+
+    private function generatePaginationObject($page )
+    {
+        $paginationObject = [
             "title" => $page,
-            "link" => is_int($page) && $this->total_page > 10 ? self::baseLink()."?per_page=".self::$per_page."&page=".$page: null,
-            "active" => $active
+            "link" => null,
+            "active" => false,
         ];
+    
+        if ($page === "Prev") {
+            $paginationObject["link"] = $this->page > 1 
+                ? $this->generatePageLink($this->page - 1) 
+                : null;
+        } elseif ($page === "Next") {
+            $paginationObject["link"] = $this->page + 1 <= $this->total_page 
+                ? $this->generatePageLink($this->page + 1) 
+                : null;
+        } else {
+            $paginationObject["link"] = $this->generatePageLink($page);
+            $paginationObject["active"] = $page !== "..." && $page == $this->page;
+        }
+    
+        return $paginationObject;
     }
 
     private function appendNextAndPreviousObject($pagination)
     {
-        $prev =  self::generatePaginationObject(page: "Prev");
-        $next =  self::generatePaginationObject(page: "Next");
+        $prev =  $this->generatePaginationObject(page: "Prev");
+        $next =  $this->generatePaginationObject(page: "Next");
         
         $pagination = Arr::prepend($pagination, $prev);
         array_push($pagination, $next);
@@ -58,46 +78,57 @@ class PaginationHelper
     {
         $pagination = [];
 
+        // Render all pagination number if page is less than 10
+        if($this->total_page < 10){
+            $pagination_number_to_render = range(1,$this->total_page);
+            
+
+            // generate pagination number object attach 
+            foreach($pagination_number_to_render as $paginationNumber){
+                
+                if((int) $paginationNumber === $this->total_page - 1){
+                    $pagination[] = $this->generatePaginationObject(page: "...");
+                }
+                
+                $pagination[] =  $this->generatePaginationObject(page: $paginationNumber);
+            }
+        }
+
         if($this->total_page > 10)
         {
             $pagination_number_to_render = 0;
- 
-            // Render all pagination number if page is less than 10
-            if($this->total_page < 10){
-                $pagination_number_to_render = range(1,$this->total_page);
+
+            // render all pagination number if page reach to end
+            if($this->isLastPage() < 10){
+                $start = $this->pageContentToRender();
+                $end = $this->isLastPage();
+
+                $pagination_number_to_render = range($start, $end);
             }else{
-                // render all pagination number if page reach to end
-                if(self::isLastPage() < 10){
-                    $start = self::pageContentToRender();
-                    $end = self::isLastPage();
+                /**
+                 * Pagination number of current page, display start to (n) - 3
+                 * display Pagination number of 2nd and last page
+                 */
+                $end_pagination = [$this->total_page-1, $this->total_page];
+                $start = $this->pageContentToRender();
+                $end = $this->isLastPage();
 
-                    $pagination_number_to_render = range($start, $end);
-                }else{
-                    /**
-                     * Pagination number of current page, display start to (n) - 3
-                     * display Pagination number of 2nd and last page
-                     */
-                    $end_pagination = [$this->total_page-1, $this->total_page];
-                    $start = self::pageContentToRender();
-                    $end = self::isLastPage();
-
-                    $start_pagination = range($start, $end - 3);
-                    $pagination_number_to_render = array_merge($start_pagination, $end_pagination);
-                }
+                $start_pagination = range($start, $end - 3);
+                $pagination_number_to_render = array_merge($start_pagination, $end_pagination);
             }
 
             // generate pagination number object attach 
             foreach($pagination_number_to_render as $paginationNumber){
                 
                 if((int) $paginationNumber === $this->total_page - 1){
-                    $pagination[] = self::generatePaginationObject(page: "...");
+                    $pagination[] = $this->generatePaginationObject(page: "...");
                 }
                 
-                $pagination[] =  self::generatePaginationObject(page: $paginationNumber);
+                $pagination[] =  $this->generatePaginationObject(page: $paginationNumber);
             }
-        }        
+        }
 
-        return self::appendNextAndPreviousObject($pagination);
+        return $this->appendNextAndPreviousObject($pagination);
     }
 
     public function prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $next_last_id)
@@ -181,7 +212,7 @@ class PaginationHelper
         }
 
         $next = [
-            ...$pagination[1],
+            ...$pagination[0],
             'title' => 'next'
         ];
 

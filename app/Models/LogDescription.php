@@ -11,7 +11,8 @@ class LogDescription extends Model
     public $fillable = [
         'title',
         'code',
-        'description'
+        'description',
+        'deleted_at'
     ];
 
     public $timestamps = true;

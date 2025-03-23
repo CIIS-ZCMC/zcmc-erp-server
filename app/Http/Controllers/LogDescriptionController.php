@@ -3,16 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\PaginationHelper;
-use App\Http\Requests\ItemUnitRequest;
-use App\Models\ItemUnit;
+use App\Http\Requests\LogDescriptionRequest;
+use App\Models\LogDescription;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class ItemUnitController extends Controller
+class LogDescriptionController extends Controller
 {
     private $is_development;
 
-    private $module = 'item-units';
+    private $module = 'log-descriptions';
 
     public function __construct()
     {
@@ -35,18 +35,18 @@ class ItemUnitController extends Controller
         $last_id = $request->query('last_id') ?? 0;
         $last_initial_id = $request->query('last_initial_id') ?? 0;
         $page_item = $request->query('page_item') ?? 0;
-        $item_unit_id = $request->query('item_unit_id') ?? null;
+        $log_description_id = $request->query('log_description_id') ?? null;
 
-        if($item_unit_id){
-            $item_unit = ItemUnit::find($item_unit_id);
+        if($log_description_id){
+            $log_description = LogDescription::find($log_description_id);
 
-            if(!$item_unit){
+            if(!$log_description){
                 return response()->json([
                     'message' => "No record found.",
                     "metadata" => [
                         "methods" => "[GET, POST, PUT, DELETE]",
                         "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_unit_id=[primary-key]",
+                            env("SERVER_DOMAIN")."/api/".$this->module."?log_description_id=[primary-key]",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
@@ -56,11 +56,11 @@ class ItemUnitController extends Controller
             }
 
             return response()->json([
-                'data' => $item_unit,
+                'data' => $log_description,
                 "metadata" => [
                     "methods" => "[GET, POST, PUT, DELETE]",
                     "urls" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?item_unit_id=[primary-key]",
+                        env("SERVER_DOMAIN")."/api/".$this->module."?log_description_id=[primary-key]",
                         env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
                         env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
                         env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
@@ -79,7 +79,7 @@ class ItemUnitController extends Controller
                         "methods" => "[GET]",
                         "modes" => ["pagination", "selection"],
                         "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_unit_id=[primary-key]",
+                            env("SERVER_DOMAIN")."/api/".$this->module."?log_description_id=[primary-key]",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
@@ -101,7 +101,7 @@ class ItemUnitController extends Controller
                         "methods" => "[GET]",
                         "modes" => ["pagination", "selection"],
                         "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_unit_id=[primary-key]",
+                            env("SERVER_DOMAIN")."/api/".$this->module."?log_description_id=[primary-key]",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
@@ -116,13 +116,13 @@ class ItemUnitController extends Controller
 
         if($search !== null){
             if($last_id === 0 || $page_item != null){
-                $item_units = ItemUnit::where('name', 'like', '%'.$search.'%')
+                $log_descriptions = LogDescription::where('title', 'like', '%'.$search.'%')
                     ->where('id','>', $last_id)
                     ->orderBy('id')
                     ->limit($per_page)
                     ->get();
 
-                $allIds = ItemUnit::where('name', 'like', '%'.$search.'%')
+                $allIds = LogDescription::where('title', 'like', '%'.$search.'%')
                     ->orderBy('id')
                     ->pluck('id');
 
@@ -137,7 +137,7 @@ class ItemUnitController extends Controller
                  */
 
                 return response()->json([
-                    'data' => $item_units,
+                    'data' => $log_descriptions,
                     'metadata' => [
                         'methods' => '[GET,POST,PUT,DELETE]',
                         'pagination' => $pagination,
@@ -151,7 +151,7 @@ class ItemUnitController extends Controller
              * Reuse existing pagination and update the existing pagination next and previous data
              */
 
-            $item_units = ItemUnit::where('name', 'like', '%'.$search.'%')
+            $log_descriptions = LogDescription::where('title', 'like', '%'.$search.'%')
                 ->where('id','>', $last_id)
                 ->orderBy('id')
                 ->limit($per_page)
@@ -159,14 +159,14 @@ class ItemUnitController extends Controller
 
             // Return the response
             return response()->json([
-                'data' => $item_units,
+                'data' => $log_descriptions,
                 'metadata' => []
             ], Response::HTTP_OK);
         }
 
         // Handle return for selection record
         if($mode === 'selection'){
-            $item_units = ItemUnit::select('id','name','code')->where("deleted_at", NULL)->get();
+            $log_descriptions = LogDescription::select('id','title','code')->where("deleted_at", NULL)->get();
 
             $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
 
@@ -176,19 +176,19 @@ class ItemUnitController extends Controller
             }
             
             return response()->json([
-                "data" => $item_units,
+                "data" => $log_descriptions,
                 "metadata" => $metadata,
             ], Response::HTTP_OK);
         }
         
-        $total_page = ItemUnit::all()->pluck('id')->chunk($per_page);
-        $item_units = ItemUnit::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
+        $total_page = LogDescription::all()->pluck('id')->chunk($per_page);
+        $log_descriptions = LogDescription::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
         $total_page = ceil(count($total_page));
         
         $pagination_helper = new PaginationHelper(  $this->module,$page, $per_page, $total_page > 10 ? 10: $total_page);
 
         return response()->json([
-            "data" => $item_units,
+            "data" => $log_descriptions,
             "metadata" => [
                 "methods" => "[GET, POST, PUT, DELETE]",
                 "pagination" => $pagination_helper->create(),
@@ -198,24 +198,24 @@ class ItemUnitController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function store(ItemUnitRequest $request)
+    public function store(LogDescriptionRequest $request)
     {
-        $base_message = "Successfully created item unit";
+        $base_message = "Successfully created item category";
 
         // Bulk Insert
-        if ($request->item_units !== null || $request->item_units > 1) {
-            $existing_items = ItemUnit::whereIn('name', collect($request->item_units)->pluck('name'))
-                ->orWhereIn('code', collect($request->item_units)->pluck('code'))
-                ->get(['name', 'code'])->toArray();
+        if ($request->log_descriptions !== null || $request->log_descriptions > 1) {
+            $existing_items = LogDescription::whereIn('title', collect($request->log_descriptions)->pluck('title'))
+                ->orWhereIn('code', collect($request->log_descriptions)->pluck('code'))
+                ->get(['title', 'code'])->toArray();
 
             // Convert existing items into a searchable format
-            $existing_names = array_column($existing_items, 'name');
+            $existing_titles = array_column($existing_items, 'title');
             $existing_codes = array_column($existing_items, 'code');
 
-            foreach ($request->item_units as $item) {
-                if (!in_array($item['name'], $existing_names) && !in_array($item['code'], $existing_codes)) {
+            foreach ($request->log_descriptions as $item) {
+                if (!in_array($item['title'], $existing_titles) && !in_array($item['code'], $existing_codes)) {
                     $cleanData[] = [
-                        "name" => strip_tags($item['name']),
+                        "title" => strip_tags($item['title']),
                         "code" => strip_tags($item['code']),
                         "description" => isset($item['description']) ? strip_tags($item['description']) : null,
                         "created_at" => now(),
@@ -227,20 +227,20 @@ class ItemUnitController extends Controller
             if (empty($cleanData) && count($existing_items) > 0) {
                 return response()->json([
                     'data' => $existing_items,
-                    'message' => "Failed to bulk insert all item units already exist.",
+                    'message' => "Failed to bulk insert all item categories already exist.",
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
     
-            ItemUnit::insert($cleanData);
+            LogDescription::insert($cleanData);
 
-            $latest_item_units = ItemUnit::orderBy('id', 'desc')
+            $latest_item_log_descriptions = LogDescription::orderBy('id', 'desc')
                 ->limit(count($cleanData))->get()
                 ->sortBy('id')->values();
 
-            $message = count($latest_item_units) > 1? $base_message."s record": $base_message." record.";
+            $message = count($latest_item_log_descriptions) > 1? $base_message."s record": $base_message." record.";
 
             return response()->json([
-                "data" => $latest_item_units,
+                "data" => $latest_item_log_descriptions,
                 "message" => $message,
                 "metadata" => [
                     "methods" => "[GET, POST, PUT ,DELETE]",
@@ -250,13 +250,13 @@ class ItemUnitController extends Controller
         }
 
         $cleanData = [
-            "name" => strip_tags($request->input('name')),
+            "title" => strip_tags($request->input('title')),
             "code" => strip_tags($request->input('code')),
             "description" => strip_tags($request->input('description')),
         ];
 
-        $new_item = ItemUnit::create([
-            "name" => strip_tags($request->name),
+        $new_item = LogDescription::create([
+            "title" => strip_tags($request->title),
             "code" => strip_tags($request->code),
             "description" => strip_tags($request->description),
         ]);
@@ -271,10 +271,10 @@ class ItemUnitController extends Controller
     }
     public function update(Request $request):Response    
     {
-        $item_unit_id = $request->query('id') ?? null;
+        $log_description_id = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
 
-        if(!$item_unit_id && !$query){
+        if(!$log_description_id && !$query){
             $response = ["message" => "Invalid request."];
 
             if($this->is_development){
@@ -294,33 +294,33 @@ class ItemUnitController extends Controller
             return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
         }
         
-        $item_unit = null;
+        $log_description = null;
 
-        if($item_unit_id){
-            $item_unit = ItemUnit::find($item_unit_id);    
+        if($log_description_id){
+            $log_description = LogDescription::find($log_description_id);    
         }
 
-        if(!$item_unit_id && $query){
-            $item_units = ItemUnit::where($query)->get();
+        if(!$log_description_id && $query){
+            $log_descriptions = LogDescription::where($query)->get();
             
             // Check result is has many records
-            if(count($item_units) > 1){
+            if(count($log_descriptions) > 1){
                 return response()->json([
-                    'data' => $item_units,
+                    'data' => $log_descriptions,
                     'message' => "Request has multiple record."
                 ], Response::HTTP_CONFLICT);
             }
 
-            $item_unit = $item_units->first();
+            $log_description = $log_descriptions->first();
         }
         
         $cleanData = [
-            "name" => strip_tags($request->input('name')),
+            "title" => strip_tags($request->input('title')),
             "code" => strip_tags($request->input('code')),
             "description" => strip_tags($request->input('description')),
         ];
 
-        $item_unit->update($cleanData);
+        $log_description->update($cleanData);
 
         $metadata = [
             "methods" => "[GET, PUT, DELETE]",
@@ -336,17 +336,17 @@ class ItemUnitController extends Controller
         }
 
         return response()->json([
-            "data" => $item_unit,
+            "data" => $log_description,
             "metadata" => $metadata
         ], Response::HTTP_OK);
     }
 
     public function destroy(Request $request): Response
     {
-        $item_unit_ids = $request->query('id') ?? null;
+        $log_description_ids = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
 
-        if (!$item_unit_ids && !$query) {
+        if (!$log_description_ids && !$query) {
             $response = ["message" => "Invalid request."];
 
             if ($this->is_development) {
@@ -368,38 +368,38 @@ class ItemUnitController extends Controller
         }
 
 
-        if ($item_unit_ids) {
-            $item_unit_ids = is_array($item_unit_ids) ? $item_unit_ids : explode(',', $item_unit_ids);
-            $item_units = ItemUnit::whereIn('id', $item_unit_ids)->where('deleted_at', NULL)->get();
+        if ($log_description_ids) {
+            $log_description_ids = is_array($log_description_ids) ? $log_description_ids : explode(',', $log_description_ids);
+            $log_descriptions = LogDescription::whereIn('id', $log_description_ids)->where('deleted_at', NULL)->get();
 
-            if ($item_units->isEmpty()) {
+            if ($log_descriptions->isEmpty()) {
                 return response()->json(["message" => "No records found."], Response::HTTP_NOT_FOUND);
             }
 
-            ItemUnit::whereIn('id', $item_unit_ids)->update(['deleted_at' => now()]);
+            LogDescription::whereIn('id', $log_description_ids)->update(['deleted_at' => now()]);
 
             return response()->json([
-                "message" => "Successfully deleted " . count($item_units) . " records."
+                "message" => "Successfully deleted " . count($log_descriptions) . " records."
             ], Response::HTTP_NO_CONTENT);
         }
 
         if ($query) {
-            $item_units = ItemUnit::where($query)->get();
+            $log_descriptions = LogDescription::where($query)->get();
 
-            if ($item_units->count() > 1) {
+            if ($log_descriptions->count() > 1) {
                 return response()->json([
-                    'data' => $item_units,
+                    'data' => $log_descriptions,
                     'message' => "Request has multiple records."
                 ], Response::HTTP_CONFLICT);
             }
 
-            $item_unit = $item_units->first();
+            $log_description = $log_descriptions->first();
 
-            if (!$item_unit) {
+            if (!$log_description) {
                 return response()->json(["message" => "No record found."], Response::HTTP_NOT_FOUND);
             }
 
-            $item_unit->update(['deleted_at' => now()]);
+            $log_description->update(['deleted_at' => now()]);
         }
 
         return response()->json(["message" => "Successfully deleted record."], Response::HTTP_NO_CONTENT);

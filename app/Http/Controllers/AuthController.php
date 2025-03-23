@@ -54,21 +54,6 @@ class AuthController extends Controller
         ], Response::HTTP_UNAUTHORIZED);
     }
 
-    public function signup(Request $request)
-    {
-        $data = [
-            "name" => "Tristan",
-            "email" => "tristans.zcmc@gmail.com",
-            "password" => Hash::make("Telemed2022") // Hash the password
-        ];
-
-        $user = User::create($data);
-
-        return response()->json([
-            'message' => "Success"
-        ], Response::HTTP_OK);
-    }
-
     public function index(Request $request)
     {
         $user = auth()->user();

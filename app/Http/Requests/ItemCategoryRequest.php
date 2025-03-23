@@ -11,7 +11,7 @@ class ItemCategoryRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,17 @@ class ItemCategoryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'item_categories' => [
+                'nullable',
+                'array', // Ensure it's an array when bulk inserting
+            ],
+            'item_categories.*.name' => 'required_with:item_categories|string|max:255',
+            'item_categories.*.code' => 'required_with:item_categories|string|max:255',
+            'item_categories.*.description' => 'nullable|string',
+    
+            'name' => 'required_without:item_categories|string|max:255',
+            'code' => 'required_without:item_categories|string|max:255',
+            'description' => 'nullable|string',
         ];
     }
 }

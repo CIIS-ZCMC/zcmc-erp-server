@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ItemUnitRequest extends FormRequest
+class LogDescriptionRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,16 +22,16 @@ class ItemUnitRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'item_units' => [
+            'log_descriptions' => [
                 'nullable',
                 'array', // Ensure it's an array when bulk inserting
             ],
-            'item_units.*.name' => 'required_with:item_units|string|max:255',
-            'item_units.*.code' => 'required_with:item_units|string|max:255',
-            'item_units.*.description' => 'nullable|string',
+            'log_descriptions.*.title' => 'required_with:log_descriptions|string|max:255',
+            'log_descriptions.*.code' => 'required_with:log_descriptions|string|max:255',
+            'log_descriptions.*.description' => 'nullable|string',
     
-            'name' => 'required_without:item_units|string|max:255',
-            'code' => 'required_without:item_units|string|max:255',
+            'title' => 'required_without:log_descriptions|string|max:255',
+            'code' => 'required_without:log_descriptions|string|max:255',
             'description' => 'nullable|string',
         ];
     }
