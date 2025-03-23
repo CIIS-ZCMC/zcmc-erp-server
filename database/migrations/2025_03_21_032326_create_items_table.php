@@ -18,7 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('item_category_id');
             $table->foreign('item_category_id')->references('id')->on('item_categories');
             $table->unsignedBigInteger('item_classification_id');
-            $table->foreign('item_classification_id')->references('id')->on('item_classications');
+            $table->foreign('item_classification_id')->references('id')->on('item_classifications');
             $table->string('name');
             $table->float('estimated_budget')->default(0);
             $table->timestamps();

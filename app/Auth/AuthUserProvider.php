@@ -3,71 +3,71 @@
 namespace App\Auth;
 
 use Illuminate\Contracts\Auth\UserProvider;
-use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Authenticatable as UserContract;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 class AuthUserProvider implements UserProvider
 {
-    /**
-     * Retrieve a user by their unique identifier (e.g., ID).
-     */
+    protected $model;
+
+    public function __construct($model)
+    {
+        $this->model = $model;
+    }
+
     public function retrieveById($identifier)
     {
-        // $token = AccessToken::where('user_id', $identifier)->first();
-
-        // return $token ? User::find($token->user_id) : null;
+        return $this->model::find($identifier);
     }
 
-    /**
-     * Retrieve a user by their unique token.
-     */
     public function retrieveByToken($identifier, $token)
     {
-        // $session = AccessToken::where('user_id', $identifier)
-        //     ->where('token', $token)
-        //     ->first();
-
-        // return $session ? \App\Models\User::find($session->user_id) : null;
+        return $this->model::where('id', $identifier)->where('remember_token', $token)->first();
     }
 
-    /**
-     * Update the user's "remember me" token.
-     */
-    public function updateRememberToken(Authenticatable $user, $token)
+    public function updateRememberToken(UserContract $user, $token)
     {
-        // Update token in access_tokens table instead of users
-        // AccessToken::updateOrCreate(
-        //     ['user_id' => $user->id],
-        //     ['token' => $token]
-        // );
+        $user->setRememberToken($token);
+        $user->save();
     }
 
-    /**
-     * Retrieve a user by given credentials (e.g., email, username).
-     */
     public function retrieveByCredentials(array $credentials)
     {
-        if (!isset($credentials['email'])) {
-            return null;
-        }
+        return $this->model::where('email', $credentials['email'])->first();
+    }
 
-        return User::where('email', $credentials['email'])->first();
+    public function validateCredentials(UserContract $user, array $credentials)
+    {
+        return Hash::check($credentials['password'], $user->getAuthPassword());
     }
 
     /**
-     * Validate a user against the given credentials.
+     * Rehash the user's password if required.
+     *
+     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
+     * @param  array  $credentials
+     * @param  bool  $force
+     * @return void
      */
-    public function validateCredentials(Authenticatable $user, array $credentials)
+    public function rehashPasswordIfRequired(UserContract $user, array $credentials, bool $force = false)
     {
-        return Hash::check($credentials['password'], $user->password);
-    }
-    
-    public function rehashPasswordIfRequired(Authenticatable $user, array $credentials, bool $force = false)
-    {
-        if ($force || Hash::needsRehash($user->password)) {
-            $user->password = Hash::make($credentials['password']);
+        // Check if the password needs to be rehashed
+        if ($force || $this->needsRehash($user->getAuthPassword())) {
+            $user->setAuthPassword($credentials['password']);
             $user->save();
         }
+    }
+
+    /**
+     * Determine if the given password needs to be rehashed.
+     *
+     * @param  string  $hashedPassword
+     * @return bool
+     */
+    protected function needsRehash($hashedPassword)
+    {
+        // Use Laravel's built-in password_needs_rehash function
+        return password_needs_rehash($hashedPassword, PASSWORD_DEFAULT);
     }
 }
