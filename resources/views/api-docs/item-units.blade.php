@@ -746,11 +746,11 @@ Content-Type: application/json
 
         <!-- Put Endpoint -->
         <div class="endpoint">
-            <h2>PUT /api/item-units</h2>
-            <p>Update an existing item unit.</p>
+            <h2>PUT /api/log-descriptions</h2>
+            <p>Update existing log description records. Supports both single and bulk updates.</p>
 
-            <h3>Parameters</h3>
-            <table>
+            <h3>URL Parameters</h3>
+            <table class="parameter-table">
                 <thead>
                     <tr>
                         <th>Parameter</th>
@@ -762,95 +762,156 @@ Content-Type: application/json
                 <tbody>
                     <tr>
                         <td>id</td>
-                        <td>integer</td>
-                        <td>The ID of the item unit to update.</td>
-                        <td>Yes (if <code>query</code> is not provided)</td>
+                        <td>integer|array</td>
+                        <td>
+                            The ID(s) of the log description(s) to update.
+                            <ul>
+                                <li>Single update: <code>?id=1</code></li>
+                                <li>Bulk update: <code>?id[]=1&id[]=2</code></li>
+                            </ul>
+                        </td>
+                        <td>Yes</td>
                     </tr>
+                </tbody>
+            </table>
+
+            <h3>Request Body</h3>
+            <table class="field-table">
+                <thead>
                     <tr>
-                        <td>query</td>
-                        <td>object</td>
-                        <td>A query object to find the item unit to update (e.g., <code>{"code": "example"}</code>).</td>
-                        <td>Yes (if <code>id</code> is not provided)</td>
+                        <th>Field</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Required</th>
                     </tr>
+                </thead>
+                <tbody>
                     <tr>
-                        <td>name</td>
+                        <td>title</td>
                         <td>string</td>
-                        <td>The updated name of the item unit.</td>
+                        <td>Log event title</td>
                         <td>No</td>
                     </tr>
                     <tr>
                         <td>code</td>
                         <td>string</td>
-                        <td>The updated code of the item unit.</td>
+                        <td>Unique event code</td>
                         <td>No</td>
                     </tr>
                     <tr>
                         <td>description</td>
                         <td>string</td>
-                        <td>The updated description of the item unit.</td>
+                        <td>Detailed log template</td>
                         <td>No</td>
+                    </tr>
+                    <tr>
+                        <td>log_descriptions</td>
+                        <td>array</td>
+                        <td>
+                            Required for bulk updates. Array of objects containing:
+                            <ul>
+                                <li>title</li>
+                                <li>code</li>
+                                <li>description</li>
+                            </ul>
+                        </td>
+                        <td>Conditional</td>
                     </tr>
                 </tbody>
             </table>
 
-            <h3>Example Request</h3>
-            <pre>
-    PUT {{ env('SERVER_DOMAIN') }}/api/item-units?id=1
-    Content-Type: application/json
+            <h3>Examples</h3>
+            
+            <div class="example">
+                <h4>Single Update</h4>
+                <pre><code>PUT /api/log-descriptions?id=1
+Content-Type: application/json
 
-    {
-        "name": "Updated Unit",
-        "code": "UU"
-    }
-            <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-units?id=1')">
-                <i class="fas fa-copy"></i> Copy URL
-            </button>
-        </pre>
+{
+    "title": "Item Updated",
+    "code": "ITEM_UPDATE"
+}
+            </code></pre>
+                
+                <h4>Response</h4>
+                <pre><code>
+{
+    "data": {
+        "id": 1,
+        "title": "Item Updated",
+        "code": "ITEM_UPDATE",
+        "description": "Original description remains"
+    },
+    "message": "Log description updated successfully."
+}
+            </code></pre>
+            </div>
 
-        <h3>Example Response</h3>
-        <pre>
-    {
-        "data": {
+            <div class="example">
+                <h4>Bulk Update</h4>
+                <pre><code>
+PUT /api/log-descriptions?id[]=1&id[]=2
+Content-Type: application/json
+
+{
+    "log_descriptions": [
+        {"title": "New Title"},
+        {"code": "NEW_CODE"}
+    ]
+}
+            </code></pre>
+                
+                <h4>Response</h4>
+                <pre><code>
+{
+    "data": [
+        {
             "id": 1,
-            "name": "Updated Unit",
-            "code": "UU",
+            "title": "New Title",
+            "code": null,
             "description": null
         },
-        "metadata": {
-            "methods": "[GET, PUT, DELETE]",
-            "formats": [
-                "{{ env('SERVER_DOMAIN') }}/api/item-units?id=1",
-                "{{ env('SERVER_DOMAIN') }}/api/item-units?query[code]=example"
-            ],
-            "fields": ["code"]
+        {
+            "id": 2,
+            "title": null,
+            "code": "NEW_CODE",
+            "description": null
         }
-    }
-            </pre>
+    ],
+    "message": "Successfully updated 2 log descriptions."
+}
+            </code></pre>
+            </div>
 
             <h3>Error Responses</h3>
-            <table>
+            <table class="error-table">
                 <thead>
                     <tr>
-                        <th>Status Code</th>
+                        <th>Code</th>
                         <th>Message</th>
                         <th>Description</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td>422</td>
-                        <td>Invalid request.</td>
-                        <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
+                        <td>400</td>
+                        <td>ID parameter is required</td>
+                        <td>Missing ID parameter</td>
                     </tr>
                     <tr>
                         <td>404</td>
-                        <td>No record found.</td>
-                        <td>Returned when no item unit is found for the given <code>id</code> or <code>query</code>.</td>
+                        <td>Log description not found</td>
+                        <td>Invalid ID provided</td>
                     </tr>
                     <tr>
                         <td>409</td>
-                        <td>Request has multiple records.</td>
-                        <td>Returned when the <code>query</code> matches multiple records.</td>
+                        <td>ID/item count mismatch</td>
+                        <td>Bulk update count mismatch</td>
+                    </tr>
+                    <tr>
+                        <td>422</td>
+                        <td>No valid fields provided</td>
+                        <td>Empty or invalid request body</td>
                     </tr>
                 </tbody>
             </table>
@@ -889,7 +950,7 @@ Content-Type: application/json
 
             <h3>Example Request</h3>
     <pre>
-    DELETE {{ env('SERVER_DOMAIN') }}/api/item-units?id=1
+DELETE {{ env('SERVER_DOMAIN') }}/api/item-units?id=1
             <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-units?item_unit_id=1')">
                 <i class="fas fa-copy"></i> <span>Copy URL</span>
             </button>
@@ -897,9 +958,9 @@ Content-Type: application/json
 
         <h3>Example Response</h3>
         <pre>
-    {
-        "message": "Successfully deleted 1 record."
-    }
+{
+    "message": "Successfully deleted 1 record."
+}
             </pre>
 
             <h3>Error Responses</h3>

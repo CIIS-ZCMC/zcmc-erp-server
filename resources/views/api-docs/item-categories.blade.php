@@ -771,10 +771,10 @@ Content-Type: application/json
     <!-- Put Endpoint -->
     <div class="endpoint">
         <h2>PUT /api/item-categories</h2>
-        <p>Update an existing item unit.</p>
+        <p>Update existing item categories. Supports both single and bulk updates.</p>
 
-        <h3>Parameters</h3>
-        <table>
+        <h3>URL Parameters</h3>
+        <table class="parameter-table">
             <thead>
                 <tr>
                     <th>Parameter</th>
@@ -786,95 +786,157 @@ Content-Type: application/json
             <tbody>
                 <tr>
                     <td>id</td>
-                    <td>integer</td>
-                    <td>The ID of the item unit to update.</td>
-                    <td>Yes (if <code>query</code> is not provided)</td>
-                </tr>
-                <tr>
-                    <td>query</td>
-                    <td>object</td>
-                    <td>A query object to find the item unit to update (e.g., <code>{"code": "example"}</code>).</td>
-                    <td>Yes (if <code>id</code> is not provided)</td>
-                </tr>
-                <tr>
-                    <td>name</td>
-                    <td>string</td>
-                    <td>The updated name of the item unit.</td>
-                    <td>No</td>
-                </tr>
-                <tr>
-                    <td>code</td>
-                    <td>string</td>
-                    <td>The updated code of the item unit.</td>
-                    <td>No</td>
-                </tr>
-                <tr>
-                    <td>description</td>
-                    <td>string</td>
-                    <td>The updated description of the item unit.</td>
-                    <td>No</td>
+                    <td>integer|array</td>
+                    <td>
+                        The ID(s) of the category(ies) to update.
+                        <ul>
+                            <li>Single update: <code>?id=1</code></li>
+                            <li>Bulk update: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Yes</td>
                 </tr>
             </tbody>
         </table>
 
-        <h3>Example Request</h3>
-        <pre>
-PUT {{ env('SERVER_DOMAIN') }}/api/item-categories?id=1
+        <h3>Request Body</h3>
+        <table class="field-table">
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>name</td>
+                    <td>string</td>
+                    <td>Category name</td>
+                    <td>No (for partial updates)</td>
+                </tr>
+                <tr>
+                    <td>code</td>
+                    <td>string</td>
+                    <td>Unique category code</td>
+                    <td>No (for partial updates)</td>
+                </tr>
+                <tr>
+                    <td>description</td>
+                    <td>string</td>
+                    <td>Category description</td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td>item_categories</td>
+                    <td>array</td>
+                    <td>
+                        Required for bulk updates. Array of objects containing:
+                        <ul>
+                            <li>name</li>
+                            <li>code</li>
+                            <li>description</li>
+                        </ul>
+                    </td>
+                    <td>Conditional</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Examples</h3>
+        
+        <div class="example">
+            <h4>Single Update</h4>
+            <pre><code>
+PUT /api/item-categories?id=1
 Content-Type: application/json
 
 {
-    "name": "Updated Unit",
-    "code": "UU"
+    "name": "Medical Supplies",
+    "code": "MED-SUP"
 }
-        <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-categories?id=1')">
-            <i class="fas fa-copy"></i> Copy URL
-        </button>
-    </pre>
-
-    <h3>Example Response</h3>
-    <pre>
+        </code></pre>
+            
+            <h4>Response</h4>
+            <pre><code>
 {
     "data": {
         "id": 1,
-        "name": "Updated Unit",
-        "code": "UU",
-        "description": null
+        "name": "Medical Supplies",
+        "code": "MED-SUP",
+        "description": "Original description remains"
     },
-    "metadata": {
-        "methods": "[GET, PUT, DELETE]",
-        "formats": [
-            "{{ env('SERVER_DOMAIN') }}/api/item-categories?id=1",
-            "{{ env('SERVER_DOMAIN') }}/api/item-categories?query[code]=example"
-        ],
-        "fields": ["code"]
-    }
+    "message": "Category updated successfully."
 }
-        </pre>
+        </code></pre>
+        </div>
+
+        <div class="example">
+            <h4>Bulk Update</h4>
+            <pre><code>
+PUT /api/item-categories?id[]=1&id[]=2
+Content-Type: application/json
+
+{
+    "item_categories": [
+        {"name": "Updated Category"},
+        {"code": "UPD-CODE"}
+    ]
+}
+        </code></pre>
+            
+            <h4>Response</h4>
+            <pre><code>
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Updated Category",
+            "code": null,
+            "description": null
+        },
+        {
+            "id": 2,
+            "name": null,
+            "code": "UPD-CODE",
+            "description": null
+        }
+    ],
+    "message": "Successfully updated 2 categories."
+}
+        </code></pre>
+        </div>
 
         <h3>Error Responses</h3>
-        <table>
+        <table class="error-table">
             <thead>
                 <tr>
-                    <th>Status Code</th>
+                    <th>Code</th>
                     <th>Message</th>
                     <th>Description</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td>422</td>
-                    <td>Invalid request.</td>
-                    <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
+                    <td>400</td>
+                    <td>ID parameter is required</td>
+                    <td>Missing ID parameter</td>
                 </tr>
                 <tr>
                     <td>404</td>
-                    <td>No record found.</td>
-                    <td>Returned when no item unit is found for the given <code>id</code> or <code>query</code>.</td>
+                    <td>Category not found</td>
+                    <td>Invalid ID provided</td>
                 </tr>
                 <tr>
                     <td>409</td>
-                    <td>Request has multiple records.</td>
-                    <td>Returned when the <code>query</code> matches multiple records.</td>
+                    <td>ID/category count mismatch</td>
+                    <td>Bulk update count mismatch</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>No valid fields provided</td>
+                    <td>Empty or invalid request body</td>
                 </tr>
             </tbody>
         </table>

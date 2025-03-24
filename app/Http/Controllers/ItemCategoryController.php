@@ -300,76 +300,125 @@ class ItemCategoryController extends Controller
             ]
         ], Response::HTTP_CREATED);
     }
-    public function update(Request $request):Response    
+    public function update(Request $request): Response
     {
-        $item_category_id = $request->query('id') ?? null;
-        $query = $request->query('query') ?? null;
-
-        if(!$item_category_id && !$query){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                            env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
+        $item_category_ids = $request->query('id') ?? null;
+    
+        // Validate ID parameter exists
+        if (!$item_category_ids) {
+            $response = ["message" => "ID parameter is required."];
+            
+            if ($this->is_development) {
+                $response['metadata'] = [
+                    "methods" => "[PUT]",
+                    "formats" => [
+                        env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                        env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                    ],
+                    "required_fields" => ["name", "code"]
                 ];
             }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-        
-        $item_category = null;
-
-        if($item_category_id){
-            $item_category = ItemCategory::find($item_category_id);    
-        }
-
-        if(!$item_category_id && $query){
-            $item_categories = ItemCategory::where($query)->get();
             
-            // Check result is has many records
-            if(count($item_categories) > 1){
-                return response()->json([
-                    'data' => $item_categories,
-                    'message' => "Request has multiple record."
-                ], Response::HTTP_CONFLICT);
-            }
-
-            $item_category = $item_categories->first();
+            return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+    
+        // Convert single ID to array for consistent processing
+        $item_category_ids = is_array($item_category_ids) ? $item_category_ids : [$item_category_ids];
+    
+        // Handle bulk update
+        if ($request->has('item_categories')) {
+            return $this->handleBulkUpdate($item_category_ids, $request);
+        }
+    
+        // Handle single update
+        return $this->handleSingleUpdate($item_category_ids[0], $request);
+    }
+    
+    protected function handleBulkUpdate(array $ids, Request $request): Response
+    {
+        if (count($ids) !== count($request->input('item_categories'))) {
+            return response()->json([
+                "message" => "Number of IDs does not match number of categories provided.",
+                "metadata" => $this->getMetadata()
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    
+        $updated_categories = [];
+        $errors = [];
+    
+        foreach ($ids as $index => $id) {
+            $category = ItemCategory::find($id);
+            
+            if (!$category) {
+                $errors[] = "Category with ID {$id} not found.";
+                continue;
+            }
+    
+            $cleanData = $this->cleanCategoryData($request->input('item_categories')[$index]);
+            $category->update($cleanData);
+            $updated_categories[] = $category;
+        }
+    
+        if (!empty($errors)) {
+            return response()->json([
+                "data" => $updated_categories,
+                "message" => "Partial update completed with errors.",
+                "errors" => $errors,
+                "metadata" => $this->getMetadata()
+            ], Response::HTTP_MULTI_STATUS);
+        }
+    
+        return response()->json([
+            "data" => $updated_categories,
+            "message" => "Successfully updated ".count($updated_categories)." categories.",
+            "metadata" => $this->getMetadata()
+        ], Response::HTTP_OK);
+    }
+    
+    protected function handleSingleUpdate(int $id, Request $request): Response
+    {
+        $category = ItemCategory::find($id);
         
-        $cleanData = [
-            "name" => strip_tags($request->input('name')),
-            "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
-        ];
-
-        $item_category->update($cleanData);
-
-        $metadata = [
-            "methods" => "[GET, PUT, DELETE]",
-        ];
-
-        if($this->is_development){
+        if (!$category) {
+            return response()->json([
+                "message" => "Category not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+    
+        $cleanData = $this->cleanCategoryData($request->all());
+        $category->update($cleanData);
+    
+        return response()->json([
+            "data" => $category,
+            "message" => "Category updated successfully.",
+            "metadata" => $this->getMetadata()
+        ], Response::HTTP_OK);
+    }
+    
+    protected function cleanCategoryData(array $data): array
+    {
+        return array_filter([
+            'name' => isset($data['name']) ? strip_tags($data['name']) : null,
+            'code' => isset($data['code']) ? strip_tags($data['code']) : null,
+            'description' => isset($data['description']) ? strip_tags($data['description']) : null
+        ], function($value) {
+            return $value !== null;
+        });
+    }
+    
+    protected function getMetadata(): array
+    {
+        $metadata = ["methods" => "[PUT]"];
+        
+        if ($this->is_development) {
             $metadata["formats"] = [
                 env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
+                env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
             ];
-            
-            $metadata['fields'] = ["code"];
+            $metadata['fields'] = ["name", "code"];
         }
-
-        return response()->json([
-            "data" => $item_category,
-            "metadata" => $metadata
-        ], Response::HTTP_OK);
+        
+        return $metadata;
     }
 
     public function destroy(Request $request): Response

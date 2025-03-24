@@ -742,117 +742,190 @@ Content-Type: application/json
             </table>
         </div>
 
-    <!-- Put Endpoint -->
-    <div class="endpoint">
-        <h2>PUT /api/log_descriptions</h2>
-        <p>Update an existing item unit.</p>
+        <!-- Put Endpoint -->
+        <div class="endpoint">
+            <h2>PUT /api/log-descriptions</h2>
+            <p>Update one or more log description records. Supports both single and bulk updates.</p>
 
-        <h3>Parameters</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Parameter</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                    <th>Required</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>id</td>
-                    <td>integer</td>
-                    <td>The ID of the item unit to update.</td>
-                    <td>Yes (if <code>query</code> is not provided)</td>
-                </tr>
-                <tr>
-                    <td>query</td>
-                    <td>object</td>
-                    <td>A query object to find the item unit to update (e.g., <code>{"code": "example"}</code>).</td>
-                    <td>Yes (if <code>id</code> is not provided)</td>
-                </tr>
-                <tr>
-                    <td>name</td>
-                    <td>string</td>
-                    <td>The updated name of the item unit.</td>
-                    <td>No</td>
-                </tr>
-                <tr>
-                    <td>code</td>
-                    <td>string</td>
-                    <td>The updated code of the item unit.</td>
-                    <td>No</td>
-                </tr>
-                <tr>
-                    <td>description</td>
-                    <td>string</td>
-                    <td>The updated description of the item unit.</td>
-                    <td>No</td>
-                </tr>
-            </tbody>
-        </table>
+            <h3>URL Parameters</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Parameter</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Required</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>id</td>
+                        <td>integer or array</td>
+                        <td>
+                            The ID(s) of the log description(s) to update. For bulk updates, provide array of IDs matching the request body items.
+                            <br>Formats:
+                            <ul>
+                                <li>Single update: <code>?id=1</code></li>
+                                <li>Bulk update: <code>?id[]=1&id[]=2</code></li>
+                            </ul>
+                        </td>
+                        <td>Yes</td>
+                    </tr>
+                </tbody>
+            </table>
 
-        <h3>Example Request</h3>
-        <pre>
-PUT {{ env('SERVER_DOMAIN') }}/api/log_descriptions?id=1
+            <h3>Request Body Fields</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Required</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>title</td>
+                        <td>string</td>
+                        <td>The title of the log description</td>
+                        <td>No (for partial updates)</td>
+                    </tr>
+                    <tr>
+                        <td>code</td>
+                        <td>string</td>
+                        <td>The unique code identifier</td>
+                        <td>No (for partial updates)</td>
+                    </tr>
+                    <tr>
+                        <td>description</td>
+                        <td>string</td>
+                        <td>The detailed description template</td>
+                        <td>No (for partial updates)</td>
+                    </tr>
+                    <tr>
+                        <td>log_descriptions</td>
+                        <td>array</td>
+                        <td>
+                            Required for bulk updates. Array of log description objects matching the IDs in the URL.
+                            Each object may contain:
+                            <ul>
+                                <li><code>title</code> (string)</li>
+                                <li><code>code</code> (string)</li>
+                                <li><code>description</code> (string)</li>
+                            </ul>
+                        </td>
+                        <td>Yes (for bulk updates)</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3>Example Requests</h3>
+            
+            <h4>Single Update</h4>
+            <pre>
+PUT {{ env('SERVER_DOMAIN') }}/api/log-descriptions?id=1
 Content-Type: application/json
 
 {
-    "name": "Updated Unit",
-    "code": "UU"
+    "title": "Item Updated",
+    "code": "ITEM_UPDATE"
 }
-        <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/log_descriptions?id=1')">
-            <i class="fas fa-copy"></i> Copy URL
-        </button>
-    </pre>
+            <button class="copy-button" onclick="copyToClipboard('PUT {{ env('SERVER_DOMAIN') }}/api/log-descriptions?id=1')">
+                <i class="fas fa-copy"></i> Copy
+            </button>
+            </pre>
 
-    <h3>Example Response</h3>
-    <pre>
+            <h4>Bulk Update</h4>
+            <pre>
+PUT {{ env('SERVER_DOMAIN') }}/api/log-descriptions?id[]=1&id[]=2
+Content-Type: application/json
+
+{
+    "log_descriptions": [
+        {
+            "title": "Item Created",
+            "code": "ITEM_CREATE"
+        },
+        {
+            "description": "Item was deleted from inventory"
+        }
+    ]
+}
+            <button class="copy-button" onclick="copyToClipboard('PUT {{ env('SERVER_DOMAIN') }}/api/log-descriptions?id[]=1&id[]=2')">
+                <i class="fas fa-copy"></i> Copy
+            </button>
+            </pre>
+
+            <h3>Example Responses</h3>
+            
+            <h4>Single Update Success</h4>
+            <pre>
 {
     "data": {
         "id": 1,
-        "name": "Updated Unit",
-        "code": "UU",
-        "description": null
+        "title": "Item Updated",
+        "code": "ITEM_UPDATE",
+        "description": "Original description remains unchanged"
     },
-    "metadata": {
-        "methods": "[GET, PUT, DELETE]",
-        "formats": [
-            "{{ env('SERVER_DOMAIN') }}/api/log_descriptions?id=1",
-            "{{ env('SERVER_DOMAIN') }}/api/log_descriptions?query[code]=example"
-        ],
-        "fields": ["code"]
-    }
+    "message": "Log description updated successfully."
 }
-        </pre>
+            </pre>
 
-        <h3>Error Responses</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Status Code</th>
-                    <th>Message</th>
-                    <th>Description</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>422</td>
-                    <td>Invalid request.</td>
-                    <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
-                </tr>
-                <tr>
-                    <td>404</td>
-                    <td>No record found.</td>
-                    <td>Returned when no item unit is found for the given <code>id</code> or <code>query</code>.</td>
-                </tr>
-                <tr>
-                    <td>409</td>
-                    <td>Request has multiple records.</td>
-                    <td>Returned when the <code>query</code> matches multiple records.</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+            <h4>Bulk Update Success</h4>
+            <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "title": "Item Created",
+            "code": "ITEM_CREATE",
+            "description": null
+        },
+        {
+            "id": 2,
+            "title": "Item Deleted",
+            "code": null,
+            "description": "Item was deleted from inventory"
+        }
+    ],
+    "message": "Successfully updated 2 log descriptions."
+}
+            </pre>
+
+            <h3>Error Responses</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Status Code</th>
+                        <th>Message</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>400</td>
+                        <td>ID parameter is required</td>
+                        <td>Returned when no ID parameter is provided</td>
+                    </tr>
+                    <tr>
+                        <td>404</td>
+                        <td>Log description not found</td>
+                        <td>Returned when no record exists with the provided ID</td>
+                    </tr>
+                    <tr>
+                        <td>409</td>
+                        <td>Number of IDs does not match number of log descriptions</td>
+                        <td>Returned for bulk updates when ID count doesn't match request body items</td>
+                    </tr>
+                    <tr>
+                        <td>422</td>
+                        <td>No valid fields provided for update</td>
+                        <td>Returned when request body contains no updatable fields</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
     <!-- Delete Endpoint -->
     <div class="endpoint">

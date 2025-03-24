@@ -25,6 +25,25 @@ class LogDescriptionController extends Controller
             'message' => "Succesfully imported record"
         ], Response::HTTP_OK);
     }
+    
+    protected function cleanLogDescriptionData(array $data): array
+    {
+        $cleanData = [];
+
+        if (isset($data['title'])) {
+            $cleanData['title'] = strip_tags($data['title']);
+        }
+
+        if (isset($data['code'])) {
+            $cleanData['code'] = strip_tags($data['code']);
+        }
+
+        if (isset($data['description'])) {
+            $cleanData['description'] = strip_tags($data['description']);
+        }
+
+        return $cleanData;
+    }
 
     public function index(Request $request)
     {
@@ -299,76 +318,116 @@ class LogDescriptionController extends Controller
             ]
         ], Response::HTTP_CREATED);
     }
-    public function update(Request $request):Response    
+    
+    public function update(Request $request): Response
     {
-        $log_description_id = $request->query('id') ?? null;
-        $query = $request->query('query') ?? null;
+        $log_description_ids = $request->query('id') ?? null;
 
-        if(!$log_description_id && !$query){
-            $response = ["message" => "Invalid request."];
+        if (!$log_description_ids) {
+            $response = ["message" => "ID parameter is required."];
 
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                            env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
+            if ($this->is_development) {
+                $response['metadata'] = [
+                    "methods" => "[PUT]",
+                    "formats" => [
+                        env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                        env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2"
+                    ],
+                    "required_fields" => ["title", "code", "description"]
                 ];
             }
 
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-        
-        $log_description = null;
-
-        if($log_description_id){
-            $log_description = LogDescription::find($log_description_id);    
+            return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if(!$log_description_id && $query){
-            $log_descriptions = LogDescription::where($query)->get();
-            
-            // Check result is has many records
-            if(count($log_descriptions) > 1){
+        // Convert single ID to array for consistent processing
+        $log_description_ids = is_array($log_description_ids) ? $log_description_ids : [$log_description_ids];
+
+        // For bulk update
+        if ($request->has('log_descriptions')) {
+            if (count($log_description_ids) !== count($request->input('log_descriptions'))) {
                 return response()->json([
-                    'data' => $log_descriptions,
-                    'message' => "Request has multiple record."
-                ], Response::HTTP_CONFLICT);
+                    "message" => "Number of IDs does not match number of log descriptions provided.",
+                    "metadata" => [
+                        "formats" => [
+                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2"
+                        ]
+                    ]
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
-            $log_description = $log_descriptions->first();
+            $updated_logs = [];
+            $errors = [];
+
+            foreach ($log_description_ids as $index => $id) {
+                $log_description = LogDescription::find($id);
+
+                if (!$log_description) {
+                    $errors[] = "Log description with ID {$id} not found.";
+                    continue;
+                }
+
+                $logData = $request->input('log_descriptions')[$index];
+                $cleanData = $this->cleanLogDescriptionData($logData);
+                
+                if (!empty($cleanData)) {
+                    $log_description->update($cleanData);
+                    $updated_logs[] = $log_description;
+                }
+            }
+
+            if (!empty($errors)) {
+                return response()->json([
+                    "data" => $updated_logs,
+                    "message" => "Partial update completed with errors.",
+                    "errors" => $errors,
+                    "metadata" => ["method" => "[PUT]"]
+                ], Response::HTTP_MULTI_STATUS);
+            }
+
+            return response()->json([
+                "data" => $updated_logs,
+                "message" => "Successfully updated " . count($updated_logs) . " log descriptions.",
+                "metadata" => ["method" => "[PUT]"]
+            ], Response::HTTP_OK);
         }
+
+        // Single item update
+        if (count($log_description_ids) > 1) {
+            return response()->json([
+                "message" => "Multiple IDs provided but no log_descriptions array for bulk update.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        $log_description = LogDescription::find($log_description_ids[0]);
+
+        if (!$log_description) {
+            return response()->json([
+                "message" => "Log description not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $cleanData = $this->cleanLogDescriptionData($request->all());
         
-        $cleanData = [
-            "title" => strip_tags($request->input('title')),
-            "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
-        ];
-
-        $log_description->update($cleanData);
-
-        $metadata = [
-            "methods" => "[GET, PUT, DELETE]",
-        ];
-
-        if($this->is_development){
-            $metadata["formats"] = [
-                env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-            ];
-            
-            $metadata['fields'] = ["code"];
+        if (!empty($cleanData)) {
+            $log_description->update($cleanData);
         }
 
-        return response()->json([
+        $response = [
             "data" => $log_description,
-            "metadata" => $metadata
-        ], Response::HTTP_OK);
+            "message" => "Log description updated successfully.",
+            "metadata" => ["method" => "[PUT]"]
+        ];
+
+        if ($this->is_development) {
+            $response['metadata'] = [
+                "methods" => "[PUT]",
+                "required_fields" => ["title", "code", "description"]
+            ];
+        }
+
+        return response()->json($response, Response::HTTP_OK);
     }
 
     public function destroy(Request $request): Response

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemUnitRequest;
 use App\Models\ItemUnit;
+use App\Models\LogDescription;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -18,12 +19,38 @@ class ItemUnitController extends Controller
     {
         $this->is_development = env("APP_DEBUG", true);
     }
-
+ 
     public function import(Request $request)
     {
         return response()->json([
             'message' => "Succesfully imported record"
         ], Response::HTTP_OK);
+    }
+    
+    protected function cleanLogDescriptionData(array $data): array
+    {
+        return array_filter([
+            'title' => isset($data['title']) ? strip_tags($data['title']) : null,
+            'code' => isset($data['code']) ? strip_tags($data['code']) : null,
+            'description' => isset($data['description']) ? strip_tags($data['description']) : null
+        ], function($value) {
+            return $value !== null;
+        });
+    }
+    
+    protected function getMetadata(): array
+    {
+        $metadata = ["methods" => "[PUT]"];
+        
+        if ($this->is_development) {
+            $metadata["formats"] = [
+                env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+            ];
+            $metadata['fields'] = ["title", "code", "description"];
+        }
+        
+        return $metadata;
     }
 
     public function index(Request $request)
@@ -299,77 +326,102 @@ class ItemUnitController extends Controller
             ]
         ], Response::HTTP_CREATED);
     }
-    public function update(Request $request):Response    
+    
+    public function update(Request $request): Response
     {
-        $item_unit_id = $request->query('id') ?? null;
-        $query = $request->query('query') ?? null;
-
-        if(!$item_unit_id && !$query){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                            env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
+        $log_description_ids = $request->query('id') ?? null;
+    
+        // Validate ID parameter exists
+        if (!$log_description_ids) {
+            $response = ["message" => "ID parameter is required."];
+            
+            if ($this->is_development) {
+                $response['metadata'] = [
+                    "methods" => "[PUT]",
+                    "formats" => [
+                        env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                        env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                    ],
+                    "required_fields" => ["title", "code", "description"]
                 ];
             }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-        
-        $item_unit = null;
-
-        if($item_unit_id){
-            $item_unit = ItemUnit::find($item_unit_id);    
-        }
-
-        if(!$item_unit_id && $query){
-            $item_units = ItemUnit::where($query)->get();
             
-            // Check result is has many records
-            if(count($item_units) > 1){
-                return response()->json([
-                    'data' => $item_units,
-                    'message' => "Request has multiple record."
-                ], Response::HTTP_CONFLICT);
+            return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    
+        // Convert single ID to array for consistent processing
+        $log_description_ids = is_array($log_description_ids) ? $log_description_ids : [$log_description_ids];
+    
+        // Handle bulk update
+        if ($request->has('log_descriptions')) {
+            return $this->handleBulkUpdate($log_description_ids, $request);
+        }
+    
+        // Handle single update
+        return $this->handleSingleUpdate($log_description_ids[0], $request);
+    }
+    
+    protected function handleBulkUpdate(array $ids, Request $request): Response
+    {
+        if (count($ids) !== count($request->input('log_descriptions'))) {
+            return response()->json([
+                "message" => "Number of IDs does not match number of log descriptions provided.",
+                "metadata" => $this->getMetadata()
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    
+        $updated_logs = [];
+        $errors = [];
+    
+        foreach ($ids as $index => $id) {
+            $log_description = LogDescription::find($id);
+            
+            if (!$log_description) {
+                $errors[] = "Log description with ID {$id} not found.";
+                continue;
             }
-
-            $item_unit = $item_units->first();
+    
+            $cleanData = $this->cleanLogDescriptionData($request->input('log_descriptions')[$index]);
+            $log_description->update($cleanData);
+            $updated_logs[] = $log_description;
         }
-        
-        $cleanData = [
-            "name" => strip_tags($request->input('name')),
-            "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
-        ];
-
-        $item_unit->update($cleanData);
-
-        $metadata = [
-            "methods" => "[GET, PUT, DELETE]",
-        ];
-
-        if($this->is_development){
-            $metadata["formats"] = [
-                env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-            ];
-            
-            $metadata['fields'] = ["code"];
+    
+        if (!empty($errors)) {
+            return response()->json([
+                "data" => $updated_logs,
+                "message" => "Partial update completed with errors.",
+                "errors" => $errors,
+                "metadata" => $this->getMetadata()
+            ], Response::HTTP_MULTI_STATUS);
         }
-
+    
         return response()->json([
-            "data" => $item_unit,
-            "metadata" => $metadata
+            "data" => $updated_logs,
+            "message" => "Successfully updated ".count($updated_logs)." log descriptions.",
+            "metadata" => $this->getMetadata()
         ], Response::HTTP_OK);
     }
+    
+    protected function handleSingleUpdate(int $id, Request $request): Response
+    {
+        $log_description = LogDescription::find($id);
+        
+        if (!$log_description) {
+            return response()->json([
+                "message" => "Log description not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+    
+        $cleanData = $this->cleanLogDescriptionData($request->all());
+        $log_description->update($cleanData);
+    
+        return response()->json([
+            "data" => $log_description,
+            "message" => "Log description updated successfully.",
+            "metadata" => $this->getMetadata()
+        ], Response::HTTP_OK);
+    }
+    
 
     public function destroy(Request $request): Response
     {
