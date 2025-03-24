@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->text('description');
             $table->string('code');
+            $table->dateTime('deleted_at')->nullable();
             $table->timestamps();
         });
     }

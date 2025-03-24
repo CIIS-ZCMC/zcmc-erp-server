@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('objectives', function (Blueprint $table) {
             $table->id();
-            $table->string('uuid');
             $table->text('description')->nullable();
             $table->string('code');
+            $table->dateTime('deleted_at')->nullable();
             $table->timestamps();
         });
     }

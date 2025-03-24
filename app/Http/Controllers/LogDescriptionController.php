@@ -112,6 +112,41 @@ class LogDescriptionController extends Controller
 
             return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+
+        // Handle return for selection record
+        if($mode === 'selection'){
+            if($search  !== null){
+                $log_descriptions = LogDescription::select('id','title','code')
+                    ->where('title', 'like', '%'.$search.'%')
+                    ->where("deleted_at", NULL)->get();
+    
+                $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
+    
+                if($this->is_development){
+                    $metadata['content'] = "This type of response is for selection component.";
+                    $metadata['mode'] = "selection";
+                }
+                
+                return response()->json([
+                    "data" => $log_descriptions,
+                    "metadata" => $metadata,
+                ], Response::HTTP_OK);
+            }
+
+            $log_descriptions = LogDescription::select('id','title','code')->where("deleted_at", NULL)->get();
+
+            $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
+
+            if($this->is_development){
+                $metadata['content'] = "This type of response is for selection component.";
+                $metadata['mode'] = "selection";
+            }
+            
+            return response()->json([
+                "data" => $log_descriptions,
+                "metadata" => $metadata,
+            ], Response::HTTP_OK);
+        }
         
 
         if($search !== null){
@@ -122,13 +157,25 @@ class LogDescriptionController extends Controller
                     ->limit($per_page)
                     ->get();
 
+                if(count($log_descriptions)  === 0){
+                    return response()->json([
+                        'data' => [],
+                        'metadata' => [
+                            'methods' => '[GET,POST,PUT,DELETE]',
+                            'pagination' => [],
+                            'page' => 0,
+                            'total_page' => 0
+                        ],
+                    ], Response::HTTP_OK);
+                }
+
                 $allIds = LogDescription::where('title', 'like', '%'.$search.'%')
                     ->orderBy('id')
                     ->pluck('id');
 
                 $chunks = $allIds->chunk($per_page);
                 
-                $pagination_helper = new PaginationHelper('hospital', $page, $per_page, 0);
+                $pagination_helper = new PaginationHelper('log-descriptions', $page, $per_page, 0);
                 $pagination = $pagination_helper->createSearchPagination( $page_item, $chunks, $search, $per_page, $last_initial_id);
                 $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
                 
@@ -161,23 +208,6 @@ class LogDescriptionController extends Controller
             return response()->json([
                 'data' => $log_descriptions,
                 'metadata' => []
-            ], Response::HTTP_OK);
-        }
-
-        // Handle return for selection record
-        if($mode === 'selection'){
-            $log_descriptions = LogDescription::select('id','title','code')->where("deleted_at", NULL)->get();
-
-            $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-
-            if($this->is_development){
-                $metadata['content'] = "This type of response is for selection component.";
-                $metadata['mode'] = "selection";
-            }
-            
-            return response()->json([
-                "data" => $log_descriptions,
-                "metadata" => $metadata,
             ], Response::HTTP_OK);
         }
         

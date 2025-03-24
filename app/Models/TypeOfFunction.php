@@ -9,7 +9,8 @@ class TypeOfFunction extends Model
     protected $table = "type_of_functions";
 
     public $fillable = [
-        'type'
+        'type',
+        'deleted_at'
     ];
 
     public $timestamps = true;

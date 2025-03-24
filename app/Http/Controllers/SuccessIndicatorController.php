@@ -3,16 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\PaginationHelper;
-use App\Http\Requests\ItemCategoryRequest;
-use App\Models\ItemCategory;
+use App\Http\Requests\SuccessIndicatorRequest;
+use App\Http\Resources\SuccessIndicatorDuplicateResource;
+use App\Models\SuccessIndicator;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class ItemCategoryController extends Controller
+class SuccessIndicatorController extends Controller
 {
     private $is_development;
 
-    private $module = 'item-categories';
+    private $module = 'success-indicators';
 
     public function __construct()
     {
@@ -35,10 +36,10 @@ class ItemCategoryController extends Controller
         $last_id = $request->query('last_id') ?? 0;
         $last_initial_id = $request->query('last_initial_id') ?? 0;
         $page_item = $request->query('page_item') ?? 0;
-        $item_category_id = $request->query('item_category_id') ?? null;
+        $success_indicator_id = $request->query('success_indicator_id') ?? null;
 
-        if($item_category_id){
-            $item_category = ItemCategory::find($item_category_id);
+        if($success_indicator_id){
+            $item_category = SuccessIndicator::find($success_indicator_id);
 
             if(!$item_category){
                 return response()->json([
@@ -46,7 +47,7 @@ class ItemCategoryController extends Controller
                     "metadata" => [
                         "methods" => "[GET, POST, PUT, DELETE]",
                         "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_category_id=[primary-key]",
+                            env("SERVER_DOMAIN")."/api/".$this->module."?success_indicator_id=[primary-key]",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
@@ -60,7 +61,7 @@ class ItemCategoryController extends Controller
                 "metadata" => [
                     "methods" => "[GET, POST, PUT, DELETE]",
                     "urls" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?item_category_id=[primary-key]",
+                        env("SERVER_DOMAIN")."/api/".$this->module."?success_indicator_id=[primary-key]",
                         env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
                         env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
                         env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
@@ -79,7 +80,7 @@ class ItemCategoryController extends Controller
                         "methods" => "[GET]",
                         "modes" => ["pagination", "selection"],
                         "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_category_id=[primary-key]",
+                            env("SERVER_DOMAIN")."/api/".$this->module."?success_indicator_id=[primary-key]",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
@@ -101,7 +102,7 @@ class ItemCategoryController extends Controller
                         "methods" => "[GET]",
                         "modes" => ["pagination", "selection"],
                         "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_category_id=[primary-key]",
+                            env("SERVER_DOMAIN")."/api/".$this->module."?success_indicator_id=[primary-key]",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
                             env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
@@ -116,8 +117,8 @@ class ItemCategoryController extends Controller
         // Handle return for selection record
         if($mode === 'selection'){
             if($search !== null){
-                $item_categories = ItemCategory::select('id','name','code')
-                    ->where('name', 'like', '%'.$search.'%')
+                $success_indicators = SuccessIndicator::select('id','code','description')
+                    ->where('code', 'like', "%".$search."%")
                     ->where("deleted_at", NULL)->get();
     
                 $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
@@ -128,12 +129,12 @@ class ItemCategoryController extends Controller
                 }
                 
                 return response()->json([
-                    "data" => $item_categories,
+                    "data" => $success_indicators,
                     "metadata" => $metadata,
                 ], Response::HTTP_OK);
             }
 
-            $item_categories = ItemCategory::select('id','name','code')->where("deleted_at", NULL)->get();
+            $success_indicators = SuccessIndicator::select('id','code','description')->where("deleted_at", NULL)->get();
 
             $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
 
@@ -143,7 +144,7 @@ class ItemCategoryController extends Controller
             }
             
             return response()->json([
-                "data" => $item_categories,
+                "data" => $success_indicators,
                 "metadata" => $metadata,
             ], Response::HTTP_OK);
         }
@@ -151,14 +152,13 @@ class ItemCategoryController extends Controller
 
         if($search !== null){
             if($last_id === 0 || $page_item != null){
-                $item_categories = ItemCategory::where('name', 'like', '%'.$search.'%')
+                $success_indicators = SuccessIndicator::where('code', 'like', '%'.$search.'%')
                     ->where('id','>', $last_id)
                     ->orderBy('id')
                     ->limit($per_page)
                     ->get();
-                    
 
-                if(count($item_categories)  === 0){
+                if(count($success_indicators)  === 0){
                     return response()->json([
                         'data' => [],
                         'metadata' => [
@@ -170,13 +170,13 @@ class ItemCategoryController extends Controller
                     ], Response::HTTP_OK);
                 }
 
-                $allIds = ItemCategory::where('name', 'like', '%'.$search.'%')
+                $allIds = SuccessIndicator::where('code', 'like', '%'.$search.'%')
                     ->orderBy('id')
                     ->pluck('id');
 
                 $chunks = $allIds->chunk($per_page);
                 
-                $pagination_helper = new PaginationHelper('item-categories', $page, $per_page, 0);
+                $pagination_helper = new PaginationHelper('success-indicators', $page, $per_page, 0);
                 $pagination = $pagination_helper->createSearchPagination( $page_item, $chunks, $search, $per_page, $last_initial_id);
                 $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
                 
@@ -185,7 +185,7 @@ class ItemCategoryController extends Controller
                  */
 
                 return response()->json([
-                    'data' => $item_categories,
+                    'data' => $success_indicators,
                     'metadata' => [
                         'methods' => '[GET,POST,PUT,DELETE]',
                         'pagination' => $pagination,
@@ -199,7 +199,7 @@ class ItemCategoryController extends Controller
              * Reuse existing pagination and update the existing pagination next and previous data
              */
 
-            $item_categories = ItemCategory::where('name', 'like', '%'.$search.'%')
+            $success_indicators = SuccessIndicator::where('code', 'like', '%'.$search.'%')
                 ->where('id','>', $last_id)
                 ->orderBy('id')
                 ->limit($per_page)
@@ -207,19 +207,19 @@ class ItemCategoryController extends Controller
 
             // Return the response
             return response()->json([
-                'data' => $item_categories,
+                'data' => $success_indicators,
                 'metadata' => []
             ], Response::HTTP_OK);
         }
         
-        $total_page = ItemCategory::all()->pluck('id')->chunk($per_page);
-        $item_categories = ItemCategory::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
+        $total_page = SuccessIndicator::all()->pluck('id')->chunk($per_page);
+        $success_indicators = SuccessIndicator::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
         $total_page = ceil(count($total_page));
         
         $pagination_helper = new PaginationHelper(  $this->module,$page, $per_page, $total_page > 10 ? 10: $total_page);
 
         return response()->json([
-            "data" => $item_categories,
+            "data" => $success_indicators,
             "metadata" => [
                 "methods" => "[GET, POST, PUT, DELETE]",
                 "pagination" => $pagination_helper->create(),
@@ -229,24 +229,26 @@ class ItemCategoryController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function store(ItemCategoryRequest $request)
+    public function store(SuccessIndicatorRequest $request)
     {
         $base_message = "Successfully created item category";
 
         // Bulk Insert
-        if ($request->item_categories !== null || $request->item_categories > 1) {
-            $existing_items = ItemCategory::whereIn('name', collect($request->item_categories)->pluck('name'))
-                ->orWhereIn('code', collect($request->item_categories)->pluck('code'))
-                ->get(['name', 'code'])->toArray();
+        if ($request->success_indicators !== null || $request->success_indicators > 1) {
+            $existing_success_indicators = [];
+            $existing_items = SuccessIndicator::whereIn('code', collect($request->success_indicators)->pluck('code'))
+                ->get(['code'])->toArray();
 
             // Convert existing items into a searchable format
-            $existing_names = array_column($existing_items, 'name');
             $existing_codes = array_column($existing_items, 'code');
 
-            foreach ($request->item_categories as $item) {
-                if (!in_array($item['name'], $existing_names) && !in_array($item['code'], $existing_codes)) {
+            if(!empty($existing_items)){
+                $existing_success_indicators = SuccessIndicatorDuplicateResource::collection(SuccessIndicator::whereIn("code", $existing_codes)->get());
+            }
+
+            foreach ($request->success_indicators as $item) {
+                if ( !in_array($item['code'], $existing_codes)) {
                     $cleanData[] = [
-                        "name" => strip_tags($item['name']),
                         "code" => strip_tags($item['code']),
                         "description" => isset($item['description']) ? strip_tags($item['description']) : null,
                         "created_at" => now(),
@@ -257,40 +259,35 @@ class ItemCategoryController extends Controller
 
             if (empty($cleanData) && count($existing_items) > 0) {
                 return response()->json([
-                    'data' => $existing_items,
+                    'data' => $existing_success_indicators,
                     'message' => "Failed to bulk insert all item categories already exist.",
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
     
-            ItemCategory::insert($cleanData);
+            SuccessIndicator::insert($cleanData);
 
-            $latest_item_categories = ItemCategory::orderBy('id', 'desc')
+            $latest_success_indicators = SuccessIndicator::orderBy('id', 'desc')
                 ->limit(count($cleanData))->get()
                 ->sortBy('id')->values();
 
-            $message = count($latest_item_categories) > 1? $base_message."s record": $base_message." record.";
+            $message = count($latest_success_indicators) > 1? $base_message."s record": $base_message." record.";
 
             return response()->json([
-                "data" => $latest_item_categories,
+                "data" => $latest_success_indicators,
                 "message" => $message,
                 "metadata" => [
                     "methods" => "[GET, POST, PUT ,DELETE]",
-                    "duplicate_items" => $existing_items
+                    "duplicate_items" => $existing_success_indicators
                 ]
             ], Response::HTTP_CREATED);
         }
 
         $cleanData = [
-            "name" => strip_tags($request->input('name')),
             "code" => strip_tags($request->input('code')),
             "description" => strip_tags($request->input('description')),
         ];
-
-        $new_item = ItemCategory::create([
-            "name" => strip_tags($request->name),
-            "code" => strip_tags($request->code),
-            "description" => strip_tags($request->description),
-        ]);
+        
+        $new_item = SuccessIndicator::create($cleanData);
 
         return response()->json([
             "data" => $new_item,
@@ -300,12 +297,13 @@ class ItemCategoryController extends Controller
             ]
         ], Response::HTTP_CREATED);
     }
+
     public function update(Request $request):Response    
     {
-        $item_category_id = $request->query('id') ?? null;
+        $success_indicator_id = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
 
-        if(!$item_category_id && !$query){
+        if(!$success_indicator_id && !$query){
             $response = ["message" => "Invalid request."];
 
             if($this->is_development){
@@ -325,33 +323,32 @@ class ItemCategoryController extends Controller
             return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
         }
         
-        $item_category = null;
+        $success_indicator = null;
 
-        if($item_category_id){
-            $item_category = ItemCategory::find($item_category_id);    
+        if($success_indicator_id){
+            $success_indicator = SuccessIndicator::find($success_indicator_id);    
         }
 
-        if(!$item_category_id && $query){
-            $item_categories = ItemCategory::where($query)->get();
+        if(!$success_indicator_id && $query){
+            $success_indicators = SuccessIndicator::where($query)->get();
             
             // Check result is has many records
-            if(count($item_categories) > 1){
+            if(count($success_indicators) > 1){
                 return response()->json([
-                    'data' => $item_categories,
+                    'data' => $success_indicators,
                     'message' => "Request has multiple record."
                 ], Response::HTTP_CONFLICT);
             }
 
-            $item_category = $item_categories->first();
+            $success_indicator = $success_indicators->first();
         }
         
         $cleanData = [
-            "name" => strip_tags($request->input('name')),
             "code" => strip_tags($request->input('code')),
             "description" => strip_tags($request->input('description')),
         ];
 
-        $item_category->update($cleanData);
+        $success_indicator->update($cleanData);
 
         $metadata = [
             "methods" => "[GET, PUT, DELETE]",
@@ -367,17 +364,17 @@ class ItemCategoryController extends Controller
         }
 
         return response()->json([
-            "data" => $item_category,
+            "data" => $success_indicator,
             "metadata" => $metadata
         ], Response::HTTP_OK);
     }
 
     public function destroy(Request $request): Response
     {
-        $item_category_ids = $request->query('id') ?? null;
+        $success_indicator_ids = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
 
-        if (!$item_category_ids && !$query) {
+        if (!$success_indicator_ids && !$query) {
             $response = ["message" => "Invalid request."];
 
             if ($this->is_development) {
@@ -399,32 +396,32 @@ class ItemCategoryController extends Controller
         }
 
 
-        if ($item_category_ids) {
-            $item_category_ids = is_array($item_category_ids) ? $item_category_ids : explode(',', $item_category_ids);
-            $item_categories = ItemCategory::whereIn('id', $item_category_ids)->where('deleted_at', NULL)->get();
+        if ($success_indicator_ids) {
+            $success_indicator_ids = is_array($success_indicator_ids) ? $success_indicator_ids : explode(',', $success_indicator_ids);
+            $success_indicators = SuccessIndicator::whereIn('id', $success_indicator_ids)->where('deleted_at', NULL)->get();
 
-            if ($item_categories->isEmpty()) {
+            if ($success_indicators->isEmpty()) {
                 return response()->json(["message" => "No records found."], Response::HTTP_NOT_FOUND);
             }
 
-            ItemCategory::whereIn('id', $item_category_ids)->update(['deleted_at' => now()]);
+            SuccessIndicator::whereIn('id', $success_indicator_ids)->update(['deleted_at' => now()]);
 
             return response()->json([
-                "message" => "Successfully deleted " . count($item_categories) . " records."
+                "message" => "Successfully deleted " . count($success_indicators) . " records."
             ], Response::HTTP_NO_CONTENT);
         }
 
         if ($query) {
-            $item_categories = ItemCategory::where($query)->get();
+            $success_indicators = SuccessIndicator::where($query)->get();
 
-            if ($item_categories->count() > 1) {
+            if ($success_indicators->count() > 1) {
                 return response()->json([
-                    'data' => $item_categories,
+                    'data' => $success_indicators,
                     'message' => "Request has multiple records."
                 ], Response::HTTP_CONFLICT);
             }
 
-            $item_category = $item_categories->first();
+            $item_category = $success_indicators->first();
 
             if (!$item_category) {
                 return response()->json(["message" => "No record found."], Response::HTTP_NOT_FOUND);

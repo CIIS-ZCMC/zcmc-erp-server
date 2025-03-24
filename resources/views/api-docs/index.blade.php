@@ -123,16 +123,28 @@
                 <p>Manage item categories with endpoints for listing, creating, updating, and deleting records.</p>
             </li>
             <li>
-                <a href="{{ url('/api-docs/log-descriptions') }}">Log Descriptions</a>
+                <a href="{{ url('/api-docs/item-classifications') }}">Item Classifications</a>
                 <p>Manage log descriptions with endpoints for listing, creating, updating, and deleting records.</p>
             </li>
             <li>
-                <a href="#">Users</a>
-                <p>Manage users with endpoints for listing, creating, updating, and deleting records.</p>
+                <a href="{{ url('/api-docs/success-indicators') }}">Success Indicators</a>
+                <p>Manage log descriptions with endpoints for listing, creating, updating, and deleting records.</p>
             </li>
             <li>
-                <a href="#">Products</a>
-                <p>Manage products with endpoints for listing, creating, updating, and deleting records.</p>
+                <a href="{{ url('/api-docs/type-of-functions') }}">Type Of Functions</a>
+                <p>Manage log descriptions with endpoints for listing, creating, updating, and deleting records.</p>
+            </li>
+            <li>
+                <a href="{{ url('/api-docs/purchase-types') }}">Purchase Type</a>
+                <p>Manage log descriptions with endpoints for listing, creating, updating, and deleting records.</p>
+            </li>
+            <li>
+                <a href="{{ url('/api-docs/objectives') }}">Objectives</a>
+                <p>Manage log descriptions with endpoints for listing, creating, updating, and deleting records.</p>
+            </li>
+            <li>
+                <a href="{{ url('/api-docs/log-descriptions') }}">Log Descriptions</a>
+                <p>Manage log descriptions with endpoints for listing, creating, updating, and deleting records.</p>
             </li>
         </ul>
 
