@@ -183,7 +183,94 @@
             text-decoration: underline;
         }
 
-        /* Responsive Design */
+        .resource-documentation {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .resource-description {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #007bff;
+        }
+
+        .model-fields table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .model-fields th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: 600;
+            padding: 12px 15px;
+        }
+
+        .model-fields td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .model-fields tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .common-units {
+            margin-bottom: 30px;
+        }
+
+        .unit-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .unit-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-top: 3px solid #007bff;
+        }
+
+        .unit-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .usage-notes {
+            background: #fff8e6;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .usage-notes ul {
+            padding-left: 20px;
+        }
+
+        .implementation-guidelines {
+            margin-top: 40px;
+        }
+
+        .guideline-card {
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .guideline-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
         @media (max-width: 768px) {
             h1 {
                 font-size: 2rem;
@@ -204,6 +291,16 @@
             pre {
                 font-size: 0.9rem;
             }
+
+            .category-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .resource-description,
+            .model-fields,
+            .implementation-guidelines {
+                padding: 15px;
+            }
         }
     </style>
 </head>
@@ -211,6 +308,91 @@
     <div class="container">
         <a href="{{ url('/api-docs') }}" class="back-link">← Back to API Documentation</a>
         <h1>API Documentation - Item Categories</h1>
+
+        
+        <div class="resource-description">
+            <h2>Item Categories Resource</h2>
+            <p>
+                The Item Categories resource organizes inventory items into logical groups for better management,
+                reporting, and procurement planning. Categories help standardize inventory classification across
+                the organization.
+            </p>
+            
+            <h3>Key Features</h3>
+            <ul>
+                <li>Hierarchical organization of inventory items</li>
+                <li>Standardized classification for reporting</li>
+                <li>Simplified searching and filtering</li>
+                <li>Budgeting and planning by category</li>
+                <li>Soft deletion for historical tracking</li>
+            </ul>
+        </div>
+
+        <div class="model-fields">
+            <h2>Item Category Model Fields</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Required</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>id</td>
+                        <td>integer</td>
+                        <td>Auto-incremented primary key</td>
+                        <td>Auto</td>
+                        <td>1</td>
+                    </tr>
+                    <tr>
+                        <td>name</td>
+                        <td>string</td>
+                        <td>Descriptive name of the category</td>
+                        <td>Yes</td>
+                        <td>"Medical Equipment"</td>
+                    </tr>
+                    <tr>
+                        <td>code</td>
+                        <td>string</td>
+                        <td>Short unique identifier code</td>
+                        <td>Yes</td>
+                        <td>"MED-EQ"</td>
+                    </tr>
+                    <tr>
+                        <td>description</td>
+                        <td>text</td>
+                        <td>Detailed explanation of category scope</td>
+                        <td>No</td>
+                        <td>"Includes all durable medical devices"</td>
+                    </tr>
+                    <tr>
+                        <td>deleted_at</td>
+                        <td>timestamp</td>
+                        <td>Soft deletion marker</td>
+                        <td>No</td>
+                        <td>null</td>
+                    </tr>
+                    <tr>
+                        <td>created_at</td>
+                        <td>timestamp</td>
+                        <td>Record creation timestamp</td>
+                        <td>Auto</td>
+                        <td>2023-06-15 10:00:00</td>
+                    </tr>
+                    <tr>
+                        <td>updated_at</td>
+                        <td>timestamp</td>
+                        <td>Record update timestamp</td>
+                        <td>Auto</td>
+                        <td>2023-06-15 10:30:00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
         <!-- Index Endpoint -->
         <div class="endpoint">
@@ -467,11 +649,11 @@ GET {{ env('SERVER_DOMAIN') }}/api/item-categories?item_unit_id=1
         POST {{ env('SERVER_DOMAIN') }}/api/item-categories
         Content-Type: application/json
 
-        {
-            "name": "New Unit",
-            "code": "NU",
-            "description": "A new item category for testing."
-        }
+{
+    "name": "Medical Equipment",
+    "code": "MED-EQ",
+    "description": "Durable medical devices used for diagnosis, monitoring or treatment (e.g., ventilators, ECG machines)",
+}
                 <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-categories')">
                     <i class="fas fa-copy"></i> Copy URL
                 </button>
@@ -485,19 +667,19 @@ Content-Type: application/json
 {
     "item_categories": [
         {
-            "name": "Electronics",
-            "code": "ELEC",
-            "description": "Devices such as mobile phones, laptops, and televisions"
+            "name": "Medical Equipment",
+            "code": "MED-EQ",
+            "description": "Durable medical devices used for diagnosis, monitoring or treatment (e.g., ventilators, ECG machines)"
         },
         {
-            "name": "Furniture",
-            "code": "FURN",
-            "description": "Household and office furniture including tables, chairs, and cabinets"
+            "name": "Surgical Supplies",
+            "code": "SURG-SUP",
+            "description": "Instruments and materials used in surgical procedures (e.g., scalpels, sutures, drapes)"
         },
         {
-            "name": "Clothing",
-            "code": "CLOTH",
-            "description": "Apparel including shirts, pants, dresses, and jackets"
+            "name": "Pharmaceuticals",
+            "code": "PHARMA",
+            "description": "Medications and drugs for therapeutic use (e.g., antibiotics, analgesics)"
         },
     ]
 }
@@ -510,12 +692,19 @@ Content-Type: application/json
             <pre>
 {
     "data": {
-        "id": 2,
-        "name": "New Unit",
-        "code": "NU",
-        "description": "A new item category for testing."
+        "name": "Medical Equipment",
+        "code": "MED-EQ",
+        "description": "Durable medical devices used for diagnosis, monitoring or treatment (e.g., ventilators, ECG machines)",
+        "updated_at": "2025-03-24T18:27:37.000000Z",
+        "created_at": "2025-03-24T18:27:37.000000Z",
+        "id": 1
     },
-    "message": "Item category created successfully."
+    "message": "Successfully created item category record.",
+    "metadata": {
+        "methods": [
+            "GET, POST, PUT, DELET"
+        ]
+    }
 }
             </pre>
 
@@ -524,25 +713,34 @@ Content-Type: application/json
 {
     "data": [
         {
+            "id": 2,
+            "name": "Surgical Supplies",
+            "code": "SURG-SUP",
+            "description": "Instruments and materials used in surgical procedures (e.g., scalpels, sutures, drapes)",
+            "deleted_at": null,
+            "created_at": "2025-03-24T18:27:59.000000Z",
+            "updated_at": "2025-03-24T18:27:59.000000Z"
+        },
+        {
             "id": 3,
-            "name": "Electronics",
-            "code": "ELEC",
-            "description": "Devices such as mobile phones, laptops, and televisions"
+            "name": "Pharmaceuticals",
+            "code": "PHARMA",
+            "description": "Medications and drugs for therapeutic use (e.g., antibiotics, analgesics)",
+            "deleted_at": null,
+            "created_at": "2025-03-24T18:27:59.000000Z",
+            "updated_at": "2025-03-24T18:27:59.000000Z"
         },
-        {
-            "id": 4,
-            "name": "Furniture",
-            "code": "FURN",
-            "description": "Household and office furniture including tables, chairs, and cabinets"
-        },
-        {
-            "id": 5,
-            "name": "Clothing",
-            "code": "CLOTH",
-            "description": "Apparel including shirts, pants, dresses, and jackets"
-        }
     ],
-    "message": "Bulk item categories created successfully."
+    "message": "Successfully created item categorys record",
+    "metadata": {
+        "methods": "[GET, POST, PUT ,DELETE]",
+        "duplicate_items": [
+            {
+                "name": "Medical Equipment",
+                "code": "MED-EQ"
+            }
+        ]
+    }
 }
             </pre>
 

@@ -183,6 +183,79 @@
             text-decoration: underline;
         }
 
+        .resource-documentation {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .resource-description {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #007bff;
+        }
+
+        .model-fields table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .model-fields th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: 600;
+            padding: 12px 15px;
+        }
+
+        .model-fields td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .model-fields tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .common-units {
+            margin-bottom: 30px;
+        }
+
+        .unit-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .unit-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-top: 3px solid #007bff;
+        }
+
+        .unit-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .usage-notes {
+            background: #fff8e6;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .usage-notes ul {
+            padding-left: 20px;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             h1 {
@@ -204,6 +277,16 @@
             pre {
                 font-size: 0.9rem;
             }
+
+            .classification-hierarchy {
+                grid-template-columns: 1fr;
+            }
+            
+            .resource-description,
+            .model-fields,
+            .implementation-standards {
+                padding: 15px;
+            }
         }
     </style>
 </head>
@@ -212,6 +295,96 @@
         <a href="{{ url('/api-docs') }}" class="back-link">← Back to API Documentation</a>
         <h1>API Documentation - Item Classifications</h1>
 
+        <div class="resource-description">
+            <h2>Item Classifications Resource</h2>
+            <p>
+                Item Classifications provide a detailed categorization system within each Item Category,
+                enabling precise inventory management and specialized reporting for healthcare organizations.
+            </p>
+            
+            <h3>Key Features</h3>
+            <ul>
+                <li>Hierarchical organization under parent categories</li>
+                <li>Granular inventory tracking and reporting</li>
+                <li>Standardized taxonomy for procurement</li>
+                <li>Support for clinical and administrative classification</li>
+                <li>Soft deletion for historical reference</li>
+            </ul>
+        </div>
+
+        <div class="model-fields">
+            <h2>Item Classification Model Fields</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Required</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>id</td>
+                        <td>integer</td>
+                        <td>Auto-incremented primary key</td>
+                        <td>Auto</td>
+                        <td>1</td>
+                    </tr>
+                    <tr>
+                        <td>item_category_id</td>
+                        <td>integer</td>
+                        <td>Reference to parent category</td>
+                        <td>Yes</td>
+                        <td>3</td>
+                    </tr>
+                    <tr>
+                        <td>name</td>
+                        <td>string</td>
+                        <td>Descriptive classification name</td>
+                        <td>Yes</td>
+                        <td>"Diagnostic Imaging"</td>
+                    </tr>
+                    <tr>
+                        <td>code</td>
+                        <td>string</td>
+                        <td>Unique classification code</td>
+                        <td>Yes</td>
+                        <td>"DIAG-IMG"</td>
+                    </tr>
+                    <tr>
+                        <td>description</td>
+                        <td>text</td>
+                        <td>Detailed scope definition</td>
+                        <td>No</td>
+                        <td>"Includes all radiology and imaging equipment"</td>
+                    </tr>
+                    <tr>
+                        <td>deleted_at</td>
+                        <td>timestamp</td>
+                        <td>Soft deletion marker</td>
+                        <td>No</td>
+                        <td>null</td>
+                    </tr>
+                    <tr>
+                        <td>created_at</td>
+                        <td>timestamp</td>
+                        <td>Record creation timestamp</td>
+                        <td>Auto</td>
+                        <td>2023-06-15 10:00:00</td>
+                    </tr>
+                    <tr>
+                        <td>updated_at</td>
+                        <td>timestamp</td>
+                        <td>Record update timestamp</td>
+                        <td>Auto</td>
+                        <td>2023-06-15 10:30:00</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    
         <!-- Index Endpoint -->
         <div class="endpoint">
             <h2>GET /api/item-classifications</h2>
@@ -486,10 +659,10 @@ POST {{ env('SERVER_DOMAIN') }}/api/item-classifications
 Content-Type: application/json
 
 {
-    "name": "Hospital Supplies",
-    "code": "hs",
-    "description": "Classification of items used in hospital operations",
-    "item_category_id": 1,
+    "name": "Diagnostic Instruments",
+    "code": "DIAG-INST",
+    "item_category_id": 6,
+    "description": "Handheld or portable devices for physical examination (e.g., stethoscopes, otoscopes)",
 }
                 <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-classifications')">
                     <i class="fas fa-copy"></i> Copy URL
@@ -502,19 +675,25 @@ POST {{ env('SERVER_DOMAIN') }}/api/item-classifications
 Content-Type: application/json
 
 {
-    "item_classifications": [
+    "item_classificationss": [
         {
-            "name": "Medical Equipment",
-            "code": "me",
-            "description": "Devices and tools used for patient care",
-            "item_category_id": 1
+            "name": "Diagnostic Instruments",
+            "code": "DIAG-INST",
+            "item_category_id": 6,
+            "description": "Handheld or portable devices for physical examination (e.g., stethoscopes, otoscopes)"
         },
         {
             "name": "Surgical Instruments",
-            "code": "si",
-            "description": "Tools used during surgical procedures",
-            "item_category_id": 1
+            "code": "SURG-INST",
+            "item_category_id": 2,
+            "description": "Tools for performing surgical procedures (e.g., scalpels, forceps, retractors)"
         },
+        {
+            "name": "Imaging Equipment",
+            "code": "IMG-EQ",
+            "item_category_id": 1,
+            "description": "Machines for medical imaging (e.g., X-ray, MRI, CT scanners)"
+        }
     ]
 }
                 <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-classifications')">
@@ -526,13 +705,13 @@ Content-Type: application/json
             <pre>
 {
     "data": {
-        "name": "Hospital Supplies",
-        "code": "hsr",
-        "description": "Classification of items used in hospital operations",
-        "item_category_id": "1",
-        "updated_at": "2025-03-24T06:12:46.000000Z",
-        "created_at": "2025-03-24T06:12:46.000000Z",
-        "id": 15
+        "name": "Diagnostic Instruments",
+        "code": "DIAG-INST",
+        "description": "Handheld or portable devices for physical examination (e.g., stethoscopes, otoscopes)",
+        "item_category_id": "6",
+        "updated_at": "2025-03-24T18:29:48.000000Z",
+        "created_at": "2025-03-24T18:29:48.000000Z",
+        "id": 1
     },
     "message": "Successfully created item_classifications record.",
     "metadata": {
@@ -544,34 +723,43 @@ Content-Type: application/json
             </pre>
 
             <h3>Example Response for Bulk Insert</h3>
-            <pre>
-{
+            <pre>{
     "data": [
         {
-            "id": 16,
-            "item_category_id": 1,
-            "name": "Medical Equipments",
-            "code": "mes",
-            "description": "Devices and tools used for patient care",
+            "id": 2,
+            "item_category_id": 2,
+            "name": "Surgical Instruments",
+            "code": "SURG-INST",
+            "description": "Tools for performing surgical procedures (e.g., scalpels, forceps, retractors)",
             "deleted_at": null,
-            "created_at": "2025-03-24T06:13:15.000000Z",
-            "updated_at": "2025-03-24T06:13:15.000000Z"
+            "created_at": "2025-03-24T18:39:54.000000Z",
+            "updated_at": "2025-03-24T18:39:54.000000Z"
         },
         {
-            "id": 17,
+            "id": 3,
             "item_category_id": 1,
-            "name": "Surgical Instruments",
-            "code": "sis",
-            "description": "Tools used during surgical procedures",
+            "name": "Imaging Equipment",
+            "code": "IMG-EQ",
+            "description": "Machines for medical imaging (e.g., X-ray, MRI, CT scanners)",
             "deleted_at": null,
-            "created_at": "2025-03-24T06:13:15.000000Z",
-            "updated_at": "2025-03-24T06:13:15.000000Z"
-        },
+            "created_at": "2025-03-24T18:39:54.000000Z",
+            "updated_at": "2025-03-24T18:39:54.000000Z"
+        }
     ],
     "message": "Successfully created item_classificationss record",
     "metadata": {
         "methods": "[GET, POST, PUT ,DELETE]",
-        "duplicate_items": []
+        "duplicate_items": [
+            {
+                "id": 1,
+                "name": "Diagnostic Instruments",
+                "code": "DIAG-INST",
+                "description": "Handheld or portable devices for physical examination (e.g., stethoscopes, otoscopes)",
+                "category": null,
+                "created_at": "2025-03-24T18:38:46.000000Z",
+                "updated_at": "2025-03-24T18:38:46.000000Z"
+            }
+        ]
     }
 }
             </pre>

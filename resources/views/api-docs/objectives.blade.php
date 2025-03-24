@@ -183,6 +183,79 @@
             text-decoration: underline;
         }
 
+        .resource-documentation {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .resource-description {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid #007bff;
+        }
+
+        .model-fields table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .model-fields th {
+            background-color: #2c3e50;
+            color: white;
+            font-weight: 600;
+            padding: 12px 15px;
+        }
+
+        .model-fields td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .model-fields tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        .common-units {
+            margin-bottom: 30px;
+        }
+
+        .unit-examples {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .unit-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-top: 3px solid #007bff;
+        }
+
+        .unit-card h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+
+        .usage-notes {
+            background: #fff8e6;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .usage-notes ul {
+            padding-left: 20px;
+        }
+
         /* Responsive Design */
         @media (max-width: 768px) {
             h1 {
@@ -211,6 +284,68 @@
     <div class="container">
         <a href="{{ url('/api-docs') }}" class="back-link">← Back to API Documentation</a>
         <h1>API Documentation - Objectives</h1>
+        
+        <div class="resource-description">
+            <h2>Objectives Resource</h2>
+            <p>
+                The Objectives resource defines the strategic goals and purposes behind inventory management decisions,
+                linking procurement activities to broader healthcare organizational objectives.
+            </p>
+            
+            <h3>Key Features</h3>
+            <ul>
+                <li>Documents the purpose behind inventory decisions</li>
+                <li>Aligns procurement with organizational strategy</li>
+                <li>Supports justification for budget allocations</li>
+                <li>Enables tracking of goal achievement</li>
+                <li>Maintains historical records through soft deletion</li>
+            </ul>
+        </div>
+
+        <div class="model-fields">
+            <h2>Objective Model Fields</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Field</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                        <th>Required</th>
+                        <th>Example</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>id</td>
+                        <td>integer</td>
+                        <td>Auto-incremented primary key</td>
+                        <td>Auto</td>
+                        <td>1</td>
+                    </tr>
+                    <tr>
+                        <td>code</td>
+                        <td>string</td>
+                        <td>Unique objective identifier</td>
+                        <td>Yes</td>
+                        <td>"PAT_SAFETY"</td>
+                    </tr>
+                    <tr>
+                        <td>description</td>
+                        <td>text</td>
+                        <td>Detailed statement of the objective</td>
+                        <td>Yes</td>
+                        <td>"Ensure availability of critical medications to support patient safety initiatives"</td>
+                    </tr>
+                    <tr>
+                        <td>deleted_at</td>
+                        <td>timestamp</td>
+                        <td>Soft deletion marker</td>
+                        <td>No</td>
+                        <td>null</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
         <!-- Index Endpoint -->
         <div class="endpoint">

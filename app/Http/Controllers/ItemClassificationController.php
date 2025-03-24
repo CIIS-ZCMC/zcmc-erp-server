@@ -235,7 +235,7 @@ class ItemClassificationController extends Controller
         // Bulk Insert
         if ($request->item_classifications !== null || $request->item_classifications > 1) {
             $existing_item_classifications = [];
-            $existing_items = ItemClassification::whereIn('name', collect($request->item_units)->pluck('name'))
+            $existing_items = ItemClassification::whereIn('name', collect($request->item_classifications)->pluck('name'))
                 ->whereIn('code', collect($request->item_classifications)->pluck('code'))->get(['code'])->toArray();
 
             // Convert existing items into a searchable format
@@ -249,25 +249,26 @@ class ItemClassificationController extends Controller
             foreach ($request->item_classifications as $item) {
                 $is_valid_category_id = ItemCategory::find($item['item_category_id']);
 
-                if(!$is_valid_category_id){
-                    return response()->json([
-                        "message" => "Found invalid Cateogry ID.",
-                        "metadata" => [
-                            "methods" => "[GET, PUT, DELETE]",
-                        ]
-                    ], Response::HTTP_BAD_REQUEST);
+                if($is_valid_category_id){
+                    if (!in_array($item['name'], $existing_names) &&  !in_array($item['code'], $existing_codes)) {
+                        $cleanData[] = [
+                            "name" => strip_tags($item['name']),
+                            "code" => strip_tags($item['code']),
+                            "description" => isset($item['description']) ? strip_tags($item['description']) : null,
+                            "item_category_id" => strip_tags($item['item_category_id']),
+                            "created_at" => now(),
+                            "updated_at" => now()
+                        ];
+                    }
+                    continue;
                 }
 
-                if (!in_array($item['name'], $existing_names) &&  !in_array($item['code'], $existing_codes)) {
-                    $cleanData[] = [
-                        "name" => strip_tags($item['name']),
-                        "code" => strip_tags($item['code']),
-                        "description" => isset($item['description']) ? strip_tags($item['description']) : null,
-                        "item_category_id" => strip_tags($item['item_category_id']),
-                        "created_at" => now(),
-                        "updated_at" => now()
-                    ];
-                }
+                return response()->json([
+                    "message" => "Found invalid Cateogry ID.",
+                    "metadata" => [
+                        "methods" => "[GET, PUT, DELETE]",
+                    ]
+                ], Response::HTTP_BAD_REQUEST);
             }
 
             if (empty($cleanData) && count($existing_items) > 0) {

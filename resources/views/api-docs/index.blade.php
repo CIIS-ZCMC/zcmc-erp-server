@@ -29,7 +29,7 @@
             text-align: center;
         }
 
-        p {
+        p.intro {
             font-size: 1.1rem;
             color: #555;
             text-align: center;
@@ -49,7 +49,6 @@
             background: #fff;
             border-radius: 10px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            padding: 20px;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
@@ -58,23 +57,27 @@
             box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
         }
 
-        .resource-list a {
+        .resource-link {
+            display: block;
+            padding: 20px;
             text-decoration: none;
+            color: inherit;
+            height: 100%;
+        }
+
+        .resource-link h2 {
             color: #007BFF;
             font-size: 1.2rem;
             font-weight: 600;
-            display: block;
-            margin-bottom: 10px;
+            margin-top: 0;
+            margin-bottom: 15px;
         }
 
-        .resource-list a:hover {
-            color: #0056b3;
-        }
-
-        .resource-list p {
+        .resource-link p {
             font-size: 1rem;
             color: #666;
             margin: 0;
+            text-align: left;
         }
 
         /* Footer */
@@ -111,40 +114,62 @@
 <body>
     <div class="container">
         <h1>API Documentation</h1>
-        <p>Welcome to the API documentation. Below is a list of available resources:</p>
+        <p class="intro">Welcome to the API documentation. Below is a list of available resources</p>
 
         <ul class="resource-list">
             <li>
-                <a href="{{ url('/api-docs/item-units') }}">Item Units</a>
-                <p>Manage item units with endpoints for listing, creating, updating, and deleting records.</p>
+                <a href="{{ url('/api-docs/item-units') }}" class="resource-link">
+                    <h2>Item Units</h2>
+                    <p>Standard measurement units for inventory items (e.g., pieces, boxes, bottles). Manage units with CRUD endpoints.</p>
+                </a>
             </li>
             <li>
-                <a href="{{ url('/api-docs/item-categories') }}">Item Categories</a>
-                <p>Manage item categories with endpoints for listing, creating, updating, and deleting records.</p>
+                <a href="{{ url('/api-docs/item-categories') }}" class="resource-link">
+                    <h2>Item Categories</h2>
+                    <p>Classification groups for inventory items (e.g., medicines, equipment, supplies). Manage categories with CRUD endpoints.</p>
+                </a>
             </li>
             <li>
-                <a href="{{ url('/api-docs/item-classifications') }}">Item Classifications</a>
-                <p>Manage log descriptions with endpoints for listing, creating, updating, and deleting records.</p>
+                <a href="{{ url('/api-docs/item-classifications') }}" class="resource-link">
+                    <h2>Item Classifications</h2>
+                    <p>Detailed categorization system for inventory items (e.g., antibiotics, surgical equipment). Manage classifications with CRUD endpoints.</p>
+                </a>
             </li>
             <li>
-                <a href="{{ url('/api-docs/success-indicators') }}">Success Indicators</a>
-                <p>Manage log descriptions with endpoints for listing, creating, updating, and deleting records.</p>
+                <a href="{{ url('/api-docs/items') }}" class="resource-link">
+                    <h2>Items</h2>
+                    <p>Complete inventory management for all products/items. Includes endpoints for listing, creating, updating, and deleting item records.</p>
+                </a>
             </li>
             <li>
-                <a href="{{ url('/api-docs/type-of-functions') }}">Type Of Functions</a>
-                <p>Manage log descriptions with endpoints for listing, creating, updating, and deleting records.</p>
+                <a href="{{ url('/api-docs/success-indicators') }}" class="resource-link">
+                    <h2>Success Indicators</h2>
+                    <p>Metrics for evaluating annual planning effectiveness (e.g., stock availability rate, order fulfillment time). Used with objectives for planning.</p>
+                </a>
             </li>
             <li>
-                <a href="{{ url('/api-docs/purchase-types') }}">Purchase Type</a>
-                <p>Manage log descriptions with endpoints for listing, creating, updating, and deleting records.</p>
+                <a href="{{ url('/api-docs/type-of-functions') }}" class="resource-link">
+                    <h2>Type Of Functions</h2>
+                    <p>Functional classifications for planning purposes (e.g., clinical support, patient care, administration). Aligns with objectives.</p>
+                </a>
             </li>
             <li>
-                <a href="{{ url('/api-docs/objectives') }}">Objectives</a>
-                <p>Manage log descriptions with endpoints for listing, creating, updating, and deleting records.</p>
+                <a href="{{ url('/api-docs/purchase-types') }}" class="resource-link">
+                    <h2>Purchase Types</h2>
+                    <p>Classification of procurement methods (e.g., emergency purchase, regular purchase, bulk order). Relates to planning records.</p>
+                </a>
             </li>
             <li>
-                <a href="{{ url('/api-docs/log-descriptions') }}">Log Descriptions</a>
-                <p>Manage log descriptions with endpoints for listing, creating, updating, and deleting records.</p>
+                <a href="{{ url('/api-docs/objectives') }}" class="resource-link">
+                    <h2>Objectives</h2>
+                    <p>Purpose statements for annual planning/ordering (e.g., "Ensure adequate stock of critical medicines"). Used with success indicators.</p>
+                </a>
+            </li>
+            <li>
+                <a href="{{ url('/api-docs/log-descriptions') }}" class="resource-link">
+                    <h2>Log Descriptions</h2>
+                    <p>Standardized system activity logs (e.g., "New item created", "Category updated"). Library for consistent system logging.</p>
+                </a>
             </li>
         </ul>
 

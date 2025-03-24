@@ -22,6 +22,11 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('login', 'AuthController@login');
     Route::get('signup', 'AuthController@signup');
 
+    Route::get('items', "ItemController@index");
+    Route::post('items', "ItemController@store");
+    Route::put('items', "ItemController@update");
+    Route::delete('items', "ItemController@destroy");
+
     Route::get('item-units', "ItemUnitController@index");
     Route::post('item-units', "ItemUnitController@store");
     Route::put('item-units', "ItemUnitController@update");

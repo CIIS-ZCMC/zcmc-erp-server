@@ -13,7 +13,8 @@ class Item extends Model
         "item_category_id",
         "item_classification_id",
         "name",
-        "estimated_budget"
+        "estimated_budget",
+        "deleted_at"
     ];
 
     public $timestamps = true;

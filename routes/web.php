@@ -45,3 +45,7 @@ Route::get('/api-docs/objectives', function () {
 Route::get('/api-docs/item-classifications', function () {
     return view('api-docs.item-classifications');
 });
+
+Route::get('/api-docs/items', function () {action: 
+    return view('api-docs.items');
+});
