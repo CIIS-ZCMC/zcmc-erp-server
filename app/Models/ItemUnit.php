@@ -11,7 +11,8 @@ class ItemUnit extends Model
     public $fillable = [
         "name",
         "code",
-        "description"
+        "description",
+        "deleted_at"
     ];
 
     public $timestamps = true;

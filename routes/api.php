@@ -11,3 +11,29 @@ Route::get('/user', function (Request $request) {
 Route::get('test', function (Request $request) {
     return response()->json(['message' => "PASSED"], 200);
 });
+
+Route::middleware('auth.api:auth_user_provider')->group(function () {
+    Route::namespace('App\Http\Controllers')->group(function () {
+        Route::get('user', 'AuthController@index');
+    });
+});
+
+Route::namespace('App\Http\Controllers')->group(function () {  
+    Route::post('login', 'AuthController@login');
+    Route::get('signup', 'AuthController@signup');
+
+    Route::get('item-units', "ItemUnitController@index");
+    Route::post('item-units', "ItemUnitController@store");
+    Route::put('item-units', "ItemUnitController@update");
+    Route::delete('item-units', "ItemUnitController@destroy");
+    
+    Route::get('item-categories', "ItemCategoryController@index");
+    Route::post('item-categories', "ItemCategoryController@store");
+    Route::put('item-categories', "ItemCategoryController@update");
+    Route::delete('item-categories', "ItemCategoryController@destroy");
+    
+    Route::get('log-descriptions', "LogDescriptionController@index");
+    Route::post('log-descriptions', "LogDescriptionController@store");
+    Route::put('log-descriptions', "LogDescriptionController@update");
+    Route::delete('log-descriptions', "LogDescriptionController@destroy");
+});

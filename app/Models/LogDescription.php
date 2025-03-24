@@ -10,7 +10,9 @@ class LogDescription extends Model
 
     public $fillable = [
         'title',
-        'description'
+        'code',
+        'description',
+        'deleted_at'
     ];
 
     public $timestamps = true;
@@ -18,10 +20,5 @@ class LogDescription extends Model
     public function transactionLogs()
     {
         return $this->hasMany( TransactionLog::class);
-    }
-    
-    public function logs()
-    {
-        return $this->morphMany(TransactionLog::class, 'referrence');
     }
 }

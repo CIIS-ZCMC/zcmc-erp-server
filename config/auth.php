@@ -14,8 +14,8 @@ return [
     */
 
     'defaults' => [
-        'guard' => env('AUTH_GUARD', 'web'),
-        'passwords' => env('AUTH_PASSWORD_BROKER', 'users'),
+        'guard' => 'auth_user_provider', // Default guard
+        'passwords' => 'users', // Default password broker
     ],
 
     /*
@@ -37,8 +37,12 @@ return [
 
     'guards' => [
         'web' => [
-            'driver' => 'session',
-            'provider' => 'users',
+            'driver' => 'session', // Default session guard
+            'provider' => 'users', // Uses the 'users' provider
+        ],
+        'auth_user_provider' => [ // Custom guard
+            'driver' => 'auth_user_provider', // Matches the custom guard driver
+            'provider' => 'users', // Uses the 'users' provider
         ],
     ],
 
@@ -61,14 +65,9 @@ return [
 
     'providers' => [
         'users' => [
-            'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
+            'driver' => 'auth_user_provider', // Custom provider driver
+            'model' => App\Models\User::class, // User model
         ],
-
-        // 'users' => [
-        //     'driver' => 'database',
-        //     'table' => 'users',
-        // ],
     ],
 
     /*
@@ -92,10 +91,10 @@ return [
 
     'passwords' => [
         'users' => [
-            'provider' => 'users',
-            'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
-            'expire' => 60,
-            'throttle' => 60,
+            'provider' => 'users', // Uses the 'users' provider
+            'table' => 'password_reset_tokens', // Password reset tokens table
+            'expire' => 60, // Token expiry time in minutes
+            'throttle' => 60, // Throttle time in seconds
         ],
     ],
 
@@ -110,6 +109,6 @@ return [
     |
     */
 
-    'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
+    'password_timeout' => 10800, // Password confirmation timeout in seconds
 
 ];
