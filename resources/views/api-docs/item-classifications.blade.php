@@ -791,7 +791,7 @@ Content-Type: application/json
     <!-- Put Endpoint -->
     <div class="endpoint">
         <h2>PUT /api/item-classifications</h2>
-        <p>Update an existing item unit.</p>
+        <p>Update one or more item classifications. Supports both single and bulk updates.</p>
 
         <h3>Parameters</h3>
         <table>
@@ -806,66 +806,112 @@ Content-Type: application/json
             <tbody>
                 <tr>
                     <td>id</td>
-                    <td>integer</td>
-                    <td>The ID of the item unit to update.</td>
-                    <td>Yes (if <code>query</code> is not provided)</td>
-                </tr>
-                <tr>
-                    <td>query</td>
-                    <td>object</td>
-                    <td>A query object to find the item unit to update (e.g., <code>{"code": "example"}</code>).</td>
-                    <td>Yes (if <code>id</code> is not provided)</td>
-                </tr>
-                <tr>
-                    <td>name</td>
-                    <td>string</td>
-                    <td>The updated name of the item unit.</td>
-                    <td>No</td>
-                </tr>
-                <tr>
-                    <td>code</td>
-                    <td>string</td>
-                    <td>The updated code of the item unit.</td>
-                    <td>No</td>
-                </tr>
-                <tr>
-                    <td>description</td>
-                    <td>string</td>
-                    <td>The updated description of the item unit.</td>
-                    <td>No</td>
+                    <td>integer|string|array</td>
+                    <td>
+                        The ID(s) of the classification(s) to update. Accepts multiple formats:
+                        <ul>
+                            <li>Single ID: <code>?id=1</code></li>
+                            <li>Comma-separated: <code>?id=1,2,3</code></li>
+                            <li>Array-style: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Yes</td>
                 </tr>
             </tbody>
         </table>
 
-        <h3>Example Request</h3>
+        <h3>Request Body</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>name</td>
+                    <td>string</td>
+                    <td>Updated classification name</td>
+                    <td>No (partial updates supported)</td>
+                </tr>
+                <tr>
+                    <td>code</td>
+                    <td>string</td>
+                    <td>Updated classification code</td>
+                    <td>No (partial updates supported)</td>
+                </tr>
+                <tr>
+                    <td>description</td>
+                    <td>string</td>
+                    <td>Updated classification description</td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td>item_classifications</td>
+                    <td>array</td>
+                    <td>
+                        Required for bulk updates. Array of objects containing:
+                        <ul>
+                            <li>name</li>
+                            <li>code</li>
+                            <li>description</li>
+                        </ul>
+                    </td>
+                    <td>Conditional (required for bulk updates)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Example Requests</h3>
+        
+        <h4>Single Update</h4>
         <pre>
 PUT {{ env('SERVER_DOMAIN') }}/api/item-classifications?id=1
 Content-Type: application/json
 
 {
-    "name": "Medical Equipment PASSED",
-    "code": "meh",
-    "description": "Devices and tools used for patient care",
-    "item_category_id": 1
+    "name": "Medical Equipment",
+    "code": "MED-EQP",
+    "description": "Updated description"
 }
-        <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-classifications?id=1')">
-            <i class="fas fa-copy"></i> Copy URL
-        </button>
-    </pre>
+        </pre>
 
-    <h3>Example Response</h3>
-    <pre>
+        <h4>Bulk Update</h4>
+        <pre>
+PUT {{ env('SERVER_DOMAIN') }}/api/item-classifications?id[]=1&id[]=2
+Content-Type: application/json
+
+{
+    "item_classifications": [
+        {
+            "name": "Updated Medical Equipment"
+        },
+        {
+            "code": "NEW-CODE"
+        }
+    ]
+}
+        </pre>
+
+        <h3>Example Responses</h3>
+        
+        <h4>Single Update Success</h4>
+        <pre>
 {
     "data": {
-        "id": 8,
+        "id": 1,
+        "name": "Medical Equipment",
+        "code": "MED-EQP",
+        "description": "Updated description",
         "item_category_id": 1,
-        "name": "Medical Equipment PASSED",
-        "code": "meh",
-        "description": "Devices and tools used for patient care",
         "deleted_at": null,
         "created_at": "2025-03-24T06:02:44.000000Z",
         "updated_at": "2025-03-24T06:14:44.000000Z"
     },
+    "message": "Item classification updated successfully.",
     "metadata": {
         "methods": "[GET, PUT, DELETE]",
         "formats": [
@@ -874,6 +920,69 @@ Content-Type: application/json
         ],
         "fields": [
             "code"
+        ]
+    }
+}
+        </pre>
+
+        <h4>Bulk Update Success</h4>
+        <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Updated Medical Equipment",
+            "code": "MED-EQP",
+            "description": null,
+            "item_category_id": 1,
+            "deleted_at": null,
+            "created_at": "2025-03-24T06:02:44.000000Z",
+            "updated_at": "2025-03-24T06:20:44.000000Z"
+        },
+        {
+            "id": 2,
+            "name": null,
+            "code": "NEW-CODE",
+            "description": null,
+            "item_category_id": 1,
+            "deleted_at": null,
+            "created_at": "2025-03-24T06:02:44.000000Z",
+            "updated_at": "2025-03-24T06:20:44.000000Z"
+        }
+    ],
+    "message": "Successfully updated 2 item classifications.",
+    "metadata": {
+        "methods": "[GET, PUT, DELETE]",
+        "formats": [
+            "http://localhost:8000/api/item_classifications?id[]=1&id[]=2"
+        ],
+        "fields": [
+            "code"
+        ]
+    }
+}
+        </pre>
+
+        <h4>Partial Update (With Errors)</h4>
+        <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Updated Medical Equipment",
+            "code": "MED-EQP",
+            "description": null,
+            "item_category_id": 1,
+            "deleted_at": null,
+            "created_at": "2025-03-24T06:02:44.000000Z",
+            "updated_at": "2025-03-24T06:20:44.000000Z"
+        }
+    ],
+    "message": "Partial update completed with errors.",
+    "metadata": {
+        "method": "[PUT]",
+        "errors": [
+            "Item classification with ID 2 not found."
         ]
     }
 }
@@ -891,27 +1000,46 @@ Content-Type: application/json
             <tbody>
                 <tr>
                     <td>422</td>
-                    <td>Invalid request.</td>
-                    <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
+                    <td>ID parameter is required</td>
+                    <td>When no ID parameter is provided</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Number of IDs does not match number of item classifications provided</td>
+                    <td>When bulk update count mismatch occurs</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Multiple IDs provided but no items array for bulk update</td>
+                    <td>When multiple IDs are given without bulk data</td>
                 </tr>
                 <tr>
                     <td>404</td>
-                    <td>No record found.</td>
-                    <td>Returned when no item unit is found for the given <code>id</code> or <code>query</code>.</td>
+                    <td>Item not found</td>
+                    <td>When single ID update fails</td>
                 </tr>
                 <tr>
-                    <td>409</td>
-                    <td>Request has multiple records.</td>
-                    <td>Returned when the <code>query</code> matches multiple records.</td>
+                    <td>207</td>
+                    <td>Partial update completed with errors</td>
+                    <td>When bulk update has partial failures (Multi-Status)</td>
                 </tr>
             </tbody>
         </table>
+
+        <h3>Notes</h3>
+        <ul>
+            <li>All updates are partial - only provided fields will be updated</li>
+            <li>In development mode, additional metadata is included in responses</li>
+            <li>For bulk updates, the order of IDs must match the order of objects in item_classifications array</li>
+            <li>Bulk updates will continue processing even if some items fail (returns 207 status)</li>
+            <li>Empty updates (no valid fields provided) will be rejected</li>
+        </ul>
     </div>
 
     <!-- Delete Endpoint -->
     <div class="endpoint">
         <h2>DELETE /api/item-classifications</h2>
-        <p>Delete one or more item classifications.</p>
+        <p>Soft delete one or more item classifications (marks as deleted but retains in database).</p>
 
         <h3>Parameters</h3>
         <table>
@@ -926,32 +1054,60 @@ Content-Type: application/json
             <tbody>
                 <tr>
                     <td>id</td>
-                    <td>integer or array</td>
-                    <td>The ID(s) of the item unit(s) to delete. Can be a single ID or a comma-separated list of IDs.</td>
-                    <td>Yes (if <code>query</code> is not provided)</td>
+                    <td>integer|string|array</td>
+                    <td>
+                        The ID(s) of the classification(s) to delete. Accepts multiple formats:
+                        <ul>
+                            <li>Single ID: <code>?id=1</code></li>
+                            <li>Comma-separated: <code>?id=1,2,3</code></li>
+                            <li>Array-style: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Conditional (required if no query)</td>
                 </tr>
                 <tr>
                     <td>query</td>
                     <td>object</td>
-                    <td>A query object to find the item unit(s) to delete (e.g., <code>{"code": "example"}</code>).</td>
-                    <td>Yes (if <code>id</code> is not provided)</td>
+                    <td>
+                        A query object to find classifications to delete (e.g., <code>{"code": "OFFICE"}</code>).
+                        Will reject if matches multiple records.
+                    </td>
+                    <td>Conditional (required if no id)</td>
                 </tr>
             </tbody>
         </table>
 
-        <h3>Example Request</h3>
-<pre>
+        <h3>Example Requests</h3>
+        <h4>Delete by single ID</h4>
+        <pre>
 DELETE {{ env('SERVER_DOMAIN') }}/api/item-classifications?id=1
-        <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-classifications?item_classification_id=1')">
-            <i class="fas fa-copy"></i> <span>Copy URL</span>
-        </button>
-</pre>
+        </pre>
 
-    <h3>Example Response</h3>
-    <pre>
-{
-    "message": "Successfully deleted 1 record."
-}
+        <h4>Delete by multiple IDs</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/item-classifications?id=1,2,3
+        </pre>
+
+        <h4>Delete by query</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/item-classifications?query={"name":"Office Equipment"}
+        </pre>
+
+        <h3>Success Responses</h3>
+        <h4>ID-based deletion</h4>
+        <pre>
+    {
+        "message": "Successfully deleted 2 classification(s).",
+        "deleted_ids": [1, 2]
+    }
+        </pre>
+
+        <h4>Query-based deletion</h4>
+        <pre>
+    {
+        "message": "Successfully deleted classification.",
+        "deleted_id": 3
+    }
         </pre>
 
         <h3>Error Responses</h3>
@@ -965,22 +1121,36 @@ DELETE {{ env('SERVER_DOMAIN') }}/api/item-classifications?id=1
             </thead>
             <tbody>
                 <tr>
-                    <td>422</td>
-                    <td>Invalid request.</td>
-                    <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
+                    <td>400</td>
+                    <td>Invalid ID format provided.</td>
+                    <td>When provided IDs are not valid numbers</td>
                 </tr>
                 <tr>
                     <td>404</td>
-                    <td>No records found.</td>
-                    <td>Returned when no item classifications are found for the given <code>id</code> or <code>query</code>.</td>
+                    <td>No active classifications found...</td>
+                    <td>When no matching active records found</td>
                 </tr>
                 <tr>
                     <td>409</td>
-                    <td>Request has multiple records.</td>
-                    <td>Returned when the <code>query</code> matches multiple records.</td>
+                    <td>Query matches multiple records...</td>
+                    <td>When query matches multiple records (includes data in response)</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Invalid request.</td>
+                    <td>When neither parameter is provided (includes metadata in dev)</td>
                 </tr>
             </tbody>
         </table>
+
+        <h3>Notes</h3>
+        <ul>
+            <li>This is a soft delete operation - records are marked as deleted but remain in database</li>
+            <li>Only active (non-deleted) records can be deleted</li>
+            <li>In development mode, additional metadata is returned for invalid requests</li>
+            <li>For query operations, the system will reject requests that would affect multiple records</li>
+            <li>The endpoint returns the IDs of successfully deleted records</li>
+        </ul>
     </div>
 </div>
 

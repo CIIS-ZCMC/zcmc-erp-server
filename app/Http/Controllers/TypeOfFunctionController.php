@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\TypeOfFunctionRequest;
 use App\Http\Resources\TypeOfFunctionDuplicateResource;
+use App\Http\Resources\TypeOfFunctionResource;
 use App\Models\TypeOfFunction;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,6 +19,64 @@ class TypeOfFunctionController extends Controller
     public function __construct()
     {
         $this->is_development = env("APP_DEBUG", true);
+    }
+    
+    private function cleanTypeOfFunctionData(array $data): array
+    {
+        $cleanData = [];
+        
+        if (isset($data['type'])) {
+            $cleanData['type'] = strip_tags($data['type']);
+        }
+
+        return $cleanData;
+    }
+    
+    protected function getMetadata($method): array
+    {
+        if($method === 'get'){
+            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
+            $metadata['modes'] = ['selection', 'pagination'];
+
+            if($this->is_development){
+                $metadata['urls'] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?type_of_function_id=[primary-key]",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                ];
+            }
+
+            return $metadata;
+        }
+        
+        if($method === 'put'){
+            $metadata = ["methods" => "[PUT]"];
+        
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["type"];
+            }
+            
+            return $metadata;
+        }
+        
+        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+
+        if($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+
+            $metadata["fields"] =  ["type"];
+        }
+
+        return $metadata;
     }
 
     public function import(Request $request)
@@ -44,29 +103,13 @@ class TypeOfFunctionController extends Controller
             if(!$type_of_function){
                 return response()->json([
                     'message' => "No record found.",
-                    "metadata" => [
-                        "methods" => "[GET, POST, PUT, DELETE]",
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?type_of_function_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ]);
             }
 
             return response()->json([
                 'data' => $type_of_function,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "urls" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?type_of_function_id=[primary-key]",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                    ]
-                ]
+                "metadata" => $this->getMetadata('get')
             ], Response::HTTP_OK);
         }
 
@@ -76,16 +119,7 @@ class TypeOfFunctionController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "Invalid value of parameters",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?type_of_function_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -98,16 +132,7 @@ class TypeOfFunctionController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?type_of_function_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -298,135 +323,190 @@ class TypeOfFunctionController extends Controller
 
     public function update(Request $request):Response    
     {
-        $type_of_function_id = $request->query('id') ?? null;
-        $query = $request->query('query') ?? null;
-
-        if(!$type_of_function_id && !$query){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                            env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-                        ],
-                        "fields" => ["type"]
-                    ]
-                ];
-            }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
+        $type_of_functions = $request->query('id') ?? null;
         
-        $success_indicator = null;
-
-        if($type_of_function_id){
-            $success_indicator = TypeOfFunction::find($type_of_function_id);    
+        // Validate request has IDs
+        if (!$type_of_functions) {
+            $response = ["message" => "ID parameter is required."];
+            
+            if ($this->is_development) {
+                $response['metadata'] = $this->getMetadata('put');
+            }
+            
+            return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if(!$type_of_function_id && $query){
-            $type_of_functions = TypeOfFunction::where($query)->get();
-            
-            // Check result is has many records
-            if(count($type_of_functions) > 1){
+        // Convert single ID to array for consistent processing
+        $type_of_functions = is_array($type_of_functions) ? $type_of_functions : [$type_of_functions];
+        
+        // For bulk update - validate items array matches IDs count
+        if ($request->has('type_of_functions')) {
+            if (count($type_of_functions) !== count($request->input('type_of_functions'))) {
                 return response()->json([
-                    'data' => $type_of_functions,
-                    'message' => "Request has multiple record."
-                ], Response::HTTP_CONFLICT);
+                    "message" => "Number of IDs does not match number of type of functions provided.",
+                    "metadata" => $this->getMetadata('put')
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-
-            $success_indicator = $type_of_functions->first();
+            
+            $updated_type_of_functions = [];
+            $errors = [];
+            
+            foreach ($type_of_functions as $index => $id) {
+                $type_of_function = TypeOfFunction::find($id);
+                
+                if (!$type_of_function) {
+                    $errors[] = "TypeOfFunction with ID {$id} not found.";
+                    continue;
+                }
+                
+                $type_of_functionData = $request->input('type_of_functions')[$index];
+                $cleanData = $this->cleanTypeOfFunctionData($type_of_functionData);
+                
+                $type_of_function->update($cleanData);
+                $updated_type_of_functions[] = $type_of_function;
+            }
+            
+            if (!empty($errors)) {
+                return response()->json([
+                    "data" => TypeOfFunctionResource::collection($updated_type_of_functions),
+                    "message" => "Partial update completed with errors.",
+                    "metadata" => [                    
+                        "method" => "[PUT]",
+                        "errors" => $errors,
+                    ]
+                ], Response::HTTP_MULTI_STATUS);
+            }
+            
+            return response()->json([
+                "data" => TypeOfFunctionResource::collection($updated_type_of_functions),
+                "message" => "Successfully updated ".count($updated_type_of_functions)." type of functions.",
+                "metadata" => $this->getMetadata('put')
+            ], Response::HTTP_OK);
         }
         
-        $cleanData = [
-            "type" => strip_tags($request->input('type'))
-        ];
-
-        $success_indicator->update($cleanData);
-
-        $metadata = [
-            "methods" => "[GET, PUT, DELETE]",
-        ];
-
-        if($this->is_development){
-            $metadata["formats"] = [
-                env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-            ];
-            
-            $metadata['fields'] = ["type"];
+        // Single type_of_function update
+        if (count($type_of_functions) > 1) {
+            return response()->json([
+                "message" => "Multiple IDs provided but no type of functions array for bulk update.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-
-        return response()->json([
-            "data" => $success_indicator,
-            "metadata" => $metadata
-        ], Response::HTTP_OK);
+        
+        $type_of_function = TypeOfFunction::find($type_of_functions[0]);
+        
+        if (!$type_of_function) {
+            return response()->json([
+                "message" => "Type of function not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+        
+        $cleanData = $this->cleanTypeOfFunctionData($request->all());
+        $type_of_function->update($cleanData);
+        
+        $response = [
+            "data" => new TypeOfFunctionResource($type_of_function),
+            "message" => "Type of Function updated successfully.",
+            "metadata" => $this->getMetadata('put')
+        ];
+        
+        if ($this->is_development) {
+            $response['metadata'] = [
+                "methods" => "[PUT]",
+                "required_fields" => ["type"]
+            ];
+        }
+        
+        return response()->json($response, Response::HTTP_OK);
     }
 
     public function destroy(Request $request): Response
     {
         $type_of_function_ids = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
-
+    
         if (!$type_of_function_ids && !$query) {
-            $response = ["message" => "Invalid request."];
-
+            $response = ["message" => "Invalid request. No parameters provided."];
+    
             if ($this->is_development) {
                 $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-                        ],
-                        "fields" => ["type"]
-                    ]
+                    "message" => "No parameters found for deletion.",
+                    "metadata" => $this->getMetadata('delete'),
+                    "hint" => "Provide either 'id' or 'query' parameter"
                 ];
             }
-
+    
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-
-
+    
         if ($type_of_function_ids) {
-            $type_of_function_ids = is_array($type_of_function_ids) ? $type_of_function_ids : explode(',', $type_of_function_ids);
-            $type_of_functions = TypeOfFunction::whereIn('id', $type_of_function_ids)->where('deleted_at', NULL)->get();
-
+            // Handle all ID formats: single, comma-separated, and array-style
+            $type_of_function_ids = is_array($type_of_function_ids) 
+                ? $type_of_function_ids 
+                : (str_contains($type_of_function_ids, ',') 
+                    ? explode(',', $type_of_function_ids) 
+                    : [$type_of_function_ids]);
+    
+            // Validate and sanitize IDs
+            $valid_ids = array_filter(array_map(function($id) {
+                return is_numeric($id) && $id > 0 ? (int)$id : null;
+            }, $type_of_function_ids));
+    
+            if (empty($valid_ids)) {
+                return response()->json(
+                    ["message" => "Invalid function type ID format provided."],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+    
+            // Get only active function types that exist
+            $type_of_functions = TypeOfFunction::whereIn('id', $valid_ids)
+                ->whereNull('deleted_at')
+                ->get();
+    
             if ($type_of_functions->isEmpty()) {
-                return response()->json(["message" => "No records found."], Response::HTTP_NOT_FOUND);
+                return response()->json(
+                    ["message" => "No active function types found with the provided IDs."],
+                    Response::HTTP_NOT_FOUND
+                );
             }
-
-            TypeOfFunction::whereIn('id', $type_of_function_ids)->update(['deleted_at' => now()]);
-
+    
+            // Perform soft delete
+            $deleted_count = TypeOfFunction::whereIn('id', $valid_ids)
+                ->update(['deleted_at' => now()]);
+    
             return response()->json([
-                "message" => "Successfully deleted " . count($type_of_functions) . " records."
-            ], Response::HTTP_NO_CONTENT);
+                "message" => "Successfully deleted {$deleted_count} function type(s).",
+                "deleted_ids" => $valid_ids,
+                "count" => $deleted_count
+            ], Response::HTTP_OK);
+        }
+        
+        $type_of_functions = TypeOfFunction::where($query)
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($type_of_functions->count() > 1) {
+            return response()->json([
+                'data' => TypeOfFunctionResource::collection($type_of_functions),
+                'message' => "Query matches multiple function types.",
+                'suggestion' => "Use ID parameter for precise deletion or add more query criteria"
+            ], Response::HTTP_CONFLICT);
         }
 
-        if ($query) {
-            $type_of_functions = TypeOfFunction::where($query)->get();
+        $type_of_function = $type_of_functions->first();
 
-            if ($type_of_functions->count() > 1) {
-                return response()->json([
-                    'data' => $type_of_functions,
-                    'message' => "Request has multiple records."
-                ], Response::HTTP_CONFLICT);
-            }
-
-            $type_of_function = $type_of_functions->first();
-
-            if (!$type_of_function) {
-                return response()->json(["message" => "No record found."], Response::HTTP_NOT_FOUND);
-            }
-
-            $type_of_function->update(['deleted_at' => now()]);
+        if (!$type_of_function) {
+            return response()->json(
+                ["message" => "No active function type found matching your criteria."],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
-        return response()->json(["message" => "Successfully deleted record."], Response::HTTP_NO_CONTENT);
+        $type_of_function->update(['deleted_at' => now()]);
+
+        return response()->json([
+            "message" => "Successfully deleted function type.",
+            "deleted_id" => $type_of_function->id,
+            "function_name" => $type_of_function->name
+        ], Response::HTTP_OK);
     }
 }

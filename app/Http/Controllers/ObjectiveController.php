@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\ObjectiveRequest;
 use App\Http\Resources\ObjectiveDuplicateResource;
+use App\Http\Resources\ObjectiveResource;
 use App\Models\Objective;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,6 +19,68 @@ class ObjectiveController extends Controller
     public function __construct()
     {
         $this->is_development = env("APP_DEBUG", true);
+    }
+    
+    private function cleanObjectivesData(array $data): array
+    {
+        $cleanData = [];
+        
+        if (isset($data['code'])) {
+            $cleanData['code'] = strip_tags($data['code']);
+        }
+        
+        if (isset($data['description'])) {
+            $cleanData['description'] = strip_tags($data['description']);
+        }
+
+        return $cleanData;
+    }
+    
+    protected function getMetadata($method): array
+    {
+        if($method === 'get'){
+            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
+            $metadata['modes'] = ['selection', 'pagination'];
+
+            if($this->is_development){
+                $metadata['urls'] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?objective_id=[primary-key]",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                ];
+            }
+
+            return $metadata;
+        }
+        
+        if($method === 'put'){
+            $metadata = ["methods" => "[PUT]"];
+        
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["title", "code", "description"];
+            }
+            
+            return $metadata;
+        }
+        
+        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+
+        if($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+
+            $metadata["fields"] =  ["code"];
+        }
+
+        return $metadata;
     }
 
     public function import(Request $request)
@@ -44,29 +107,13 @@ class ObjectiveController extends Controller
             if(!$purchase_type){
                 return response()->json([
                     'message' => "No record found.",
-                    "metadata" => [
-                        "methods" => "[GET, POST, PUT, DELETE]",
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?objective_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ]);
             }
 
             return response()->json([
                 'data' => $purchase_type,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "urls" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?objective_id=[primary-key]",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                    ]
-                ]
+                "metadata" => $this->getMetadata('get')
             ], Response::HTTP_OK);
         }
 
@@ -76,16 +123,7 @@ class ObjectiveController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "Invalid value of parameters",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?objective_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -98,16 +136,7 @@ class ObjectiveController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?objective_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -298,136 +327,179 @@ class ObjectiveController extends Controller
 
     public function update(Request $request):Response    
     {
-        $objective_id = $request->query('id') ?? null;
-        $query = $request->query('query') ?? null;
-
-        if(!$objective_id && !$query){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                            env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
-                ];
-            }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
+        $objectives = $request->query('id') ?? null;
         
-        $objective = null;
-
-        if($objective_id){
-            $objective = Objective::find($objective_id);    
+        // Validate request has IDs
+        if (!$objectives) {
+            $response = ["message" => "ID parameter is required."];
+            
+            if ($this->is_development) {
+                $response['metadata'] = $this->getMetadata('put');
+            }
+            
+            return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if(!$objective_id && $query){
-            $objectives = Objective::where($query)->get();
-            
-            // Check result is has many records
-            if(count($objectives) > 1){
+        // Convert single ID to array for consistent processing
+        $objectives = is_array($objectives) ? $objectives : [$objectives];
+        
+        // For bulk update - validate items array matches IDs count
+        if ($request->has('items')) {
+            if (count($objectives) !== count($request->input('items'))) {
                 return response()->json([
-                    'data' => $objectives,
-                    'message' => "Request has multiple record."
-                ], Response::HTTP_CONFLICT);
+                    "message" => "Number of IDs does not match number of objectives provided.",
+                    "metadata" => $this->getMetadata("put"),
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-
-            $objective = $objectives->first();
+            
+            $updated_items = [];
+            $errors = [];
+            
+            foreach ($objectives as $index => $id) {
+                $item = Objective::find($id);
+                
+                if (!$item) {
+                    $errors[] = "Objectives with ID {$id} not found.";
+                    continue;
+                }
+                
+                $itemData = $request->input('items')[$index];
+                $cleanData = $this->cleanObjectivesData($itemData);
+                
+                $item->update($cleanData);
+                $updated_items[] = $item;
+            }
+            
+            if (!empty($errors)) {
+                return response()->json([
+                    "data" => ObjectiveResource::collection($updated_items),
+                    "message" => "Partial update completed with errors.",
+                    "metadata" => [                    
+                        "method" => "[PUT]",
+                        "errors" => $errors,
+                    ]
+                ], Response::HTTP_MULTI_STATUS);
+            }
+            
+            return response()->json([
+                "data" => ObjectiveResource::collection($updated_items),
+                "message" => "Successfully updated ".count($updated_items)." items.",
+                "metadata" => $this->getMetadata('put')
+            ], Response::HTTP_OK);
         }
         
-        $cleanData = [
-            "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
-        ];
-
-        $objective->update($cleanData);
-
-        $metadata = [
-            "methods" => "[GET, PUT, DELETE]",
-        ];
-
-        if($this->is_development){
-            $metadata["formats"] = [
-                env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-            ];
-            
-            $metadata['fields'] = ["code"];
+        // Single item update
+        if (count($objectives) > 1) {
+            return response()->json([
+                "message" => "Multiple IDs provided but no items array for bulk update.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+        
+        $item = Objective::find($objectives[0]);
+        
+        if (!$item) {
+            return response()->json([
+                "message" => "Objectives not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+        
+        $cleanData = $this->cleanObjectivesData($request->all());
+        $item->update($cleanData);
+        
+        $response = [
+            "data" => new ObjectiveResource($item),
+            "message" => "Objective updated successfully.",
+            "metadata" => $this->getMetadata('put')
+        ];
 
-        return response()->json([
-            "data" => $objective,
-            "metadata" => $metadata
-        ], Response::HTTP_OK);
+        return response()->json($response, Response::HTTP_OK);
     }
 
     public function destroy(Request $request): Response
     {
         $objective_ids = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
-
+    
         if (!$objective_ids && !$query) {
             $response = ["message" => "Invalid request."];
-
+    
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
+                    "metadata" => $this->getMetadata('delete')
                 ];
             }
-
+    
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-
-
+    
         if ($objective_ids) {
-            $objective_ids = is_array($objective_ids) ? $objective_ids : explode(',', $objective_ids);
-            $objectives = Objective::whereIn('id', $objective_ids)->where('deleted_at', NULL)->geft();
-
+            $objective_ids = is_array($objective_ids) 
+                ? $objective_ids 
+                : (str_contains($objective_ids, ',') 
+                    ? explode(',', $objective_ids) 
+                    : [$objective_ids]
+                  );
+    
+            $objective_ids = array_filter(array_map('intval', $objective_ids));
+            
+            if (empty($objective_ids)) {
+                return response()->json(
+                    ["message" => "Invalid objective ID format provided."],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+    
+            $objectives = Objective::whereIn('id', $objective_ids)
+                ->whereNull('deleted_at')
+                ->get();
+    
             if ($objectives->isEmpty()) {
-                return response()->json(["message" => "No records found."], Response::HTTP_NOT_FOUND);
+                return response()->json(
+                    ["message" => "No active objectives found with the provided IDs."],
+                    Response::HTTP_NOT_FOUND
+                );
             }
-
-            Objective::whereIn('id', $objective_ids)->update(['deleted_at' => now()]);
-
+    
+            $found_ids = $objectives->pluck('id')->toArray();
+            
+            $deletedCount = Objective::whereIn('id', $found_ids)
+                ->update(['deleted_at' => now()]);
+    
             return response()->json([
-                "message" => "Successfully deleted " . count($objectives) . " records."
-            ], Response::HTTP_NO_CONTENT);
+                "message" => "Successfully deleted {$deletedCount} objective(s).",
+                "deleted_ids" => $found_ids,
+                "count" => $deletedCount
+            ], Response::HTTP_OK);
+        }
+    
+        $objectives = Objective::where($query)
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($objectives->count() > 1) {
+            return response()->json([
+                'data' => $objectives,
+                'message' => "Query matches multiple objectives. Please specify IDs directly.",
+                'suggestion' => "Use ?id parameter for bulk operations or add more specific query criteria."
+            ], Response::HTTP_CONFLICT);
         }
 
-        if ($query) {
-            $objectives = Objective::where($query)->get();
+        $objective = $objectives->first();
 
-            if ($objectives->count() > 1) {
-                return response()->json([
-                    'data' => $objectives,
-                    'message' => "Request has multiple records."
-                ], Response::HTTP_CONFLICT);
-            }
-
-            $purchase_type = $objectives->first();
-
-            if (!$purchase_type) {
-                return response()->json(["message" => "No record found."], Response::HTTP_NOT_FOUND);
-            }
-
-            $purchase_type->update(['deleted_at' => now()]);
+        if (!$objective) {
+            return response()->json(
+                ["message" => "No active objective found matching query."],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
-        return response()->json(["message" => "Successfully deleted record."], Response::HTTP_NO_CONTENT);
+        $objective->update(['deleted_at' => now()]);
+
+        return response()->json([
+            "message" => "Successfully deleted objective.",
+            "deleted_id" => $objective->id,
+            "objective_name" => $objective->name // Include relevant objective info
+        ], Response::HTTP_OK);
     }
 }

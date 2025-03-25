@@ -733,188 +733,374 @@ Content-Type: application/json
             </table>
         </div>
 
-        <!-- Put Endpoint -->
-        <div class="endpoint">
-            <h2>PUT /api/type-of-functions</h2>
-            <p>Update an existing type of function.</p>
+    <!-- Put Endpoint -->
+    <div class="endpoint">
+        <h2>PUT /api/type-of-functions</h2>
+        <p>Update one or more type of function records. Supports both single and bulk updates.</p>
 
-            <h3>Parameters</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Required</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>id</td>
-                        <td>integer</td>
-                        <td>The ID of the type of function to update.</td>
-                        <td>Yes (if <code>query</code> is not provided)</td>
-                    </tr>
-                    <tr>
-                        <td>query</td>
-                        <td>object</td>
-                        <td>A query object to find the type of function to update (e.g., <code>{"code": "example"}</code>).</td>
-                        <td>Yes (if <code>id</code> is not provided)</td>
-                    </tr>
-                    <tr>
-                        <td>code</td>
-                        <td>string</td>
-                        <td>The updated code of the type of function.</td>
-                        <td>No</td>
-                    </tr>
-                    <tr>
-                        <td>description</td>
-                        <td>string</td>
-                        <td>The updated description of the type of function.</td>
-                        <td>No</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h3>Parameters</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>integer or array</td>
+                    <td>
+                        The ID(s) of the type of function(s) to update. Can be:<br>
+                        - Single ID (e.g., <code>1</code>)<br>
+                        - Comma-separated list (e.g., <code>1,2,3</code>)<br>
+                        - Array format (e.g., <code>id[]=1&id[]=2</code>)
+                    </td>
+                    <td>Yes</td>
+                </tr>
+                <tr>
+                    <td>type_of_functions</td>
+                    <td>array</td>
+                    <td>
+                        Required for bulk updates. Array of objects containing update data, where each object corresponds to an ID in the same order.<br>
+                        Example: <code>[{"type": "Type1"}, {"type": "Type2"}]</code>
+                    </td>
+                    <td>Yes (for bulk updates)</td>
+                </tr>
+                <tr>
+                    <td>type</td>
+                    <td>string</td>
+                    <td>
+                        The type value to update (for single updates)<br>
+                        Data is automatically cleaned/sanitized before updating.
+                    </td>
+                    <td>Yes (for single updates)</td>
+                </tr>
+            </tbody>
+        </table>
 
-            <h3>Example Request</h3>
-            <pre>
+        <h3>Example Requests</h3>
+        
+        <h4>Single Update</h4>
+        <pre>
 PUT {{ env('SERVER_DOMAIN') }}/api/type-of-functions?id=1
 Content-Type: application/json
 
 {
-    "code": "USR_LOGIN_UPDATED"
+    "type": "USR_LOGIN_UPDATED"
 }
-            <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/type-of-functions?id=1')">
-                <i class="fas fa-copy"></i> Copy URL
+            <button class="copy-button" onclick="copyToClipboard('PUT {{ env('SERVER_DOMAIN') }}/api/type-of-functions?id=1')">
+                <i class="fas fa-copy"></i> Copy
             </button>
         </pre>
 
-        <h3>Example Response</h3>
+        <h4>Bulk Update</h4>
+        <pre>
+PUT {{ env('SERVER_DOMAIN') }}/api/type-of-functions?id=1,2,3
+Content-Type: application/json
+
+{
+    "type_of_functions": [
+        {"type": "Type1"},
+        {"type": "Type2"},
+        {"type": "Type3"}
+    ]
+}
+            <button class="copy-button" onclick="copyToClipboard('PUT {{ env('SERVER_DOMAIN') }}/api/type-of-functions?id=1,2,3')">
+                <i class="fas fa-copy"></i> Copy
+            </button>
+        </pre>
+
+        <h3>Example Responses</h3>
+        
+        <h4>Successful Single Update</h4>
         <pre>
 {
     "data": {
-        "id": 3,
-        "type": "",
+        "id": 1,
+        "type": "USR_LOGIN_UPDATED",
         "deleted_at": null,
         "created_at": "2025-03-24T02:41:52.000000Z",
         "updated_at": "2025-03-24T03:01:58.000000Z"
     },
+    "message": "Type of Function updated successfully.",
     "metadata": {
-        "methods": "[GET, PUT, DELETE]",
-        "formats": [
-            "http://localhost:8000/api/type-of-functions?id=1",
-            "http://localhost:8000/api/type-of-functionsquery[target_field]=value"
-        ],
-        "fields": [
-            "type"
+        "methods": ["PUT"],
+        "required_fields": ["type"]
+    }
+}
+        </pre>
+
+        <h4>Successful Bulk Update</h4>
+        <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "type": "Type1",
+            "deleted_at": null,
+            "created_at": "2025-03-24T02:41:52.000000Z",
+            "updated_at": "2025-03-24T03:01:58.000000Z"
+        },
+        {
+            "id": 2,
+            "type": "Type2",
+            "deleted_at": null,
+            "created_at": "2025-03-24T02:41:52.000000Z",
+            "updated_at": "2025-03-24T03:01:58.000000Z"
+        }
+    ],
+    "message": "Successfully updated 2 type of functions.",
+    "metadata": {
+        "methods": ["GET", "POST", "PUT", "DELETE"]
+    }
+}
+        </pre>
+
+        <h4>Partial Bulk Update (with errors)</h4>
+        <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "type": "Type1",
+            "deleted_at": null,
+            "created_at": "2025-03-24T02:41:52.000000Z",
+            "updated_at": "2025-03-24T03:01:58.000000Z"
+        }
+    ],
+    "message": "Partial update completed with errors.",
+    "metadata": {
+        "method": "[PUT]",
+        "errors": [
+            "TypeOfFunction with ID 2 not found."
         ]
     }
 }
-            </pre>
+        </pre>
 
-            <h3>Error Responses</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Status Code</th>
-                        <th>Message</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>422</td>
-                        <td>Invalid request.</td>
-                        <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
-                    </tr>
-                    <tr>
-                        <td>404</td>
-                        <td>No record found.</td>
-                        <td>Returned when no type of function is found for the given <code>id</code> or <code>query</code>.</td>
-                    </tr>
-                    <tr>
-                        <td>409</td>
-                        <td>Request has multiple records.</td>
-                        <td>Returned when the <code>query</code> matches multiple records.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <h3>Error Responses</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Status Code</th>
+                    <th>Response</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>422</td>
+                    <td><pre>{
+        "message": "ID parameter is required.",
+        "metadata": { ... }
+    }</pre></td>
+                    <td>Returned when no ID parameter is provided.</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td><pre>{
+        "message": "Number of IDs does not match number of type of functions provided.",
+        "metadata": { ... }
+    }</pre></td>
+                    <td>Returned in bulk updates when IDs count doesn't match type_of_functions array length.</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td><pre>{
+        "message": "Multiple IDs provided but no type of functions array for bulk update."
+    }</pre></td>
+                    <td>Returned when multiple IDs are provided without bulk update data.</td>
+                </tr>
+                <tr>
+                    <td>404</td>
+                    <td><pre>{
+        "message": "Type of function not found."
+    }</pre></td>
+                    <td>Returned when the specified ID doesn't exist (single update).</td>
+                </tr>
+                <tr>
+                    <td>207</td>
+                    <td><pre>{
+        "data": [...],
+        "message": "Partial update completed with errors.",
+        "metadata": {
+            "errors": [...]
+        }
+    }</pre></td>
+                    <td>Returned for bulk updates when some items fail to update.</td>
+                </tr>
+            </tbody>
+        </table>
 
-        <!-- Delete Endpoint -->
-        <div class="endpoint">
-            <h2>DELETE /api/type-of-functions</h2>
-            <p>Delete one or more type of functions.</p>
+        <h3>Notes</h3>
+        <ul>
+            <li>For bulk updates, the order of IDs must match the order of objects in the type_of_functions array</li>
+            <li>All update data is automatically cleaned/sanitized before being applied</li>
+            <li>The 'type' field is required for updates</li>
+            <li>In development environment, responses include additional metadata</li>
+            <li>Partial updates (207 status) include successfully updated items in the response along with error messages</li>
+            <li>The endpoint does not support query-based updates - only ID-based updates are allowed</li>
+        </ul>
+    </div>
 
-            <h3>Parameters</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Required</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>id</td>
-                        <td>integer or array</td>
-                        <td>The ID(s) of the type of function(s) to delete. Can be a single ID or a comma-separated list of IDs.</td>
-                        <td>Yes (if <code>query</code> is not provided)</td>
-                    </tr>
-                    <tr>
-                        <td>query</td>
-                        <td>object</td>
-                        <td>A query object to find the type of function(s) to delete (e.g., <code>{"type": "example"}</code>).</td>
-                        <td>Yes (if <code>id</code> is not provided)</td>
-                    </tr>
-                </tbody>
-            </table>
+    <!-- Delete Endpoint -->
+    <div class="endpoint">
+        <h2>DELETE /api/type-of-functions</h2>
+        <p>Delete one or more type of function records (soft delete).</p>
 
-            <h3>Example Request</h3>
-    <pre>
-DELETE {{ env('SERVER_DOMAIN') }}/api/type-of-functions?id=1,2
-        <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/type-of-functions?type_of_function_id=1')">
-            <i class="fas fa-copy"></i> <span>Copy URL</span>
-        </button>
-    </pre>
+        <h3>Parameters</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>integer, string, or array</td>
+                    <td>
+                        The ID(s) of the function type(s) to delete. Can be:<br>
+                        - Single ID (e.g., <code>1</code>)<br>
+                        - Comma-separated list (e.g., <code>1,2,3</code>)<br>
+                        - Array format (e.g., <code>id[]=1&id[]=2</code>)<br>
+                        Only active (non-deleted) records will be affected.
+                    </td>
+                    <td>Yes (if <code>query</code> is not provided)</td>
+                </tr>
+                <tr>
+                    <td>query</td>
+                    <td>object</td>
+                    <td>
+                        A query object to find the function type(s) to delete (e.g., <code>{"type": "example"}</code>).<br>
+                        If the query matches multiple records, the operation will fail with a 409 Conflict response.
+                    </td>
+                    <td>Yes (if <code>id</code> is not provided)</td>
+                </tr>
+            </tbody>
+        </table>
 
-        <h3>Example Response</h3>
+        <h3>Example Requests</h3>
+        <h4>Delete by single ID</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/type-of-functions?id=1
+            <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/type-of-functions?id=1')">
+                <i class="fas fa-copy"></i> <span>Copy URL</span>
+            </button>
+        </pre>
+
+        <h4>Delete by multiple IDs</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/type-of-functions?id=1,2,3
+            <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/type-of-functions?id=1,2,3')">
+                <i class="fas fa-copy"></i> <span>Copy URL</span>
+            </button>
+        </pre>
+
+        <h4>Delete by query</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/type-of-functions?query={"type":"example"}
+            <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/type-of-functions?query={"type":"example"}')">
+                <i class="fas fa-copy"></i> <span>Copy URL</span>
+            </button>
+        </pre>
+
+        <h3>Example Responses</h3>
+        <h4>Successful deletion (by ID)</h4>
         <pre>
 {
-    "message": "Successfully deleted 1 record."
+    "message": "Successfully deleted 3 function type(s).",
+    "deleted_ids": [1, 2, 3],
+    "count": 3
 }
-            </pre>
+        </pre>
 
-            <h3>Error Responses</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Status Code</th>
-                        <th>Message</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>422</td>
-                        <td>Invalid request.</td>
-                        <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
-                    </tr>
-                    <tr>
-                        <td>404</td>
-                        <td>No records found.</td>
-                        <td>Returned when no type of functions are found for the given <code>id</code> or <code>query</code>.</td>
-                    </tr>
-                    <tr>
-                        <td>409</td>
-                        <td>Request has multiple records.</td>
-                        <td>Returned when the <code>query</code> matches multiple records.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <h4>Successful deletion (by query)</h4>
+        <pre>
+{
+    "message": "Successfully deleted function type.",
+    "deleted_id": 1,
+    "function_name": "Example Function Type"
+}
+        </pre>
+
+        <h4>Multiple records found (query)</h4>
+        <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "type": "example",
+            "name": "Function Type 1"
+        },
+        {
+            "id": 2,
+            "type": "example",
+            "name": "Function Type 2"
+        }
+    ],
+    "message": "Query matches multiple function types.",
+    "suggestion": "Use ID parameter for precise deletion or add more query criteria"
+}
+        </pre>
+
+        <h3>Error Responses</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Status Code</th>
+                    <th>Response Body</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>400</td>
+                    <td><pre>{"message": "Invalid function type ID format provided."}</pre></td>
+                    <td>Returned when ID parameter contains non-numeric or invalid values.</td>
+                </tr>
+                <tr>
+                    <td>404</td>
+                    <td><pre>{"message": "No active function types found with the provided IDs."}</pre>
+    <pre>{"message": "No active function type found matching your criteria."}</pre></td>
+                    <td>Returned when no active (non-deleted) function types are found.</td>
+                </tr>
+                <tr>
+                    <td>409</td>
+                    <td><pre>{
+        "data": [...],
+        "message": "Query matches multiple function types.",
+        "suggestion": "Use ID parameter for precise deletion or add more query criteria"
+    }</pre></td>
+                    <td>Returned when query parameter matches multiple records.</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td><pre>{
+        "message": "No parameters found for deletion.",
+        "metadata": {...},
+        "hint": "Provide either 'id' or 'query' parameter"
+    }</pre></td>
+                    <td>Returned when neither id nor query parameter is provided.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Notes</h3>
+        <ul>
+            <li>This endpoint performs a soft delete (sets deleted_at timestamp) rather than permanent deletion.</li>
+            <li>Only active records (where deleted_at is null) will be affected by the operation.</li>
+            <li>When using the query parameter, it must match exactly one record for the operation to succeed.</li>
+            <li>In development environment, error responses include additional metadata and hints.</li>
+            <li>For bulk deletions, all IDs must reference existing, active records for the operation to succeed.</li>
+        </ul>
+    </div>
 </div>
 
 <!-- Notification Message -->

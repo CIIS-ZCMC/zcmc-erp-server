@@ -1038,110 +1038,113 @@ Content-Type: application/json
             </table>
         </div>
 
-        <!-- Put Endpoint -->
-        <div class="endpoint">
-            <h2>PUT /api/items</h2>
-            <p>Update one or more items. Supports both single and bulk updates.</p>
-            
-            <h3>Parameters</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Required</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>id</td>
-                        <td>integer or array</td>
-                        <td>The ID(s) of the item(s) to update. Can be a single ID or array of IDs (e.g., id[]=1&id[]=2)</td>
-                        <td>Yes</td>
-                    </tr>
-                </tbody>
-            </table>
+    <!-- Put Endpoint -->
+    <div class="endpoint">
+        <h2>PUT /api/items</h2>
+        <p>Update one or more items. Supports both single and bulk updates with partial updates.</p>
 
-            <h3>Request Body</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Field</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Required</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>name</td>
-                        <td>string</td>
-                        <td>The name of the item</td>
-                        <td>Yes (for single update)</td>
-                    </tr>
-                    <tr>
-                        <td>estimated_budget</td>
-                        <td>float</td>
-                        <td>The market price of the item</td>
-                        <td>Yes (for single update)</td>
-                    </tr>
-                    <tr>
-                        <td>item_unit_id</td>
-                        <td>integer</td>
-                        <td>Reference to item unit resource</td>
-                        <td>No</td>
-                    </tr>
-                    <tr>
-                        <td>item_category_id</td>
-                        <td>integer</td>
-                        <td>Reference to item category resource</td>
-                        <td>No</td>
-                    </tr>
-                    <tr>
-                        <td>item_classification_id</td>
-                        <td>integer</td>
-                        <td>Reference to item classification resource</td>
-                        <td>No</td>
-                    </tr>
-                    <tr>
-                        <td>items</td>
-                        <td>array</td>
-                        <td>
-                            Array of items for bulk update (required when multiple IDs provided). Each item should include:
-                            <ul>
-                                <li><code>name</code> (string, required)</li>
-                                <li><code>estimated_budget</code> (float, required)</li>
-                                <li><code>item_unit_id</code> (integer, optional)</li>
-                                <li><code>item_category_id</code> (integer, optional)</li>
-                                <li><code>item_classification_id</code> (integer, optional)</li>
-                            </ul>
-                        </td>
-                        <td>Yes (for bulk update)</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h3>Parameters</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>integer|string|array</td>
+                    <td>
+                        The ID(s) of the item(s) to update. Accepts multiple formats:
+                        <ul>
+                            <li>Single ID: <code>?id=1</code></li>
+                            <li>Comma-separated: <code>?id=1,2,3</code></li>
+                            <li>Array-style: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Yes</td>
+                </tr>
+            </tbody>
+        </table>
 
-            <h3>Example Requests</h3>
-            <h4>Single Item Update</h4>
-            <pre>
+        <h3>Request Body</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>name</td>
+                    <td>string</td>
+                    <td>Updated item name</td>
+                    <td>Yes (for single update)</td>
+                </tr>
+                <tr>
+                    <td>estimated_budget</td>
+                    <td>float</td>
+                    <td>Updated estimated budget</td>
+                    <td>Yes (for single update)</td>
+                </tr>
+                <tr>
+                    <td>item_unit_id</td>
+                    <td>integer</td>
+                    <td>Reference to item unit</td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td>item_category_id</td>
+                    <td>integer</td>
+                    <td>Reference to item category</td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td>item_classification_id</td>
+                    <td>integer</td>
+                    <td>Reference to item classification</td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td>items</td>
+                    <td>array</td>
+                    <td>
+                        Required for bulk updates. Array of item objects containing:
+                        <ul>
+                            <li><strong>name</strong> (string, required)</li>
+                            <li><strong>estimated_budget</strong> (float, required)</li>
+                            <li>item_unit_id (integer, optional)</li>
+                            <li>item_category_id (integer, optional)</li>
+                            <li>item_classification_id (integer, optional)</li>
+                        </ul>
+                    </td>
+                    <td>Conditional (required for bulk updates)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Example Requests</h3>
+        
+        <h4>Single Item Update</h4>
+        <pre>
 PUT {{ env('SERVER_DOMAIN') }}/api/items?id=1
 Content-Type: application/json
 
 {
     "name": "Premium Stethoscope",
     "estimated_budget": 195.50,
-    "item_unit_id": 1,
-    "item_category_id": 1,
-    "item_classification_id": 1
+    "item_unit_id": 1
 }
-            <button class="copy-button" onclick="copyToClipboard('PUT {{ env('SERVER_DOMAIN') }}/api/items?id=1')">
-                <i class="fas fa-copy"></i> Copy
-            </button>
-            </pre>
+        </pre>
 
-            <h4>Bulk Update</h4>
-            <pre>
+        <h4>Bulk Update</h4>
+        <pre>
 PUT {{ env('SERVER_DOMAIN') }}/api/items?id[]=1&id[]=2
 Content-Type: application/json
 
@@ -1149,8 +1152,7 @@ Content-Type: application/json
     "items": [
         {
             "name": "Premium Stethoscope",
-            "estimated_budget": 195.50,
-            "item_unit_id": 1
+            "estimated_budget": 195.50
         },
         {
             "name": "Surgical Scalpel",
@@ -1159,72 +1161,42 @@ Content-Type: application/json
         }
     ]
 }
-            <button class="copy-button" onclick="copyToClipboard('PUT {{ env('SERVER_DOMAIN') }}/api/items?id[]=1&id[]=2')">
-                <i class="fas fa-copy"></i> Copy
-            </button>
-            </pre>
+        </pre>
 
-            <h3>Example Single Response</h3>
-            <h4>Success Response</h4>
-            <pre>
+        <h3>Example Responses</h3>
+        
+        <h4>Single Update Success</h4>
+        <pre>
 {
     "data": {
         "id": 1,
         "name": "Premium Stethoscope",
-        "deleted_at": null,
-        "created_at": "2025-03-24T18:23:45.000000Z",
-        "updated_at": "2025-03-24T19:44:25.000000Z"
+        "estimated_budget": "195.5",
+        "item_unit_id": 1,
+        "item_category_id": 1,
+        "item_classification_id": 1,
+        "created_at": "2025-03-24T18:44:44.000000Z",
+        "updated_at": "2025-03-24T19:58:41.000000Z"
     },
+    "message": "Item updated successfully.",
     "metadata": {
         "methods": "[GET, PUT, DELETE]",
         "formats": [
-            "http://localhost:8000/api/item-units?id=1",
-            "http://localhost:8000/api/item-units?id=1,2,3"
+            "http://localhost:8000/api/items?id=1"
         ]
     }
 }
-            </pre>
+        </pre>
 
-            <h3>Example Responses</h3>
-            <h4>Success Response</h4>
-            <pre>
+        <h4>Bulk Update Success</h4>
+        <pre>
 {
     "data": [
         {
             "id": 1,
             "name": "Premium Stethoscope",
             "estimated_budget": "195.5",
-            "unit": "",
-            "category": "MED-EQ",
-            "classification": "DIAG-INST",
-            "item_unit": {
-                "id": 1,
-                "name": "",
-                "code": "",
-                "description": "",
-                "deleted_at": null,
-                "created_at": "2025-03-24T18:23:45.000000Z",
-                "updated_at": "2025-03-24T19:47:44.000000Z"
-            },
-            "item_category": {
-                "id": 1,
-                "name": "Medical Equipment",
-                "code": "MED-EQ",
-                "description": "Durable medical devices used for diagnosis, monitoring or treatment (e.g., ventilators, ECG machines)",
-                "deleted_at": null,
-                "created_at": "2025-03-24T18:27:37.000000Z",
-                "updated_at": "2025-03-24T18:27:37.000000Z"
-            },
-            "item_classification": {
-                "id": 1,
-                "item_category_id": 6,
-                "name": "Diagnostic Instruments",
-                "code": "DIAG-INST",
-                "description": "Handheld or portable devices for physical examination (e.g., stethoscopes, otoscopes)",
-                "deleted_at": null,
-                "created_at": "2025-03-24T18:38:46.000000Z",
-                "updated_at": "2025-03-24T18:38:46.000000Z"
-            },
+            "item_unit_id": 1,
             "created_at": "2025-03-24T18:44:44.000000Z",
             "updated_at": "2025-03-24T19:58:41.000000Z"
         },
@@ -1232,87 +1204,27 @@ Content-Type: application/json
             "id": 2,
             "name": "Surgical Scalpel",
             "estimated_budget": "9.75",
-            "unit": "",
-            "category": "SURG-SUP",
-            "classification": "DIAG-INST",
-            "item_unit": {
-                "id": 1,
-                "name": "",
-                "code": "",
-                "description": "",
-                "deleted_at": null,
-                "created_at": "2025-03-24T18:23:45.000000Z",
-                "updated_at": "2025-03-24T19:47:44.000000Z"
-            },
-            "item_category": {
-                "id": 2,
-                "name": "Surgical Supplies",
-                "code": "SURG-SUP",
-                "description": "Instruments and materials used in surgical procedures (e.g., scalpels, sutures, drapes)",
-                "deleted_at": null,
-                "created_at": "2025-03-24T18:27:59.000000Z",
-                "updated_at": "2025-03-24T18:27:59.000000Z"
-            },
-            "item_classification": {
-                "id": 1,
-                "item_category_id": 6,
-                "name": "Diagnostic Instruments",
-                "code": "DIAG-INST",
-                "description": "Handheld or portable devices for physical examination (e.g., stethoscopes, otoscopes)",
-                "deleted_at": null,
-                "created_at": "2025-03-24T18:38:46.000000Z",
-                "updated_at": "2025-03-24T18:38:46.000000Z"
-            },
+            "item_category_id": 2,
             "created_at": "2025-03-24T19:01:41.000000Z",
             "updated_at": "2025-03-24T19:58:41.000000Z"
         }
     ],
     "message": "Successfully updated 2 items.",
     "metadata": {
-        "method": "[GET, POST, PUT, DELETE]"
+        "method": "[PUT]"
     }
 }
-            </pre>
+        </pre>
 
-            <h4>Partial Update Response</h4>
-            <pre>
+        <h4>Partial Update (With Errors)</h4>
+        <pre>
 {
     "data": [
         {
             "id": 1,
             "name": "Premium Stethoscope",
             "estimated_budget": "195.5",
-            "unit": "",
-            "category": "MED-EQ",
-            "classification": "DIAG-INST",
-            "item_unit": {
-                "id": 1,
-                "name": "",
-                "code": "",
-                "description": "",
-                "deleted_at": null,
-                "created_at": "2025-03-24T18:23:45.000000Z",
-                "updated_at": "2025-03-24T19:47:44.000000Z"
-            },
-            "item_category": {
-                "id": 1,
-                "name": "Medical Equipment",
-                "code": "MED-EQ",
-                "description": "Durable medical devices used for diagnosis, monitoring or treatment (e.g., ventilators, ECG machines)",
-                "deleted_at": null,
-                "created_at": "2025-03-24T18:27:37.000000Z",
-                "updated_at": "2025-03-24T18:27:37.000000Z"
-            },
-            "item_classification": {
-                "id": 1,
-                "item_category_id": 6,
-                "name": "Diagnostic Instruments",
-                "code": "DIAG-INST",
-                "description": "Handheld or portable devices for physical examination (e.g., stethoscopes, otoscopes)",
-                "deleted_at": null,
-                "created_at": "2025-03-24T18:38:46.000000Z",
-                "updated_at": "2025-03-24T18:38:46.000000Z"
-            },
+            "item_unit_id": 1,
             "created_at": "2025-03-24T18:44:44.000000Z",
             "updated_at": "2025-03-24T19:58:41.000000Z"
         }
@@ -1321,157 +1233,178 @@ Content-Type: application/json
     "metadata": {
         "method": "[PUT]",
         "errors": [
-            "Item with ID 254 not found."
+            "Item with ID 2 not found."
         ]
     }
 }
-            </pre>
+        </pre>
 
-            <h3>Error Responses</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Status Code</th>
-                        <th>Message</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>400</td>
-                        <td>ID parameter is required</td>
-                        <td>Returned when no ID parameter is provided</td>
-                    </tr>
-                    <tr>
-                        <td>404</td>
-                        <td>Item not found</td>
-                        <td>Returned when no item exists with the provided ID</td>
-                    </tr>
-                    <tr>
-                        <td>409</td>
-                        <td>Number of IDs does not match number of items</td>
-                        <td>Returned for bulk updates when ID count doesn't match items array length</td>
-                    </tr>
-                    <tr>
-                        <td>422</td>
-                        <td>Validation error</td>
-                        <td>Returned when required fields are missing or invalid</td>
-                    </tr>
-                    <tr>
-                        <td>424</td>
-                        <td>Partial update completed with errors</td>
-                        <td>Returned when some items in bulk update failed</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    
-        <!-- Delete Endpoint -->
-        <div class="endpoint">
-            <h2>DELETE /api/items</h2>
-            <p>Delete one or more item categories. Deletion is performed via soft delete (sets deleted_at timestamp).</p>
+        <h3>Error Responses</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Status Code</th>
+                    <th>Message</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>422</td>
+                    <td>ID parameter is required</td>
+                    <td>When no ID parameter is provided (includes metadata in dev)</td>
+                </tr>
+                <tr>
+                    <td>404</td>
+                    <td>Item not found</td>
+                    <td>When single ID update fails</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Number of IDs does not match number of items provided</td>
+                    <td>When bulk update count mismatch occurs</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Multiple IDs provided but no items array for bulk update</td>
+                    <td>When multiple IDs given without bulk data</td>
+                </tr>
+                <tr>
+                    <td>207</td>
+                    <td>Partial update completed with errors</td>
+                    <td>When bulk update has partial failures (Multi-Status)</td>
+                </tr>
+            </tbody>
+        </table>
 
-            <h3>Parameters</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Required</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>id</td>
-                        <td>integer or array</td>
-                        <td>The ID(s) of the item category(s) to delete. Can be a single ID or comma-separated list.</td>
-                        <td>Yes (if no other parameter provided)</td>
-                    </tr>
-                    <tr>
-                        <td>query</td>
-                        <td>object</td>
-                        <td>Query object to find records (e.g., <code>{"code": "MED-EQ"}</code> or <code>{"name": "Medical Equipment"}</code>)</td>
-                        <td>Yes (if no ID provided)</td>
-                    </tr>
-                    <tr>
-                        <td>query[name]</td>
-                        <td>string</td>
-                        <td>Direct name query (alternative to full query object). Example: <code>query[name]=Medical Equipment</code></td>
-                        <td>No</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h3>Implementation Notes</h3>
+        <ul>
+            <li><strong>Partial Updates</strong>: Only provided fields will be updated</li>
+            <li><strong>Bulk Processing</strong>: Order of IDs must match order of objects in items array</li>
+            <li><strong>Error Handling</strong>: Bulk updates continue processing even if some items fail</li>
+            <li><strong>Development Mode</strong>: Additional metadata included in responses</li>
+            <li><strong>Validation</strong>: Name and estimated_budget are required for each item</li>
+            <li><strong>Resource Formatting</strong>: Responses use ItemResource for consistent formatting</li>
+        </ul>
+    </div>
 
-            <h3>Example Requests</h3>
-            <h4>Delete by ID</h4>
-            <pre>
-        DELETE {{ env('SERVER_DOMAIN') }}/api/items?id=1
-                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/items?id=1')">
-                    <i class="fas fa-copy"></i> <span>Copy URL</span>
-                </button>
-            </pre>
+    <!-- Delete Endpoint -->
+    <div class="endpoint">
+        <h2>DELETE /api/items</h2>
+        <p>Soft delete one or more items (marks as deleted but retains in database).</p>
 
-            <h4>Delete by Query Object</h4>
-            <pre>
-        DELETE {{ env('SERVER_DOMAIN') }}/api/items?query={"code":"MED-EQ"}
-                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/items?query={"code":"MED-EQ"}')">
-                    <i class="fas fa-copy"></i> <span>Copy URL</span>
-                </button>
-            </pre>
+        <h3>Parameters</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>integer|string|array</td>
+                    <td>
+                        The ID(s) of the item(s) to delete. Accepts multiple formats:
+                        <ul>
+                            <li>Single ID: <code>?id=1</code></li>
+                            <li>Comma-separated: <code>?id=1,2,3</code></li>
+                            <li>Array-style: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Conditional (required if no query)</td>
+                </tr>
+                <tr>
+                    <td>query</td>
+                    <td>object</td>
+                    <td>
+                        A query object to find items to delete (e.g., <code>{"name": "Medical Equipment"}</code>).
+                        Will reject if matches multiple records.
+                    </td>
+                    <td>Conditional (required if no id)</td>
+                </tr>
+            </tbody>
+        </table>
 
-            <h4>Delete by Name Query</h4>
-            <pre>
-        DELETE {{ env('SERVER_DOMAIN') }}/api/items?query[name]=Medical%20Equipment
-                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/items?query[name]=Medical%20Equipment')">
-                    <i class="fas fa-copy"></i> <span>Copy URL</span>
-                </button>
-            </pre>
+        <h3>Example Requests</h3>
+        <h4>Delete by single ID</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/items?id=1
+        </pre>
 
-            <h3>Example Response</h3>
-            <pre>
-        {
-            "message": "Successfully deleted 1 record."
-        }
-            </pre>
+        <h4>Delete by multiple IDs</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/items?id=1,2,3
+        </pre>
 
-            <h3>Error Responses</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Status Code</th>
-                        <th>Message</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>422</td>
-                        <td>Invalid request.</td>
-                        <td>No parameters provided. In development mode, returns available methods and formats.</td>
-                    </tr>
-                    <tr>
-                        <td>404</td>
-                        <td>No records found.</td>
-                        <td>No matching records found for the given parameters.</td>
-                    </tr>
-                    <tr>
-                        <td>409</td>
-                        <td>Request has multiple records.</td>
-                        <td>Returned when query matches multiple records (includes data of all matches).</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h4>Delete by query</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/items?query={"name":"Medical Equipment"}
+        </pre>
 
-            <h3>Implementation Details</h3>
-            <p>The endpoint supports three deletion methods:</p>
-            <ol>
-                <li><strong>Direct ID(s)</strong>: Delete by primary key(s)</li>
-                <li><strong>Query Object</strong>: Flexible query using any field(s)</li>
-                <li><strong>Name Query</strong>: Simplified syntax for name-based deletion</li>
-            </ol>
-            <p>In development mode, the endpoint provides additional metadata about available parameters and formats when invalid requests are made.</p>
-        </div>
+        <h3>Success Responses</h3>
+        <h4>ID-based deletion</h4>
+        <pre>
+{
+    "message": "Successfully deleted 2 record(s).",
+    "deleted_ids": [1, 2]
+}
+        </pre>
+
+        <h4>Query-based deletion</h4>
+        <pre>
+{
+    "message": "Successfully deleted record.",
+    "deleted_id": 3
+}
+        </pre>
+
+        <h3>Error Responses</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Status Code</th>
+                    <th>Message</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>400</td>
+                    <td>Invalid ID format.</td>
+                    <td>When provided IDs are not valid numbers</td>
+                </tr>
+                <tr>
+                    <td>404</td>
+                    <td>No active records found...</td>
+                    <td>When no matching active records found</td>
+                </tr>
+                <tr>
+                    <td>409</td>
+                    <td>Request would affect multiple records...</td>
+                    <td>When query matches multiple records (includes data in response)</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Invalid request.</td>
+                    <td>When neither parameter is provided (includes metadata in dev)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Implementation Notes</h3>
+        <ul>
+            <li><strong>Soft Delete</strong>: Records are marked as deleted (deleted_at timestamp set) but remain in database</li>
+            <li><strong>Active Records Only</strong>: Only non-deleted records can be deleted</li>
+            <li><strong>ID Processing</strong>: Handles single ID, comma-separated list, and array-style formats</li>
+            <li><strong>Query Safety</strong>: Rejects queries that would affect multiple records</li>
+            <li><strong>Development Mode</strong>: Returns additional metadata for invalid requests</li>
+            <li><strong>Response Includes</strong>: Returns IDs of successfully deleted records</li>
+        </ul>
+    </div>
 
 <!-- Notification Message -->
 <div id="copy-notification" class="copy-notification"></div>

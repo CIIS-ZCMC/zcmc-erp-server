@@ -757,113 +757,7 @@ Content-Type: application/json
     <!-- Put Endpoint -->
     <div class="endpoint">
         <h2>PUT /api/success-indicators</h2>
-        <p>Update an existing success indicator.</p>
-
-        <h3>Parameters</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Parameter</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                    <th>Required</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>id</td>
-                    <td>integer</td>
-                    <td>The ID of the success indicator to update.</td>
-                    <td>Yes (if <code>query</code> is not provided)</td>
-                </tr>
-                <tr>
-                    <td>query</td>
-                    <td>object</td>
-                    <td>A query object to find the success indicator to update (e.g., <code>{"code": "example"}</code>).</td>
-                    <td>Yes (if <code>id</code> is not provided)</td>
-                </tr>
-                <tr>
-                    <td>code</td>
-                    <td>string</td>
-                    <td>The updated code of the success indicator.</td>
-                    <td>No</td>
-                </tr>
-                <tr>
-                    <td>description</td>
-                    <td>string</td>
-                    <td>The updated description of the success indicator.</td>
-                    <td>No</td>
-                </tr>
-            </tbody>
-        </table>
-
-        <h3>Example Request</h3>
-        <pre>
-PUT {{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1
-Content-Type: application/json
-
-{
-    "name": "Updated Unit",
-    "code": "UU"
-}
-        <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1')">
-            <i class="fas fa-copy"></i> Copy URL
-        </button>
-    </pre>
-
-    <h3>Example Response</h3>
-    <pre>
-{
-    "data": {
-        "id": 1,
-        "name": "Updated Unit",
-        "code": "UU",
-        "description": null
-    },
-    "metadata": {
-        "methods": "[GET, PUT, DELETE]",
-        "formats": [
-            "{{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1",
-            "{{ env('SERVER_DOMAIN') }}/api/success-indicators?query[code]=example"
-        ],
-        "fields": ["code"]
-    }
-}
-        </pre>
-
-        <h3>Error Responses</h3>
-        <table>
-            <thead>
-                <tr>
-                    <th>Status Code</th>
-                    <th>Message</th>
-                    <th>Description</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>422</td>
-                    <td>Invalid request.</td>
-                    <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
-                </tr>
-                <tr>
-                    <td>404</td>
-                    <td>No record found.</td>
-                    <td>Returned when no success indicator is found for the given <code>id</code> or <code>query</code>.</td>
-                </tr>
-                <tr>
-                    <td>409</td>
-                    <td>Request has multiple records.</td>
-                    <td>Returned when the <code>query</code> matches multiple records.</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- Delete Endpoint -->
-    <div class="endpoint">
-        <h2>DELETE /api/success-indicators</h2>
-        <p>Delete one or more success indicators.</p>
+        <p>Update one or more existing success indicators. Supports both single and bulk updates.</p>
 
         <h3>Parameters</h3>
         <table>
@@ -879,30 +773,132 @@ Content-Type: application/json
                 <tr>
                     <td>id</td>
                     <td>integer or array</td>
-                    <td>The ID(s) of the success indicator(s) to delete. Can be a single ID or a comma-separated list of IDs.</td>
-                    <td>Yes (if <code>query</code> is not provided)</td>
+                    <td>
+                        The ID(s) of the success indicator(s) to update. Can be:<br>
+                        - Single ID (e.g., <code>1</code>)<br>
+                        - Comma-separated list (e.g., <code>1,2,3</code>)<br>
+                        - Array format (e.g., <code>id[]=1&id[]=2</code>)
+                    </td>
+                    <td>Yes</td>
                 </tr>
                 <tr>
-                    <td>query</td>
-                    <td>object</td>
-                    <td>A query object to find the success indicator(s) to delete (e.g., <code>{"code": "example"}</code>).</td>
-                    <td>Yes (if <code>id</code> is not provided)</td>
+                    <td>success_indicators</td>
+                    <td>array</td>
+                    <td>
+                        Required for bulk updates. Array of objects containing update data, where each object corresponds to an ID in the same order.<br>
+                        Example: <code>[{"name": "Updated 1"}, {"name": "Updated 2"}]</code>
+                    </td>
+                    <td>Yes (for bulk updates)</td>
+                </tr>
+                <tr>
+                    <td>[field_name]</td>
+                    <td>various</td>
+                    <td>
+                        Field values to update for single updates (e.g., <code>name</code>, <code>code</code>, etc.).<br>
+                        Data is automatically cleaned/sanitized before updating.
+                    </td>
+                    <td>Yes (for single updates)</td>
                 </tr>
             </tbody>
         </table>
 
-        <h3>Example Request</h3>
-<pre>
-DELETE {{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1
-        <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/success-indicators?success_indicator_id=1')">
-            <i class="fas fa-copy"></i> <span>Copy URL</span>
-        </button>
-</pre>
+        <h3>Example Requests</h3>
+        
+        <h4>Single Update</h4>
+        <pre>
+PUT {{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1
+Content-Type: application/json
 
-    <h3>Example Response</h3>
-    <pre>
 {
-    "message": "Successfully deleted 1 record."
+    "name": "Updated Unit",
+    "code": "UU",
+    "description": "New description"
+}
+            <button class="copy-button" onclick="copyToClipboard('PUT {{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1')">
+                <i class="fas fa-copy"></i> Copy
+            </button>
+        </pre>
+
+        <h4>Bulk Update</h4>
+        <pre>
+PUT {{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1,2,3
+Content-Type: application/json
+
+{
+    "success_indicators": [
+        {"name": "Updated 1", "code": "U1"},
+        {"name": "Updated 2", "code": "U2"},
+        {"name": "Updated 3", "code": "U3"}
+    ]
+}
+            <button class="copy-button" onclick="copyToClipboard('PUT {{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1,2,3')">
+                <i class="fas fa-copy"></i> Copy
+            </button>
+        </pre>
+
+        <h3>Example Responses</h3>
+        
+        <h4>Successful Single Update</h4>
+        <pre>
+{
+    "data": {
+        "id": 1,
+        "name": "Updated Unit",
+        "code": "UU",
+        "description": "New description"
+    },
+    "message": "SuccessIndicator updated successfully.",
+    "metadata": {
+        "methods": ["GET", "PUT", "DELETE"],
+        "formats": [
+            "{{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1",
+            "{{ env('SERVER_DOMAIN') }}/api/success-indicators?query[code]=example"
+        ]
+    }
+}
+        </pre>
+
+        <h4>Successful Bulk Update</h4>
+        <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Updated 1",
+            "code": "U1",
+            "description": null
+        },
+        {
+            "id": 2,
+            "name": "Updated 2",
+            "code": "U2",
+            "description": null
+        }
+    ],
+    "message": "Successfully updated 2 success indicators.",
+    "metadata": {
+        "methods": ["GET", "POST", "PUT", "DELETE"]
+    }
+}
+        </pre>
+
+        <h4>Partial Bulk Update (with errors)</h4>
+        <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Updated 1",
+            "code": "U1"
+        }
+    ],
+    "message": "Partial update completed with errors.",
+    "metadata": {
+        "method": "[PUT]",
+        "errors": [
+            "SuccessIndicator with ID 2 not found."
+        ]
+    }
 }
         </pre>
 
@@ -911,28 +907,198 @@ DELETE {{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1
             <thead>
                 <tr>
                     <th>Status Code</th>
-                    <th>Message</th>
+                    <th>Response</th>
                     <th>Description</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td>422</td>
-                    <td>Invalid request.</td>
-                    <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
+                    <td><pre>{
+        "message": "ID parameter is required.",
+        "metadata": { ... }
+    }</pre></td>
+                    <td>Returned when no ID parameter is provided.</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td><pre>{
+        "message": "Number of IDs does not match number of success indicators provided.",
+        "metadata": { ... }
+    }</pre></td>
+                    <td>Returned in bulk updates when IDs count doesn't match success_indicators array length.</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td><pre>{
+        "message": "Multiple IDs provided but no success_indicators array for bulk update."
+    }</pre></td>
+                    <td>Returned when multiple IDs are provided without bulk update data.</td>
                 </tr>
                 <tr>
                     <td>404</td>
-                    <td>No records found.</td>
-                    <td>Returned when no success indicators are found for the given <code>id</code> or <code>query</code>.</td>
+                    <td><pre>{
+        "message": "SuccessIndicator not found."
+    }</pre></td>
+                    <td>Returned when the specified ID doesn't exist (single update).</td>
                 </tr>
                 <tr>
-                    <td>409</td>
-                    <td>Request has multiple records.</td>
-                    <td>Returned when the <code>query</code> matches multiple records.</td>
+                    <td>207</td>
+                    <td><pre>{
+        "data": [...],
+        "message": "Partial update completed with errors.",
+        "metadata": {
+            "errors": [...]
+        }
+    }</pre></td>
+                    <td>Returned for bulk updates when some items fail to update.</td>
                 </tr>
             </tbody>
         </table>
+
+        <h3>Notes</h3>
+        <ul>
+            <li>For bulk updates, the order of IDs must match the order of objects in the success_indicators array.</li>
+            <li>All update data is automatically cleaned/sanitized before being applied.</li>
+            <li>In development environment, error responses include additional metadata.</li>
+            <li>Partial updates (207 status) include successfully updated items in the response along with error messages.</li>
+            <li>The endpoint does not support query-based updates - only ID-based updates are allowed.</li>
+        </ul>
+    </div>
+
+    <!-- Delete Endpoint -->
+    <div class="endpoint">
+        <h2>DELETE /api/success-indicators</h2>
+        <p>Delete one or more success indicators (soft delete).</p>
+
+        <h3>Parameters</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>integer, string, or array</td>
+                    <td>
+                        The ID(s) of the success indicator(s) to delete. Can be:<br>
+                        - Single ID (e.g., <code>1</code>)<br>
+                        - Comma-separated list (e.g., <code>1,2,3</code>)<br>
+                        - Array format (e.g., <code>id[]=1&id[]=2</code>)<br>
+                        Only active (non-deleted) records will be affected.
+                    </td>
+                    <td>Yes (if <code>query</code> is not provided)</td>
+                </tr>
+                <tr>
+                    <td>query</td>
+                    <td>object</td>
+                    <td>
+                        A query object to find the success indicator(s) to delete (e.g., <code>{"code": "example"}</code>).<br>
+                        If the query matches multiple records, the operation will fail with a 409 Conflict response.
+                    </td>
+                    <td>Yes (if <code>id</code> is not provided)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Example Requests</h3>
+        <h4>Delete by single ID</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1
+            <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1')">
+                <i class="fas fa-copy"></i> <span>Copy URL</span>
+            </button>
+        </pre>
+
+        <h4>Delete by multiple IDs</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1,2,3
+            <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/success-indicators?id=1,2,3')">
+                <i class="fas fa-copy"></i> <span>Copy URL</span>
+            </button>
+        </pre>
+
+        <h4>Delete by query</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/success-indicators?query={"code":"example"}
+            <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/success-indicators?query={"code":"example"}')">
+                <i class="fas fa-copy"></i> <span>Copy URL</span>
+            </button>
+        </pre>
+
+        <h3>Example Responses</h3>
+        <h4>Successful deletion (by ID)</h4>
+        <pre>
+{
+    "message": "Successfully deleted 3 success indicator(s).",
+    "deleted_ids": [1, 2, 3],
+    "count": 3
+}
+        </pre>
+
+        <h4>Successful deletion (by query)</h4>
+        <pre>
+{
+    "message": "Successfully deleted success indicator.",
+    "deleted_id": 1,
+    "indicator_name": "Example Indicator"
+}
+        </pre>
+
+        <h3>Error Responses</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Status Code</th>
+                    <th>Response Body</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>400</td>
+                    <td><pre>{"message": "Invalid success indicator ID format provided."}</pre></td>
+                    <td>Returned when ID parameter contains non-numeric or invalid values.</td>
+                </tr>
+                <tr>
+                    <td>404</td>
+                    <td><pre>{"message": "No active success indicators found with the provided IDs."}</pre>
+    <pre>{"message": "No active success indicator found matching your criteria."}</pre></td>
+                    <td>Returned when no active (non-deleted) success indicators are found for the given parameters.</td>
+                </tr>
+                <tr>
+                    <td>409</td>
+                    <td><pre>{
+        "data": [...],
+        "message": "Query matches multiple success indicators.",
+        "suggestion": "Use ID parameter for precise deletion or add more query criteria"
+    }</pre></td>
+                    <td>Returned when query parameter matches multiple records.</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td><pre>{
+        "message": "No parameters found for deletion.",
+        "metadata": {...},
+        "hint": "Provide either 'id' or 'query' parameter"
+    }</pre></td>
+                    <td>Returned when neither id nor query parameter is provided.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Notes</h3>
+        <ul>
+            <li>This endpoint performs a soft delete (sets deleted_at timestamp) rather than permanent deletion.</li>
+            <li>Only active records (where deleted_at is null) will be affected by the operation.</li>
+            <li>When using the query parameter, it must match exactly one record for the operation to succeed.</li>
+            <li>In development environment, error responses include additional metadata and hints.</li>
+        </ul>
     </div>
 </div>
 

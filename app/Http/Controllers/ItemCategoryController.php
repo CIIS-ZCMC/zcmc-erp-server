@@ -25,6 +25,71 @@ class ItemCategoryController extends Controller
             'message' => "Succesfully imported record"
         ], Response::HTTP_OK);
     }
+    
+    protected function cleanCategoryData(array $data): array
+    {
+        $cleanData = [];
+        
+        if (isset($data['name'])) {
+            $cleanData['name'] = strip_tags($data['name']);
+        }
+        
+        if (isset($data['code'])) {
+            $cleanData['code'] = strip_tags($data['code']);
+        }
+        
+        if (isset($data['description'])) {
+            $cleanData['description'] = strip_tags($data['description']);
+        }
+        
+        return $cleanData;
+    }
+    
+    protected function getMetadata($method): array
+    {
+        if($method === 'get'){
+            $metadata = ["methods" => ["GET, POST, PUT, DELETE"]];
+            $metadata['modes'] = ['selection', 'pagination'];
+
+            if($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?item_category_id=[primary-key]",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value"
+                ];
+            }
+            
+            return $metadata;
+        }
+
+        if($method === 'put'){
+            $metadata = ["methods" => ["PUT"]];
+            
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["name", "code"];
+            }
+            
+            return $metadata;
+        }
+
+        $metadata = ["methods" => ["GET, PUT, DELETE"]];
+        
+        if ($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+            $metadata['fields'] = ["code"];
+        }
+        
+        return $metadata;
+    }
 
     public function index(Request $request)
     {
@@ -43,29 +108,13 @@ class ItemCategoryController extends Controller
             if(!$item_category){
                 return response()->json([
                     'message' => "No record found.",
-                    "metadata" => [
-                        "methods" => "[GET, POST, PUT, DELETE]",
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_category_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ]);
             }
 
             return response()->json([
                 'data' => $item_category,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "urls" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?item_category_id=[primary-key]",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                    ]
-                ]
+                "metadata" => $this->getMetadata('get')
             ], Response::HTTP_OK);
         }
 
@@ -75,16 +124,7 @@ class ItemCategoryController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "Invalid value of parameters",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_category_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -97,16 +137,7 @@ class ItemCategoryController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_category_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -300,6 +331,7 @@ class ItemCategoryController extends Controller
             ]
         ], Response::HTTP_CREATED);
     }
+    
     public function update(Request $request): Response
     {
         $item_category_ids = $request->query('id') ?? null;
@@ -309,75 +341,57 @@ class ItemCategoryController extends Controller
             $response = ["message" => "ID parameter is required."];
             
             if ($this->is_development) {
-                $response['metadata'] = [
-                    "methods" => "[PUT]",
-                    "formats" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
-                    ],
-                    "required_fields" => ["name", "code"]
-                ];
+                $response['metadata'] = $this->getMetadata("put");
             }
             
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
     
-        // Convert single ID to array for consistent processing
         $item_category_ids = is_array($item_category_ids) ? $item_category_ids : [$item_category_ids];
     
         // Handle bulk update
         if ($request->has('item_categories')) {
-            return $this->handleBulkUpdate($item_category_ids, $request);
-        }
-    
-        // Handle single update
-        return $this->handleSingleUpdate($item_category_ids[0], $request);
-    }
-    
-    protected function handleBulkUpdate(array $ids, Request $request): Response
-    {
-        if (count($ids) !== count($request->input('item_categories'))) {
-            return response()->json([
-                "message" => "Number of IDs does not match number of categories provided.",
-                "metadata" => $this->getMetadata()
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-    
-        $updated_categories = [];
-        $errors = [];
-    
-        foreach ($ids as $index => $id) {
-            $category = ItemCategory::find($id);
             
-            if (!$category) {
-                $errors[] = "Category with ID {$id} not found.";
-                continue;
+            if (count($item_category_ids) !== count($request->input('item_categories'))) {
+                return response()->json([
+                    "message" => "Number of IDs does not match number of categories provided.",
+                    "metadata" => $this->getMetadata('put')
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-    
-            $cleanData = $this->cleanCategoryData($request->input('item_categories')[$index]);
-            $category->update($cleanData);
-            $updated_categories[] = $category;
-        }
-    
-        if (!empty($errors)) {
+        
+            $updated_categories = [];
+            $errors = [];
+        
+            foreach ($item_category_ids as $index => $id) {
+                $category = ItemCategory::find($id);
+                
+                if (!$category) {
+                    $errors[] = "Category with ID {$id} not found.";
+                    continue;
+                }
+        
+                $cleanData = $this->cleanCategoryData($request->input('item_categories')[$index]);
+                $category->update($cleanData);
+                $updated_categories[] = $category;
+            }
+        
+            if (!empty($errors)) {
+                return response()->json([
+                    "data" => $updated_categories,
+                    "message" => "Partial update completed with errors.",
+                    "errors" => $errors,
+                    "metadata" => $this->getMetadata('put')
+                ], Response::HTTP_MULTI_STATUS);
+            }
+        
             return response()->json([
                 "data" => $updated_categories,
-                "message" => "Partial update completed with errors.",
-                "errors" => $errors,
-                "metadata" => $this->getMetadata()
-            ], Response::HTTP_MULTI_STATUS);
+                "message" => "Successfully updated ".count($updated_categories)." categories.",
+                "metadata" => $this->getMetadata('put')
+            ], Response::HTTP_OK);
         }
-    
-        return response()->json([
-            "data" => $updated_categories,
-            "message" => "Successfully updated ".count($updated_categories)." categories.",
-            "metadata" => $this->getMetadata()
-        ], Response::HTTP_OK);
-    }
-    
-    protected function handleSingleUpdate(int $id, Request $request): Response
-    {
-        $category = ItemCategory::find($id);
+        
+        $category = ItemCategory::find($item_category_ids[0]);
         
         if (!$category) {
             return response()->json([
@@ -391,34 +405,8 @@ class ItemCategoryController extends Controller
         return response()->json([
             "data" => $category,
             "message" => "Category updated successfully.",
-            "metadata" => $this->getMetadata()
+            "metadata" => $this->getMetadata('put')
         ], Response::HTTP_OK);
-    }
-    
-    protected function cleanCategoryData(array $data): array
-    {
-        return array_filter([
-            'name' => isset($data['name']) ? strip_tags($data['name']) : null,
-            'code' => isset($data['code']) ? strip_tags($data['code']) : null,
-            'description' => isset($data['description']) ? strip_tags($data['description']) : null
-        ], function($value) {
-            return $value !== null;
-        });
-    }
-    
-    protected function getMetadata(): array
-    {
-        $metadata = ["methods" => "[PUT]"];
-        
-        if ($this->is_development) {
-            $metadata["formats"] = [
-                env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
-            ];
-            $metadata['fields'] = ["name", "code"];
-        }
-        
-        return $metadata;
     }
 
     public function destroy(Request $request): Response
@@ -432,56 +420,70 @@ class ItemCategoryController extends Controller
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
+                    "metadata" => $this->getMetadata("delete"),
                 ];
             }
 
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-
         if ($item_category_ids) {
-            $item_category_ids = is_array($item_category_ids) ? $item_category_ids : explode(',', $item_category_ids);
-            $item_categories = ItemCategory::whereIn('id', $item_category_ids)->where('deleted_at', NULL)->get();
+            $item_category_ids = is_array($item_category_ids) 
+                ? $item_category_ids 
+                : (str_contains($item_category_ids, ',') 
+                    ? explode(',', $item_category_ids) 
+                    : [$item_category_ids]
+                );
+
+            // Convert all IDs to integers and filter invalid ones
+            $item_category_ids = array_filter(array_map('intval', $item_category_ids));
+
+            if (empty($item_category_ids)) {
+                return response()->json(["message" => "Invalid ID format."], Response::HTTP_BAD_REQUEST);
+            }
+
+            $item_categories = ItemCategory::whereIn('id', $item_category_ids)
+                ->whereNull('deleted_at')
+                ->get();
 
             if ($item_categories->isEmpty()) {
-                return response()->json(["message" => "No records found."], Response::HTTP_NOT_FOUND);
+                return response()->json(["message" => "No active records found for the given IDs."], Response::HTTP_NOT_FOUND);
             }
 
-            ItemCategory::whereIn('id', $item_category_ids)->update(['deleted_at' => now()]);
+            // Get only the IDs that were actually found and not deleted
+            $found_ids = $item_categories->pluck('id')->toArray();
+            
+            // Soft delete only the found records
+            ItemCategory::whereIn('id', $found_ids)->update(['deleted_at' => now()]);
 
             return response()->json([
-                "message" => "Successfully deleted " . count($item_categories) . " records."
-            ], Response::HTTP_NO_CONTENT);
+                "message" => "Successfully deleted " . count($found_ids) . " record(s).",
+                "deleted_ids" => $found_ids
+            ], Response::HTTP_OK);
         }
 
-        if ($query) {
-            $item_categories = ItemCategory::where($query)->get();
+        $item_categories = ItemCategory::where($query)
+            ->whereNull('deleted_at')
+            ->get();
 
-            if ($item_categories->count() > 1) {
-                return response()->json([
-                    'data' => $item_categories,
-                    'message' => "Request has multiple records."
-                ], Response::HTTP_CONFLICT);
-            }
-
-            $item_category = $item_categories->first();
-
-            if (!$item_category) {
-                return response()->json(["message" => "No record found."], Response::HTTP_NOT_FOUND);
-            }
-
-            $item_category->update(['deleted_at' => now()]);
+        if ($item_categories->count() > 1) {
+            return response()->json([
+                'data' => $item_categories,
+                'message' => "Request would affect multiple records. Please specify IDs directly."
+            ], Response::HTTP_CONFLICT);
         }
 
-        return response()->json(["message" => "Successfully deleted record."], Response::HTTP_NO_CONTENT);
+        $item_category = $item_categories->first();
+
+        if (!$item_category) {
+            return response()->json(["message" => "No active record found matching query."], Response::HTTP_NOT_FOUND);
+        }
+
+        $item_category->update(['deleted_at' => now()]);
+        
+        return response()->json([
+            "message" => "Successfully deleted record.",
+            "deleted_id" => $item_category->id
+        ], Response::HTTP_OK);
     }
 }

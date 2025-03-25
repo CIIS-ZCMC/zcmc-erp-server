@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemClassificationRequest;
 use App\Http\Resources\ItemClassificationDuplicateResource;
+use App\Http\Resources\ItemClassificationResource;
 use App\Models\ItemCategory;
 use App\Models\ItemClassification;
 use Illuminate\Http\Request;
@@ -14,11 +15,82 @@ class ItemClassificationController extends Controller
 {
     private $is_development;
 
-    private $module = 'item_classifications';
+    private $module = 'item-classifications';
 
     public function __construct()
     {
         $this->is_development = env("APP_DEBUG", true);
+    }
+
+    private function cleanItemClassificationData(array $data): array
+    {
+        $cleanData = [];
+        
+        if (isset($data['name'])) {
+            $cleanData['name'] = strip_tags($data['name']);
+        }
+        
+        if (isset($data['code'])) {
+            $cleanData['code'] = strip_tags($data['code']);
+        }
+        
+        
+        if (isset($data['description'])) {
+            $cleanData['description'] = strip_tags($data['description']);
+        }
+        
+        if (isset($data['item_category_id'])) {
+            $cleanData['item_category_id'] = (int)$data['item_category_id'];
+        }
+        
+        return $cleanData;
+    }
+    
+    protected function getMetadata($method): array
+    {
+        if($method === 'get'){
+            $metadata = ["methods" => ["GET, POST, PUT, DELETE"]];
+            $metadata['modes'] = ['selection', 'pagination'];
+
+            if($this->is_development){
+                $metadata['urls'] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?item_classification_id=[primary-key]",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                ];
+            }
+
+            return $metadata;
+        }
+        
+        if($method === 'put'){
+            $metadata = ["methods" => "[PUT]"];
+        
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["title", "code", "description"];
+            }
+            
+            return $metadata;
+        }
+        
+        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+
+        if($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+
+            $metadata["fields"] =  ["code"];
+        }
+
+        return $metadata;
     }
 
     public function import(Request $request)
@@ -316,138 +388,178 @@ class ItemClassificationController extends Controller
 
     public function update(Request $request):Response    
     {
-        $item_classification_id = $request->query('id') ?? null;
-        $query = $request->query('query') ?? null;
-
-        if(!$item_classification_id && !$query){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                            env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
-                ];
-            }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
+        $item_classification_ids = $request->query('id') ?? null;
         
-        $item_classification = null;
-
-        if($item_classification_id){
-            $item_classification = ItemClassification::find($item_classification_id);    
+        // Validate request has IDs
+        if (!$item_classification_ids) {
+            $response = ["message" => "ID parameter is required."];
+            
+            if ($this->is_development) {
+                $response['metadata'] = $this->getMetadata('put');
+            }
+            
+            return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if(!$item_classification_id && $query){
-            $item_classifications = ItemClassification::where($query)->get();
-            
-            // Check result is has many records
-            if(count($item_classifications) > 1){
+        // Convert single ID to array for consistent processing
+        $item_classification_ids = is_array($item_classification_ids) ? $item_classification_ids : [$item_classification_ids];
+        
+        // For bulk update - validate items array matches IDs count
+        if ($request->has('item_classificationss')) {
+            if (count($item_classification_ids) !== count($request->input('items'))) {
                 return response()->json([
-                    'data' => $item_classifications,
-                    'message' => "Request has multiple record."
-                ], Response::HTTP_CONFLICT);
+                    "message" => "Number of IDs does not match number of item classifications provided.",
+                    "metadata" => $this->getMetadata('put')
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
+            
+            $updated_items = [];
+            $errors = [];
+            
+            foreach ($item_classification_ids as $index => $id) {
+                $item = ItemClassification::find($id);
+                
+                if (!$item) {
+                    $errors[] = "Item classification with ID {$id} not found.";
+                    continue;
+                }
+                
+                $itemData = $request->input('item_classifications')[$index];
+                $cleanData = $this->cleanItemClassificationData($itemData);
+                
+                $item->update($cleanData);
+                $updated_items[] = $item;
+            }
+            
+            if (!empty($errors)) {
+                return response()->json([
+                    "data" => ItemClassificationResource::collection($updated_items),
+                    "message" => "Partial update completed with errors.",
+                    "metadata" => [                    
+                        "method" => "[PUT]",
+                        "errors" => $errors,
+                    ]
+                ], Response::HTTP_MULTI_STATUS);
+            }
+            
+            return response()->json([
+                "data" => ItemClassificationResource::collection($updated_items),
+                "message" => "Successfully updated ".count($updated_items)." item classifications.",
+                "metadata" => $this->getMetadata('put')
+            ], Response::HTTP_OK);
+        }
 
-            $item_classification = $item_classifications->first();
+        
+        // Single item update
+        if (count($item_classification_ids) > 1) {
+            return response()->json([
+                "message" => "Multiple IDs provided but no items array for bulk update.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
         
-        $cleanData = [
-            "name" => strip_tags($request->input('name')),
-            "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
-            "category_id" => strip_tags($request->input('category_id')),
-        ];
-
-        $item_classification->update($cleanData);
-
-        $metadata = [
-            "methods" => "[GET, PUT, DELETE]",
-        ];
-
-        if($this->is_development){
-            $metadata["formats"] = [
-                env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-            ];
-            
-            $metadata['fields'] = ["code"];
+        $item = ItemClassification::find($item_classification_ids[0]);
+        
+        if (!$item) {
+            return response()->json([
+                "message" => "Item not found."
+            ], Response::HTTP_NOT_FOUND);
         }
-
-        return response()->json([
-            "data" => $item_classification,
-            "metadata" => $metadata
-        ], Response::HTTP_OK);
+        
+        $cleanData = $this->cleanItemClassificationData($request->all());
+        $item->update($cleanData);
+        
+        $response = [
+            "data" => new ItemClassificationResource($item),
+            "message" => "Item classification updated successfully.",
+            "metadata" => $this->getMetadata('put')
+        ];
+        
+        return response()->json($response, Response::HTTP_OK);
     }
-
+    
     public function destroy(Request $request): Response
     {
         $item_classification_ids = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
-
+    
         if (!$item_classification_ids && !$query) {
             $response = ["message" => "Invalid request."];
-
+    
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
+                    "metadata" => $this->getMetadata('delete')
                 ];
             }
-
+    
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-
-
+    
         if ($item_classification_ids) {
-            $item_classification_ids = is_array($item_classification_ids) ? $item_classification_ids : explode(',', $item_classification_ids);
-            $item_classifications = ItemClassification::whereIn('id', $item_classification_ids)->where('deleted_at', NULL)->get();
-
+            $item_classification_ids = is_array($item_classification_ids)
+                ? $item_classification_ids
+                : (str_contains($item_classification_ids, ',')
+                    ? explode(',', $item_classification_ids)
+                    : [$item_classification_ids]
+                  );
+    
+            // Convert and validate IDs
+            $item_classification_ids = array_filter(array_map('intval', $item_classification_ids));
+            
+            if (empty($item_classification_ids)) {
+                return response()->json(["message" => "Invalid ID format provided."], Response::HTTP_BAD_REQUEST);
+            }
+    
+            // Get only active records
+            $item_classifications = ItemClassification::whereIn('id', $item_classification_ids)
+                ->whereNull('deleted_at')
+                ->get();
+    
             if ($item_classifications->isEmpty()) {
-                return response()->json(["message" => "No records found."], Response::HTTP_NOT_FOUND);
+                return response()->json(
+                    ["message" => "No active classifications found with the provided IDs."],
+                    Response::HTTP_NOT_FOUND
+                );
             }
-
-            ItemClassification::whereIn('id', $item_classification_ids)->update(['deleted_at' => now()]);
-
+    
+            // Get only IDs that were actually found
+            $found_ids = $item_classifications->pluck('id')->toArray();
+            
+            // Perform soft delete
+            ItemClassification::whereIn('id', $found_ids)->update(['deleted_at' => now()]);
+    
             return response()->json([
-                "message" => "Successfully deleted " . count($item_classifications) . " records."
-            ], Response::HTTP_NO_CONTENT);
+                "message" => "Successfully deleted " . count($found_ids) . " classification(s).",
+                "deleted_ids" => $found_ids
+            ], Response::HTTP_OK);
+        }
+    
+        // Ensure we only work with active records
+        $item_classifications = ItemClassification::where($query)
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($item_classifications->count() > 1) {
+            return response()->json([
+                'data' => $item_classifications,
+                'message' => "Query matches multiple records. Please specify IDs directly."
+            ], Response::HTTP_CONFLICT);
         }
 
-        if ($query) {
-            $item_classifications = ItemClassification::where($query)->get();
+        $item_classification = $item_classifications->first();
 
-            if ($item_classifications->count() > 1) {
-                return response()->json([
-                    'data' => $item_classifications,
-                    'message' => "Request has multiple records."
-                ], Response::HTTP_CONFLICT);
-            }
-
-            $item_classification = $item_classifications->first();
-
-            if (!$item_classification) {
-                return response()->json(["message" => "No record found."], Response::HTTP_NOT_FOUND);
-            }
-
-            $item_classification->update(['deleted_at' => now()]);
+        if (!$item_classification) {
+            return response()->json(
+                ["message" => "No active classification found matching query."],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
-        return response()->json(["message" => "Successfully deleted record."], Response::HTTP_NO_CONTENT);
+        $item_classification->update(['deleted_at' => now()]);
+
+        return response()->json([
+            "message" => "Successfully deleted classification.",
+            "deleted_id" => $item_classification->id
+        ], Response::HTTP_OK);
     }
 }

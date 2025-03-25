@@ -9,8 +9,8 @@ class Objective extends Model
     protected $table = 'objectives';
 
     protected $fillable = [
-        'description',
         'code',
+        'description',
         'deleted_at'
     ];
 

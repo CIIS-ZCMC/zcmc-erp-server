@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\SuccessIndicatorRequest;
 use App\Http\Resources\SuccessIndicatorDuplicateResource;
+use App\Http\Resources\SuccessIndicatorResource;
 use App\Models\SuccessIndicator;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -18,6 +19,68 @@ class SuccessIndicatorController extends Controller
     public function __construct()
     {
         $this->is_development = env("APP_DEBUG", true);
+    }
+    
+    private function cleanSuccessIndicatorData(array $data): array
+    {
+        $cleanData = [];
+        
+        if (isset($data['code'])) {
+            $cleanData['code'] = strip_tags($data['code']);
+        }
+        
+        if (isset($data['description'])) {
+            $cleanData['description'] = strip_tags($data['description']);
+        }
+
+        return $cleanData;
+    }
+    
+    protected function getMetadata($method): array
+    {
+        if($method === 'get'){
+            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
+            $metadata['modes'] = ['selection', 'pagination'];
+
+            if($this->is_development){
+                $metadata['urls'] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?success_indicator_id=[primary-key]",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                ];
+            }
+
+            return $metadata;
+        }
+        
+        if($method === 'put'){
+            $metadata = ["methods" => "[PUT]"];
+        
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["title", "code", "description"];
+            }
+            
+            return $metadata;
+        }
+        
+        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+
+        if($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+
+            $metadata["fields"] =  ["code"];
+        }
+
+        return $metadata;
     }
 
     public function import(Request $request)
@@ -44,29 +107,13 @@ class SuccessIndicatorController extends Controller
             if(!$item_category){
                 return response()->json([
                     'message' => "No record found.",
-                    "metadata" => [
-                        "methods" => "[GET, POST, PUT, DELETE]",
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?success_indicator_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ]);
             }
 
             return response()->json([
                 'data' => $item_category,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "urls" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?success_indicator_id=[primary-key]",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                    ]
-                ]
+                "metadata" => $this->getMetadata('get')
             ], Response::HTTP_OK);
         }
 
@@ -76,16 +123,7 @@ class SuccessIndicatorController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "Invalid value of parameters",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?success_indicator_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -98,16 +136,7 @@ class SuccessIndicatorController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?success_indicator_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -300,73 +329,94 @@ class SuccessIndicatorController extends Controller
 
     public function update(Request $request):Response    
     {
-        $success_indicator_id = $request->query('id') ?? null;
-        $query = $request->query('query') ?? null;
-
-        if(!$success_indicator_id && !$query){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                            env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
-                ];
-            }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
+        $success_indicators = $request->query('id') ?? null;
         
-        $success_indicator = null;
-
-        if($success_indicator_id){
-            $success_indicator = SuccessIndicator::find($success_indicator_id);    
+        // Validate request has IDs
+        if (!$success_indicators) {
+            $response = ["message" => "ID parameter is required."];
+            
+            if ($this->is_development) {
+                $response['metadata'] = $this->getMetadata('put');
+            }
+            
+            return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if(!$success_indicator_id && $query){
-            $success_indicators = SuccessIndicator::where($query)->get();
-            
-            // Check result is has many records
-            if(count($success_indicators) > 1){
+        // Convert single ID to array for consistent processing
+        $success_indicators = is_array($success_indicators) ? $success_indicators : [$success_indicators];
+        
+        // For bulk update - validate items array matches IDs count
+        if ($request->has('success_indicators')) {
+            if (count($success_indicators) !== count($request->input('success_indicators'))) {
                 return response()->json([
-                    'data' => $success_indicators,
-                    'message' => "Request has multiple record."
-                ], Response::HTTP_CONFLICT);
+                    "message" => "Number of IDs does not match number of success indicators provided.",
+                    "metadata" => $this->getMetadata('put')
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-
-            $success_indicator = $success_indicators->first();
+            
+            $updated_success_indicators = [];
+            $errors = [];
+            
+            foreach ($success_indicators as $index => $id) {
+                $success_indicator = SuccessIndicator::find($id);
+                
+                if (!$success_indicator) {
+                    $errors[] = "SuccessIndicator with ID {$id} not found.";
+                    continue;
+                }
+                
+                $success_indicatorData = $request->input('success_indicators')[$index];
+                $cleanData = $this->cleanSuccessIndicatorData($success_indicatorData);
+                
+                $success_indicator->update($cleanData);
+                $updated_success_indicators[] = $success_indicator;
+            }
+            
+            if (!empty($errors)) {
+                return response()->json([
+                    "data" => SuccessIndicatorResource::collection($updated_success_indicators),
+                    "message" => "Partial update completed with errors.",
+                    "metadata" => [                    
+                        "method" => "[PUT]",
+                        "errors" => $errors,
+                    ]
+                ], Response::HTTP_MULTI_STATUS);
+            }
+            
+            return response()->json([
+                "data" => SuccessIndicatorResource::collection($updated_success_indicators),
+                "message" => "Successfully updated ".count($updated_success_indicators)." success indicators.",
+                "metadata" => [              
+                    "method" => "[GET, POST, PUT, DELETE]"
+                ]
+            ], Response::HTTP_OK);
         }
         
-        $cleanData = [
-            "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
-        ];
-
-        $success_indicator->update($cleanData);
-
-        $metadata = [
-            "methods" => "[GET, PUT, DELETE]",
-        ];
-
-        if($this->is_development){
-            $metadata["formats"] = [
-                env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-            ];
-            
-            $metadata['fields'] = ["code"];
+        // Single item update
+        if (count($success_indicators) > 1) {
+            return response()->json([
+                "message" => "Multiple IDs provided but no success_indicators array for bulk update.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-
-        return response()->json([
-            "data" => $success_indicator,
-            "metadata" => $metadata
-        ], Response::HTTP_OK);
+        
+        $item = SuccessIndicator::find($success_indicators[0]);
+        
+        if (!$item) {
+            return response()->json([
+                "message" => "SuccessIndicator not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+        
+        $cleanData = $this->cleanSuccessIndicatorData($request->all());
+        $item->update($cleanData);
+        
+        $response = [
+            "data" => new SuccessIndicatorResource($item),
+            "message" => "SuccessIndicator updated successfully.",
+            "metadata" => $this->getMetadata('put')
+        ];
+        
+        return response()->json($response, Response::HTTP_OK);
     }
 
     public function destroy(Request $request): Response
@@ -375,61 +425,89 @@ class SuccessIndicatorController extends Controller
         $query = $request->query('query') ?? null;
 
         if (!$success_indicator_ids && !$query) {
-            $response = ["message" => "Invalid request."];
+            $response = ["message" => "Invalid request. No parameters provided."];
 
             if ($this->is_development) {
                 $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
+                    "message" => "No parameters found for deletion.",
+                    "metadata" => $this->getMetadata('delete'),
+                    "hint" => "Provide either 'id' or 'query' parameter"
                 ];
             }
 
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-
         if ($success_indicator_ids) {
-            $success_indicator_ids = is_array($success_indicator_ids) ? $success_indicator_ids : explode(',', $success_indicator_ids);
-            $success_indicators = SuccessIndicator::whereIn('id', $success_indicator_ids)->where('deleted_at', NULL)->get();
+            // Handle all ID formats: single, comma-separated, and array-style
+            $success_indicator_ids = is_array($success_indicator_ids) 
+                ? $success_indicator_ids 
+                : (str_contains($success_indicator_ids, ',') 
+                    ? explode(',', $success_indicator_ids) 
+                    : [$success_indicator_ids]);
+
+            // Validate and sanitize IDs
+            $valid_ids = array_filter(array_map(function($id) {
+                return is_numeric($id) && $id > 0 ? (int)$id : null;
+            }, $success_indicator_ids));
+
+            if (empty($valid_ids)) {
+                return response()->json(
+                    ["message" => "Invalid success indicator ID format provided."],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+
+            // Get only active success indicators that exist
+            $success_indicators = SuccessIndicator::whereIn('id', $valid_ids)
+                ->whereNull('deleted_at')
+                ->get();
 
             if ($success_indicators->isEmpty()) {
-                return response()->json(["message" => "No records found."], Response::HTTP_NOT_FOUND);
+                return response()->json(
+                    ["message" => "No active success indicators found with the provided IDs."],
+                    Response::HTTP_NOT_FOUND
+                );
             }
 
-            SuccessIndicator::whereIn('id', $success_indicator_ids)->update(['deleted_at' => now()]);
+            // Perform soft delete
+            $deleted_count = SuccessIndicator::whereIn('id', $valid_ids)
+                ->update(['deleted_at' => now()]);
 
             return response()->json([
-                "message" => "Successfully deleted " . count($success_indicators) . " records."
-            ], Response::HTTP_NO_CONTENT);
+                "message" => "Successfully deleted {$deleted_count} success indicator(s).",
+                "deleted_ids" => $valid_ids,
+                "count" => $deleted_count
+            ], Response::HTTP_OK);
         }
 
-        if ($query) {
-            $success_indicators = SuccessIndicator::where($query)->get();
+        $success_indicators = SuccessIndicator::where($query)
+            ->whereNull('deleted_at')
+            ->get();
 
-            if ($success_indicators->count() > 1) {
-                return response()->json([
-                    'data' => $success_indicators,
-                    'message' => "Request has multiple records."
-                ], Response::HTTP_CONFLICT);
-            }
-
-            $item_category = $success_indicators->first();
-
-            if (!$item_category) {
-                return response()->json(["message" => "No record found."], Response::HTTP_NOT_FOUND);
-            }
-
-            $item_category->update(['deleted_at' => now()]);
+        if ($success_indicators->count() > 1) {
+            return response()->json([
+                'data' => $success_indicators,
+                'message' => "Query matches multiple success indicators.",
+                'suggestion' => "Use ID parameter for precise deletion or add more query criteria"
+            ], Response::HTTP_CONFLICT);
         }
 
-        return response()->json(["message" => "Successfully deleted record."], Response::HTTP_NO_CONTENT);
+        $success_indicator = $success_indicators->first();
+
+        if (!$success_indicator) {
+            return response()->json(
+                ["message" => "No active success indicator found matching your criteria."],
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
+        $success_indicator->update(['deleted_at' => now()]);
+
+        return response()->json([
+            "message" => "Successfully deleted success indicator.",
+            "deleted_id" => $success_indicator->id,
+            "indicator_name" => $success_indicator->name
+        ], Response::HTTP_OK);
     }
 }

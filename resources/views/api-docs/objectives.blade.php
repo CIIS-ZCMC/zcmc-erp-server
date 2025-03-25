@@ -712,7 +712,7 @@ Content-Type: application/json
     <!-- Put Endpoint -->
     <div class="endpoint">
         <h2>PUT /api/objectives</h2>
-        <p>Update an existing objective.</p>
+        <p>Update one or more objectives. Supports both single and bulk updates with partial updates.</p>
 
         <h3>Parameters</h3>
         <table>
@@ -727,61 +727,158 @@ Content-Type: application/json
             <tbody>
                 <tr>
                     <td>id</td>
-                    <td>integer</td>
-                    <td>The ID of the objective to update.</td>
-                    <td>Yes (if <code>query</code> is not provided)</td>
-                </tr>
-                <tr>
-                    <td>query</td>
-                    <td>object</td>
-                    <td>A query object to find the objective to update (e.g., <code>{"code": "example"}</code>).</td>
-                    <td>Yes (if <code>id</code> is not provided)</td>
-                </tr>
-                <tr>
-                    <td>code</td>
-                    <td>string</td>
-                    <td>The updated code of the objective.</td>
-                    <td>No</td>
-                </tr>
-                <tr>
-                    <td>description</td>
-                    <td>string</td>
-                    <td>The updated description of the objective.</td>
-                    <td>No</td>
+                    <td>integer|string|array</td>
+                    <td>
+                        The ID(s) of the objective(s) to update. Accepts multiple formats:
+                        <ul>
+                            <li>Single ID: <code>?id=1</code></li>
+                            <li>Comma-separated: <code>?id=1,2,3</code></li>
+                            <li>Array-style: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Yes</td>
                 </tr>
             </tbody>
         </table>
 
-        <h3>Example Request</h3>
+        <h3>Request Body</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>name</td>
+                    <td>string</td>
+                    <td>Objective name</td>
+                    <td>No (partial updates supported)</td>
+                </tr>
+                <tr>
+                    <td>code</td>
+                    <td>string</td>
+                    <td>Objective code</td>
+                    <td>No (partial updates supported)</td>
+                </tr>
+                <tr>
+                    <td>description</td>
+                    <td>string</td>
+                    <td>Objective description</td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td>items</td>
+                    <td>array</td>
+                    <td>
+                        Required for bulk updates. Array of objects containing:
+                        <ul>
+                            <li><strong>name</strong> (string, optional)</li>
+                            <li><strong>code</strong> (string, optional)</li>
+                            <li><strong>description</strong> (string, optional)</li>
+                        </ul>
+                    </td>
+                    <td>Conditional (required for bulk updates)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Example Requests</h3>
+        
+        <h4>Single Update (Partial Fields)</h4>
         <pre>
 PUT {{ env('SERVER_DOMAIN') }}/api/objectives?id=1
 Content-Type: application/json
 
 {
-    "name": "Updated Unit",
-    "code": "UU"
+    "name": "Updated Strategic Goal",
+    "code": "STRAT-2023"
 }
-        <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/objectives?id=1')">
-            <i class="fas fa-copy"></i> Copy URL
-        </button>
-    </pre>
+        </pre>
 
-    <h3>Example Response</h3>
-    <pre>
+        <h4>Bulk Update</h4>
+        <pre>
+PUT {{ env('SERVER_DOMAIN') }}/api/objectives?id[]=1&id[]=2
+Content-Type: application/json
+
+{
+    "items": [
+        {
+            "name": "Updated Strategic Goal",
+            "code": "STRAT-2023"
+        },
+        {
+            "description": "New quarterly objective description"
+        }
+    ]
+}
+        </pre>
+
+        <h3>Example Responses</h3>
+        
+        <h4>Single Update Success</h4>
+        <pre>
 {
     "data": {
         "id": 1,
-        "name": "Updated Unit",
-        "code": "UU",
-        "description": null
+        "name": "Updated Strategic Goal",
+        "code": "STRAT-2023",
+        "description": null,
+        "updated_at": "2023-06-15T08:30:45.000000Z"
     },
+    "message": "Objective updated successfully.",
     "metadata": {
-        "methods": "[GET, PUT, DELETE]",
-        "formats": [
-            "{{ env('SERVER_DOMAIN') }}/api/objectives?id=1",
-            "{{ env('SERVER_DOMAIN') }}/api/objectives?query[code]=example"
-        ],
-        "fields": ["code"]
+        "methods": "[PUT]",
+        "fields": ["name", "code", "description"]
+    }
+}
+        </pre>
+
+        <h4>Bulk Update Success</h4>
+        <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Updated Strategic Goal",
+            "code": "STRAT-2023",
+            "description": null,
+            "updated_at": "2023-06-15T08:32:10.000000Z"
+        },
+        {
+            "id": 2,
+            "name": null,
+            "code": null,
+            "description": "New quarterly objective description",
+            "updated_at": "2023-06-15T08:32:10.000000Z"
+        }
+    ],
+    "message": "Successfully updated 2 objectives.",
+    "metadata": {
+        "method": "[PUT]"
+    }
+}
+        </pre>
+
+        <h4>Partial Update (With Errors)</h4>
+        <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Updated Strategic Goal",
+            "updated_at": "2023-06-15T08:32:10.000000Z"
+        }
+    ],
+    "message": "Partial update completed with errors.",
+    "errors": [
+        "Objectives with ID 2 not found."
+    ],
+    "metadata": {
+        "method": "[PUT]"
     }
 }
         </pre>
@@ -790,7 +887,7 @@ Content-Type: application/json
         <table>
             <thead>
                 <tr>
-                    <th>Status Code</th>
+                    <th>Code</th>
                     <th>Message</th>
                     <th>Description</th>
                 </tr>
@@ -798,27 +895,56 @@ Content-Type: application/json
             <tbody>
                 <tr>
                     <td>422</td>
-                    <td>Invalid request.</td>
-                    <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
+                    <td>ID parameter is required</td>
+                    <td>Missing ID parameter (includes metadata in dev)</td>
                 </tr>
                 <tr>
                     <td>404</td>
-                    <td>No record found.</td>
-                    <td>Returned when no objective is found for the given <code>id</code> or <code>query</code>.</td>
+                    <td>Objectives not found</td>
+                    <td>Invalid ID provided for single update</td>
                 </tr>
                 <tr>
-                    <td>409</td>
-                    <td>Request has multiple records.</td>
-                    <td>Returned when the <code>query</code> matches multiple records.</td>
+                    <td>422</td>
+                    <td>Number of IDs does not match number of objectives provided</td>
+                    <td>Bulk update count mismatch</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Multiple IDs provided but no items array for bulk update</td>
+                    <td>Multiple IDs without bulk data</td>
+                </tr>
+                <tr>
+                    <td>207</td>
+                    <td>Partial update completed with errors</td>
+                    <td>Bulk update with some failures (Multi-Status)</td>
                 </tr>
             </tbody>
         </table>
+
+        <h3>Implementation Notes</h3>
+        <ul>
+            <li><strong>Partial Updates</strong>: Only provided fields will be updated</li>
+            <li><strong>Bulk Processing</strong>:
+                <ul>
+                    <li>Order of IDs must match order of objects in items array</li>
+                    <li>Continues processing even if some items fail</li>
+                </ul>
+            </li>
+            <li><strong>Validation</strong>:
+                <ul>
+                    <li>At least one field must be provided for each update</li>
+                    <li>Empty updates will be rejected</li>
+                </ul>
+            </li>
+            <li><strong>Development Mode</strong>: Additional metadata included for invalid requests</li>
+            <li><strong>Resource Formatting</strong>: Responses use ObjectiveResource for consistent output</li>
+        </ul>
     </div>
 
     <!-- Delete Endpoint -->
     <div class="endpoint">
         <h2>DELETE /api/objectives</h2>
-        <p>Delete one or more objectives.</p>
+        <p>Soft delete one or more objectives (marks as deleted but retains in database).</p>
 
         <h3>Parameters</h3>
         <table>
@@ -833,31 +959,63 @@ Content-Type: application/json
             <tbody>
                 <tr>
                     <td>id</td>
-                    <td>integer or array</td>
-                    <td>The ID(s) of the objective(s) to delete. Can be a single ID or a comma-separated list of IDs.</td>
-                    <td>Yes (if <code>query</code> is not provided)</td>
+                    <td>integer|string|array</td>
+                    <td>
+                        The ID(s) of the objective(s) to delete. Accepts multiple formats:
+                        <ul>
+                            <li>Single ID: <code>?id=1</code></li>
+                            <li>Comma-separated: <code>?id=1,2,3</code></li>
+                            <li>Array-style: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Conditional (required if no query)</td>
                 </tr>
                 <tr>
                     <td>query</td>
                     <td>object</td>
-                    <td>A query object to find the objective(s) to delete (e.g., <code>{"code": "example"}</code>).</td>
-                    <td>Yes (if <code>id</code> is not provided)</td>
+                    <td>
+                        A query object to find objectives to delete (e.g., <code>{"name":"Strategic Goal"}</code>).
+                        Will reject if matches multiple records.
+                    </td>
+                    <td>Conditional (required if no id)</td>
                 </tr>
             </tbody>
         </table>
 
-        <h3>Example Request</h3>
-<pre>
+        <h3>Example Requests</h3>
+        
+        <h4>Delete by Single ID</h4>
+        <pre>
 DELETE {{ env('SERVER_DOMAIN') }}/api/objectives?id=1
-        <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/objectives?objective_id=1')">
-            <i class="fas fa-copy"></i> <span>Copy URL</span>
-        </button>
-</pre>
+        </pre>
 
-    <h3>Example Response</h3>
-    <pre>
+        <h4>Delete by Multiple IDs</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/objectives?id=1,2,3
+        </pre>
+
+        <h4>Delete by Query</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/objectives?query={"name":"Strategic Goal"}
+        </pre>
+
+        <h3>Success Responses</h3>
+        
+        <h4>ID-based Deletion</h4>
+        <pre>
 {
-    "message": "Successfully deleted 1 record."
+    "message": "Successfully deleted 2 objective(s).",
+    "deleted_ids": [1, 2],
+    "count": 2
+}
+        </pre>
+
+        <h4>Query-based Deletion</h4>
+        <pre>
+{
+    "message": "Successfully deleted objective.",
+    "deleted_id": 3,
+    "objective_name": "Strategic Goal"
 }
         </pre>
 
@@ -872,22 +1030,54 @@ DELETE {{ env('SERVER_DOMAIN') }}/api/objectives?id=1
             </thead>
             <tbody>
                 <tr>
-                    <td>422</td>
-                    <td>Invalid request.</td>
-                    <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
+                    <td>400</td>
+                    <td>Invalid objective ID format provided</td>
+                    <td>When provided IDs are not valid numbers</td>
                 </tr>
                 <tr>
                     <td>404</td>
-                    <td>No records found.</td>
-                    <td>Returned when no objectives are found for the given <code>id</code> or <code>query</code>.</td>
+                    <td>No active objectives found...</td>
+                    <td>When no matching active records found</td>
                 </tr>
                 <tr>
                     <td>409</td>
-                    <td>Request has multiple records.</td>
-                    <td>Returned when the <code>query</code> matches multiple records.</td>
+                    <td>Query matches multiple objectives...</td>
+                    <td>When query matches multiple records (includes data in response)</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Invalid request</td>
+                    <td>When neither parameter is provided (includes metadata in dev)</td>
                 </tr>
             </tbody>
         </table>
+
+        <h3>Implementation Notes</h3>
+        <ul>
+            <li><strong>Soft Delete</strong>: Records are marked as deleted (sets deleted_at timestamp) but remain in database</li>
+            <li><strong>Active Records Only</strong>: Only affects non-deleted records (where deleted_at is null)</li>
+            <li><strong>ID Processing</strong>:
+                <ul>
+                    <li>Handles single ID, comma-separated list, and array formats</li>
+                    <li>Validates all IDs are positive integers</li>
+                    <li>Only processes records that actually exist</li>
+                </ul>
+            </li>
+            <li><strong>Query Safety</strong>:
+                <ul>
+                    <li>Rejects queries that would affect multiple records</li>
+                    <li>Provides helpful suggestions in conflict responses</li>
+                </ul>
+            </li>
+            <li><strong>Response Details</strong>:
+                <ul>
+                    <li>Returns count of deleted records</li>
+                    <li>Includes IDs of successfully deleted records</li>
+                    <li>Includes objective name for single deletions</li>
+                </ul>
+            </li>
+            <li><strong>Development Mode</strong>: Provides additional metadata when invalid requests are made</li>
+        </ul>
     </div>
 </div>
 

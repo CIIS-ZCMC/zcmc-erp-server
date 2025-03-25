@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\PurchaseTypeRequest;
 use App\Http\Resources\PurchaseTypeDuplicateResource;
+use App\Http\Resources\PurchaseTypeResource;
 use App\Models\PurchaseType;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -19,7 +20,69 @@ class PurchaseTypeController extends Controller
     {
         $this->is_development = env("APP_DEBUG", true);
     }
+    
+    private function cleanPurchaseTypeData(array $data): array
+    {
+        $cleanData = [];
+        
+        if (isset($data['code'])) {
+            $cleanData['code'] = strip_tags($data['code']);
+        }
+        
+        if (isset($data['description'])) {
+            $cleanData['description'] = strip_tags($data['description']);
+        }
 
+        return $cleanData;
+    }
+    
+    protected function getMetadata($method): array
+    {
+        if($method === 'get'){
+            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
+            $metadata['modes'] = ['selection', 'pagination'];
+
+            if($this->is_development){
+                $metadata['urls'] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?purchase_type_id=[primary-key]",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                ];
+            }
+
+            return $metadata;
+        }
+        
+        if($method === 'put'){
+            $metadata = ["methods" => "[PUT]"];
+        
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["title", "code", "description"];
+            }
+            
+            return $metadata;
+        }
+        
+        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+
+        if($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+
+            $metadata["fields"] =  ["code"];
+        }
+
+        return $metadata;
+    }
+ 
     public function import(Request $request)
     {
         return response()->json([
@@ -44,29 +107,13 @@ class PurchaseTypeController extends Controller
             if(!$purchase_type){
                 return response()->json([
                     'message' => "No record found.",
-                    "metadata" => [
-                        "methods" => "[GET, POST, PUT, DELETE]",
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?purchase_type_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ]);
             }
 
             return response()->json([
                 'data' => $purchase_type,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "urls" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?purchase_type_id=[primary-key]",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                    ]
-                ]
+                "metadata" => $this->getMetadata('get')
             ], Response::HTTP_OK);
         }
 
@@ -76,16 +123,7 @@ class PurchaseTypeController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "Invalid value of parameters",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?purchase_type_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -98,16 +136,7 @@ class PurchaseTypeController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?purchase_type_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -300,73 +329,96 @@ class PurchaseTypeController extends Controller
 
     public function update(Request $request):Response    
     {
-        $purchase_type_id = $request->query('id') ?? null;
-        $query = $request->query('query') ?? null;
-
-        if(!$purchase_type_id && !$query){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                            env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
-                ];
-            }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
+        $purchase_types = $request->query('id') ?? null;
         
-        $success_indicator = null;
-
-        if($purchase_type_id){
-            $success_indicator = PurchaseType::find($purchase_type_id);    
+        // Validate request has IDs
+        if (!$purchase_types) {
+            $response = ["message" => "ID parameter is required."];
+            
+            if ($this->is_development) {
+                $response['metadata'] = $this->getMetadata('put');
+            }
+            
+            return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if(!$purchase_type_id && $query){
-            $purchase_types = PurchaseType::where($query)->get();
-            
-            // Check result is has many records
-            if(count($purchase_types) > 1){
+        // Convert single ID to array for consistent processing
+        $purchase_types = is_array($purchase_types) ? $purchase_types : [$purchase_types];
+        
+        // For bulk update - validate purchase_types array matches IDs count
+        if ($request->has('purchase_types')) {
+            if (count($purchase_types) !== count($request->input('purchase_types'))) {
                 return response()->json([
-                    'data' => $purchase_types,
-                    'message' => "Request has multiple record."
-                ], Response::HTTP_CONFLICT);
+                    "message" => "Number of IDs does not match number of purchase_types provided.",
+                    "metadata" => $this->getMetadata("put"),
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-
-            $success_indicator = $purchase_types->first();
+            
+            $updated_items = [];
+            $errors = [];
+            
+            foreach ($purchase_types as $index => $id) {
+                $purchase_type = PurchaseType::find($id);
+                
+                if (!$purchase_type) {
+                    $errors[] = "PurchaseType with ID {$id} not found.";
+                    continue;
+                }
+                
+                $purchase_typeData = $request->input('purchase_types')[$index];
+                $cleanData = $this->cleanPurchaseTypeData($purchase_typeData);
+                
+                $purchase_type->update($cleanData);
+                $updated_purchase_types[] = $purchase_type;
+            }
+            
+            if (!empty($errors)) {
+                return response()->json([
+                    "data" => PurchaseTypeResource::collection($updated_purchase_types),
+                    "message" => "Partial update completed with errors.",
+                    "metadata" => [                    
+                        "method" => "[PUT]",
+                        "errors" => $errors,
+                    ]
+                ], Response::HTTP_MULTI_STATUS);
+            }
+            
+            return response()->json([
+                "data" => PurchaseTypeResource::collection($updated_purchase_types),
+                "message" => "Successfully updated ".count($updated_purchase_types)." items.",
+                "metadata" => $this->getMetadata('put')
+            ], Response::HTTP_OK);
         }
         
-        $cleanData = [
-            "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
-        ];
-
-        $success_indicator->update($cleanData);
-
-        $metadata = [
-            "methods" => "[GET, PUT, DELETE]",
-        ];
-
-        if($this->is_development){
-            $metadata["formats"] = [
-                env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-            ];
-            
-            $metadata['fields'] = ["code"];
+        // Single item update
+        if (count($purchase_types) > 1) {
+            return response()->json([
+                "message" => "Multiple IDs provided but no purchase type array for bulk update.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-
-        return response()->json([
-            "data" => $success_indicator,
-            "metadata" => $metadata
-        ], Response::HTTP_OK);
+        
+        $item = PurchaseType::find($purchase_types[0]);
+        
+        if (!$item) {
+            return response()->json([
+                "message" => "PurchaseType not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+        
+        $cleanData = $this->cleanPurchaseTypeData($request->all());
+        $item->update($cleanData);
+        
+        $response = [
+            "data" => new PurchaseTypeResource($item),
+            "message" => "Purchase Type updated successfully.",
+            "metadata" => $this->getMetadata('put')
+        ];
+        
+        if ($this->is_development) {
+            $response['metadata'] = $this->getMetadata('put');
+        }
+        
+        return response()->json($response, Response::HTTP_OK);
     }
 
     public function destroy(Request $request): Response
@@ -375,61 +427,100 @@ class PurchaseTypeController extends Controller
         $query = $request->query('query') ?? null;
 
         if (!$purchase_type_ids && !$query) {
-            $response = ["message" => "Invalid request."];
+            $response = ["message" => "Invalid request. No parameters provided."];
 
             if ($this->is_development) {
                 $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
+                    "message" => "No parameters found for deletion.",
+                    "metadata" => $this->getMetadata('delete'),
+                    "hint" => "Provide either 'id' or 'query' parameter"
                 ];
             }
 
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-
         if ($purchase_type_ids) {
-            $purchase_type_ids = is_array($purchase_type_ids) ? $purchase_type_ids : explode(',', $purchase_type_ids);
-            $purchase_types = PurchaseType::whereIn('id', $purchase_type_ids)->where('deleted_at', NULL)->get();
+            // Handle all ID formats: single, comma-separated, and array-style
+            $purchase_type_ids = is_array($purchase_type_ids) 
+                ? $purchase_type_ids 
+                : (str_contains($purchase_type_ids, ',') 
+                    ? explode(',', $purchase_type_ids) 
+                    : [$purchase_type_ids]);
+
+            // Validate and sanitize IDs
+            $valid_ids = [];
+            foreach ($purchase_type_ids as $id) {
+                if (is_numeric($id) && $id > 0) {
+                    $valid_ids[] = (int)$id;
+                }
+            }
+
+            if (empty($valid_ids)) {
+                return response()->json(
+                    ["message" => "Invalid purchase type ID format provided."],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+
+            // Get only active purchase types that exist
+            $purchase_types = PurchaseType::whereIn('id', $valid_ids)
+                ->whereNull('deleted_at')
+                ->get();
 
             if ($purchase_types->isEmpty()) {
-                return response()->json(["message" => "No records found."], Response::HTTP_NOT_FOUND);
+                return response()->json(
+                    ["message" => "No active purchase types found with the provided IDs."],
+                    Response::HTTP_NOT_FOUND
+                );
             }
 
-            PurchaseType::whereIn('id', $purchase_type_ids)->update(['deleted_at' => now()]);
+            // Get the IDs that were actually found
+            $found_ids = $purchase_types->pluck('id')->toArray();
+            
+            // Perform soft delete and get count
+            $deleted_count = PurchaseType::whereIn('id', $found_ids)
+                ->update(['deleted_at' => now()]);
 
             return response()->json([
-                "message" => "Successfully deleted " . count($purchase_types) . " records."
-            ], Response::HTTP_NO_CONTENT);
+                "message" => "Successfully deleted {$deleted_count} purchase type(s).",
+                "deleted_ids" => $found_ids,
+                "count" => $deleted_count,
+                "remaining_active" => PurchaseType::whereNull('deleted_at')->count()
+            ], Response::HTTP_OK);
+        }
+        
+        $purchase_types = PurchaseType::where($query)
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($purchase_types->count() > 1) {
+            return response()->json([
+                'data' => $purchase_types,
+                'message' => "Query matches multiple purchase types. Please be more specific.",
+                'suggestion' => [
+                    'use_ids' => "Use ?id parameter for precise deletion",
+                    'add_criteria' => "Add more query parameters to narrow down results"
+                ]
+            ], Response::HTTP_CONFLICT);
         }
 
-        if ($query) {
-            $purchase_types = PurchaseType::where($query)->get();
+        $purchase_type = $purchase_types->first();
 
-            if ($purchase_types->count() > 1) {
-                return response()->json([
-                    'data' => $purchase_types,
-                    'message' => "Request has multiple records."
-                ], Response::HTTP_CONFLICT);
-            }
-
-            $purchase_type = $purchase_types->first();
-
-            if (!$purchase_type) {
-                return response()->json(["message" => "No record found."], Response::HTTP_NOT_FOUND);
-            }
-
-            $purchase_type->update(['deleted_at' => now()]);
+        if (!$purchase_type) {
+            return response()->json(
+                ["message" => "No active purchase type found matching your criteria."],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
-        return response()->json(["message" => "Successfully deleted record."], Response::HTTP_NO_CONTENT);
+        $purchase_type->update(['deleted_at' => now()]);
+
+        return response()->json([
+            "message" => "Successfully deleted purchase type.",
+            "deleted_id" => $purchase_type->id,
+            "type_name" => $purchase_type->name,
+            "remaining_active" => PurchaseType::whereNull('deleted_at')->count()
+        ], Response::HTTP_OK);
     }
 }

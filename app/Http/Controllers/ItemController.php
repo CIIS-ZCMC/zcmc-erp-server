@@ -55,6 +55,53 @@ class ItemController extends Controller
         
         return $cleanData;
     }
+    
+    protected function getMetadata($method): array
+    {
+        if($method === 'get'){
+            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
+            $metadata['modes'] = ['selection', 'pagination'];
+
+            if($this->is_development){
+                $metadata['urls'] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?item_id=[primary-key]",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                ];
+            }
+
+            return $metadata;
+        }
+        
+        if($method === 'put'){
+            $metadata = ["methods" => "[PUT]"];
+        
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["type"];
+            }
+            
+            return $metadata;
+        }
+        
+        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+
+        if($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+
+            $metadata["fields"] =  ["type"];
+        }
+
+        return $metadata;
+    }
 
     public function import(Request $request)
     {
@@ -80,29 +127,13 @@ class ItemController extends Controller
             if(!$item){
                 return response()->json([
                     'message' => "No record found.",
-                    "metadata" => [
-                        "methods" => "[GET, POST, PUT, DELETE]",
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ]);
             }
 
             return response()->json([
                 'data' => new ItemResource($item),
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "urls" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?item_id=[primary-key]",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                    ]
-                ]
+                "metadata" => $this->getMetadata('get')
             ], Response::HTTP_OK);
         }
 
@@ -112,16 +143,7 @@ class ItemController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "Invalid value of parameters",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -134,16 +156,7 @@ class ItemController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -234,7 +247,6 @@ class ItemController extends Controller
             /**
              * Reuse existing pagination and update the existing pagination next and previous data
              */
-
             $items = Item::where('name', 'like', '%'.$search.'%')
                 ->where('id','>', $last_id)
                 ->orderBy('id')->limit($per_page)->get();
@@ -390,13 +402,7 @@ class ItemController extends Controller
             $response = ["message" => "ID parameter is required."];
             
             if ($this->is_development) {
-                $response['metadata'] = [
-                    "methods" => "[PUT]",
-                    "formats" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
-                    ]
-                ];
+                $response['metadata'] = $this->getMetadata('put');
             }
             
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -410,12 +416,7 @@ class ItemController extends Controller
             if (count($item_ids) !== count($request->input('items'))) {
                 return response()->json([
                     "message" => "Number of IDs does not match number of items provided.",
-                    "metadata" => [
-                        "formats" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('put')
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
             
@@ -451,9 +452,7 @@ class ItemController extends Controller
             return response()->json([
                 "data" => ItemResource::collection($updated_items),
                 "message" => "Successfully updated ".count($updated_items)." items.",
-                "metadata" => [              
-                    "method" => "[GET, POST, PUT, DELETE]"
-                ]
+                "metadata" => $this->getMetadata()
             ], Response::HTTP_OK);
         }
         
@@ -478,17 +477,8 @@ class ItemController extends Controller
         $response = [
             "data" => new ItemResource($item),
             "message" => "Item updated successfully.",
-            "metadata" => [              
-                "method" => "[GET, POST, PUT, DELETE]"
-            ]
+            "metadata" => $this->getMetadata('put')
         ];
-        
-        if ($this->is_development) {
-            $response['metadata'] = [
-                "methods" => "[PUT]",
-                "required_fields" => ["name", "estimated_budget"]
-            ];
-        }
         
         return response()->json($response, Response::HTTP_OK);
     }
@@ -497,63 +487,71 @@ class ItemController extends Controller
     {
         $item_ids = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
-
+    
         if (!$item_ids && !$query) {
             $response = ["message" => "Invalid request."];
-
+    
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-                        ],
-                        "fields" => ["name"]
-                    ]
+                    "metadata" => $this->getMetadata('delete')
                 ];
             }
-
+    
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-
-
+    
         if ($item_ids) {
-            $item_ids = is_array($item_ids) ? $item_ids : explode(',', $item_ids);
-            $items = Item::whereIn('id', $item_ids)->where('deleted_at', NULL)->get();
-
+            $item_ids = is_array($item_ids) 
+                ? $item_ids 
+                : (str_contains($item_ids, ',') 
+                    ? explode(',', $item_ids) 
+                    : [$item_ids]
+                  );
+    
+            // Ensure all IDs are integers
+            $item_ids = array_filter(array_map('intval', $item_ids));
+    
+            if (empty($item_ids)) {
+                return response()->json(["message" => "Invalid ID format."], Response::HTTP_BAD_REQUEST);
+            }
+    
+            $items = Item::whereIn('id', $item_ids)->whereNull('deleted_at')->get();
+    
             if ($items->isEmpty()) {
-                return response()->json(["message" => "No records found."], Response::HTTP_NOT_FOUND);
+                return response()->json(["message" => "No active records found for the given IDs."], Response::HTTP_NOT_FOUND);
             }
-
-            Item::whereIn('id', $item_ids)->update(['deleted_at' => now()]);
-
+    
+            // Only soft-delete records that were actually found
+            $found_ids = $items->pluck('id')->toArray();
+            Item::whereIn('id', $found_ids)->update(['deleted_at' => now()]);
+    
             return response()->json([
-                "message" => "Successfully deleted " . count($items) . " records."
-            ], Response::HTTP_NO_CONTENT);
+                "message" => "Successfully deleted " . count($found_ids) . " record(s).",
+                "deleted_ids" => $found_ids
+            ], Response::HTTP_OK); // Changed from NO_CONTENT to OK to allow response body
+        }
+    
+        $items = Item::where($query)->whereNull('deleted_at')->get();
+    
+        if ($items->count() > 1) {
+            return response()->json([
+                'data' => $items,
+                'message' => "Request would affect multiple records. Please specify IDs directly."
+            ], Response::HTTP_CONFLICT);
         }
 
-        if ($query) {
-            $items = Item::where($query)->get();
+        $item = $items->first();
 
-            if ($items->count() > 1) {
-                return response()->json([
-                    'data' => $items,
-                    'message' => "Request has multiple records."
-                ], Response::HTTP_CONFLICT);
-            }
-
-            $item = $items->first();
-
-            if (!$item) {
-                return response()->json(["message" => "No record found."], Response::HTTP_NOT_FOUND);
-            }
-
-            $item->update(['deleted_at' => now()]);
+        if (!$item) {
+            return response()->json(["message" => "No active record found matching query."], Response::HTTP_NOT_FOUND);
         }
 
-        return response()->json(["message" => "Successfully deleted record."], Response::HTTP_NO_CONTENT);
+        $item->update(['deleted_at' => now()]);
+        
+        return response()->json([
+            "message" => "Successfully deleted record.",
+            "deleted_id" => $item->id
+        ], Response::HTTP_OK);
     }
 }

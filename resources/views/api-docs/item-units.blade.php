@@ -744,253 +744,346 @@ Content-Type: application/json
             </table>
         </div>
 
-        <!-- Put Endpoint -->
-        <div class="endpoint">
-            <h2>PUT /api/log-descriptions</h2>
-            <p>Update existing log description records. Supports both single and bulk updates.</p>
+    <!-- Put Endpoint -->
+    <div class="endpoint">
+        <h2>PUT /api/item-units</h2>
+        <p>Update one or more item units. Supports both single and bulk updates with partial updates.</p>
 
-            <h3>URL Parameters</h3>
-            <table class="parameter-table">
-                <thead>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Required</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>id</td>
-                        <td>integer|array</td>
-                        <td>
-                            The ID(s) of the log description(s) to update.
-                            <ul>
-                                <li>Single update: <code>?id=1</code></li>
-                                <li>Bulk update: <code>?id[]=1&id[]=2</code></li>
-                            </ul>
-                        </td>
-                        <td>Yes</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h3>URL Parameters</h3>
+        <table class="parameter-table">
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>integer|string|array</td>
+                    <td>
+                        The ID(s) of the item unit(s) to update. Accepts multiple formats:
+                        <ul>
+                            <li>Single ID: <code>?id=1</code></li>
+                            <li>Comma-separated: <code>?id=1,2,3</code></li>
+                            <li>Array-style: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Yes</td>
+                </tr>
+            </tbody>
+        </table>
 
-            <h3>Request Body</h3>
-            <table class="field-table">
-                <thead>
-                    <tr>
-                        <th>Field</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Required</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>title</td>
-                        <td>string</td>
-                        <td>Log event title</td>
-                        <td>No</td>
-                    </tr>
-                    <tr>
-                        <td>code</td>
-                        <td>string</td>
-                        <td>Unique event code</td>
-                        <td>No</td>
-                    </tr>
-                    <tr>
-                        <td>description</td>
-                        <td>string</td>
-                        <td>Detailed log template</td>
-                        <td>No</td>
-                    </tr>
-                    <tr>
-                        <td>log_descriptions</td>
-                        <td>array</td>
-                        <td>
-                            Required for bulk updates. Array of objects containing:
-                            <ul>
-                                <li>title</li>
-                                <li>code</li>
-                                <li>description</li>
-                            </ul>
-                        </td>
-                        <td>Conditional</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h3>Request Body</h3>
+        <table class="field-table">
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>name</td>
+                    <td>string</td>
+                    <td>Unit name (e.g., "Piece", "Box")</td>
+                    <td>No (partial updates supported)</td>
+                </tr>
+                <tr>
+                    <td>code</td>
+                    <td>string</td>
+                    <td>Unit code (e.g., "PC", "BOX")</td>
+                    <td>No (partial updates supported)</td>
+                </tr>
+                <tr>
+                    <td>description</td>
+                    <td>string</td>
+                    <td>Detailed description of the unit</td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td>item_units</td>
+                    <td>array</td>
+                    <td>
+                        Required for bulk updates. Array of objects containing:
+                        <ul>
+                            <li>name (string, optional)</li>
+                            <li>code (string, optional)</li>
+                            <li>description (string, optional)</li>
+                        </ul>
+                    </td>
+                    <td>Conditional (required for bulk updates)</td>
+                </tr>
+            </tbody>
+        </table>
 
-            <h3>Examples</h3>
-            
-            <div class="example">
-                <h4>Single Update</h4>
-                <pre><code>PUT /api/log-descriptions?id=1
+        <h3>Example Requests</h3>
+        
+        <h4>Single Update</h4>
+        <pre><code>
+PUT /api/item-units?id=1
 Content-Type: application/json
 
 {
-    "title": "Item Updated",
-    "code": "ITEM_UPDATE"
+    "name": "Piece",
+    "code": "PC",
+    "description": "Individual countable items"
 }
-            </code></pre>
-                
-                <h4>Response</h4>
-                <pre><code>
+        </code></pre>
+        
+        <h4>Bulk Update</h4>
+        <pre><code>
+PUT /api/item-units?id[]=1&id[]=2
+Content-Type: application/json
+
+{
+    "item_units": [
+        {
+            "name": "Piece",
+            "code": "PC"
+        },
+        {
+            "description": "Pre-packaged quantities"
+        }
+    ]
+}
+        </code></pre>
+
+        <h3>Example Responses</h3>
+        
+        <h4>Single Update Success</h4>
+        <pre><code>
 {
     "data": {
         "id": 1,
-        "title": "Item Updated",
-        "code": "ITEM_UPDATE",
-        "description": "Original description remains"
+        "name": "Piece",
+        "code": "PC",
+        "description": "Individual countable items",
+        "deleted_at": null,
+        "created_at": "2025-03-25T01:45:23.000000Z",
+        "updated_at": "2025-03-25T01:48:58.000000Z"
     },
-    "message": "Log description updated successfully."
+    "message": "Item unit updated successfully.",
+    "metadata": {
+        "methods": "[PUT]",
+        "fields": ["name", "code", "description"]
+    }
 }
-            </code></pre>
-            </div>
+        </code></pre>
 
-            <div class="example">
-                <h4>Bulk Update</h4>
-                <pre><code>
-PUT /api/log-descriptions?id[]=1&id[]=2
-Content-Type: application/json
-
-{
-    "log_descriptions": [
-        {"title": "New Title"},
-        {"code": "NEW_CODE"}
-    ]
-}
-            </code></pre>
-                
-                <h4>Response</h4>
-                <pre><code>
+        <h4>Bulk Update Success</h4>
+        <pre><code>
 {
     "data": [
         {
             "id": 1,
-            "title": "New Title",
-            "code": null,
-            "description": null
+            "name": "Piece",
+            "code": "PC",
+            "description": null,
+            "updated_at": "2025-03-25T01:51:00.000000Z"
         },
         {
             "id": 2,
-            "title": null,
-            "code": "NEW_CODE",
-            "description": null
+            "name": null,
+            "code": null,
+            "description": "Pre-packaged quantities",
+            "updated_at": "2025-03-25T01:51:00.000000Z"
         }
     ],
-    "message": "Successfully updated 2 log descriptions."
+    "message": "Successfully updated 2 item units.",
+    "metadata": {
+        "methods": "[PUT]"
+    }
 }
-            </code></pre>
-            </div>
+        </code></pre>
 
-            <h3>Error Responses</h3>
-            <table class="error-table">
-                <thead>
-                    <tr>
-                        <th>Code</th>
-                        <th>Message</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>400</td>
-                        <td>ID parameter is required</td>
-                        <td>Missing ID parameter</td>
-                    </tr>
-                    <tr>
-                        <td>404</td>
-                        <td>Log description not found</td>
-                        <td>Invalid ID provided</td>
-                    </tr>
-                    <tr>
-                        <td>409</td>
-                        <td>ID/item count mismatch</td>
-                        <td>Bulk update count mismatch</td>
-                    </tr>
-                    <tr>
-                        <td>422</td>
-                        <td>No valid fields provided</td>
-                        <td>Empty or invalid request body</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <h4>Partial Update (With Errors)</h4>
+        <pre><code>
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Piece",
+            "code": "PC",
+            "updated_at": "2025-03-25T01:51:00.000000Z"
+        }
+    ],
+    "message": "Partial update completed with errors.",
+    "errors": [
+        "Item unit with ID 2 not found."
+    ],
+    "metadata": {
+        "method": "[PUT]"
+    }
+}
+        </code></pre>
 
-        <!-- Delete Endpoint -->
-        <div class="endpoint">
-            <h2>DELETE /api/item-units</h2>
-            <p>Delete one or more item units.</p>
+        <h3>Error Responses</h3>
+        <table class="error-table">
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Message</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>422</td>
+                    <td>ID parameter is required</td>
+                    <td>Missing ID parameter (includes metadata in dev)</td>
+                </tr>
+                <tr>
+                    <td>404</td>
+                    <td>Item unit not found</td>
+                    <td>Invalid ID provided for single update</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Number of IDs does not match number of item units provided</td>
+                    <td>Bulk update count mismatch</td>
+                </tr>
+                <tr>
+                    <td>207</td>
+                    <td>Partial update completed with errors</td>
+                    <td>Bulk update with some failures (Multi-Status)</td>
+                </tr>
+            </tbody>
+        </table>
 
-            <h3>Parameters</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Required</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>id</td>
-                        <td>integer or array</td>
-                        <td>The ID(s) of the item unit(s) to delete. Can be a single ID or a comma-separated list of IDs.</td>
-                        <td>Yes (if <code>query</code> is not provided)</td>
-                    </tr>
-                    <tr>
-                        <td>query</td>
-                        <td>object</td>
-                        <td>A query object to find the item unit(s) to delete (e.g., <code>{"code": "example"}</code>).</td>
-                        <td>Yes (if <code>id</code> is not provided)</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h3>Implementation Notes</h3>
+        <ul>
+            <li><strong>Partial Updates</strong>: Only provided fields will be updated</li>
+            <li><strong>Bulk Processing</strong>: Order of IDs must match order of objects in item_units array</li>
+            <li><strong>Error Handling</strong>: Bulk updates continue processing even if some items fail</li>
+            <li><strong>Development Mode</strong>: Additional metadata included in responses for invalid requests</li>
+            <li><strong>Validation</strong>: At least one field must be provided for each update</li>
+        </ul>
+    </div>
 
-            <h3>Example Request</h3>
-    <pre>
+    <!-- Delete Endpoint -->
+    <div class="endpoint">
+        <h2>DELETE /api/item-units</h2>
+        <p>Soft delete one or more item units (marks as deleted but retains in database).</p>
+
+        <h3>Parameters</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>integer|string|array</td>
+                    <td>
+                        The ID(s) of the item unit(s) to delete. Accepts multiple formats:
+                        <ul>
+                            <li>Single ID: <code>?id=1</code></li>
+                            <li>Comma-separated: <code>?id=1,2,3</code></li>
+                            <li>Array-style: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Conditional (required if no query)</td>
+                </tr>
+                <tr>
+                    <td>query</td>
+                    <td>object</td>
+                    <td>
+                        A query object to find item units to delete (e.g., <code>{"code":"PC"}</code>).
+                        Will reject if matches multiple records.
+                    </td>
+                    <td>Conditional (required if no id)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Example Requests</h3>
+        
+        <h4>Delete by Single ID</h4>
+        <pre>
 DELETE {{ env('SERVER_DOMAIN') }}/api/item-units?id=1
-            <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-units?item_unit_id=1')">
-                <i class="fas fa-copy"></i> <span>Copy URL</span>
-            </button>
-    </pre>
+        </pre>
 
-        <h3>Example Response</h3>
+        <h4>Delete by Multiple IDs</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/item-units?id=1,2,3
+        </pre>
+
+        <h4>Delete by Query</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/item-units?query={"code":"PC"}
+        </pre>
+
+        <h3>Success Responses</h3>
+        
+        <h4>ID-based Deletion</h4>
         <pre>
 {
-    "message": "Successfully deleted 1 record."
+    "message": "Successfully deleted 2 item unit(s).",
+    "deleted_ids": [1, 2]
 }
-            </pre>
+        </pre>
 
-            <h3>Error Responses</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Status Code</th>
-                        <th>Message</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>422</td>
-                        <td>Invalid request.</td>
-                        <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
-                    </tr>
-                    <tr>
-                        <td>404</td>
-                        <td>No records found.</td>
-                        <td>Returned when no item units are found for the given <code>id</code> or <code>query</code>.</td>
-                    </tr>
-                    <tr>
-                        <td>409</td>
-                        <td>Request has multiple records.</td>
-                        <td>Returned when the <code>query</code> matches multiple records.</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <h4>Query-based Deletion</h4>
+        <pre>
+{
+    "message": "Successfully deleted item unit.",
+    "deleted_id": 3
+}
+        </pre>
+
+        <h3>Error Responses</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Status Code</th>
+                    <th>Message</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>400</td>
+                    <td>Invalid ID format provided.</td>
+                    <td>When provided IDs are not valid numbers</td>
+                </tr>
+                <tr>
+                    <td>404</td>
+                    <td>No active item units found...</td>
+                    <td>When no matching active records found</td>
+                </tr>
+                <tr>
+                    <td>409</td>
+                    <td>Query matches multiple records...</td>
+                    <td>When query matches multiple records (includes data in response)</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Invalid request.</td>
+                    <td>When neither parameter is provided (includes metadata in dev)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Implementation Notes</h3>
+        <ul>
+            <li><strong>Soft Delete</strong>: Records are marked as deleted (sets deleted_at timestamp) but remain in database</li>
+            <li><strong>Active Records Only</strong>: Only affects non-deleted records (where deleted_at is null)</li>
+            <li><strong>ID Processing</strong>: Automatically handles single ID, comma-separated list, and array formats</li>
+            <li><strong>Query Safety</strong>: Rejects queries that would affect multiple records to prevent accidental mass deletion</li>
+            <li><strong>Development Mode</strong>: Provides additional metadata about available parameters when invalid requests are made</li>
+            <li><strong>Response Includes</strong>: Returns IDs of successfully deleted records for verification</li>
+        </ul>
+    </div>
 </div>
 
 <!-- Notification Message -->

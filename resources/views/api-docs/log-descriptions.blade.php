@@ -742,195 +742,240 @@ Content-Type: application/json
             </table>
         </div>
 
-        <!-- Put Endpoint -->
-        <div class="endpoint">
-            <h2>PUT /api/log-descriptions</h2>
-            <p>Update one or more log description records. Supports both single and bulk updates.</p>
+    <!-- Put Endpoint -->
+    <div class="endpoint">
+        <h2>PUT /api/log-descriptions</h2>
+        <p>Update one or more log description records with partial updates. Supports both single and bulk operations.</p>
 
-            <h3>URL Parameters</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Parameter</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Required</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>id</td>
-                        <td>integer or array</td>
-                        <td>
-                            The ID(s) of the log description(s) to update. For bulk updates, provide array of IDs matching the request body items.
-                            <br>Formats:
-                            <ul>
-                                <li>Single update: <code>?id=1</code></li>
-                                <li>Bulk update: <code>?id[]=1&id[]=2</code></li>
-                            </ul>
-                        </td>
-                        <td>Yes</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h3>URL Parameters</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>id</td>
+                    <td>integer|string|array</td>
+                    <td>
+                        The ID(s) of the log description(s) to update. Accepts:
+                        <ul>
+                            <li>Single ID: <code>?id=1</code></li>
+                            <li>Comma-separated: <code>?id=1,2,3</code></li>
+                            <li>Array-style: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Yes</td>
+                </tr>
+            </tbody>
+        </table>
 
-            <h3>Request Body Fields</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Field</th>
-                        <th>Type</th>
-                        <th>Description</th>
-                        <th>Required</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>title</td>
-                        <td>string</td>
-                        <td>The title of the log description</td>
-                        <td>No (for partial updates)</td>
-                    </tr>
-                    <tr>
-                        <td>code</td>
-                        <td>string</td>
-                        <td>The unique code identifier</td>
-                        <td>No (for partial updates)</td>
-                    </tr>
-                    <tr>
-                        <td>description</td>
-                        <td>string</td>
-                        <td>The detailed description template</td>
-                        <td>No (for partial updates)</td>
-                    </tr>
-                    <tr>
-                        <td>log_descriptions</td>
-                        <td>array</td>
-                        <td>
-                            Required for bulk updates. Array of log description objects matching the IDs in the URL.
-                            Each object may contain:
-                            <ul>
-                                <li><code>title</code> (string)</li>
-                                <li><code>code</code> (string)</li>
-                                <li><code>description</code> (string)</li>
-                            </ul>
-                        </td>
-                        <td>Yes (for bulk updates)</td>
-                    </tr>
-                </tbody>
-            </table>
+        <h3>Request Body</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>title</td>
+                    <td>string</td>
+                    <td>Log event title</td>
+                    <td>No (partial updates supported)</td>
+                </tr>
+                <tr>
+                    <td>code</td>
+                    <td>string</td>
+                    <td>Unique event code</td>
+                    <td>No (partial updates supported)</td>
+                </tr>
+                <tr>
+                    <td>description</td>
+                    <td>string</td>
+                    <td>Detailed log template</td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td>log_descriptions</td>
+                    <td>array</td>
+                    <td>
+                        Required for bulk updates. Array of objects containing:
+                        <ul>
+                            <li><strong>title</strong> (string, optional)</li>
+                            <li><strong>code</strong> (string, optional)</li>
+                            <li><strong>description</strong> (string, optional)</li>
+                        </ul>
+                    </td>
+                    <td>Conditional (required for bulk updates)</td>
+                </tr>
+            </tbody>
+        </table>
 
-            <h3>Example Requests</h3>
-            
-            <h4>Single Update</h4>
-            <pre>
+        <h3>Example Requests</h3>
+        
+        <h4>Single Update (Partial Fields)</h4>
+        <pre>
 PUT {{ env('SERVER_DOMAIN') }}/api/log-descriptions?id=1
 Content-Type: application/json
 
 {
-    "title": "Item Updated",
-    "code": "ITEM_UPDATE"
+    "title": "System Error",
+    "code": "SYS_ERR"
 }
-            <button class="copy-button" onclick="copyToClipboard('PUT {{ env('SERVER_DOMAIN') }}/api/log-descriptions?id=1')">
-                <i class="fas fa-copy"></i> Copy
-            </button>
-            </pre>
+        </pre>
 
-            <h4>Bulk Update</h4>
-            <pre>
+        <h4>Bulk Update (Mixed Fields)</h4>
+        <pre>
 PUT {{ env('SERVER_DOMAIN') }}/api/log-descriptions?id[]=1&id[]=2
 Content-Type: application/json
 
 {
     "log_descriptions": [
         {
-            "title": "Item Created",
-            "code": "ITEM_CREATE"
+            "title": "Updated Error Log"
         },
         {
-            "description": "Item was deleted from inventory"
+            "code": "NEW_CODE"
         }
     ]
 }
-            <button class="copy-button" onclick="copyToClipboard('PUT {{ env('SERVER_DOMAIN') }}/api/log-descriptions?id[]=1&id[]=2')">
-                <i class="fas fa-copy"></i> Copy
-            </button>
-            </pre>
+        </pre>
 
-            <h3>Example Responses</h3>
-            
-            <h4>Single Update Success</h4>
-            <pre>
+        <h3>Example Responses</h3>
+        
+        <h4>Single Update Success</h4>
+        <pre>
 {
     "data": {
         "id": 1,
-        "title": "Item Updated",
-        "code": "ITEM_UPDATE",
-        "description": "Original description remains unchanged"
+        "title": "System Error",
+        "code": "SYS_ERR",
+        "description": "Original description remains unchanged",
+        "updated_at": "2023-06-15T08:30:45.000000Z"
     },
-    "message": "Log description updated successfully."
+    "message": "Log description updated successfully.",
+    "metadata": {
+        "methods": "[PUT]",
+        "fields": ["title", "code", "description"]
+    }
 }
-            </pre>
+        </pre>
 
-            <h4>Bulk Update Success</h4>
-            <pre>
+        <h4>Bulk Update Success</h4>
+        <pre>
 {
     "data": [
         {
             "id": 1,
-            "title": "Item Created",
-            "code": "ITEM_CREATE",
-            "description": null
+            "title": "Updated Error Log",
+            "code": null,
+            "description": null,
+            "updated_at": "2023-06-15T08:32:10.000000Z"
         },
         {
             "id": 2,
-            "title": "Item Deleted",
-            "code": null,
-            "description": "Item was deleted from inventory"
+            "title": null,
+            "code": "NEW_CODE",
+            "description": null,
+            "updated_at": "2023-06-15T08:32:10.000000Z"
         }
     ],
-    "message": "Successfully updated 2 log descriptions."
+    "message": "Successfully updated 2 log descriptions.",
+    "metadata": {
+        "method": "[PUT]"
+    }
 }
-            </pre>
+        </pre>
 
-            <h3>Error Responses</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Status Code</th>
-                        <th>Message</th>
-                        <th>Description</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>400</td>
-                        <td>ID parameter is required</td>
-                        <td>Returned when no ID parameter is provided</td>
-                    </tr>
-                    <tr>
-                        <td>404</td>
-                        <td>Log description not found</td>
-                        <td>Returned when no record exists with the provided ID</td>
-                    </tr>
-                    <tr>
-                        <td>409</td>
-                        <td>Number of IDs does not match number of log descriptions</td>
-                        <td>Returned for bulk updates when ID count doesn't match request body items</td>
-                    </tr>
-                    <tr>
-                        <td>422</td>
-                        <td>No valid fields provided for update</td>
-                        <td>Returned when request body contains no updatable fields</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <h4>Partial Update (With Errors)</h4>
+        <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "title": "Updated Error Log",
+            "updated_at": "2023-06-15T08:32:10.000000Z"
+        }
+    ],
+    "message": "Partial update completed with errors.",
+    "errors": [
+        "Log description with ID 2 not found."
+    ],
+    "metadata": {
+        "method": "[PUT]"
+    }
+}
+        </pre>
+
+        <h3>Error Responses</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Code</th>
+                    <th>Message</th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>422</td>
+                    <td>ID parameter is required</td>
+                    <td>Missing ID parameter (includes metadata in dev)</td>
+                </tr>
+                <tr>
+                    <td>404</td>
+                    <td>Log description not found</td>
+                    <td>Invalid ID provided for single update</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Number of IDs does not match number of log descriptions</td>
+                    <td>Bulk update count mismatch</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Multiple IDs provided but no log_descriptions array</td>
+                    <td>Multiple IDs without bulk data</td>
+                </tr>
+                <tr>
+                    <td>207</td>
+                    <td>Partial update completed with errors</td>
+                    <td>Bulk update with some failures (Multi-Status)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Implementation Notes</h3>
+        <ul>
+            <li><strong>Partial Updates</strong>: Only provided fields will be updated</li>
+            <li><strong>Bulk Processing</strong>:
+                <ul>
+                    <li>Order of IDs must match order of objects in log_descriptions array</li>
+                    <li>Continues processing even if some items fail</li>
+                </ul>
+            </li>
+            <li><strong>Validation</strong>:
+                <ul>
+                    <li>At least one field must be provided for each update</li>
+                    <li>Empty updates will be rejected</li>
+                </ul>
+            </li>
+            <li><strong>Development Mode</strong>: Additional metadata included for invalid requests</li>
+        </ul>
+    </div>
 
     <!-- Delete Endpoint -->
     <div class="endpoint">
         <h2>DELETE /api/log_descriptions</h2>
-        <p>Delete one or more item categories.</p>
+        <p>Soft delete one or more log descriptions (marks as deleted but retains in database).</p>
 
         <h3>Parameters</h3>
         <table>
@@ -945,31 +990,63 @@ Content-Type: application/json
             <tbody>
                 <tr>
                     <td>id</td>
-                    <td>integer or array</td>
-                    <td>The ID(s) of the item unit(s) to delete. Can be a single ID or a comma-separated list of IDs.</td>
-                    <td>Yes (if <code>query</code> is not provided)</td>
+                    <td>integer|string|array</td>
+                    <td>
+                        The ID(s) of the log description(s) to delete. Accepts multiple formats:
+                        <ul>
+                            <li>Single ID: <code>?id=1</code></li>
+                            <li>Comma-separated: <code>?id=1,2,3</code></li>
+                            <li>Array-style: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Conditional (required if no query)</td>
                 </tr>
                 <tr>
                     <td>query</td>
                     <td>object</td>
-                    <td>A query object to find the item unit(s) to delete (e.g., <code>{"code": "example"}</code>).</td>
-                    <td>Yes (if <code>id</code> is not provided)</td>
+                    <td>
+                        A query object to find log descriptions to delete (e.g., <code>{"code":"LOG001"}</code>).
+                        Will reject if matches multiple records.
+                    </td>
+                    <td>Conditional (required if no id)</td>
                 </tr>
             </tbody>
         </table>
 
-        <h3>Example Request</h3>
-<pre>
+        <h3>Example Requests</h3>
+        
+        <h4>Delete by Single ID</h4>
+        <pre>
 DELETE {{ env('SERVER_DOMAIN') }}/api/log_descriptions?id=1
-        <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/log_descriptions?log_description_id=1')">
-            <i class="fas fa-copy"></i> <span>Copy URL</span>
-        </button>
-</pre>
+        </pre>
 
-    <h3>Example Response</h3>
-    <pre>
+        <h4>Delete by Multiple IDs</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/log_descriptions?id=1,2,3
+        </pre>
+
+        <h4>Delete by Query</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/log_descriptions?query={"code":"LOG001"}
+        </pre>
+
+        <h3>Success Responses</h3>
+        
+        <h4>ID-based Deletion</h4>
+        <pre>
 {
-    "message": "Successfully deleted 1 record."
+    "message": "Successfully deleted 2 log description(s).",
+    "deleted_ids": [1, 2],
+    "count": 2
+}
+        </pre>
+
+        <h4>Query-based Deletion</h4>
+        <pre>
+{
+    "message": "Successfully deleted log description.",
+    "deleted_id": 3,
+    "description": "System maintenance log entry"
 }
         </pre>
 
@@ -984,22 +1061,54 @@ DELETE {{ env('SERVER_DOMAIN') }}/api/log_descriptions?id=1
             </thead>
             <tbody>
                 <tr>
-                    <td>422</td>
-                    <td>Invalid request.</td>
-                    <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
+                    <td>400</td>
+                    <td>Invalid log description ID format provided</td>
+                    <td>When provided IDs are not valid numbers</td>
                 </tr>
                 <tr>
                     <td>404</td>
-                    <td>No records found.</td>
-                    <td>Returned when no item categories are found for the given <code>id</code> or <code>query</code>.</td>
+                    <td>No active log descriptions found...</td>
+                    <td>When no matching active records found</td>
                 </tr>
                 <tr>
                     <td>409</td>
-                    <td>Request has multiple records.</td>
-                    <td>Returned when the <code>query</code> matches multiple records.</td>
+                    <td>Query matches multiple log descriptions...</td>
+                    <td>When query matches multiple records (includes data in response)</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Invalid request</td>
+                    <td>When neither parameter is provided (includes metadata in dev)</td>
                 </tr>
             </tbody>
         </table>
+
+        <h3>Implementation Notes</h3>
+        <ul>
+            <li><strong>Soft Delete</strong>: Records are marked as deleted (sets deleted_at timestamp) but remain in database</li>
+            <li><strong>Active Records Only</strong>: Only affects non-deleted records (where deleted_at is null)</li>
+            <li><strong>ID Processing</strong>:
+                <ul>
+                    <li>Handles single ID, comma-separated list, and array formats</li>
+                    <li>Validates all IDs are positive integers</li>
+                    <li>Only processes records that actually exist</li>
+                </ul>
+            </li>
+            <li><strong>Query Safety</strong>:
+                <ul>
+                    <li>Rejects queries that would affect multiple records</li>
+                    <li>Provides helpful suggestions in conflict responses</li>
+                </ul>
+            </li>
+            <li><strong>Response Details</strong>:
+                <ul>
+                    <li>Returns count of deleted records</li>
+                    <li>Includes IDs of successfully deleted records</li>
+                    <li>Optionally includes description text for single deletions</li>
+                </ul>
+            </li>
+            <li><strong>Development Mode</strong>: Provides additional metadata when invalid requests are made</li>
+        </ul>
     </div>
 </div>
 

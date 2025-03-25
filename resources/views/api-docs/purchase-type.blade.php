@@ -711,7 +711,7 @@ Content-Type: application/json
     <!-- Put Endpoint -->
     <div class="endpoint">
         <h2>PUT /api/purchase-types</h2>
-        <p>Update an existing purchase type.</p>
+        <p>Update one or more purchase types. Supports both single and bulk updates with partial updates.</p>
 
         <h3>Parameters</h3>
         <table>
@@ -726,61 +726,158 @@ Content-Type: application/json
             <tbody>
                 <tr>
                     <td>id</td>
-                    <td>integer</td>
-                    <td>The ID of the purchase type to update.</td>
-                    <td>Yes (if <code>query</code> is not provided)</td>
-                </tr>
-                <tr>
-                    <td>query</td>
-                    <td>object</td>
-                    <td>A query object to find the purchase type to update (e.g., <code>{"code": "example"}</code>).</td>
-                    <td>Yes (if <code>id</code> is not provided)</td>
-                </tr>
-                <tr>
-                    <td>code</td>
-                    <td>string</td>
-                    <td>The updated code of the purchase type.</td>
-                    <td>No</td>
-                </tr>
-                <tr>
-                    <td>description</td>
-                    <td>string</td>
-                    <td>The updated description of the purchase type.</td>
-                    <td>No</td>
+                    <td>integer|string|array</td>
+                    <td>
+                        The ID(s) of the purchase type(s) to update. Accepts multiple formats:
+                        <ul>
+                            <li>Single ID: <code>?id=1</code></li>
+                            <li>Comma-separated: <code>?id=1,2,3</code></li>
+                            <li>Array-style: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Yes</td>
                 </tr>
             </tbody>
         </table>
 
-        <h3>Example Request</h3>
+        <h3>Request Body</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>Required</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>name</td>
+                    <td>string</td>
+                    <td>Purchase type name</td>
+                    <td>No (partial updates supported)</td>
+                </tr>
+                <tr>
+                    <td>code</td>
+                    <td>string</td>
+                    <td>Purchase type code</td>
+                    <td>No (partial updates supported)</td>
+                </tr>
+                <tr>
+                    <td>description</td>
+                    <td>string</td>
+                    <td>Purchase type description</td>
+                    <td>No</td>
+                </tr>
+                <tr>
+                    <td>purchase_types</td>
+                    <td>array</td>
+                    <td>
+                        Required for bulk updates. Array of objects containing:
+                        <ul>
+                            <li><strong>name</strong> (string, optional)</li>
+                            <li><strong>code</strong> (string, optional)</li>
+                            <li><strong>description</strong> (string, optional)</li>
+                        </ul>
+                    </td>
+                    <td>Conditional (required for bulk updates)</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Example Requests</h3>
+        
+        <h4>Single Update (Partial Fields)</h4>
         <pre>
 PUT {{ env('SERVER_DOMAIN') }}/api/purchase-types?id=1
 Content-Type: application/json
 
 {
-    "name": "Updated Unit",
-    "code": "UU"
+    "name": "Capital Expenditure",
+    "code": "CAPEX"
 }
-        <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/purchase-types?id=1')">
-            <i class="fas fa-copy"></i> Copy URL
-        </button>
-    </pre>
+        </pre>
 
-    <h3>Example Response</h3>
-    <pre>
+        <h4>Bulk Update</h4>
+        <pre>
+PUT {{ env('SERVER_DOMAIN') }}/api/purchase-types?id[]=1&id[]=2
+Content-Type: application/json
+
+{
+    "purchase_types": [
+        {
+            "name": "Updated Capital Expenditure",
+            "code": "CAPEX-2023"
+        },
+        {
+            "description": "New description for operational expenses"
+        }
+    ]
+}
+        </pre>
+
+        <h3>Example Responses</h3>
+        
+        <h4>Single Update Success</h4>
+        <pre>
 {
     "data": {
         "id": 1,
-        "name": "Updated Unit",
-        "code": "UU",
-        "description": null
+        "name": "Capital Expenditure",
+        "code": "CAPEX",
+        "description": null,
+        "updated_at": "2023-06-15T08:30:45.000000Z"
     },
+    "message": "Purchase Type updated successfully.",
     "metadata": {
-        "methods": "[GET, PUT, DELETE]",
-        "formats": [
-            "{{ env('SERVER_DOMAIN') }}/api/purchase-types?id=1",
-            "{{ env('SERVER_DOMAIN') }}/api/purchase-types?query[code]=example"
-        ],
-        "fields": ["code"]
+        "methods": "[PUT]",
+        "fields": ["name", "code", "description"]
+    }
+}
+        </pre>
+
+        <h4>Bulk Update Success</h4>
+        <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Updated Capital Expenditure",
+            "code": "CAPEX-2023",
+            "description": null,
+            "updated_at": "2023-06-15T08:32:10.000000Z"
+        },
+        {
+            "id": 2,
+            "name": null,
+            "code": null,
+            "description": "New description for operational expenses",
+            "updated_at": "2023-06-15T08:32:10.000000Z"
+        }
+    ],
+    "message": "Successfully updated 2 purchase types.",
+    "metadata": {
+        "method": "[PUT]"
+    }
+}
+        </pre>
+
+        <h4>Partial Update (With Errors)</h4>
+        <pre>
+{
+    "data": [
+        {
+            "id": 1,
+            "name": "Updated Capital Expenditure",
+            "updated_at": "2023-06-15T08:32:10.000000Z"
+        }
+    ],
+    "message": "Partial update completed with errors.",
+    "errors": [
+        "PurchaseType with ID 2 not found."
+    ],
+    "metadata": {
+        "method": "[PUT]"
     }
 }
         </pre>
@@ -789,7 +886,7 @@ Content-Type: application/json
         <table>
             <thead>
                 <tr>
-                    <th>Status Code</th>
+                    <th>Code</th>
                     <th>Message</th>
                     <th>Description</th>
                 </tr>
@@ -797,27 +894,56 @@ Content-Type: application/json
             <tbody>
                 <tr>
                     <td>422</td>
-                    <td>Invalid request.</td>
-                    <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
+                    <td>ID parameter is required</td>
+                    <td>Missing ID parameter (includes metadata in dev)</td>
                 </tr>
                 <tr>
                     <td>404</td>
-                    <td>No record found.</td>
-                    <td>Returned when no purchase type is found for the given <code>id</code> or <code>query</code>.</td>
+                    <td>PurchaseType not found</td>
+                    <td>Invalid ID provided for single update</td>
                 </tr>
                 <tr>
-                    <td>409</td>
-                    <td>Request has multiple records.</td>
-                    <td>Returned when the <code>query</code> matches multiple records.</td>
+                    <td>422</td>
+                    <td>Number of IDs does not match number of purchase_types</td>
+                    <td>Bulk update count mismatch</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Multiple IDs provided but no purchase type array</td>
+                    <td>Multiple IDs without bulk data</td>
+                </tr>
+                <tr>
+                    <td>207</td>
+                    <td>Partial update completed with errors</td>
+                    <td>Bulk update with some failures (Multi-Status)</td>
                 </tr>
             </tbody>
         </table>
+
+        <h3>Implementation Notes</h3>
+        <ul>
+            <li><strong>Partial Updates</strong>: Only provided fields will be updated</li>
+            <li><strong>Bulk Processing</strong>:
+                <ul>
+                    <li>Order of IDs must match order of objects in purchase_types array</li>
+                    <li>Continues processing even if some items fail</li>
+                </ul>
+            </li>
+            <li><strong>Validation</strong>:
+                <ul>
+                    <li>At least one field must be provided for each update</li>
+                    <li>Empty updates will be rejected</li>
+                </ul>
+            </li>
+            <li><strong>Development Mode</strong>: Additional metadata included for invalid requests</li>
+            <li><strong>Resource Formatting</strong>: Responses use PurchaseTypeResource for consistent output</li>
+        </ul>
     </div>
 
     <!-- Delete Endpoint -->
     <div class="endpoint">
         <h2>DELETE /api/purchase-types</h2>
-        <p>Delete one or more purchase types.</p>
+        <p>Soft delete one or more purchase types (marks as deleted but retains in database).</p>
 
         <h3>Parameters</h3>
         <table>
@@ -832,31 +958,65 @@ Content-Type: application/json
             <tbody>
                 <tr>
                     <td>id</td>
-                    <td>integer or array</td>
-                    <td>The ID(s) of the purchase type(s) to delete. Can be a single ID or a comma-separated list of IDs.</td>
-                    <td>Yes (if <code>query</code> is not provided)</td>
+                    <td>integer|string|array</td>
+                    <td>
+                        The ID(s) of the purchase type(s) to delete. Accepts multiple formats:
+                        <ul>
+                            <li>Single ID: <code>?id=1</code></li>
+                            <li>Comma-separated: <code>?id=1,2,3</code></li>
+                            <li>Array-style: <code>?id[]=1&id[]=2</code></li>
+                        </ul>
+                    </td>
+                    <td>Conditional (required if no query)</td>
                 </tr>
                 <tr>
                     <td>query</td>
                     <td>object</td>
-                    <td>A query object to find the purchase type(s) to delete (e.g., <code>{"code": "example"}</code>).</td>
-                    <td>Yes (if <code>id</code> is not provided)</td>
+                    <td>
+                        A query object to find purchase types to delete (e.g., <code>{"code":"CAPEX"}</code>).
+                        Will reject if matches multiple records.
+                    </td>
+                    <td>Conditional (required if no id)</td>
                 </tr>
             </tbody>
         </table>
 
-        <h3>Example Request</h3>
-<pre>
+        <h3>Example Requests</h3>
+        
+        <h4>Delete by Single ID</h4>
+        <pre>
 DELETE {{ env('SERVER_DOMAIN') }}/api/purchase-types?id=1
-        <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/purchase-types?purchase_type_id=1')">
-            <i class="fas fa-copy"></i> <span>Copy URL</span>
-        </button>
-</pre>
+        </pre>
 
-    <h3>Example Response</h3>
-    <pre>
+        <h4>Delete by Multiple IDs</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/purchase-types?id=1,2,3
+        </pre>
+
+        <h4>Delete by Query</h4>
+        <pre>
+DELETE {{ env('SERVER_DOMAIN') }}/api/purchase-types?query={"code":"CAPEX"}
+        </pre>
+
+        <h3>Success Responses</h3>
+        
+        <h4>ID-based Deletion</h4>
+        <pre>
 {
-    "message": "Successfully deleted 1 record."
+    "message": "Successfully deleted 2 purchase type(s).",
+    "deleted_ids": [1, 2],
+    "count": 2,
+    "remaining_active": 5
+}
+        </pre>
+
+        <h4>Query-based Deletion</h4>
+        <pre>
+{
+    "message": "Successfully deleted purchase type.",
+    "deleted_id": 3,
+    "type_name": "Capital Expenditure",
+    "remaining_active": 4
 }
         </pre>
 
@@ -871,22 +1031,55 @@ DELETE {{ env('SERVER_DOMAIN') }}/api/purchase-types?id=1
             </thead>
             <tbody>
                 <tr>
-                    <td>422</td>
-                    <td>Invalid request.</td>
-                    <td>Returned when neither <code>id</code> nor <code>query</code> is provided.</td>
+                    <td>400</td>
+                    <td>Invalid purchase type ID format provided</td>
+                    <td>When provided IDs are not valid numbers</td>
                 </tr>
                 <tr>
                     <td>404</td>
-                    <td>No records found.</td>
-                    <td>Returned when no purchase types are found for the given <code>id</code> or <code>query</code>.</td>
+                    <td>No active purchase types found...</td>
+                    <td>When no matching active records found</td>
                 </tr>
                 <tr>
                     <td>409</td>
-                    <td>Request has multiple records.</td>
-                    <td>Returned when the <code>query</code> matches multiple records.</td>
+                    <td>Query matches multiple purchase types...</td>
+                    <td>When query matches multiple records (includes data in response)</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Invalid request. No parameters provided</td>
+                    <td>When neither parameter is provided (includes metadata in dev)</td>
                 </tr>
             </tbody>
         </table>
+
+        <h3>Implementation Notes</h3>
+        <ul>
+            <li><strong>Soft Delete</strong>: Records are marked as deleted (sets deleted_at timestamp) but remain in database</li>
+            <li><strong>Active Records Only</strong>: Only affects non-deleted records (where deleted_at is null)</li>
+            <li><strong>ID Processing</strong>:
+                <ul>
+                    <li>Handles single ID, comma-separated list, and array formats</li>
+                    <li>Validates all IDs are positive integers</li>
+                    <li>Only processes records that actually exist</li>
+                </ul>
+            </li>
+            <li><strong>Query Safety</strong>:
+                <ul>
+                    <li>Rejects queries that would affect multiple records</li>
+                    <li>Provides helpful suggestions in conflict responses</li>
+                </ul>
+            </li>
+            <li><strong>Response Details</strong>:
+                <ul>
+                    <li>Returns count of deleted records</li>
+                    <li>Includes IDs of successfully deleted records</li>
+                    <li>Shows remaining active count for reference</li>
+                    <li>Includes type name for single deletions</li>
+                </ul>
+            </li>
+            <li><strong>Development Mode</strong>: Provides additional metadata and hints when invalid requests are made</li>
+        </ul>
     </div>
 </div>
 
