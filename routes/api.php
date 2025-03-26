@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Middleware\Cors;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +25,12 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('items', "ItemController@store");
     Route::put('items', "ItemController@update");
     Route::delete('items', "ItemController@destroy");
+
+    Route::post('item-requests/{id}/update-status', "ItemRequestController@approve");
+    Route::get('item-requests', "ItemRequestController@index");
+    Route::post('item-requests', "ItemRequestController@store");
+    Route::put('item-requests/{id}', "ItemRequestController@update");
+    Route::delete('item-requests', "ItemRequestController@destroy");
 
     Route::post('item-units/template', "ItemUnitController@import");
     Route::post('item-units/import', "ItemUnitController@downloadTemplate");
