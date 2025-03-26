@@ -49,3 +49,7 @@ Route::get('/api-docs/item-classifications', function () {
 Route::get('/api-docs/items', function () {action: 
     return view('api-docs.items');
 });
+
+Route::get('/api-docs/procurement-modes', function () {action: 
+    return view('api-docs.procurement-modes');
+});

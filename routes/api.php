@@ -62,6 +62,11 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::put('objectives', "ObjectiveController@update");
     Route::delete('objectives', "ObjectiveController@destroy");
     
+    Route::get('procurement-modes', "ProcurementModesController@index");
+    Route::post('procurement-modes', "ProcurementModesController@store");
+    Route::put('procurement-modes/{id}', "ProcurementModesController@update");
+    Route::delete('procurement-modes', "ProcurementModesController@destroy");
+    
     Route::get('log-descriptions', "LogDescriptionController@index");
     Route::post('log-descriptions', "LogDescriptionController@store");
     Route::put('log-descriptions', "LogDescriptionController@update");
