@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\UnitResource;
 use App\Models\Unit;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -104,7 +105,7 @@ class UnitController extends Controller
             }
 
             return response()->json([
-                'data' => $unit,
+                'data' => new UnitResource($unit),
                 "metadata" => $this->getMetadata('get', [])
             ], 200);
         }
@@ -144,7 +145,7 @@ class UnitController extends Controller
         if ($mode === 'selection') {
             $units = $query->select('id', 'name')->get();
             return response()->json([
-                'data' => $units,
+                'data' => new UnitResource($units),
                 'metadata' => $this->getMetadata('get', [])
             ], 200);
         }
@@ -182,7 +183,7 @@ class UnitController extends Controller
         ];
 
         return response()->json([
-            'data' => $units,
+            'data' => new UnitResource($units),
             'metadata' => [
                 'pagination' => $pagination,
                 'page' => $page,
@@ -224,7 +225,7 @@ class UnitController extends Controller
 
             if (empty($cleanData) && count($existing_items) > 0) {
                 return response()->json([
-                    'data' => $existing_units,
+                    'data' => new UnitResource($existing_units),
                     'message' => "Failed to bulk insert all units already exist.",
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
@@ -238,7 +239,7 @@ class UnitController extends Controller
             $message = count($latest_units) > 1 ? $base_message."s record" : $base_message." record.";
 
             return response()->json([
-                "data" => $latest_units,
+                "data" => new UnitResource($latest_units),
                 "message" => $message,
                 "metadata" => [
                     "methods" => "[GET, POST, PUT, DELETE]",
@@ -254,7 +255,7 @@ class UnitController extends Controller
     public function show(Unit $unit)
     {
         return response()->json([
-            'data' => $unit,
+            'data' => new UnitResource($unit),
             'metadata' => $this->getMetadata('get', [])
         ], Response::HTTP_OK);
     }
@@ -269,7 +270,7 @@ class UnitController extends Controller
         $unit->update($cleanData);
         
         return response()->json([
-            'data' => $unit,
+            'data' => new UnitResource($unit),
             'message' => 'Unit updated successfully',
             'metadata' => $this->getMetadata('put', [])
         ], Response::HTTP_OK);
