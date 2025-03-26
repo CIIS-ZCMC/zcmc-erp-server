@@ -171,6 +171,12 @@
                     <p>Standardized system activity logs (e.g., "New item created", "Category updated"). Library for consistent system logging.</p>
                 </a>
             </li>
+            <li>
+                <a href="{{ url('/api-docs/procurement-modes') }}" class="resource-link">
+                    <h2>Procurement Modes</h2>
+                    <p>Standardized purchasing methods (e.g., "Public Bidding", "Direct Purchase"). Defines how inventory is acquired across the organization.</p>
+                </a>
+            </li>
         </ul>
 
         <footer>
