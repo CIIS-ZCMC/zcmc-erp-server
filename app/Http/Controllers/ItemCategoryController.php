@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemCategoryRequest;
+use App\Imports\ItemCategoriesImport;
 use App\Models\ItemCategory;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Excel;
 use Symfony\Component\HttpFoundation\Response;
 
 class ItemCategoryController extends Controller
@@ -18,12 +20,57 @@ class ItemCategoryController extends Controller
     {
         $this->is_development = env("APP_DEBUG", true);
     }
+    
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="item_categories_template.csv"',
+        ];
+        
+        $columns = ['name', 'code', 'description'];
+        
+        $callback = function() use ($columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
 
     public function import(Request $request)
     {
-        return response()->json([
-            'message' => "Succesfully imported record"
-        ], Response::HTTP_OK);
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv'
+        ]);
+
+        try {
+            $import = new ItemCategoriesImport;
+            Excel::import($import, $request->file('file'));
+            
+            $successCount = $import->getRowCount() - count($import->failures());
+            $failures = $import->failures();
+            
+            return response()->json([
+                'message' => "$successCount item categories imported successfully.",
+                'success_count' => $successCount,
+                'failure_count' => count($failures),
+                'failures' => $failures->map(function($failure) {
+                    return [
+                        'row' => $failure->row(),
+                        'errors' => $failure->errors(),
+                        'values' => $failure->values()
+                    ];
+                }),
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error importing file',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
     
     protected function cleanCategoryData(array $data): array
