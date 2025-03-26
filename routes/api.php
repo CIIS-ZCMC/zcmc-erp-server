@@ -73,6 +73,26 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::put('procurement-modes/{id}', "ProcurementModesController@update");
     Route::delete('procurement-modes', "ProcurementModesController@destroy");
     
+    Route::get('divisions/import', "DivisionController@import");
+    Route::get('divisions', "DivisionController@index");
+    Route::put('divisions', "DivisionController@update");
+    Route::delete('divisions', "DivisionController@destroy");
+    
+    Route::get('departments/import', "DepartmentController@import");
+    Route::get('departments', "DepartmentController@index");
+    Route::put('departments', "DepartmentController@update");
+    Route::delete('departments', "DepartmentController@destroy");
+    
+    Route::get('sections/import', "SectionController@import");
+    Route::get('sections', "SectionController@index");
+    Route::put('sections', "SectionController@update");
+    Route::delete('sections', "SectionController@destroy");
+    
+    Route::get('units/import', "UnitController@import");
+    Route::get('units', "UnitController@index");
+    Route::put('units', "UnitController@update");
+    Route::delete('units', "UnitController@destroy");
+    
     Route::post('log-descriptions/template', "LogDescriptionController@import");
     Route::post('log-descriptions/import', "LogDescriptionController@downloadTemplate");
     Route::get('log-descriptions', "LogDescriptionController@index");

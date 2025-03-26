@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('departments', function (Blueprint $table) {
+        Schema::create('sections', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('head_id');
             $table->foreign('head_id')->references('id')->on('users');
@@ -19,7 +19,9 @@ return new class extends Migration
             $table->foreign('oic_id')->references('id')->on('users');
             $table->unsignedBigInteger('division_id')->nullable();
             $table->foreign('division_id')->references('id')->on('divisions');
-            $table->unsignedBigInteger('umis_department_id');
+            $table->unsignedBigInteger('department_id')->nullable();
+            $table->foreign('department_id')->references('id')->on('departments');
+            $table->unsignedBigInteger('umis_section_id');
             $table->string('name');
             $table->timestamps();
         });
@@ -30,6 +32,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('departments');
+        Schema::dropIfExists('sections');
     }
 };

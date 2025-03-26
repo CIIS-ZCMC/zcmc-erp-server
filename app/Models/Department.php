@@ -26,6 +26,9 @@ class Department extends Model
      */
     protected $fillable = [
         'head_id',
+        'oid_id',
+        'division_id',
+        'umis_department_id',
         'name',
     ];  
 
@@ -37,6 +40,21 @@ class Department extends Model
     public function head()
     {
         return $this->belongsTo(User::class);
+    }  
+
+    /**
+     * Get the division where the department belongs.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function divsion()
+    {
+        return $this->belongsTo(Division::class);
+    }
+
+    public function sections()
+    {
+        return $this->hasMany(Section::class);
     }
 
     /**

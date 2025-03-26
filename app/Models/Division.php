@@ -13,6 +13,8 @@ class Division extends Model
      */
     protected $fillable = [
         'head_id',
+        'oic_id',
+        'umis_division_id',
         'name',
     ];
 
@@ -24,6 +26,11 @@ class Division extends Model
     public function head()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function departments()
+    {
+        return $this->hasMany(Department::class);
     }
     
     /**

@@ -80,6 +80,20 @@ class DivisionController extends Controller
     }
 
     /**
+     * Summary of import
+     * 
+     * This endpoint stands as entry point of division record from umis
+     * it will request all divisions from umis and register to the system
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return mixed|\Illuminate\Http\JsonResponse
+     */
+    public function import(Request $request)
+    {
+        return response()->json(['message' => "COMPLETE THIS ENDPOINT"], Response::HTTP_PARTIAL_CONTENT);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
@@ -193,89 +207,10 @@ class DivisionController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $base_message = "Successfully created division";
-
-        // Bulk Insert
-        if ($request->divisions !== null || $request->divisions > 1) {
-            $existing_divisions = [];
-            $existing_items = Division::whereIn('name', collect($request->divisions)->pluck('name'))
-                ->get(['name'])->toArray();
-
-            // Convert existing items into a searchable format
-            $existing_names = array_column($existing_items, 'name');
-
-            if(!empty($existing_items)){
-                $existing_divisions = Division::whereIn("name", $existing_names)->get();
-            }
-
-            foreach ($request->divisions as $item) {
-                if (!in_array($item['name'], $existing_names)) {
-                    $cleanData[] = [
-                        "name" => strip_tags($item['name']),
-                        "code" => isset($item['code']) ? strip_tags($item['code']) : null,
-                        "created_at" => now(),
-                        "updated_at" => now()
-                    ];
-                }
-            }
-
-            if (empty($cleanData) && count($existing_items) > 0) {
-                return response()->json([
-                    'data' => $existing_divisions,
-                    'message' => "Failed to bulk insert all divisions already exist.",
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            Division::insert($cleanData);
-
-            $latest_divisions = Division::orderBy('id', 'desc')
-                ->limit(count($cleanData))->get()
-                ->sortBy('id')->values();
-
-            $message = count($latest_divisions) > 1 ? $base_message."s record" : $base_message." record.";
-
-            return response()->json([
-                "data" => $latest_divisions,
-                "message" => $message,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "duplicate_items" => $existing_divisions
-                ]
-            ], Response::HTTP_CREATED);
-        }
-        
-        // Single insert
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:divisions,name',
-            'code' => 'nullable|string|max:50|unique:divisions,code',
-        ]);
-        
-        $division = Division::create($this->cleanDivisionData($validated));
-        
-        return response()->json([
-            'data' => $division,
-            'message' => $base_message,
-            'metadata' => $this->getMetadata('post', $division->toArray())
-        ], Response::HTTP_CREATED);
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Division $division)
-    {
-        return response()->json([
-            'data' => $division,
-            'metadata' => $this->getMetadata('get', [])
-        ], Response::HTTP_OK);
-    }
-
-    /**
-     * Update the specified resource in storage.
+     * UPDATE
+     * This end point is intended for umis only in a situation where
+     * a oic assign to a division the umis will also send update to this system
+     * so that it will have updated data.
      */
     public function update(Request $request, Division $division)
     {

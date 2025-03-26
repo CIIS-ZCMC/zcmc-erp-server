@@ -26,6 +26,10 @@ class Unit extends Model
      */
     protected $fillable = [
         'head_id',
+        'oic_id',
+        'division_id',
+        'section_id',
+        'umis_unit_id',
         'name',
     ];
 
@@ -37,6 +41,16 @@ class Unit extends Model
     public function head()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
+    }
+
+    public function section()
+    {
+        return $this->belongsTo(Section::class);
     }
 
     /**

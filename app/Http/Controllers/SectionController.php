@@ -73,6 +73,20 @@ class SectionController extends Controller
     }
 
     /**
+     * Summary of import
+     * 
+     * This endpoint stands as entry point of section record from umis
+     * it will request all sections from umis and register to the system
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return mixed|\Illuminate\Http\JsonResponse
+     */
+    public function import(Request $request)
+    {
+        return response()->json(['message' => "COMPLETE THIS ENDPOINT"], Response::HTTP_PARTIAL_CONTENT);
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
@@ -186,89 +200,10 @@ class SectionController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $base_message = "Successfully created section";
-
-        // Bulk Insert
-        if ($request->sections !== null || $request->sections > 1) {
-            $existing_sections = [];
-            $existing_items = Section::whereIn('name', collect($request->sections)->pluck('name'))
-                ->get(['name'])->toArray();
-
-            // Convert existing items into a searchable format
-            $existing_names = array_column($existing_items, 'name');
-
-            if(!empty($existing_items)){
-                $existing_sections = Section::whereIn("name", $existing_names)->get();
-            }
-
-            foreach ($request->sections as $item) {
-                if (!in_array($item['name'], $existing_names)) {
-                    $cleanData[] = [
-                        "name" => strip_tags($item['name']),
-                        "code" => isset($item['code']) ? strip_tags($item['code']) : null,
-                        "created_at" => now(),
-                        "updated_at" => now()
-                    ];
-                }
-            }
-
-            if (empty($cleanData) && count($existing_items) > 0) {
-                return response()->json([
-                    'data' => $existing_sections,
-                    'message' => "Failed to bulk insert all sections already exist.",
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            Section::insert($cleanData);
-
-            $latest_sections = Section::orderBy('id', 'desc')
-                ->limit(count($cleanData))->get()
-                ->sortBy('id')->values();
-
-            $message = count($latest_sections) > 1 ? $base_message."s record" : $base_message." record.";
-
-            return response()->json([
-                "data" => $latest_sections,
-                "message" => $message,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "duplicate_items" => $existing_sections
-                ]
-            ], Response::HTTP_CREATED);
-        }
-        
-        // Single insert
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:sections,name',
-            'code' => 'nullable|string|max:50|unique:sections,code',
-        ]);
-        
-        $section = Section::create($this->cleanSectionData($validated));
-        
-        return response()->json([
-            'data' => $section,
-            'message' => $base_message,
-            'metadata' => $this->getMetadata('post', $section->toArray())
-        ], Response::HTTP_CREATED);
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Section $section)
-    {
-        return response()->json([
-            'data' => $section,
-            'metadata' => $this->getMetadata('get', $section->toArray())
-        ]);
-    }
-
-    /**
-     * Update the specified resource in storage.
+     * UPDATE
+     * This end point is intended for umis only in a situation where
+     * a oic assign to a section the umis will also send update to this system
+     * so that it will have updated data.
      */
     public function update(Request $request, Section $section)
     {
