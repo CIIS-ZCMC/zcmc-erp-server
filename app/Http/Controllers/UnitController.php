@@ -285,9 +285,7 @@ class UnitController extends Controller
         
         return response()->json([
             'message' => 'Unit deleted successfully',
-            'metadata' => [
-                'methods' => ['DELETE']
-            ]
+            'metadata' => $this->getMetadata('delete', $unit->toArray())
         ], Response::HTTP_OK);
     }
 }

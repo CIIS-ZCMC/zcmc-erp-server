@@ -6,6 +6,7 @@ use App\Models\Section;
 use App\Helpers\PaginationHelper;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Http\Resources\SectionResource;
 
 class SectionController extends Controller
 {
@@ -97,7 +98,7 @@ class SectionController extends Controller
             }
 
             return response()->json([
-                'data' => $section,
+                'data' => new SectionResource($section),
                 "metadata" => $this->getMetadata('get', [])
             ], 200);
         }
@@ -138,7 +139,7 @@ class SectionController extends Controller
         if ($mode === 'selection') {
             $sections = $query->select('id', 'name', 'code')->get();
             return response()->json([
-                'data' => $sections,
+                'data' => new SectionResource($sections),
                 'metadata' => $this->getMetadata('get', [])
             ], 200);
         }
@@ -176,7 +177,7 @@ class SectionController extends Controller
         ];
 
         return response()->json([
-            'data' => $sections,
+            'data' => new SectionResource($sections),
             'metadata' => [
                 'pagination' => $pagination,
                 'page' => $page,
@@ -218,7 +219,7 @@ class SectionController extends Controller
 
             if (empty($cleanData) && count($existing_items) > 0) {
                 return response()->json([
-                    'data' => $existing_sections,
+                    'data' => new SectionResource($existing_sections),
                     'message' => "Failed to bulk insert all sections already exist.",
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
@@ -232,7 +233,7 @@ class SectionController extends Controller
             $message = count($latest_sections) > 1 ? $base_message."s record" : $base_message." record.";
 
             return response()->json([
-                "data" => $latest_sections,
+                "data" => new SectionResource($latest_sections),
                 "message" => $message,
                 "metadata" => [
                     "methods" => "[GET, POST, PUT, DELETE]",
@@ -250,7 +251,7 @@ class SectionController extends Controller
         $section = Section::create($this->cleanSectionData($validated));
         
         return response()->json([
-            'data' => $section,
+            'data' => new SectionResource($section),
             'message' => $base_message,
             'metadata' => $this->getMetadata('post', $section->toArray())
         ], Response::HTTP_CREATED);
@@ -262,7 +263,7 @@ class SectionController extends Controller
     public function show(Section $section)
     {
         return response()->json([
-            'data' => $section,
+            'data' => new SectionResource($section),
             'metadata' => $this->getMetadata('get', $section->toArray())
         ]);
     }
@@ -280,7 +281,7 @@ class SectionController extends Controller
         $section->update($this->cleanSectionData($validated));
         
         return response()->json([
-            'data' => $section,
+            'data' => new SectionResource($section),
             'metadata' => $this->getMetadata('put', $section->toArray())
         ]);
     }
@@ -293,7 +294,8 @@ class SectionController extends Controller
         $section->delete();
         
         return response()->json([
-            'message' => 'Section deleted successfully'
+            'message' => 'Section deleted successfully',
+            'metadata' => $this->getMetadata('delete', $section->toArray())
         ], Response::HTTP_OK);
     }
 }
