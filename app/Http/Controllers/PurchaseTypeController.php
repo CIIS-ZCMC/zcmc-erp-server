@@ -3,36 +3,27 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\PaginationHelper;
-use App\Http\Requests\ItemCategoryRequest;
-use App\Models\ItemCategory;
+use App\Http\Requests\PurchaseTypeRequest;
+use App\Http\Resources\PurchaseTypeDuplicateResource;
+use App\Http\Resources\PurchaseTypeResource;
+use App\Models\PurchaseType;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class ItemCategoryController extends Controller
+class PurchaseTypeController extends Controller
 {
     private $is_development;
 
-    private $module = 'item-categories';
+    private $module = 'purchase-types';
 
     public function __construct()
     {
         $this->is_development = env("APP_DEBUG", true);
     }
-
-    public function import(Request $request)
-    {
-        return response()->json([
-            'message' => "Succesfully imported record"
-        ], Response::HTTP_OK);
-    }
     
-    protected function cleanCategoryData(array $data): array
+    private function cleanPurchaseTypeData(array $data): array
     {
         $cleanData = [];
-        
-        if (isset($data['name'])) {
-            $cleanData['name'] = strip_tags($data['name']);
-        }
         
         if (isset($data['code'])) {
             $cleanData['code'] = strip_tags($data['code']);
@@ -41,54 +32,62 @@ class ItemCategoryController extends Controller
         if (isset($data['description'])) {
             $cleanData['description'] = strip_tags($data['description']);
         }
-        
+
         return $cleanData;
     }
     
     protected function getMetadata($method): array
     {
         if($method === 'get'){
-            $metadata = ["methods" => ["GET, POST, PUT, DELETE"]];
+            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
             $metadata['modes'] = ['selection', 'pagination'];
 
-            if($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?item_category_id=[primary-key]",
+            if($this->is_development){
+                $metadata['urls'] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?purchase_type_id=[primary-key]",
                     env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
                     env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value"
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
                 ];
             }
-            
+
             return $metadata;
         }
-
+        
         if($method === 'put'){
-            $metadata = ["methods" => ["PUT"]];
-            
+            $metadata = ["methods" => "[PUT]"];
+        
             if ($this->is_development) {
                 $metadata["urls"] = [
                     env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
                     env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
                 ];
-                $metadata['fields'] = ["name", "code"];
+                $metadata['fields'] = ["title", "code", "description"];
             }
             
             return $metadata;
         }
-
-        $metadata = ["methods" => ["GET, PUT, DELETE"]];
         
-        if ($this->is_development) {
+        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+
+        if($this->is_development) {
             $metadata["urls"] = [
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
             ];
-            $metadata['fields'] = ["code"];
+
+            $metadata["fields"] =  ["code"];
         }
-        
+
         return $metadata;
+    }
+ 
+    public function import(Request $request)
+    {
+        return response()->json([
+            'message' => "Succesfully imported record"
+        ], Response::HTTP_OK);
     }
 
     public function index(Request $request)
@@ -100,12 +99,12 @@ class ItemCategoryController extends Controller
         $last_id = $request->query('last_id') ?? 0;
         $last_initial_id = $request->query('last_initial_id') ?? 0;
         $page_item = $request->query('page_item') ?? 0;
-        $item_category_id = $request->query('item_category_id') ?? null;
+        $purchase_type_id = $request->query('purchase_type_id') ?? null;
 
-        if($item_category_id){
-            $item_category = ItemCategory::find($item_category_id);
+        if($purchase_type_id){
+            $purchase_type = PurchaseType::find($purchase_type_id);
 
-            if(!$item_category){
+            if(!$purchase_type){
                 return response()->json([
                     'message' => "No record found.",
                     "metadata" => $this->getMetadata('get')
@@ -113,7 +112,7 @@ class ItemCategoryController extends Controller
             }
 
             return response()->json([
-                'data' => $item_category,
+                'data' => $purchase_type,
                 "metadata" => $this->getMetadata('get')
             ], Response::HTTP_OK);
         }
@@ -147,8 +146,8 @@ class ItemCategoryController extends Controller
         // Handle return for selection record
         if($mode === 'selection'){
             if($search !== null){
-                $item_categories = ItemCategory::select('id','name','code')
-                    ->where('name', 'like', '%'.$search.'%')
+                $purchase_types = PurchaseType::select('id','code','description')
+                    ->where('code', 'like', "%".$search."%")
                     ->where("deleted_at", NULL)->get();
     
                 $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
@@ -159,12 +158,12 @@ class ItemCategoryController extends Controller
                 }
                 
                 return response()->json([
-                    "data" => $item_categories,
+                    "data" => $purchase_types,
                     "metadata" => $metadata,
                 ], Response::HTTP_OK);
             }
 
-            $item_categories = ItemCategory::select('id','name','code')->where("deleted_at", NULL)->get();
+            $purchase_types = PurchaseType::select('id','code','description')->where("deleted_at", NULL)->get();
 
             $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
 
@@ -174,7 +173,7 @@ class ItemCategoryController extends Controller
             }
             
             return response()->json([
-                "data" => $item_categories,
+                "data" => $purchase_types,
                 "metadata" => $metadata,
             ], Response::HTTP_OK);
         }
@@ -182,14 +181,13 @@ class ItemCategoryController extends Controller
 
         if($search !== null){
             if($last_id === 0 || $page_item != null){
-                $item_categories = ItemCategory::where('name', 'like', '%'.$search.'%')
+                $purchase_types = PurchaseType::where('code', 'like', '%'.$search.'%')
                     ->where('id','>', $last_id)
                     ->orderBy('id')
                     ->limit($per_page)
                     ->get();
-                    
 
-                if(count($item_categories)  === 0){
+                if(count($purchase_types)  === 0){
                     return response()->json([
                         'data' => [],
                         'metadata' => [
@@ -201,13 +199,13 @@ class ItemCategoryController extends Controller
                     ], Response::HTTP_OK);
                 }
 
-                $allIds = ItemCategory::where('name', 'like', '%'.$search.'%')
+                $allIds = PurchaseType::where('code', 'like', '%'.$search.'%')
                     ->orderBy('id')
                     ->pluck('id');
 
                 $chunks = $allIds->chunk($per_page);
                 
-                $pagination_helper = new PaginationHelper('item-categories', $page, $per_page, 0);
+                $pagination_helper = new PaginationHelper('purchase-types', $page, $per_page, 0);
                 $pagination = $pagination_helper->createSearchPagination( $page_item, $chunks, $search, $per_page, $last_initial_id);
                 $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
                 
@@ -216,7 +214,7 @@ class ItemCategoryController extends Controller
                  */
 
                 return response()->json([
-                    'data' => $item_categories,
+                    'data' => $purchase_types,
                     'metadata' => [
                         'methods' => '[GET,POST,PUT,DELETE]',
                         'pagination' => $pagination,
@@ -230,7 +228,7 @@ class ItemCategoryController extends Controller
              * Reuse existing pagination and update the existing pagination next and previous data
              */
 
-            $item_categories = ItemCategory::where('name', 'like', '%'.$search.'%')
+            $purchase_types = PurchaseType::where('code', 'like', '%'.$search.'%')
                 ->where('id','>', $last_id)
                 ->orderBy('id')
                 ->limit($per_page)
@@ -238,19 +236,19 @@ class ItemCategoryController extends Controller
 
             // Return the response
             return response()->json([
-                'data' => $item_categories,
+                'data' => $purchase_types,
                 'metadata' => []
             ], Response::HTTP_OK);
         }
         
-        $total_page = ItemCategory::all()->pluck('id')->chunk($per_page);
-        $item_categories = ItemCategory::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
+        $total_page = PurchaseType::all()->pluck('id')->chunk($per_page);
+        $purchase_types = PurchaseType::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
         $total_page = ceil(count($total_page));
         
         $pagination_helper = new PaginationHelper(  $this->module,$page, $per_page, $total_page > 10 ? 10: $total_page);
 
         return response()->json([
-            "data" => $item_categories,
+            "data" => $purchase_types,
             "metadata" => [
                 "methods" => "[GET, POST, PUT, DELETE]",
                 "pagination" => $pagination_helper->create(),
@@ -260,24 +258,26 @@ class ItemCategoryController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function store(ItemCategoryRequest $request)
+    public function store(PurchaseTypeRequest $request)
     {
         $base_message = "Successfully created item category";
 
         // Bulk Insert
-        if ($request->item_categories !== null || $request->item_categories > 1) {
-            $existing_items = ItemCategory::whereIn('name', collect($request->item_categories)->pluck('name'))
-                ->orWhereIn('code', collect($request->item_categories)->pluck('code'))
-                ->get(['name', 'code'])->toArray();
+        if ($request->purchase_types !== null || $request->purchase_types > 1) {
+            $existing_purchase_types = [];
+            $existing_items = PurchaseType::whereIn('code', collect($request->purchase_types)->pluck('code'))
+                ->get(['code'])->toArray();
 
             // Convert existing items into a searchable format
-            $existing_names = array_column($existing_items, 'name');
             $existing_codes = array_column($existing_items, 'code');
 
-            foreach ($request->item_categories as $item) {
-                if (!in_array($item['name'], $existing_names) && !in_array($item['code'], $existing_codes)) {
+            if(!empty($existing_items)){
+                $existing_purchase_types = PurchaseTypeDuplicateResource::collection(PurchaseType::whereIn("code", $existing_codes)->get());
+            }
+
+            foreach ($request->purchase_types as $item) {
+                if ( !in_array($item['code'], $existing_codes)) {
                     $cleanData[] = [
-                        "name" => strip_tags($item['name']),
                         "code" => strip_tags($item['code']),
                         "description" => isset($item['description']) ? strip_tags($item['description']) : null,
                         "created_at" => now(),
@@ -288,40 +288,35 @@ class ItemCategoryController extends Controller
 
             if (empty($cleanData) && count($existing_items) > 0) {
                 return response()->json([
-                    'data' => $existing_items,
+                    'data' => $existing_purchase_types,
                     'message' => "Failed to bulk insert all item categories already exist.",
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
     
-            ItemCategory::insert($cleanData);
+            PurchaseType::insert($cleanData);
 
-            $latest_item_categories = ItemCategory::orderBy('id', 'desc')
+            $latest_purchase_types = PurchaseType::orderBy('id', 'desc')
                 ->limit(count($cleanData))->get()
                 ->sortBy('id')->values();
 
-            $message = count($latest_item_categories) > 1? $base_message."s record": $base_message." record.";
+            $message = count($latest_purchase_types) > 1? $base_message."s record": $base_message." record.";
 
             return response()->json([
-                "data" => $latest_item_categories,
+                "data" => $latest_purchase_types,
                 "message" => $message,
                 "metadata" => [
                     "methods" => "[GET, POST, PUT ,DELETE]",
-                    "duplicate_items" => $existing_items
+                    "duplicate_items" => $existing_purchase_types
                 ]
             ], Response::HTTP_CREATED);
         }
 
         $cleanData = [
-            "name" => strip_tags($request->input('name')),
             "code" => strip_tags($request->input('code')),
             "description" => strip_tags($request->input('description')),
         ];
-
-        $new_item = ItemCategory::create([
-            "name" => strip_tags($request->name),
-            "code" => strip_tags($request->code),
-            "description" => strip_tags($request->description),
-        ]);
+        
+        $new_item = PurchaseType::create($cleanData);
 
         return response()->json([
             "data" => $new_item,
@@ -331,159 +326,201 @@ class ItemCategoryController extends Controller
             ]
         ], Response::HTTP_CREATED);
     }
-    
-    public function update(Request $request): Response
+
+    public function update(Request $request):Response    
     {
-        $item_category_ids = $request->query('id') ?? null;
-    
-        // Validate ID parameter exists
-        if (!$item_category_ids) {
+        $purchase_types = $request->query('id') ?? null;
+        
+        // Validate request has IDs
+        if (!$purchase_types) {
             $response = ["message" => "ID parameter is required."];
             
             if ($this->is_development) {
-                $response['metadata'] = $this->getMetadata("put");
+                $response['metadata'] = $this->getMetadata('put');
             }
             
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-    
-        $item_category_ids = is_array($item_category_ids) ? $item_category_ids : [$item_category_ids];
-    
-        // Handle bulk update
-        if ($request->has('item_categories')) {
-            
-            if (count($item_category_ids) !== count($request->input('item_categories'))) {
+
+        // Convert single ID to array for consistent processing
+        $purchase_types = is_array($purchase_types) ? $purchase_types : [$purchase_types];
+        
+        // For bulk update - validate purchase_types array matches IDs count
+        if ($request->has('purchase_types')) {
+            if (count($purchase_types) !== count($request->input('purchase_types'))) {
                 return response()->json([
-                    "message" => "Number of IDs does not match number of categories provided.",
-                    "metadata" => $this->getMetadata('put')
+                    "message" => "Number of IDs does not match number of purchase_types provided.",
+                    "metadata" => $this->getMetadata("put"),
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-        
-            $updated_categories = [];
+            
+            $updated_items = [];
             $errors = [];
-        
-            foreach ($item_category_ids as $index => $id) {
-                $category = ItemCategory::find($id);
+            
+            foreach ($purchase_types as $index => $id) {
+                $purchase_type = PurchaseType::find($id);
                 
-                if (!$category) {
-                    $errors[] = "Category with ID {$id} not found.";
+                if (!$purchase_type) {
+                    $errors[] = "PurchaseType with ID {$id} not found.";
                     continue;
                 }
-        
-                $cleanData = $this->cleanCategoryData($request->input('item_categories')[$index]);
-                $category->update($cleanData);
-                $updated_categories[] = $category;
+                
+                $purchase_typeData = $request->input('purchase_types')[$index];
+                $cleanData = $this->cleanPurchaseTypeData($purchase_typeData);
+                
+                $purchase_type->update($cleanData);
+                $updated_purchase_types[] = $purchase_type;
             }
-        
+            
             if (!empty($errors)) {
                 return response()->json([
-                    "data" => $updated_categories,
+                    "data" => PurchaseTypeResource::collection($updated_purchase_types),
                     "message" => "Partial update completed with errors.",
-                    "errors" => $errors,
-                    "metadata" => $this->getMetadata('put')
+                    "metadata" => [                    
+                        "method" => "[PUT]",
+                        "errors" => $errors,
+                    ]
                 ], Response::HTTP_MULTI_STATUS);
             }
-        
+            
             return response()->json([
-                "data" => $updated_categories,
-                "message" => "Successfully updated ".count($updated_categories)." categories.",
+                "data" => PurchaseTypeResource::collection($updated_purchase_types),
+                "message" => "Successfully updated ".count($updated_purchase_types)." items.",
                 "metadata" => $this->getMetadata('put')
             ], Response::HTTP_OK);
         }
         
-        $category = ItemCategory::find($item_category_ids[0]);
-        
-        if (!$category) {
+        // Single item update
+        if (count($purchase_types) > 1) {
             return response()->json([
-                "message" => "Category not found."
+                "message" => "Multiple IDs provided but no purchase type array for bulk update.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        
+        $item = PurchaseType::find($purchase_types[0]);
+        
+        if (!$item) {
+            return response()->json([
+                "message" => "PurchaseType not found."
             ], Response::HTTP_NOT_FOUND);
         }
-    
-        $cleanData = $this->cleanCategoryData($request->all());
-        $category->update($cleanData);
-    
-        return response()->json([
-            "data" => $category,
-            "message" => "Category updated successfully.",
+        
+        $cleanData = $this->cleanPurchaseTypeData($request->all());
+        $item->update($cleanData);
+        
+        $response = [
+            "data" => new PurchaseTypeResource($item),
+            "message" => "Purchase Type updated successfully.",
             "metadata" => $this->getMetadata('put')
-        ], Response::HTTP_OK);
+        ];
+        
+        if ($this->is_development) {
+            $response['metadata'] = $this->getMetadata('put');
+        }
+        
+        return response()->json($response, Response::HTTP_OK);
     }
 
     public function destroy(Request $request): Response
     {
-        $item_category_ids = $request->query('id') ?? null;
+        $purchase_type_ids = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
 
-        if (!$item_category_ids && !$query) {
-            $response = ["message" => "Invalid request."];
+        if (!$purchase_type_ids && !$query) {
+            $response = ["message" => "Invalid request. No parameters provided."];
 
             if ($this->is_development) {
                 $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => $this->getMetadata("delete"),
+                    "message" => "No parameters found for deletion.",
+                    "metadata" => $this->getMetadata('delete'),
+                    "hint" => "Provide either 'id' or 'query' parameter"
                 ];
             }
 
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if ($item_category_ids) {
-            $item_category_ids = is_array($item_category_ids) 
-                ? $item_category_ids 
-                : (str_contains($item_category_ids, ',') 
-                    ? explode(',', $item_category_ids) 
-                    : [$item_category_ids]
-                );
+        if ($purchase_type_ids) {
+            // Handle all ID formats: single, comma-separated, and array-style
+            $purchase_type_ids = is_array($purchase_type_ids) 
+                ? $purchase_type_ids 
+                : (str_contains($purchase_type_ids, ',') 
+                    ? explode(',', $purchase_type_ids) 
+                    : [$purchase_type_ids]);
 
-            // Convert all IDs to integers and filter invalid ones
-            $item_category_ids = array_filter(array_map('intval', $item_category_ids));
-
-            if (empty($item_category_ids)) {
-                return response()->json(["message" => "Invalid ID format."], Response::HTTP_BAD_REQUEST);
+            // Validate and sanitize IDs
+            $valid_ids = [];
+            foreach ($purchase_type_ids as $id) {
+                if (is_numeric($id) && $id > 0) {
+                    $valid_ids[] = (int)$id;
+                }
             }
 
-            $item_categories = ItemCategory::whereIn('id', $item_category_ids)
+            if (empty($valid_ids)) {
+                return response()->json(
+                    ["message" => "Invalid purchase type ID format provided."],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+
+            // Get only active purchase types that exist
+            $purchase_types = PurchaseType::whereIn('id', $valid_ids)
                 ->whereNull('deleted_at')
                 ->get();
 
-            if ($item_categories->isEmpty()) {
-                return response()->json(["message" => "No active records found for the given IDs."], Response::HTTP_NOT_FOUND);
+            if ($purchase_types->isEmpty()) {
+                return response()->json(
+                    ["message" => "No active purchase types found with the provided IDs."],
+                    Response::HTTP_NOT_FOUND
+                );
             }
 
-            // Get only the IDs that were actually found and not deleted
-            $found_ids = $item_categories->pluck('id')->toArray();
+            // Get the IDs that were actually found
+            $found_ids = $purchase_types->pluck('id')->toArray();
             
-            // Soft delete only the found records
-            ItemCategory::whereIn('id', $found_ids)->update(['deleted_at' => now()]);
+            // Perform soft delete and get count
+            $deleted_count = PurchaseType::whereIn('id', $found_ids)
+                ->update(['deleted_at' => now()]);
 
             return response()->json([
-                "message" => "Successfully deleted " . count($found_ids) . " record(s).",
-                "deleted_ids" => $found_ids
+                "message" => "Successfully deleted {$deleted_count} purchase type(s).",
+                "deleted_ids" => $found_ids,
+                "count" => $deleted_count,
+                "remaining_active" => PurchaseType::whereNull('deleted_at')->count()
             ], Response::HTTP_OK);
         }
-
-        $item_categories = ItemCategory::where($query)
+        
+        $purchase_types = PurchaseType::where($query)
             ->whereNull('deleted_at')
             ->get();
 
-        if ($item_categories->count() > 1) {
+        if ($purchase_types->count() > 1) {
             return response()->json([
-                'data' => $item_categories,
-                'message' => "Request would affect multiple records. Please specify IDs directly."
+                'data' => $purchase_types,
+                'message' => "Query matches multiple purchase types. Please be more specific.",
+                'suggestion' => [
+                    'use_ids' => "Use ?id parameter for precise deletion",
+                    'add_criteria' => "Add more query parameters to narrow down results"
+                ]
             ], Response::HTTP_CONFLICT);
         }
 
-        $item_category = $item_categories->first();
+        $purchase_type = $purchase_types->first();
 
-        if (!$item_category) {
-            return response()->json(["message" => "No active record found matching query."], Response::HTTP_NOT_FOUND);
+        if (!$purchase_type) {
+            return response()->json(
+                ["message" => "No active purchase type found matching your criteria."],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
-        $item_category->update(['deleted_at' => now()]);
-        
+        $purchase_type->update(['deleted_at' => now()]);
+
         return response()->json([
-            "message" => "Successfully deleted record.",
-            "deleted_id" => $item_category->id
+            "message" => "Successfully deleted purchase type.",
+            "deleted_id" => $purchase_type->id,
+            "type_name" => $purchase_type->name,
+            "remaining_active" => PurchaseType::whereNull('deleted_at')->count()
         ], Response::HTTP_OK);
     }
 }

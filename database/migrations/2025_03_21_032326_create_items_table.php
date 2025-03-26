@@ -21,6 +21,7 @@ return new class extends Migration
             $table->foreign('item_classification_id')->references('id')->on('item_classifications');
             $table->string('name');
             $table->float('estimated_budget')->default(0);
+            $table->dateTime('deleted_at')->nullable();
             $table->timestamps();
         });
     }

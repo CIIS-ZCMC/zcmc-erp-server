@@ -9,8 +9,9 @@ class PurchaseType extends Model
     protected $table = "purchase_types";
 
     public $fillable = [
+        "code",
         "description",
-        "code"
+        "deleted_at"
     ];
 
     public $timestamps = true;

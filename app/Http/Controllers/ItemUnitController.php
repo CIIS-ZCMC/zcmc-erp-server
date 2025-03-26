@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemUnitRequest;
 use App\Models\ItemUnit;
+use App\Models\LogDescription;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -18,12 +19,78 @@ class ItemUnitController extends Controller
     {
         $this->is_development = env("APP_DEBUG", true);
     }
-
+ 
     public function import(Request $request)
     {
         return response()->json([
             'message' => "Succesfully imported record"
         ], Response::HTTP_OK);
+    }
+    
+    private function cleanItemUnitData(array $data): array
+    {
+        $cleanData = [];
+        
+        if (isset($data['name'])) {
+            $cleanData['name'] = strip_tags($data['name']);
+        }
+        
+        if (isset($data['code'])) {
+            $cleanData['code'] = strip_tags($data['code']);
+        }
+        
+        if (isset($data['description'])) {
+            $cleanData['description'] = strip_tags($data['description']);
+        }
+
+        return $cleanData;
+    }
+    
+    protected function getMetadata($method): array
+    {
+        if($method === 'get'){
+            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
+            $metadata['modes'] = ['selection', 'pagination'];
+
+            if($this->is_development){
+                $metadata['urls'] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?item_unit_id=[primary-key]",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                ];
+            }
+
+            return $metadata;
+        }
+        
+        if($method === 'put'){
+            $metadata = ["methods" => "[PUT]"];
+        
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["title", "code", "description"];
+            }
+            
+            return $metadata;
+        }
+        
+        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+
+        if($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+
+            $metadata["fields"] =  ["code"];
+        }
+
+        return $metadata;
     }
 
     public function index(Request $request)
@@ -43,29 +110,13 @@ class ItemUnitController extends Controller
             if(!$item_unit){
                 return response()->json([
                     'message' => "No record found.",
-                    "metadata" => [
-                        "methods" => "[GET, POST, PUT, DELETE]",
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_unit_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata("get")
                 ]);
             }
 
             return response()->json([
                 'data' => $item_unit,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "urls" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?item_unit_id=[primary-key]",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                    ]
-                ]
+                "metadata" => $this->getMetadata("get")
             ], Response::HTTP_OK);
         }
 
@@ -75,16 +126,7 @@ class ItemUnitController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "Invalid value of parameters",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_unit_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata("get")
                 ];
             }
 
@@ -97,20 +139,46 @@ class ItemUnitController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_unit_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata("get")
                 ];
             }
 
             return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        // Handle return for selection record
+        if($mode === 'selection'){
+            if($search !== null){
+                $item_units = ItemUnit::select('id','name','code')
+                    ->where('name', 'like', '%'.$search.'%')
+                    ->where("deleted_at", NULL)->get();
+    
+                $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
+    
+                if($this->is_development){
+                    $metadata['content'] = "This type of response is for selection component.";
+                    $metadata['mode'] = "selection";
+                }
+                
+                return response()->json([
+                    "data" => $item_units,
+                    "metadata" => $metadata,
+                ], Response::HTTP_OK);
+            }
+
+            $item_units = ItemUnit::select('id','name','code')->where("deleted_at", NULL)->get();
+
+            $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
+
+            if($this->is_development){
+                $metadata['content'] = "This type of response is for selection component.";
+                $metadata['mode'] = "selection";
+            }
+            
+            return response()->json([
+                "data" => $item_units,
+                "metadata" => $metadata,
+            ], Response::HTTP_OK);
         }
         
 
@@ -122,13 +190,25 @@ class ItemUnitController extends Controller
                     ->limit($per_page)
                     ->get();
 
+                if(count($item_units)  === 0){
+                    return response()->json([
+                        'data' => [],
+                        'metadata' => [
+                            'methods' => '[GET,POST,PUT,DELETE]',
+                            'pagination' => [],
+                            'page' => 0,
+                            'total_page' => 0
+                        ],
+                    ], Response::HTTP_OK);
+                }
+
                 $allIds = ItemUnit::where('name', 'like', '%'.$search.'%')
                     ->orderBy('id')
                     ->pluck('id');
 
                 $chunks = $allIds->chunk($per_page);
                 
-                $pagination_helper = new PaginationHelper('hospital', $page, $per_page, 0);
+                $pagination_helper = new PaginationHelper('item-units', $page, $per_page, 0);
                 $pagination = $pagination_helper->createSearchPagination( $page_item, $chunks, $search, $per_page, $last_initial_id);
                 $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
                 
@@ -161,23 +241,6 @@ class ItemUnitController extends Controller
             return response()->json([
                 'data' => $item_units,
                 'metadata' => []
-            ], Response::HTTP_OK);
-        }
-
-        // Handle return for selection record
-        if($mode === 'selection'){
-            $item_units = ItemUnit::select('id','name','code')->where("deleted_at", NULL)->get();
-
-            $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-
-            if($this->is_development){
-                $metadata['content'] = "This type of response is for selection component.";
-                $metadata['mode'] = "selection";
-            }
-            
-            return response()->json([
-                "data" => $item_units,
-                "metadata" => $metadata,
             ], Response::HTTP_OK);
         }
         
@@ -269,75 +332,82 @@ class ItemUnitController extends Controller
             ]
         ], Response::HTTP_CREATED);
     }
-    public function update(Request $request):Response    
+    
+    public function update(Request $request): Response
     {
-        $item_unit_id = $request->query('id') ?? null;
-        $query = $request->query('query') ?? null;
-
-        if(!$item_unit_id && !$query){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                            env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
-                ];
-            }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-        
-        $item_unit = null;
-
-        if($item_unit_id){
-            $item_unit = ItemUnit::find($item_unit_id);    
-        }
-
-        if(!$item_unit_id && $query){
-            $item_units = ItemUnit::where($query)->get();
+        $item_unit_ids = $request->query('id') ?? null;
+    
+        // Validate ID parameter exists
+        if (!$item_unit_ids) {
+            $response = ["message" => "ID parameter is required."];
             
-            // Check result is has many records
-            if(count($item_units) > 1){
+            if ($this->is_development) {
+                $response['metadata'] = $this->getMetadata('put');
+            }
+            
+            return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    
+        // Convert single ID to array for consistent processing
+        $item_unit_ids = is_array($item_unit_ids) ? $item_unit_ids : [$item_unit_ids];
+    
+        // Handle bulk update
+        if ($request->has('item_units')) {
+            if (count($item_unit_ids) !== count($request->input('item_units'))) {
                 return response()->json([
-                    'data' => $item_units,
-                    'message' => "Request has multiple record."
-                ], Response::HTTP_CONFLICT);
+                    "message" => "Number of IDs does not match number of item units provided.",
+                    "metadata" => $this->getMetadata('put')
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-
-            $item_unit = $item_units->first();
-        }
         
-        $cleanData = [
-            "name" => strip_tags($request->input('name')),
-            "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
-        ];
-
-        $item_unit->update($cleanData);
-
-        $metadata = [
-            "methods" => "[GET, PUT, DELETE]",
-        ];
-
-        if($this->is_development){
-            $metadata["formats"] = [
-                env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-            ];
-            
-            $metadata['fields'] = ["code"];
+            $updated_logs = [];
+            $errors = [];
+        
+            foreach ($item_unit_ids as $index => $id) {
+                $item_unit = ItemUnit::find($id);
+                
+                if (!$item_unit) {
+                    $errors[] = "Log description with ID {$id} not found.";
+                    continue;
+                }
+        
+                $cleanData = $this->cleanItemUnitData($request->input('item_units')[$index]);
+                $item_unit->update($cleanData);
+                $updated_logs[] = $item_unit;
+            }
+        
+            if (!empty($errors)) {
+                return response()->json([
+                    "data" => $updated_logs,
+                    "message" => "Partial update completed with errors.",
+                    "errors" => $errors,
+                    "metadata" => $this->getMetadata('put')
+                ], Response::HTTP_MULTI_STATUS);
+            }
+        
+            return response()->json([
+                "data" => $updated_logs,
+                "message" => "Successfully updated ".count($updated_logs)." item units.",
+                "metadata" => $this->getMetadata('put')
+            ], Response::HTTP_OK);
         }
-
+    
+        // Handle single update
+        $item_unit = ItemUnit::find($item_unit_ids[0]);
+        
+        if (!$item_unit) {
+            return response()->json([
+                "message" => "Item unit not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+    
+        $cleanData = $this->cleanItemUnitData($request->all());
+        $item_unit->update($cleanData);
+    
         return response()->json([
             "data" => $item_unit,
-            "metadata" => $metadata
+            "message" => "Item unit updated successfully.",
+            "metadata" => $this->getMetadata('put')
         ], Response::HTTP_OK);
     }
 
@@ -352,56 +422,77 @@ class ItemUnitController extends Controller
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
+                    "metadata" => $this->getMetadata("delete")
                 ];
             }
 
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-
         if ($item_unit_ids) {
-            $item_unit_ids = is_array($item_unit_ids) ? $item_unit_ids : explode(',', $item_unit_ids);
-            $item_units = ItemUnit::whereIn('id', $item_unit_ids)->where('deleted_at', NULL)->get();
+            $item_unit_ids = is_array($item_unit_ids) 
+                ? $item_unit_ids 
+                : (str_contains($item_unit_ids, ',') 
+                    ? explode(',', $item_unit_ids) 
+                    : [$item_unit_ids]
+                );
+
+            $item_unit_ids = array_filter(array_map('intval', $item_unit_ids));
+            
+            if (empty($item_unit_ids)) {
+                return response()->json(
+                    ["message" => "Invalid ID format provided."],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+
+            $item_units = ItemUnit::whereIn('id', $item_unit_ids)
+                ->whereNull('deleted_at')
+                ->get();
 
             if ($item_units->isEmpty()) {
-                return response()->json(["message" => "No records found."], Response::HTTP_NOT_FOUND);
+                return response()->json(
+                    ["message" => "No active item units found with the provided IDs."],
+                    Response::HTTP_NOT_FOUND
+                );
             }
 
-            ItemUnit::whereIn('id', $item_unit_ids)->update(['deleted_at' => now()]);
+            $found_ids = $item_units->pluck('id')->toArray();
+            
+            ItemUnit::whereIn('id', $found_ids)->update(['deleted_at' => now()]);
 
             return response()->json([
-                "message" => "Successfully deleted " . count($item_units) . " records."
-            ], Response::HTTP_NO_CONTENT);
+                "message" => "Successfully deleted " . count($found_ids) . " item unit(s).",
+                "deleted_ids" => $found_ids
+            ], Response::HTTP_OK);
         }
 
-        if ($query) {
-            $item_units = ItemUnit::where($query)->get();
+        $item_units = ItemUnit::where($query)
+            ->whereNull('deleted_at')
+            ->get();
 
-            if ($item_units->count() > 1) {
-                return response()->json([
-                    'data' => $item_units,
-                    'message' => "Request has multiple records."
-                ], Response::HTTP_CONFLICT);
-            }
-
-            $item_unit = $item_units->first();
-
-            if (!$item_unit) {
-                return response()->json(["message" => "No record found."], Response::HTTP_NOT_FOUND);
-            }
-
-            $item_unit->update(['deleted_at' => now()]);
+        if ($item_units->count() > 1) {
+            return response()->json([
+                'data' => $item_units,
+                'message' => "Query matches multiple records. Please specify IDs directly.",
+                'suggestion' => "Use the ID parameter instead for bulk operations."
+            ], Response::HTTP_CONFLICT);
         }
 
-        return response()->json(["message" => "Successfully deleted record."], Response::HTTP_NO_CONTENT);
+        $item_unit = $item_units->first();
+
+        if (!$item_unit) {
+            return response()->json(
+                ["message" => "No active item unit found matching query."],
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
+        $item_unit->update(['deleted_at' => now()]);
+
+        return response()->json([
+            "message" => "Successfully deleted item unit.",
+            "deleted_id" => $item_unit->id
+        ], Response::HTTP_OK);
     }
 }

@@ -9,10 +9,11 @@ class ItemClassification extends Model
     protected $table = "item_classifications";
 
     public $fillable = [
-        "item_categories_id",
+        "item_category_id",
         "name",
         "code",
-        "description"
+        "description",
+        "deleted_at"
     ];
 
     public $timestamps = true;

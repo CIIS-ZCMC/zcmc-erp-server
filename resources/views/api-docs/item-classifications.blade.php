@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>API Documentation - Item Categories</title>
+    <title>API Documentation - Item Classifications</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         /* Base Styles */
@@ -277,33 +277,43 @@
             pre {
                 font-size: 0.9rem;
             }
+
+            .classification-hierarchy {
+                grid-template-columns: 1fr;
+            }
+            
+            .resource-description,
+            .model-fields,
+            .implementation-standards {
+                padding: 15px;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="{{ url('/api-docs') }}" class="back-link">← Back to API Documentation</a>
-        <h1>API Documentation - Log Descriptions</h1>
-        
+        <h1>API Documentation - Item Classifications</h1>
+
         <div class="resource-description">
-            <h2>Log Descriptions Resource</h2>
+            <h2>Item Classifications Resource</h2>
             <p>
-                The Log Descriptions resource standardizes system activity logging by providing predefined templates
-                for common inventory management events in healthcare settings.
+                Item Classifications provide a detailed categorization system within each Item Category,
+                enabling precise inventory management and specialized reporting for healthcare organizations.
             </p>
             
             <h3>Key Features</h3>
             <ul>
-                <li>Standardized audit trail messages</li>
-                <li>Consistent logging format across the system</li>
-                <li>Improved searchability of log events</li>
-                <li>Support for compliance reporting</li>
-                <li>Soft deletion for maintaining historical templates</li>
+                <li>Hierarchical organization under parent categories</li>
+                <li>Granular inventory tracking and reporting</li>
+                <li>Standardized taxonomy for procurement</li>
+                <li>Support for clinical and administrative classification</li>
+                <li>Soft deletion for historical reference</li>
             </ul>
         </div>
 
         <div class="model-fields">
-            <h2>Log Description Model Fields</h2>
+            <h2>Item Classification Model Fields</h2>
             <table>
                 <thead>
                     <tr>
@@ -323,25 +333,32 @@
                         <td>1</td>
                     </tr>
                     <tr>
-                        <td>title</td>
-                        <td>string</td>
-                        <td>Brief descriptive title of the log event</td>
+                        <td>item_category_id</td>
+                        <td>integer</td>
+                        <td>Reference to parent category</td>
                         <td>Yes</td>
-                        <td>"Item Restocked"</td>
+                        <td>3</td>
+                    </tr>
+                    <tr>
+                        <td>name</td>
+                        <td>string</td>
+                        <td>Descriptive classification name</td>
+                        <td>Yes</td>
+                        <td>"Diagnostic Imaging"</td>
                     </tr>
                     <tr>
                         <td>code</td>
                         <td>string</td>
-                        <td>Unique event identifier code</td>
+                        <td>Unique classification code</td>
                         <td>Yes</td>
-                        <td>"ITEM_RESTOCK"</td>
+                        <td>"DIAG-IMG"</td>
                     </tr>
                     <tr>
                         <td>description</td>
                         <td>text</td>
-                        <td>Template message with placeholder variables</td>
-                        <td>Yes</td>
-                        <td>"Item {item_name} was restocked with {quantity} {unit}"</td>
+                        <td>Detailed scope definition</td>
+                        <td>No</td>
+                        <td>"Includes all radiology and imaging equipment"</td>
                     </tr>
                     <tr>
                         <td>deleted_at</td>
@@ -350,45 +367,28 @@
                         <td>No</td>
                         <td>null</td>
                     </tr>
+                    <tr>
+                        <td>created_at</td>
+                        <td>timestamp</td>
+                        <td>Record creation timestamp</td>
+                        <td>Auto</td>
+                        <td>2023-06-15 10:00:00</td>
+                    </tr>
+                    <tr>
+                        <td>updated_at</td>
+                        <td>timestamp</td>
+                        <td>Record update timestamp</td>
+                        <td>Auto</td>
+                        <td>2023-06-15 10:30:00</td>
+                    </tr>
                 </tbody>
             </table>
         </div>
-
-        <div class="implementation-guidelines">
-            <h2>Implementation Guidelines</h2>
-            <div class="guideline-card">
-                <h3>Title Standards</h3>
-                <ul>
-                    <li>Use clear, action-oriented language</li>
-                    <li>Keep under 50 characters</li>
-                    <li>Follow "Noun Verb" or "Verb Noun" pattern</li>
-                    <li>Avoid ambiguous terms</li>
-                </ul>
-            </div>
-            <div class="guideline-card">
-                <h3>Code Formatting</h3>
-                <ul>
-                    <li>Uppercase with underscore separators</li>
-                    <li>Use consistent prefix for related events (e.g., "ITEM_")</li>
-                    <li>Keep codes under 20 characters</li>
-                    <li>Make codes self-descriptive</li>
-                </ul>
-            </div>
-            <div class="guideline-card">
-                <h3>Description Templates</h3>
-                <ul>
-                    <li>Use curly braces for variables {like_this}</li>
-                    <li>Include all relevant context</li>
-                    <li>Maintain neutral, factual tone</li>
-                    <li>Keep under 120 characters when possible</li>
-                </ul>
-            </div>
-        </div>
-
+    
         <!-- Index Endpoint -->
         <div class="endpoint">
-            <h2>GET /api/log-descriptions</h2>
-            <p>Retrieve log descriptions with options for pagination, selection mode, or fetching a single record by ID.</p>
+            <h2>GET /api/item-classifications</h2>
+            <p>Retrieve item classifications with options for pagination, selection mode, or fetching a single record by ID.</p>
 
             <h3>Parameters</h3>
             <table>
@@ -422,11 +422,11 @@
                     <tr>
                         <td>search</td>
                         <td>string</td>
-                        <td>A search term to filter item categories by title.</td>
+                        <td>A search term to filter item classifications by name.</td>
                         <td>No</td>
                     </tr>
                     <tr>
-                        <td>log_description_id</td>
+                        <td>item_classification_id</td>
                         <td>integer</td>
                         <td>The ID of a specific item unit to retrieve.</td>
                         <td>No</td>
@@ -441,14 +441,14 @@
                     <strong>pagination</strong> (default): Returns paginated results with metadata for navigating between pages.
                 </li>
                 <li>
-                    <strong>selection</strong>: Returns a flat list of item categories suitable for use in dropdowns or selection components.
+                    <strong>selection</strong>: Returns a flat list of item classifications suitable for use in dropdowns or selection components.
                 </li>
             </ul>
 
             <h4>Example Request for Pagination Mode</h4>
             <pre>
-GET {{ env('SERVER_DOMAIN') }}/api/log_descriptions?page=1&per_page=10&search=Ton
-                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/log_descriptions?page=1&per_page=10&search=Ton')">
+GET {{ env('SERVER_DOMAIN') }}/api/item-classifications?page=1&per_page=10&search=Ton
+                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-classifications?page=1&per_page=10&search=Ton')">
                     <i class="fas fa-copy"></i> Copy URL
                 </button>
             </pre>
@@ -458,34 +458,51 @@ GET {{ env('SERVER_DOMAIN') }}/api/log_descriptions?page=1&per_page=10&search=To
 {
     "data": [
         {
-            "id": 3,
-            "title": "User Login",
-            "description": "A user has successfully logged into the system.",
-            "code": "USR_LOGIN",
+            "id": 6,
+            "item_category_id": 1,
+            "name": "Pharmaceuticals",
+            "code": "ph",
+            "description": "Medicines and drugs used for treatment",
             "deleted_at": null,
-            "created_at": "2025-03-23T17:04:28.000000Z",
-            "updated_at": "2025-03-23T17:04:28.000000Z"
-        }
+            "created_at": "2025-03-24T06:02:44.000000Z",
+            "updated_at": "2025-03-24T06:02:44.000000Z"
+        },
+        {
+            "id": 7,
+            "item_category_id": 1,
+            "name": "Hospital Furniture",
+            "code": "hf",
+            "description": "Beds, stretchers, and other patient care furniture",
+            "deleted_at": null,
+            "created_at": "2025-03-24T06:02:44.000000Z",
+            "updated_at": "2025-03-24T06:02:44.000000Z"
+        },
     ],
     "metadata": {
+        "methods": "[GET, POST, PUT, DELETE]",
         "pagination": [
             {
-                "title": "previous",
+                "title": "Prev",
                 "link": null,
-                "is_active": false
+                "active": false
             },
             {
                 "title": 1,
-                "link": "http://localhost:8000/api/log-descriptions?search=User&per_page=10&last_initial_id=0&last_id=0",
-                "is_active": true
+                "link": "http://http://localhost/api/item_classifications?per_page=10&page=1",
+                "active": true
             },
             {
-                "title": "next",
-                "link": "http://localhost:8000/api/log-descriptions?search=User&per_page=10&last_initial_id=0&last_id=0",
-                "is_active": true
+                "title": 2,
+                "link": "http://http://localhost/api/item_classifications?per_page=10&page=2",
+                "active": false
+            },
+            {
+                "title": "Next",
+                "link": "http://http://localhost/api/item_classifications?per_page=10&page=2",
+                "active": false
             }
         ],
-        "page": 1,
+        "page": "1",
         "total_page": 2
     }
 }
@@ -493,8 +510,8 @@ GET {{ env('SERVER_DOMAIN') }}/api/log_descriptions?page=1&per_page=10&search=To
 
             <h4>Example Request for Selection Mode</h4>
             <pre>
-GET {{ env('SERVER_DOMAIN') }}/api/log_descriptions?mode=selection
-                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/log_descriptions?mode=selection')">
+GET {{ env('SERVER_DOMAIN') }}/api/item-classifications?mode=selection
+                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-classifications?mode=selection')">
                     <i class="fas fa-copy"></i> Copy URL
                 </button>
             </pre>
@@ -504,25 +521,15 @@ GET {{ env('SERVER_DOMAIN') }}/api/log_descriptions?mode=selection
 {
     "data": [
         {
-            "id": 1,
-            "title": "Data Exported",
-            "code": "DATA_EXPORT"
+            "id": 6,
+            "code": "ph",
+            "description": "Medicines and drugs used for treatment"
         },
         {
-            "id": 2,
-            "title": "Data Exported",
-            "code": "DATA_EXPORT"
-        },
-        {
-            "id": 3,
-            "title": "User Login",
-            "code": "USR_LOGIN"
-        },
-        {
-            "id": 4,
-            "title": "User Logout",
-            "code": "USR_LOGOUT"
-        },
+            "id": 7,
+            "code": "hf",
+            "description": "Beds, stretchers, and other patient care furniture"
+        }
     ],
     "metadata": {
         "methods": "[GET, POST, PUT, DELETE]",
@@ -534,8 +541,8 @@ GET {{ env('SERVER_DOMAIN') }}/api/log_descriptions?mode=selection
 
             <h4>Example Request for Single Record by ID</h4>
             <pre>
-GET {{ env('SERVER_DOMAIN') }}/api/log_descriptions?log_description_id=1
-                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/log_descriptions?log_description_id=1')">
+GET {{ env('SERVER_DOMAIN') }}/api/item-classifications?item_classification_id=1
+                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-classifications?item_classification_id=1')">
                     <i class="fas fa-copy"></i> Copy URL
                 </button>
             </pre>
@@ -545,16 +552,21 @@ GET {{ env('SERVER_DOMAIN') }}/api/log_descriptions?log_description_id=1
 {
     "data": {
         "id": 1,
-        "title": "example",
-        "code": "T"
+        "item_category_id": 1,
+        "name": "Hospital Supplies",
+        "code": "hs",
+        "description": "Classification of items used in hospital operations",
+        "deleted_at": "2025-03-24 06:06:25",
+        "created_at": "2025-03-24T06:02:12.000000Z",
+        "updated_at": "2025-03-24T06:06:25.000000Z"
     },
     "metadata": {
         "methods": "[GET, POST, PUT, DELETE]",
         "urls": [
-            "{{ env('SERVER_DOMAIN') }}/api/log_descriptions?log_description_id=1",
-            "{{ env('SERVER_DOMAIN') }}/api/log_descriptions?page=1&per_page=10",
-            "{{ env('SERVER_DOMAIN') }}/api/log_descriptions?page=1&per_page=10&mode=selection",
-            "{{ env('SERVER_DOMAIN') }}/api/log_descriptions?page=1&per_page=10&search=Ton"
+            "http://localhost:8000/api/item_classifications?item_classification_id=[primary-key]",
+            "http://localhost:8000/api/item_classifications?page={currentPage}&per_page={number_of_record_to_return}",
+            "http://localhost:8000/api/item_classifications?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+            "http://localhost:8000/api/item_classifications?page={currentPage}&per_page={number_of_record_to_return}&search=value"
         ]
     }
 }
@@ -573,7 +585,7 @@ GET {{ env('SERVER_DOMAIN') }}/api/log_descriptions?log_description_id=1
                     <tr>
                         <td>404</td>
                         <td>No record found.</td>
-                        <td>Returned when no item unit is found for the given <code>log_description_id</code>.</td>
+                        <td>Returned when no item unit is found for the given <code>item_classification_id</code>.</td>
                     </tr>
                     <tr>
                         <td>422</td>
@@ -586,8 +598,8 @@ GET {{ env('SERVER_DOMAIN') }}/api/log_descriptions?log_description_id=1
 
         <!-- Store Endpoint -->
         <div class="endpoint">
-            <h2>POST /api/log_descriptions</h2>
-            <p>Create a new item category or insert multiple item categories in bulk.</p>
+            <h2>POST /api/item-classifications</h2>
+            <p>Create a new item unit or insert multiple item classifications in bulk.</p>
 
             <h3>Request Body</h3>
             <table>
@@ -603,30 +615,37 @@ GET {{ env('SERVER_DOMAIN') }}/api/log_descriptions?log_description_id=1
                     <tr>
                         <td>name</td>
                         <td>string</td>
-                        <td>The name of the item category.</td>
+                        <td>The name of the item classification.</td>
                         <td>Yes (for single insert)</td>
                     </tr>
                     <tr>
                         <td>code</td>
                         <td>string</td>
-                        <td>The code of the item category.</td>
+                        <td>The code of the item classification.</td>
                         <td>Yes (for single insert)</td>
                     </tr>
                     <tr>
                         <td>description</td>
                         <td>string</td>
-                        <td>A description of the item category.</td>
+                        <td>A description of the item classification.</td>
                         <td>No</td>
                     </tr>
                     <tr>
-                        <td>item_categories</td>
+                        <td>category_id</td>
+                        <td>string</td>
+                        <td>A category the item class is under.</td>
+                        <td>No</td>
+                    </tr>
+                    <tr>
+                        <td>item_units</td>
                         <td>array</td>
                         <td>
-                            An array of item categories for bulk insert. Each item in the array should include:
+                            An array of item classifications for bulk insert. Each item in the array should include:
                             <ul>
                                 <li><code>name</code> (string, required)</li>
                                 <li><code>code</code> (string, required)</li>
                                 <li><code>description</code> (string, optional)</li>
+                                <li><code>category_id</code> (unsignedBigInteger)</li>
                             </ul>
                         </td>
                         <td>Yes (for bulk insert)</td>
@@ -636,44 +655,48 @@ GET {{ env('SERVER_DOMAIN') }}/api/log_descriptions?log_description_id=1
 
             <h3>Example Request for Single Insert</h3>
             <pre>
-        POST {{ env('SERVER_DOMAIN') }}/api/log_descriptions
-        Content-Type: application/json
+POST {{ env('SERVER_DOMAIN') }}/api/item-classifications
+Content-Type: application/json
 
-        {
-            "title": "Real",
-            "code": "NU",
-            "description": "A new item category for testing."
-        }
-                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/log_descriptions')">
+{
+    "name": "Diagnostic Instruments",
+    "code": "DIAG-INST",
+    "item_category_id": 6,
+    "description": "Handheld or portable devices for physical examination (e.g., stethoscopes, otoscopes)",
+}
+                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-classifications')">
                     <i class="fas fa-copy"></i> Copy URL
                 </button>
             </pre>
 
             <h3>Example Request for Bulk Insert</h3>
             <pre>
-POST {{ env('SERVER_DOMAIN') }}/api/log_descriptions
+POST {{ env('SERVER_DOMAIN') }}/api/item-classifications
 Content-Type: application/json
 
 {
-    "item_categories": [
+    "item_classificationss": [
         {
-            "name": "Electronics",
-            "code": "ELEC",
-            "description": "Devices such as mobile phones, laptops, and televisions"
+            "name": "Diagnostic Instruments",
+            "code": "DIAG-INST",
+            "item_category_id": 6,
+            "description": "Handheld or portable devices for physical examination (e.g., stethoscopes, otoscopes)"
         },
         {
-            "name": "Furniture",
-            "code": "FURN",
-            "description": "Household and office furniture including tables, chairs, and cabinets"
+            "name": "Surgical Instruments",
+            "code": "SURG-INST",
+            "item_category_id": 2,
+            "description": "Tools for performing surgical procedures (e.g., scalpels, forceps, retractors)"
         },
         {
-            "name": "Clothing",
-            "code": "CLOTH",
-            "description": "Apparel including shirts, pants, dresses, and jackets"
-        },
+            "name": "Imaging Equipment",
+            "code": "IMG-EQ",
+            "item_category_id": 1,
+            "description": "Machines for medical imaging (e.g., X-ray, MRI, CT scanners)"
+        }
     ]
 }
-                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/log_descriptions')">
+                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-classifications')">
                     <i class="fas fa-copy"></i> Copy URL
                 </button>
             </pre>
@@ -682,39 +705,62 @@ Content-Type: application/json
             <pre>
 {
     "data": {
-        "id": 2,
-        "name": "New Unit",
-        "code": "NU",
-        "description": "A new item category for testing."
+        "name": "Diagnostic Instruments",
+        "code": "DIAG-INST",
+        "description": "Handheld or portable devices for physical examination (e.g., stethoscopes, otoscopes)",
+        "item_category_id": "6",
+        "updated_at": "2025-03-24T18:29:48.000000Z",
+        "created_at": "2025-03-24T18:29:48.000000Z",
+        "id": 1
     },
-    "message": "Item category created successfully."
+    "message": "Successfully created item_classifications record.",
+    "metadata": {
+        "methods": [
+            "GET, POST, PUT, DELET"
+        ]
+    }
 }
             </pre>
 
             <h3>Example Response for Bulk Insert</h3>
-            <pre>
-{
+            <pre>{
     "data": [
         {
+            "id": 2,
+            "item_category_id": 2,
+            "name": "Surgical Instruments",
+            "code": "SURG-INST",
+            "description": "Tools for performing surgical procedures (e.g., scalpels, forceps, retractors)",
+            "deleted_at": null,
+            "created_at": "2025-03-24T18:39:54.000000Z",
+            "updated_at": "2025-03-24T18:39:54.000000Z"
+        },
+        {
             "id": 3,
-            "name": "Electronics",
-            "code": "ELEC",
-            "description": "Devices such as mobile phones, laptops, and televisions"
-        },
-        {
-            "id": 4,
-            "name": "Furniture",
-            "code": "FURN",
-            "description": "Household and office furniture including tables, chairs, and cabinets"
-        },
-        {
-            "id": 5,
-            "name": "Clothing",
-            "code": "CLOTH",
-            "description": "Apparel including shirts, pants, dresses, and jackets"
+            "item_category_id": 1,
+            "name": "Imaging Equipment",
+            "code": "IMG-EQ",
+            "description": "Machines for medical imaging (e.g., X-ray, MRI, CT scanners)",
+            "deleted_at": null,
+            "created_at": "2025-03-24T18:39:54.000000Z",
+            "updated_at": "2025-03-24T18:39:54.000000Z"
         }
     ],
-    "message": "Bulk item categories created successfully."
+    "message": "Successfully created item_classificationss record",
+    "metadata": {
+        "methods": "[GET, POST, PUT ,DELETE]",
+        "duplicate_items": [
+            {
+                "id": 1,
+                "name": "Diagnostic Instruments",
+                "code": "DIAG-INST",
+                "description": "Handheld or portable devices for physical examination (e.g., stethoscopes, otoscopes)",
+                "category": null,
+                "created_at": "2025-03-24T18:38:46.000000Z",
+                "updated_at": "2025-03-24T18:38:46.000000Z"
+            }
+        ]
+    }
 }
             </pre>
 
@@ -744,10 +790,10 @@ Content-Type: application/json
 
     <!-- Put Endpoint -->
     <div class="endpoint">
-        <h2>PUT /api/log-descriptions</h2>
-        <p>Update one or more log description records with partial updates. Supports both single and bulk operations.</p>
+        <h2>PUT /api/item-classifications</h2>
+        <p>Update one or more item classifications. Supports both single and bulk updates.</p>
 
-        <h3>URL Parameters</h3>
+        <h3>Parameters</h3>
         <table>
             <thead>
                 <tr>
@@ -762,7 +808,7 @@ Content-Type: application/json
                     <td>id</td>
                     <td>integer|string|array</td>
                     <td>
-                        The ID(s) of the log description(s) to update. Accepts:
+                        The ID(s) of the classification(s) to update. Accepts multiple formats:
                         <ul>
                             <li>Single ID: <code>?id=1</code></li>
                             <li>Comma-separated: <code>?id=1,2,3</code></li>
@@ -786,32 +832,32 @@ Content-Type: application/json
             </thead>
             <tbody>
                 <tr>
-                    <td>title</td>
+                    <td>name</td>
                     <td>string</td>
-                    <td>Log event title</td>
+                    <td>Updated classification name</td>
                     <td>No (partial updates supported)</td>
                 </tr>
                 <tr>
                     <td>code</td>
                     <td>string</td>
-                    <td>Unique event code</td>
+                    <td>Updated classification code</td>
                     <td>No (partial updates supported)</td>
                 </tr>
                 <tr>
                     <td>description</td>
                     <td>string</td>
-                    <td>Detailed log template</td>
+                    <td>Updated classification description</td>
                     <td>No</td>
                 </tr>
                 <tr>
-                    <td>log_descriptions</td>
+                    <td>item_classifications</td>
                     <td>array</td>
                     <td>
                         Required for bulk updates. Array of objects containing:
                         <ul>
-                            <li><strong>title</strong> (string, optional)</li>
-                            <li><strong>code</strong> (string, optional)</li>
-                            <li><strong>description</strong> (string, optional)</li>
+                            <li>name</li>
+                            <li>code</li>
+                            <li>description</li>
                         </ul>
                     </td>
                     <td>Conditional (required for bulk updates)</td>
@@ -821,29 +867,30 @@ Content-Type: application/json
 
         <h3>Example Requests</h3>
         
-        <h4>Single Update (Partial Fields)</h4>
+        <h4>Single Update</h4>
         <pre>
-PUT {{ env('SERVER_DOMAIN') }}/api/log-descriptions?id=1
+PUT {{ env('SERVER_DOMAIN') }}/api/item-classifications?id=1
 Content-Type: application/json
 
 {
-    "title": "System Error",
-    "code": "SYS_ERR"
+    "name": "Medical Equipment",
+    "code": "MED-EQP",
+    "description": "Updated description"
 }
         </pre>
 
-        <h4>Bulk Update (Mixed Fields)</h4>
+        <h4>Bulk Update</h4>
         <pre>
-PUT {{ env('SERVER_DOMAIN') }}/api/log-descriptions?id[]=1&id[]=2
+PUT {{ env('SERVER_DOMAIN') }}/api/item-classifications?id[]=1&id[]=2
 Content-Type: application/json
 
 {
-    "log_descriptions": [
+    "item_classifications": [
         {
-            "title": "Updated Error Log"
+            "name": "Updated Medical Equipment"
         },
         {
-            "code": "NEW_CODE"
+            "code": "NEW-CODE"
         }
     ]
 }
@@ -856,15 +903,24 @@ Content-Type: application/json
 {
     "data": {
         "id": 1,
-        "title": "System Error",
-        "code": "SYS_ERR",
-        "description": "Original description remains unchanged",
-        "updated_at": "2023-06-15T08:30:45.000000Z"
+        "name": "Medical Equipment",
+        "code": "MED-EQP",
+        "description": "Updated description",
+        "item_category_id": 1,
+        "deleted_at": null,
+        "created_at": "2025-03-24T06:02:44.000000Z",
+        "updated_at": "2025-03-24T06:14:44.000000Z"
     },
-    "message": "Log description updated successfully.",
+    "message": "Item classification updated successfully.",
     "metadata": {
-        "methods": "[PUT]",
-        "fields": ["title", "code", "description"]
+        "methods": "[GET, PUT, DELETE]",
+        "formats": [
+            "http://localhost:8000/api/item_classifications?id=1",
+            "http://localhost:8000/api/item_classificationsquery[target_field]=value"
+        ],
+        "fields": [
+            "code"
+        ]
     }
 }
         </pre>
@@ -875,22 +931,34 @@ Content-Type: application/json
     "data": [
         {
             "id": 1,
-            "title": "Updated Error Log",
-            "code": null,
+            "name": "Updated Medical Equipment",
+            "code": "MED-EQP",
             "description": null,
-            "updated_at": "2023-06-15T08:32:10.000000Z"
+            "item_category_id": 1,
+            "deleted_at": null,
+            "created_at": "2025-03-24T06:02:44.000000Z",
+            "updated_at": "2025-03-24T06:20:44.000000Z"
         },
         {
             "id": 2,
-            "title": null,
-            "code": "NEW_CODE",
+            "name": null,
+            "code": "NEW-CODE",
             "description": null,
-            "updated_at": "2023-06-15T08:32:10.000000Z"
+            "item_category_id": 1,
+            "deleted_at": null,
+            "created_at": "2025-03-24T06:02:44.000000Z",
+            "updated_at": "2025-03-24T06:20:44.000000Z"
         }
     ],
-    "message": "Successfully updated 2 log descriptions.",
+    "message": "Successfully updated 2 item classifications.",
     "metadata": {
-        "method": "[PUT]"
+        "methods": "[GET, PUT, DELETE]",
+        "formats": [
+            "http://localhost:8000/api/item_classifications?id[]=1&id[]=2"
+        ],
+        "fields": [
+            "code"
+        ]
     }
 }
         </pre>
@@ -901,16 +969,21 @@ Content-Type: application/json
     "data": [
         {
             "id": 1,
-            "title": "Updated Error Log",
-            "updated_at": "2023-06-15T08:32:10.000000Z"
+            "name": "Updated Medical Equipment",
+            "code": "MED-EQP",
+            "description": null,
+            "item_category_id": 1,
+            "deleted_at": null,
+            "created_at": "2025-03-24T06:02:44.000000Z",
+            "updated_at": "2025-03-24T06:20:44.000000Z"
         }
     ],
     "message": "Partial update completed with errors.",
-    "errors": [
-        "Log description with ID 2 not found."
-    ],
     "metadata": {
-        "method": "[PUT]"
+        "method": "[PUT]",
+        "errors": [
+            "Item classification with ID 2 not found."
+        ]
     }
 }
         </pre>
@@ -919,7 +992,7 @@ Content-Type: application/json
         <table>
             <thead>
                 <tr>
-                    <th>Code</th>
+                    <th>Status Code</th>
                     <th>Message</th>
                     <th>Description</th>
                 </tr>
@@ -928,54 +1001,45 @@ Content-Type: application/json
                 <tr>
                     <td>422</td>
                     <td>ID parameter is required</td>
-                    <td>Missing ID parameter (includes metadata in dev)</td>
+                    <td>When no ID parameter is provided</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Number of IDs does not match number of item classifications provided</td>
+                    <td>When bulk update count mismatch occurs</td>
+                </tr>
+                <tr>
+                    <td>422</td>
+                    <td>Multiple IDs provided but no items array for bulk update</td>
+                    <td>When multiple IDs are given without bulk data</td>
                 </tr>
                 <tr>
                     <td>404</td>
-                    <td>Log description not found</td>
-                    <td>Invalid ID provided for single update</td>
-                </tr>
-                <tr>
-                    <td>422</td>
-                    <td>Number of IDs does not match number of log descriptions</td>
-                    <td>Bulk update count mismatch</td>
-                </tr>
-                <tr>
-                    <td>422</td>
-                    <td>Multiple IDs provided but no log_descriptions array</td>
-                    <td>Multiple IDs without bulk data</td>
+                    <td>Item not found</td>
+                    <td>When single ID update fails</td>
                 </tr>
                 <tr>
                     <td>207</td>
                     <td>Partial update completed with errors</td>
-                    <td>Bulk update with some failures (Multi-Status)</td>
+                    <td>When bulk update has partial failures (Multi-Status)</td>
                 </tr>
             </tbody>
         </table>
 
-        <h3>Implementation Notes</h3>
+        <h3>Notes</h3>
         <ul>
-            <li><strong>Partial Updates</strong>: Only provided fields will be updated</li>
-            <li><strong>Bulk Processing</strong>:
-                <ul>
-                    <li>Order of IDs must match order of objects in log_descriptions array</li>
-                    <li>Continues processing even if some items fail</li>
-                </ul>
-            </li>
-            <li><strong>Validation</strong>:
-                <ul>
-                    <li>At least one field must be provided for each update</li>
-                    <li>Empty updates will be rejected</li>
-                </ul>
-            </li>
-            <li><strong>Development Mode</strong>: Additional metadata included for invalid requests</li>
+            <li>All updates are partial - only provided fields will be updated</li>
+            <li>In development mode, additional metadata is included in responses</li>
+            <li>For bulk updates, the order of IDs must match the order of objects in item_classifications array</li>
+            <li>Bulk updates will continue processing even if some items fail (returns 207 status)</li>
+            <li>Empty updates (no valid fields provided) will be rejected</li>
         </ul>
     </div>
 
     <!-- Delete Endpoint -->
     <div class="endpoint">
-        <h2>DELETE /api/log_descriptions</h2>
-        <p>Soft delete one or more log descriptions (marks as deleted but retains in database).</p>
+        <h2>DELETE /api/item-classifications</h2>
+        <p>Soft delete one or more item classifications (marks as deleted but retains in database).</p>
 
         <h3>Parameters</h3>
         <table>
@@ -992,7 +1056,7 @@ Content-Type: application/json
                     <td>id</td>
                     <td>integer|string|array</td>
                     <td>
-                        The ID(s) of the log description(s) to delete. Accepts multiple formats:
+                        The ID(s) of the classification(s) to delete. Accepts multiple formats:
                         <ul>
                             <li>Single ID: <code>?id=1</code></li>
                             <li>Comma-separated: <code>?id=1,2,3</code></li>
@@ -1005,7 +1069,7 @@ Content-Type: application/json
                     <td>query</td>
                     <td>object</td>
                     <td>
-                        A query object to find log descriptions to delete (e.g., <code>{"code":"LOG001"}</code>).
+                        A query object to find classifications to delete (e.g., <code>{"code": "OFFICE"}</code>).
                         Will reject if matches multiple records.
                     </td>
                     <td>Conditional (required if no id)</td>
@@ -1014,40 +1078,36 @@ Content-Type: application/json
         </table>
 
         <h3>Example Requests</h3>
-        
-        <h4>Delete by Single ID</h4>
+        <h4>Delete by single ID</h4>
         <pre>
-DELETE {{ env('SERVER_DOMAIN') }}/api/log_descriptions?id=1
+DELETE {{ env('SERVER_DOMAIN') }}/api/item-classifications?id=1
         </pre>
 
-        <h4>Delete by Multiple IDs</h4>
+        <h4>Delete by multiple IDs</h4>
         <pre>
-DELETE {{ env('SERVER_DOMAIN') }}/api/log_descriptions?id=1,2,3
+DELETE {{ env('SERVER_DOMAIN') }}/api/item-classifications?id=1,2,3
         </pre>
 
-        <h4>Delete by Query</h4>
+        <h4>Delete by query</h4>
         <pre>
-DELETE {{ env('SERVER_DOMAIN') }}/api/log_descriptions?query={"code":"LOG001"}
+DELETE {{ env('SERVER_DOMAIN') }}/api/item-classifications?query={"name":"Office Equipment"}
         </pre>
 
         <h3>Success Responses</h3>
-        
-        <h4>ID-based Deletion</h4>
+        <h4>ID-based deletion</h4>
         <pre>
-{
-    "message": "Successfully deleted 2 log description(s).",
-    "deleted_ids": [1, 2],
-    "count": 2
-}
+    {
+        "message": "Successfully deleted 2 classification(s).",
+        "deleted_ids": [1, 2]
+    }
         </pre>
 
-        <h4>Query-based Deletion</h4>
+        <h4>Query-based deletion</h4>
         <pre>
-{
-    "message": "Successfully deleted log description.",
-    "deleted_id": 3,
-    "description": "System maintenance log entry"
-}
+    {
+        "message": "Successfully deleted classification.",
+        "deleted_id": 3
+    }
         </pre>
 
         <h3>Error Responses</h3>
@@ -1062,52 +1122,34 @@ DELETE {{ env('SERVER_DOMAIN') }}/api/log_descriptions?query={"code":"LOG001"}
             <tbody>
                 <tr>
                     <td>400</td>
-                    <td>Invalid log description ID format provided</td>
+                    <td>Invalid ID format provided.</td>
                     <td>When provided IDs are not valid numbers</td>
                 </tr>
                 <tr>
                     <td>404</td>
-                    <td>No active log descriptions found...</td>
+                    <td>No active classifications found...</td>
                     <td>When no matching active records found</td>
                 </tr>
                 <tr>
                     <td>409</td>
-                    <td>Query matches multiple log descriptions...</td>
+                    <td>Query matches multiple records...</td>
                     <td>When query matches multiple records (includes data in response)</td>
                 </tr>
                 <tr>
                     <td>422</td>
-                    <td>Invalid request</td>
+                    <td>Invalid request.</td>
                     <td>When neither parameter is provided (includes metadata in dev)</td>
                 </tr>
             </tbody>
         </table>
 
-        <h3>Implementation Notes</h3>
+        <h3>Notes</h3>
         <ul>
-            <li><strong>Soft Delete</strong>: Records are marked as deleted (sets deleted_at timestamp) but remain in database</li>
-            <li><strong>Active Records Only</strong>: Only affects non-deleted records (where deleted_at is null)</li>
-            <li><strong>ID Processing</strong>:
-                <ul>
-                    <li>Handles single ID, comma-separated list, and array formats</li>
-                    <li>Validates all IDs are positive integers</li>
-                    <li>Only processes records that actually exist</li>
-                </ul>
-            </li>
-            <li><strong>Query Safety</strong>:
-                <ul>
-                    <li>Rejects queries that would affect multiple records</li>
-                    <li>Provides helpful suggestions in conflict responses</li>
-                </ul>
-            </li>
-            <li><strong>Response Details</strong>:
-                <ul>
-                    <li>Returns count of deleted records</li>
-                    <li>Includes IDs of successfully deleted records</li>
-                    <li>Optionally includes description text for single deletions</li>
-                </ul>
-            </li>
-            <li><strong>Development Mode</strong>: Provides additional metadata when invalid requests are made</li>
+            <li>This is a soft delete operation - records are marked as deleted but remain in database</li>
+            <li>Only active (non-deleted) records can be deleted</li>
+            <li>In development mode, additional metadata is returned for invalid requests</li>
+            <li>For query operations, the system will reject requests that would affect multiple records</li>
+            <li>The endpoint returns the IDs of successfully deleted records</li>
         </ul>
     </div>
 </div>

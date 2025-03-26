@@ -9,8 +9,9 @@ class SuccessIndicator extends Model
     protected $table = "success_indicators";
 
     public $fillable = [
+        'code',
         'description',
-        'code'
+        'deleted_at'
     ];
 
     public $timestamps = true;

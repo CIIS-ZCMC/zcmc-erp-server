@@ -3,20 +3,80 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\PaginationHelper;
-use App\Http\Requests\ItemCategoryRequest;
-use App\Models\ItemCategory;
+use App\Http\Requests\TypeOfFunctionRequest;
+use App\Http\Resources\TypeOfFunctionDuplicateResource;
+use App\Http\Resources\TypeOfFunctionResource;
+use App\Models\TypeOfFunction;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class ItemCategoryController extends Controller
+class TypeOfFunctionController extends Controller
 {
     private $is_development;
 
-    private $module = 'item-categories';
+    private $module = 'type-of-functions';
 
     public function __construct()
     {
         $this->is_development = env("APP_DEBUG", true);
+    }
+    
+    private function cleanTypeOfFunctionData(array $data): array
+    {
+        $cleanData = [];
+        
+        if (isset($data['type'])) {
+            $cleanData['type'] = strip_tags($data['type']);
+        }
+
+        return $cleanData;
+    }
+    
+    protected function getMetadata($method): array
+    {
+        if($method === 'get'){
+            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
+            $metadata['modes'] = ['selection', 'pagination'];
+
+            if($this->is_development){
+                $metadata['urls'] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?type_of_function_id=[primary-key]",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                ];
+            }
+
+            return $metadata;
+        }
+        
+        if($method === 'put'){
+            $metadata = ["methods" => "[PUT]"];
+        
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["type"];
+            }
+            
+            return $metadata;
+        }
+        
+        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+
+        if($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+
+            $metadata["fields"] =  ["type"];
+        }
+
+        return $metadata;
     }
 
     public function import(Request $request)
@@ -24,71 +84,6 @@ class ItemCategoryController extends Controller
         return response()->json([
             'message' => "Succesfully imported record"
         ], Response::HTTP_OK);
-    }
-    
-    protected function cleanCategoryData(array $data): array
-    {
-        $cleanData = [];
-        
-        if (isset($data['name'])) {
-            $cleanData['name'] = strip_tags($data['name']);
-        }
-        
-        if (isset($data['code'])) {
-            $cleanData['code'] = strip_tags($data['code']);
-        }
-        
-        if (isset($data['description'])) {
-            $cleanData['description'] = strip_tags($data['description']);
-        }
-        
-        return $cleanData;
-    }
-    
-    protected function getMetadata($method): array
-    {
-        if($method === 'get'){
-            $metadata = ["methods" => ["GET, POST, PUT, DELETE"]];
-            $metadata['modes'] = ['selection', 'pagination'];
-
-            if($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?item_category_id=[primary-key]",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value"
-                ];
-            }
-            
-            return $metadata;
-        }
-
-        if($method === 'put'){
-            $metadata = ["methods" => ["PUT"]];
-            
-            if ($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
-                ];
-                $metadata['fields'] = ["name", "code"];
-            }
-            
-            return $metadata;
-        }
-
-        $metadata = ["methods" => ["GET, PUT, DELETE"]];
-        
-        if ($this->is_development) {
-            $metadata["urls"] = [
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-            ];
-            $metadata['fields'] = ["code"];
-        }
-        
-        return $metadata;
     }
 
     public function index(Request $request)
@@ -100,12 +95,12 @@ class ItemCategoryController extends Controller
         $last_id = $request->query('last_id') ?? 0;
         $last_initial_id = $request->query('last_initial_id') ?? 0;
         $page_item = $request->query('page_item') ?? 0;
-        $item_category_id = $request->query('item_category_id') ?? null;
+        $type_of_function_id = $request->query('type_of_function_id') ?? null;
 
-        if($item_category_id){
-            $item_category = ItemCategory::find($item_category_id);
+        if($type_of_function_id){
+            $type_of_function = TypeOfFunction::find($type_of_function_id);
 
-            if(!$item_category){
+            if(!$type_of_function){
                 return response()->json([
                     'message' => "No record found.",
                     "metadata" => $this->getMetadata('get')
@@ -113,7 +108,7 @@ class ItemCategoryController extends Controller
             }
 
             return response()->json([
-                'data' => $item_category,
+                'data' => $type_of_function,
                 "metadata" => $this->getMetadata('get')
             ], Response::HTTP_OK);
         }
@@ -147,8 +142,8 @@ class ItemCategoryController extends Controller
         // Handle return for selection record
         if($mode === 'selection'){
             if($search !== null){
-                $item_categories = ItemCategory::select('id','name','code')
-                    ->where('name', 'like', '%'.$search.'%')
+                $type_of_functions = TypeOfFunction::select('id','type')
+                    ->where('type', 'like', "%".$search."%")
                     ->where("deleted_at", NULL)->get();
     
                 $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
@@ -159,12 +154,12 @@ class ItemCategoryController extends Controller
                 }
                 
                 return response()->json([
-                    "data" => $item_categories,
+                    "data" => $type_of_functions,
                     "metadata" => $metadata,
                 ], Response::HTTP_OK);
             }
 
-            $item_categories = ItemCategory::select('id','name','code')->where("deleted_at", NULL)->get();
+            $type_of_functions = TypeOfFunction::select('id','type')->where("deleted_at", NULL)->get();
 
             $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
 
@@ -174,7 +169,7 @@ class ItemCategoryController extends Controller
             }
             
             return response()->json([
-                "data" => $item_categories,
+                "data" => $type_of_functions,
                 "metadata" => $metadata,
             ], Response::HTTP_OK);
         }
@@ -182,14 +177,13 @@ class ItemCategoryController extends Controller
 
         if($search !== null){
             if($last_id === 0 || $page_item != null){
-                $item_categories = ItemCategory::where('name', 'like', '%'.$search.'%')
+                $type_of_functions = TypeOfFunction::where('type', 'like', '%'.$search.'%')
                     ->where('id','>', $last_id)
                     ->orderBy('id')
                     ->limit($per_page)
                     ->get();
-                    
 
-                if(count($item_categories)  === 0){
+                if(count($type_of_functions)  === 0){
                     return response()->json([
                         'data' => [],
                         'metadata' => [
@@ -201,13 +195,13 @@ class ItemCategoryController extends Controller
                     ], Response::HTTP_OK);
                 }
 
-                $allIds = ItemCategory::where('name', 'like', '%'.$search.'%')
+                $allIds = TypeOfFunction::where('type', 'like', '%'.$search.'%')
                     ->orderBy('id')
                     ->pluck('id');
 
                 $chunks = $allIds->chunk($per_page);
                 
-                $pagination_helper = new PaginationHelper('item-categories', $page, $per_page, 0);
+                $pagination_helper = new PaginationHelper('type-of-functions', $page, $per_page, 0);
                 $pagination = $pagination_helper->createSearchPagination( $page_item, $chunks, $search, $per_page, $last_initial_id);
                 $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
                 
@@ -216,7 +210,7 @@ class ItemCategoryController extends Controller
                  */
 
                 return response()->json([
-                    'data' => $item_categories,
+                    'data' => $type_of_functions,
                     'metadata' => [
                         'methods' => '[GET,POST,PUT,DELETE]',
                         'pagination' => $pagination,
@@ -230,7 +224,7 @@ class ItemCategoryController extends Controller
              * Reuse existing pagination and update the existing pagination next and previous data
              */
 
-            $item_categories = ItemCategory::where('name', 'like', '%'.$search.'%')
+            $type_of_functions = TypeOfFunction::where('type', 'like', '%'.$search.'%')
                 ->where('id','>', $last_id)
                 ->orderBy('id')
                 ->limit($per_page)
@@ -238,19 +232,19 @@ class ItemCategoryController extends Controller
 
             // Return the response
             return response()->json([
-                'data' => $item_categories,
+                'data' => $type_of_functions,
                 'metadata' => []
             ], Response::HTTP_OK);
         }
         
-        $total_page = ItemCategory::all()->pluck('id')->chunk($per_page);
-        $item_categories = ItemCategory::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
+        $total_page = TypeOfFunction::all()->pluck('id')->chunk($per_page);
+        $type_of_functions = TypeOfFunction::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
         $total_page = ceil(count($total_page));
         
         $pagination_helper = new PaginationHelper(  $this->module,$page, $per_page, $total_page > 10 ? 10: $total_page);
 
         return response()->json([
-            "data" => $item_categories,
+            "data" => $type_of_functions,
             "metadata" => [
                 "methods" => "[GET, POST, PUT, DELETE]",
                 "pagination" => $pagination_helper->create(),
@@ -260,26 +254,27 @@ class ItemCategoryController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function store(ItemCategoryRequest $request)
+    public function store(TypeOfFunctionRequest $request)
     {
         $base_message = "Successfully created item category";
 
         // Bulk Insert
-        if ($request->item_categories !== null || $request->item_categories > 1) {
-            $existing_items = ItemCategory::whereIn('name', collect($request->item_categories)->pluck('name'))
-                ->orWhereIn('code', collect($request->item_categories)->pluck('code'))
-                ->get(['name', 'code'])->toArray();
+        if ($request->type_of_functions !== null || $request->type_of_functions > 1) {
+            $existing_type_of_functions = [];
+            $existing_items = TypeOfFunction::whereIn('type', collect($request->type_of_functions)->pluck('type'))
+                ->get(['type'])->toArray();
 
             // Convert existing items into a searchable format
-            $existing_names = array_column($existing_items, 'name');
-            $existing_codes = array_column($existing_items, 'code');
+            $existing_types = array_column($existing_items, 'type');
 
-            foreach ($request->item_categories as $item) {
-                if (!in_array($item['name'], $existing_names) && !in_array($item['code'], $existing_codes)) {
+            if(!empty($existing_items)){
+                $existing_type_of_functions = TypeOfFunctionDuplicateResource::collection(TypeOfFunction::whereIn("type", $existing_types)->get());
+            }
+
+            foreach ($request->type_of_functions as $item) {
+                if ( !in_array($item['type'], $existing_types)) {
                     $cleanData[] = [
-                        "name" => strip_tags($item['name']),
-                        "code" => strip_tags($item['code']),
-                        "description" => isset($item['description']) ? strip_tags($item['description']) : null,
+                        "type" => strip_tags($item['type']),
                         "created_at" => now(),
                         "updated_at" => now()
                     ];
@@ -288,40 +283,34 @@ class ItemCategoryController extends Controller
 
             if (empty($cleanData) && count($existing_items) > 0) {
                 return response()->json([
-                    'data' => $existing_items,
+                    'data' => $existing_type_of_functions,
                     'message' => "Failed to bulk insert all item categories already exist.",
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
     
-            ItemCategory::insert($cleanData);
+            TypeOfFunction::insert($cleanData);
 
-            $latest_item_categories = ItemCategory::orderBy('id', 'desc')
+            $latest_type_of_functions = TypeOfFunction::orderBy('id', direction: 'desc')
                 ->limit(count($cleanData))->get()
                 ->sortBy('id')->values();
 
-            $message = count($latest_item_categories) > 1? $base_message."s record": $base_message." record.";
+            $message = count($latest_type_of_functions) > 1? $base_message."s record": $base_message." record.";
 
             return response()->json([
-                "data" => $latest_item_categories,
+                "data" => $latest_type_of_functions,
                 "message" => $message,
                 "metadata" => [
                     "methods" => "[GET, POST, PUT ,DELETE]",
-                    "duplicate_items" => $existing_items
+                    "duplicate_items" => $existing_type_of_functions
                 ]
             ], Response::HTTP_CREATED);
         }
 
         $cleanData = [
-            "name" => strip_tags($request->input('name')),
-            "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
+            "type" => strip_tags($request->input('type'))
         ];
-
-        $new_item = ItemCategory::create([
-            "name" => strip_tags($request->name),
-            "code" => strip_tags($request->code),
-            "description" => strip_tags($request->description),
-        ]);
+        
+        $new_item = TypeOfFunction::create($cleanData);
 
         return response()->json([
             "data" => $new_item,
@@ -331,159 +320,193 @@ class ItemCategoryController extends Controller
             ]
         ], Response::HTTP_CREATED);
     }
-    
-    public function update(Request $request): Response
+
+    public function update(Request $request):Response    
     {
-        $item_category_ids = $request->query('id') ?? null;
-    
-        // Validate ID parameter exists
-        if (!$item_category_ids) {
+        $type_of_functions = $request->query('id') ?? null;
+        
+        // Validate request has IDs
+        if (!$type_of_functions) {
             $response = ["message" => "ID parameter is required."];
             
             if ($this->is_development) {
-                $response['metadata'] = $this->getMetadata("put");
+                $response['metadata'] = $this->getMetadata('put');
             }
             
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-    
-        $item_category_ids = is_array($item_category_ids) ? $item_category_ids : [$item_category_ids];
-    
-        // Handle bulk update
-        if ($request->has('item_categories')) {
-            
-            if (count($item_category_ids) !== count($request->input('item_categories'))) {
+
+        // Convert single ID to array for consistent processing
+        $type_of_functions = is_array($type_of_functions) ? $type_of_functions : [$type_of_functions];
+        
+        // For bulk update - validate items array matches IDs count
+        if ($request->has('type_of_functions')) {
+            if (count($type_of_functions) !== count($request->input('type_of_functions'))) {
                 return response()->json([
-                    "message" => "Number of IDs does not match number of categories provided.",
+                    "message" => "Number of IDs does not match number of type of functions provided.",
                     "metadata" => $this->getMetadata('put')
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-        
-            $updated_categories = [];
+            
+            $updated_type_of_functions = [];
             $errors = [];
-        
-            foreach ($item_category_ids as $index => $id) {
-                $category = ItemCategory::find($id);
+            
+            foreach ($type_of_functions as $index => $id) {
+                $type_of_function = TypeOfFunction::find($id);
                 
-                if (!$category) {
-                    $errors[] = "Category with ID {$id} not found.";
+                if (!$type_of_function) {
+                    $errors[] = "TypeOfFunction with ID {$id} not found.";
                     continue;
                 }
-        
-                $cleanData = $this->cleanCategoryData($request->input('item_categories')[$index]);
-                $category->update($cleanData);
-                $updated_categories[] = $category;
+                
+                $type_of_functionData = $request->input('type_of_functions')[$index];
+                $cleanData = $this->cleanTypeOfFunctionData($type_of_functionData);
+                
+                $type_of_function->update($cleanData);
+                $updated_type_of_functions[] = $type_of_function;
             }
-        
+            
             if (!empty($errors)) {
                 return response()->json([
-                    "data" => $updated_categories,
+                    "data" => TypeOfFunctionResource::collection($updated_type_of_functions),
                     "message" => "Partial update completed with errors.",
-                    "errors" => $errors,
-                    "metadata" => $this->getMetadata('put')
+                    "metadata" => [                    
+                        "method" => "[PUT]",
+                        "errors" => $errors,
+                    ]
                 ], Response::HTTP_MULTI_STATUS);
             }
-        
+            
             return response()->json([
-                "data" => $updated_categories,
-                "message" => "Successfully updated ".count($updated_categories)." categories.",
+                "data" => TypeOfFunctionResource::collection($updated_type_of_functions),
+                "message" => "Successfully updated ".count($updated_type_of_functions)." type of functions.",
                 "metadata" => $this->getMetadata('put')
             ], Response::HTTP_OK);
         }
         
-        $category = ItemCategory::find($item_category_ids[0]);
-        
-        if (!$category) {
+        // Single type_of_function update
+        if (count($type_of_functions) > 1) {
             return response()->json([
-                "message" => "Category not found."
+                "message" => "Multiple IDs provided but no type of functions array for bulk update.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        
+        $type_of_function = TypeOfFunction::find($type_of_functions[0]);
+        
+        if (!$type_of_function) {
+            return response()->json([
+                "message" => "Type of function not found."
             ], Response::HTTP_NOT_FOUND);
         }
-    
-        $cleanData = $this->cleanCategoryData($request->all());
-        $category->update($cleanData);
-    
-        return response()->json([
-            "data" => $category,
-            "message" => "Category updated successfully.",
+        
+        $cleanData = $this->cleanTypeOfFunctionData($request->all());
+        $type_of_function->update($cleanData);
+        
+        $response = [
+            "data" => new TypeOfFunctionResource($type_of_function),
+            "message" => "Type of Function updated successfully.",
             "metadata" => $this->getMetadata('put')
-        ], Response::HTTP_OK);
+        ];
+        
+        if ($this->is_development) {
+            $response['metadata'] = [
+                "methods" => "[PUT]",
+                "required_fields" => ["type"]
+            ];
+        }
+        
+        return response()->json($response, Response::HTTP_OK);
     }
 
     public function destroy(Request $request): Response
     {
-        $item_category_ids = $request->query('id') ?? null;
+        $type_of_function_ids = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
-
-        if (!$item_category_ids && !$query) {
-            $response = ["message" => "Invalid request."];
-
+    
+        if (!$type_of_function_ids && !$query) {
+            $response = ["message" => "Invalid request. No parameters provided."];
+    
             if ($this->is_development) {
                 $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => $this->getMetadata("delete"),
+                    "message" => "No parameters found for deletion.",
+                    "metadata" => $this->getMetadata('delete'),
+                    "hint" => "Provide either 'id' or 'query' parameter"
                 ];
             }
-
+    
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-
-        if ($item_category_ids) {
-            $item_category_ids = is_array($item_category_ids) 
-                ? $item_category_ids 
-                : (str_contains($item_category_ids, ',') 
-                    ? explode(',', $item_category_ids) 
-                    : [$item_category_ids]
+    
+        if ($type_of_function_ids) {
+            // Handle all ID formats: single, comma-separated, and array-style
+            $type_of_function_ids = is_array($type_of_function_ids) 
+                ? $type_of_function_ids 
+                : (str_contains($type_of_function_ids, ',') 
+                    ? explode(',', $type_of_function_ids) 
+                    : [$type_of_function_ids]);
+    
+            // Validate and sanitize IDs
+            $valid_ids = array_filter(array_map(function($id) {
+                return is_numeric($id) && $id > 0 ? (int)$id : null;
+            }, $type_of_function_ids));
+    
+            if (empty($valid_ids)) {
+                return response()->json(
+                    ["message" => "Invalid function type ID format provided."],
+                    Response::HTTP_BAD_REQUEST
                 );
-
-            // Convert all IDs to integers and filter invalid ones
-            $item_category_ids = array_filter(array_map('intval', $item_category_ids));
-
-            if (empty($item_category_ids)) {
-                return response()->json(["message" => "Invalid ID format."], Response::HTTP_BAD_REQUEST);
             }
-
-            $item_categories = ItemCategory::whereIn('id', $item_category_ids)
+    
+            // Get only active function types that exist
+            $type_of_functions = TypeOfFunction::whereIn('id', $valid_ids)
                 ->whereNull('deleted_at')
                 ->get();
-
-            if ($item_categories->isEmpty()) {
-                return response()->json(["message" => "No active records found for the given IDs."], Response::HTTP_NOT_FOUND);
+    
+            if ($type_of_functions->isEmpty()) {
+                return response()->json(
+                    ["message" => "No active function types found with the provided IDs."],
+                    Response::HTTP_NOT_FOUND
+                );
             }
-
-            // Get only the IDs that were actually found and not deleted
-            $found_ids = $item_categories->pluck('id')->toArray();
-            
-            // Soft delete only the found records
-            ItemCategory::whereIn('id', $found_ids)->update(['deleted_at' => now()]);
-
+    
+            // Perform soft delete
+            $deleted_count = TypeOfFunction::whereIn('id', $valid_ids)
+                ->update(['deleted_at' => now()]);
+    
             return response()->json([
-                "message" => "Successfully deleted " . count($found_ids) . " record(s).",
-                "deleted_ids" => $found_ids
+                "message" => "Successfully deleted {$deleted_count} function type(s).",
+                "deleted_ids" => $valid_ids,
+                "count" => $deleted_count
             ], Response::HTTP_OK);
         }
-
-        $item_categories = ItemCategory::where($query)
+        
+        $type_of_functions = TypeOfFunction::where($query)
             ->whereNull('deleted_at')
             ->get();
 
-        if ($item_categories->count() > 1) {
+        if ($type_of_functions->count() > 1) {
             return response()->json([
-                'data' => $item_categories,
-                'message' => "Request would affect multiple records. Please specify IDs directly."
+                'data' => TypeOfFunctionResource::collection($type_of_functions),
+                'message' => "Query matches multiple function types.",
+                'suggestion' => "Use ID parameter for precise deletion or add more query criteria"
             ], Response::HTTP_CONFLICT);
         }
 
-        $item_category = $item_categories->first();
+        $type_of_function = $type_of_functions->first();
 
-        if (!$item_category) {
-            return response()->json(["message" => "No active record found matching query."], Response::HTTP_NOT_FOUND);
+        if (!$type_of_function) {
+            return response()->json(
+                ["message" => "No active function type found matching your criteria."],
+                Response::HTTP_NOT_FOUND
+            );
         }
 
-        $item_category->update(['deleted_at' => now()]);
-        
+        $type_of_function->update(['deleted_at' => now()]);
+
         return response()->json([
-            "message" => "Successfully deleted record.",
-            "deleted_id" => $item_category->id
+            "message" => "Successfully deleted function type.",
+            "deleted_id" => $type_of_function->id,
+            "function_name" => $type_of_function->name
         ], Response::HTTP_OK);
     }
 }

@@ -25,6 +25,72 @@ class LogDescriptionController extends Controller
             'message' => "Succesfully imported record"
         ], Response::HTTP_OK);
     }
+    
+    protected function cleanLogDescriptionData(array $data): array
+    {
+        $cleanData = [];
+
+        if (isset($data['title'])) {
+            $cleanData['title'] = strip_tags($data['title']);
+        }
+
+        if (isset($data['code'])) {
+            $cleanData['code'] = strip_tags($data['code']);
+        }
+
+        if (isset($data['description'])) {
+            $cleanData['description'] = strip_tags($data['description']);
+        }
+
+        return $cleanData;
+    }
+    
+    protected function getMetadata($method): array
+    {
+        if($method === 'get'){
+            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
+            $metadata['modes'] = ['selection', 'pagination'];
+
+            if($this->is_development){
+                $metadata['urls'] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?log_description_id=[primary-key]",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                ];
+            }
+
+            return $metadata;
+        }
+        
+        if($method === 'put'){
+            $metadata = ["methods" => "[PUT]"];
+        
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["title", "code", "description"];
+            }
+            
+            return $metadata;
+        }
+        
+        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+
+        if($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+
+            $metadata["fields"] =  ["code"];
+        }
+
+        return $metadata;
+    }
 
     public function index(Request $request)
     {
@@ -43,29 +109,13 @@ class LogDescriptionController extends Controller
             if(!$log_description){
                 return response()->json([
                     'message' => "No record found.",
-                    "metadata" => [
-                        "methods" => "[GET, POST, PUT, DELETE]",
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?log_description_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ]);
             }
 
             return response()->json([
                 'data' => $log_description,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "urls" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?log_description_id=[primary-key]",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                    ]
-                ]
+                "metadata" => $this->getMetadata('get')
             ], Response::HTTP_OK);
         }
 
@@ -75,16 +125,7 @@ class LogDescriptionController extends Controller
             if($this->is_development){
                 $response = [
                     "message" => "Invalid value of parameters",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?log_description_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
+                    "metadata" => $this->getMetadata('get')
                 ];
             }
 
@@ -112,6 +153,41 @@ class LogDescriptionController extends Controller
 
             return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
         }
+
+        // Handle return for selection record
+        if($mode === 'selection'){
+            if($search  !== null){
+                $log_descriptions = LogDescription::select('id','title','code')
+                    ->where('title', 'like', '%'.$search.'%')
+                    ->where("deleted_at", NULL)->get();
+    
+                $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
+    
+                if($this->is_development){
+                    $metadata['content'] = "This type of response is for selection component.";
+                    $metadata['mode'] = "selection";
+                }
+                
+                return response()->json([
+                    "data" => $log_descriptions,
+                    "metadata" => $metadata,
+                ], Response::HTTP_OK);
+            }
+
+            $log_descriptions = LogDescription::select('id','title','code')->where("deleted_at", NULL)->get();
+
+            $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
+
+            if($this->is_development){
+                $metadata['content'] = "This type of response is for selection component.";
+                $metadata['mode'] = "selection";
+            }
+            
+            return response()->json([
+                "data" => $log_descriptions,
+                "metadata" => $metadata,
+            ], Response::HTTP_OK);
+        }
         
 
         if($search !== null){
@@ -122,13 +198,25 @@ class LogDescriptionController extends Controller
                     ->limit($per_page)
                     ->get();
 
+                if(count($log_descriptions)  === 0){
+                    return response()->json([
+                        'data' => [],
+                        'metadata' => [
+                            'methods' => '[GET,POST,PUT,DELETE]',
+                            'pagination' => [],
+                            'page' => 0,
+                            'total_page' => 0
+                        ],
+                    ], Response::HTTP_OK);
+                }
+
                 $allIds = LogDescription::where('title', 'like', '%'.$search.'%')
                     ->orderBy('id')
                     ->pluck('id');
 
                 $chunks = $allIds->chunk($per_page);
                 
-                $pagination_helper = new PaginationHelper('hospital', $page, $per_page, 0);
+                $pagination_helper = new PaginationHelper('log-descriptions', $page, $per_page, 0);
                 $pagination = $pagination_helper->createSearchPagination( $page_item, $chunks, $search, $per_page, $last_initial_id);
                 $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
                 
@@ -161,23 +249,6 @@ class LogDescriptionController extends Controller
             return response()->json([
                 'data' => $log_descriptions,
                 'metadata' => []
-            ], Response::HTTP_OK);
-        }
-
-        // Handle return for selection record
-        if($mode === 'selection'){
-            $log_descriptions = LogDescription::select('id','title','code')->where("deleted_at", NULL)->get();
-
-            $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-
-            if($this->is_development){
-                $metadata['content'] = "This type of response is for selection component.";
-                $metadata['mode'] = "selection";
-            }
-            
-            return response()->json([
-                "data" => $log_descriptions,
-                "metadata" => $metadata,
             ], Response::HTTP_OK);
         }
         
@@ -269,139 +340,184 @@ class LogDescriptionController extends Controller
             ]
         ], Response::HTTP_CREATED);
     }
-    public function update(Request $request):Response    
-    {
-        $log_description_id = $request->query('id') ?? null;
-        $query = $request->query('query') ?? null;
-
-        if(!$log_description_id && !$query){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                            env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
-                ];
-            }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-        
-        $log_description = null;
-
-        if($log_description_id){
-            $log_description = LogDescription::find($log_description_id);    
-        }
-
-        if(!$log_description_id && $query){
-            $log_descriptions = LogDescription::where($query)->get();
-            
-            // Check result is has many records
-            if(count($log_descriptions) > 1){
-                return response()->json([
-                    'data' => $log_descriptions,
-                    'message' => "Request has multiple record."
-                ], Response::HTTP_CONFLICT);
-            }
-
-            $log_description = $log_descriptions->first();
-        }
-        
-        $cleanData = [
-            "title" => strip_tags($request->input('title')),
-            "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
-        ];
-
-        $log_description->update($cleanData);
-
-        $metadata = [
-            "methods" => "[GET, PUT, DELETE]",
-        ];
-
-        if($this->is_development){
-            $metadata["formats"] = [
-                env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                env("SERVER_DOMAIN")."/api/".$this->module."query[target_field]=value"
-            ];
-            
-            $metadata['fields'] = ["code"];
-        }
-
-        return response()->json([
-            "data" => $log_description,
-            "metadata" => $metadata
-        ], Response::HTTP_OK);
-    }
-
-    public function destroy(Request $request): Response
+    
+    public function update(Request $request): Response
     {
         $log_description_ids = $request->query('id') ?? null;
-        $query = $request->query('query') ?? null;
 
-        if (!$log_description_ids && !$query) {
-            $response = ["message" => "Invalid request."];
+        if (!$log_description_ids) {
+            $response = ["message" => "ID parameter is required."];
 
             if ($this->is_development) {
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                        "formats" => [
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                            env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-                        ],
-                        "fields" => ["code"]
-                    ]
-                ];
+                $response['metadata'] = $this->getMetadata('put');
             }
 
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
+        // Convert single ID to array for consistent processing
+        $log_description_ids = is_array($log_description_ids) ? $log_description_ids : [$log_description_ids];
 
-        if ($log_description_ids) {
-            $log_description_ids = is_array($log_description_ids) ? $log_description_ids : explode(',', $log_description_ids);
-            $log_descriptions = LogDescription::whereIn('id', $log_description_ids)->where('deleted_at', NULL)->get();
-
-            if ($log_descriptions->isEmpty()) {
-                return response()->json(["message" => "No records found."], Response::HTTP_NOT_FOUND);
+        // For bulk update
+        if ($request->has('log_descriptions')) {
+            if (count($log_description_ids) !== count($request->input('log_descriptions'))) {
+                return response()->json([
+                    "message" => "Number of IDs does not match number of log descriptions provided.",
+                    "metadata" => $this->getMetadata('put')
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
-            LogDescription::whereIn('id', $log_description_ids)->update(['deleted_at' => now()]);
+            $updated_logs = [];
+            $errors = [];
+
+            foreach ($log_description_ids as $index => $id) {
+                $log_description = LogDescription::find($id);
+
+                if (!$log_description) {
+                    $errors[] = "Log description with ID {$id} not found.";
+                    continue;
+                }
+
+                $logData = $request->input('log_descriptions')[$index];
+                $cleanData = $this->cleanLogDescriptionData($logData);
+                
+                if (!empty($cleanData)) {
+                    $log_description->update($cleanData);
+                    $updated_logs[] = $log_description;
+                }
+            }
+
+            if (!empty($errors)) {
+                return response()->json([
+                    "data" => $updated_logs,
+                    "message" => "Partial update completed with errors.",
+                    "errors" => $errors,
+                    "metadata" => ["method" => "[PUT]"]
+                ], Response::HTTP_MULTI_STATUS);
+            }
 
             return response()->json([
-                "message" => "Successfully deleted " . count($log_descriptions) . " records."
-            ], Response::HTTP_NO_CONTENT);
+                "data" => $updated_logs,
+                "message" => "Successfully updated " . count($updated_logs) . " log descriptions.",
+                "metadata" => ["method" => "[PUT]"]
+            ], Response::HTTP_OK);
         }
 
-        if ($query) {
-            $log_descriptions = LogDescription::where($query)->get();
-
-            if ($log_descriptions->count() > 1) {
-                return response()->json([
-                    'data' => $log_descriptions,
-                    'message' => "Request has multiple records."
-                ], Response::HTTP_CONFLICT);
-            }
-
-            $log_description = $log_descriptions->first();
-
-            if (!$log_description) {
-                return response()->json(["message" => "No record found."], Response::HTTP_NOT_FOUND);
-            }
-
-            $log_description->update(['deleted_at' => now()]);
+        // Single item update
+        if (count($log_description_ids) > 1) {
+            return response()->json([
+                "message" => "Multiple IDs provided but no log_descriptions array for bulk update.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        return response()->json(["message" => "Successfully deleted record."], Response::HTTP_NO_CONTENT);
+        $log_description = LogDescription::find($log_description_ids[0]);
+
+        if (!$log_description) {
+            return response()->json([
+                "message" => "Log description not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $cleanData = $this->cleanLogDescriptionData($request->all());
+        
+        if (!empty($cleanData)) {
+            $log_description->update($cleanData);
+        }
+
+        $response = [
+            "data" => $log_description,
+            "message" => "Log description updated successfully.",
+            "metadata" => $this->getMetadata('put')
+        ];
+
+        return response()->json($response, Response::HTTP_OK);
+    }
+    
+    public function destroy(Request $request): Response
+    {
+        $log_description_ids = $request->query('id') ?? null;
+        $query = $request->query('query') ?? null;
+    
+        if (!$log_description_ids && !$query) {
+            $response = ["message" => "Invalid request."];
+    
+            if ($this->is_development) {
+                $response = [
+                    "message" => "No parameters found.",
+                    "metadata" => $this->getMetadata('delete')
+                ];
+            }
+    
+            return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    
+        if ($log_description_ids) {
+            $log_description_ids = is_array($log_description_ids) 
+                ? $log_description_ids 
+                : (str_contains($log_description_ids, ',') 
+                    ? explode(',', $log_description_ids) 
+                    : [$log_description_ids]
+                  );
+    
+            $log_description_ids = array_filter(array_map('intval', $log_description_ids));
+            
+            if (empty($log_description_ids)) {
+                return response()->json(
+                    ["message" => "Invalid log description ID format provided."],
+                    Response::HTTP_BAD_REQUEST
+                );
+            }
+    
+            $log_descriptions = LogDescription::whereIn('id', $log_description_ids)
+                ->whereNull('deleted_at')
+                ->get();
+    
+            if ($log_descriptions->isEmpty()) {
+                return response()->json(
+                    ["message" => "No active log descriptions found with the provided IDs."],
+                    Response::HTTP_NOT_FOUND
+                );
+            }
+    
+            $found_ids = $log_descriptions->pluck('id')->toArray();
+            
+            $deleted_count = LogDescription::whereIn('id', $found_ids)
+                ->update(['deleted_at' => now()]);
+    
+            return response()->json([
+                "message" => "Successfully deleted {$deleted_count} log description(s).",
+                "deleted_ids" => $found_ids,
+                "count" => $deleted_count
+            ], Response::HTTP_OK);
+        }
+    
+        $log_descriptions = LogDescription::where($query)
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($log_descriptions->count() > 1) {
+            return response()->json([
+                'data' => $log_descriptions,
+                'message' => "Query matches multiple log descriptions. Please specify IDs directly.",
+                'suggestion' => "Use ?id parameter for bulk operations or refine your query."
+            ], Response::HTTP_CONFLICT);
+        }
+
+        $log_description = $log_descriptions->first();
+
+        if (!$log_description) {
+            return response()->json(
+                ["message" => "No active log description found matching query."],
+                Response::HTTP_NOT_FOUND
+            );
+        }
+
+        $log_description->update(['deleted_at' => now()]);
+
+        return response()->json([
+            "message" => "Successfully deleted log description.",
+            "deleted_id" => $log_description->id,
+            "description" => $log_description->description // Optional: include relevant info
+        ], Response::HTTP_OK);
     }
 }

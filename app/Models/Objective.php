@@ -9,9 +9,9 @@ class Objective extends Model
     protected $table = 'objectives';
 
     protected $fillable = [
-        'uuid',
+        'code',
         'description',
-        'code'
+        'deleted_at'
     ];
 
     public $timestamps = true;
