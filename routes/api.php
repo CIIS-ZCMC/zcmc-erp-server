@@ -27,16 +27,22 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::put('items', "ItemController@update");
     Route::delete('items', "ItemController@destroy");
 
+    Route::post('item-units/template', "ItemUnitController@import");
+    Route::post('item-units/import', "ItemUnitController@downloadTemplate");
     Route::get('item-units', "ItemUnitController@index");
     Route::post('item-units', "ItemUnitController@store");
     Route::put('item-units', "ItemUnitController@update");
     Route::delete('item-units', "ItemUnitController@destroy");
     
+    Route::post('item-categories/template', "ItemCategoryController@import");
+    Route::post('item-categories/import', "ItemCategoryController@downloadTemplate");
     Route::get('item-categories', "ItemCategoryController@index");
     Route::post('item-categories', "ItemCategoryController@store");
     Route::put('item-categories', "ItemCategoryController@update");
     Route::delete('item-categories', "ItemCategoryController@destroy");
     
+    Route::post('item-classifications/template', "itemClassificationController@import");
+    Route::post('item-classifications/import', "itemClassificationController@downloadTemplate");
     Route::get('item-classifications', "itemClassificationController@index");
     Route::post('item-classifications', "itemClassificationController@store");
     Route::put('item-classifications', "itemClassificationController@update");
@@ -67,6 +73,8 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::put('procurement-modes/{id}', "ProcurementModesController@update");
     Route::delete('procurement-modes', "ProcurementModesController@destroy");
     
+    Route::post('log-descriptions/template', "LogDescriptionController@import");
+    Route::post('log-descriptions/import', "LogDescriptionController@downloadTemplate");
     Route::get('log-descriptions', "LogDescriptionController@index");
     Route::post('log-descriptions', "LogDescriptionController@store");
     Route::put('log-descriptions', "LogDescriptionController@update");
