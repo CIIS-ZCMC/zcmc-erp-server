@@ -6,9 +6,11 @@ use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemClassificationRequest;
 use App\Http\Resources\ItemClassificationDuplicateResource;
 use App\Http\Resources\ItemClassificationResource;
+use App\Imports\ItemClassificationsImport;
 use App\Models\ItemCategory;
 use App\Models\ItemClassification;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Excel;
 use Symfony\Component\HttpFoundation\Response;
 
 class ItemClassificationController extends Controller
@@ -93,11 +95,69 @@ class ItemClassificationController extends Controller
         return $metadata;
     }
 
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="item_classifications_template.csv"',
+        ];
+        
+        $columns = ['name', 'code', 'category_code', 'description'];
+        
+        // Get sample category codes for the template
+        $sampleCategories = ItemCategory::limit(3)->pluck('code')->toArray();
+        $sampleCategoryText = implode(', ', $sampleCategories);
+        
+        $callback = function() use ($columns, $sampleCategoryText) {
+            $file = fopen('php://output', 'w');
+            
+            fputcsv($file, $columns);
+            
+            fputcsv($file, [
+                'Sample Name',
+                'SAMPLE-CODE',
+                $sampleCategoryText ? "Example codes: $sampleCategoryText" : 'CAT-CODE',
+                'Optional description'
+            ]);
+            
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+
     public function import(Request $request)
     {
-        return response()->json([
-            'message' => "Succesfully imported record"
-        ], Response::HTTP_OK);
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv'
+        ]);
+
+        try {
+            $import = new ItemClassificationsImport();
+            Excel::import($import, $request->file('file'));
+            
+            $successCount = $import->getRowCount() - count($import->failures());
+            $failures = $import->failures();
+            
+            return response()->json([
+                'message' => "$successCount item classifications imported successfully.",
+                'success_count' => $successCount,
+                'failure_count' => count($failures),
+                'failures' => $failures->map(function($failure) {
+                    return [
+                        'row' => $failure->row(),
+                        'errors' => $failure->errors(),
+                        'values' => $failure->values()
+                    ];
+                }),
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error importing file',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     public function index(Request $request)
