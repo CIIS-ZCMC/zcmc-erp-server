@@ -258,7 +258,7 @@ class DivisionController extends Controller
         $division = Division::create($this->cleanDivisionData($validated));
         
         return response()->json([
-            'data' => $division,
+            'data' => new DivisionResource($division),
             'message' => $base_message,
             'metadata' => $this->getMetadata('post', $division->toArray())
         ], Response::HTTP_CREATED);
