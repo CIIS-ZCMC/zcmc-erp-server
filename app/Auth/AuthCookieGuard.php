@@ -3,6 +3,7 @@
 namespace App\Auth;
 
 use App\Models\AccessToken;
+use HttpRequestHelper;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Symfony\Component\HttpFoundation\Request;
@@ -29,22 +30,25 @@ class AuthCookieGuard implements Guard
         return !$this->check();
     }
     
+    
     public function attempt(array $credentials = [], $remember = false)
     {
-        // Retrieve the user by credentials (e.g., email)
-        $user = $this->provider->retrieveByCredentials($credentials);
+        // Modify this to authenticate view session id of umis
+        // $user = $this->provider->retrieveByCredentials($credentials);
 
-        if ($user && $this->provider->validateCredentials($user, $credentials)) {
-            // Log the user in
-            $this->setUser($user);
+        // if ($user && $this->provider->validateCredentials($user, $credentials)) {
+        //     // Log the user in
+        //     $this->setUser($user);
 
-            // Optionally, set a "remember me" cookie
-            if ($remember) {
-                $this->createRememberToken($user);
-            }
+        //     // Optionally, set a "remember me" cookie
+        //     if ($remember) {
+        //         $this->createRememberToken($user);
+        //     }
 
-            return true;
-        }
+        //     return true;
+        // }
+
+        HttpRequestHelper::forwardRequestToExternalApi("auth");
 
         return false;
     }
