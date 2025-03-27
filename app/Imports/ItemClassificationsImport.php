@@ -27,18 +27,11 @@ class ItemClassificationsImport implements ToModel, WithHeadingRow, WithValidati
     public function model(array $row)
     {
         ++$this->rows;
-        
-        $category = $this->categories->get($row['category_code']);
-        
-        if (!$category) {
-            throw new \Exception("Category with code {$row['category_code']} not found");
-        }
 
         return new ItemClassification([
             'name'        => $row['name'],
             'code'        => $row['code'],
-            'description' => $row['description'] ?? null,
-            'category_id' => $category->id,
+            'description' => $row['description'] ?? null
         ]);
     }
 
@@ -47,7 +40,7 @@ class ItemClassificationsImport implements ToModel, WithHeadingRow, WithValidati
         return [
             'name' => 'required|string|max:255',
             'code' => 'required|string|max:50|unique:item_classifications,code',
-            'category_code' => 'required|exists:item_categories,code',
+            'description' => 'required|string',
         ];
     }
 
