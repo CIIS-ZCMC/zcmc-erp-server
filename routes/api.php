@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Middleware\Cors;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -27,16 +26,28 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::put('items', "ItemController@update");
     Route::delete('items', "ItemController@destroy");
 
+    Route::post('item-requests/{id}/update-status', "ItemRequestController@approve");
+    Route::get('item-requests', "ItemRequestController@index");
+    Route::post('item-requests', "ItemRequestController@store");
+    Route::put('item-requests/{id}', "ItemRequestController@update");
+    Route::delete('item-requests', "ItemRequestController@destroy");
+
+    Route::post('item-units/import', "ItemUnitController@import");
+    Route::get('item-units/template', "ItemUnitController@downloadTemplate");
     Route::get('item-units', "ItemUnitController@index");
     Route::post('item-units', "ItemUnitController@store");
     Route::put('item-units', "ItemUnitController@update");
     Route::delete('item-units', "ItemUnitController@destroy");
     
+    Route::post('item-categories/import', "ItemCategoryController@import");
+    Route::get('item-categories/template', "ItemCategoryController@downloadTemplate");
     Route::get('item-categories', "ItemCategoryController@index");
     Route::post('item-categories', "ItemCategoryController@store");
     Route::put('item-categories', "ItemCategoryController@update");
     Route::delete('item-categories', "ItemCategoryController@destroy");
     
+    Route::post('item-classifications/import', "itemClassificationController@import");
+    Route::get('item-classifications/template', "itemClassificationController@downloadTemplate");
     Route::get('item-classifications', "itemClassificationController@index");
     Route::post('item-classifications', "itemClassificationController@store");
     Route::put('item-classifications', "itemClassificationController@update");
@@ -67,6 +78,8 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::put('procurement-modes/{id}', "ProcurementModesController@update");
     Route::delete('procurement-modes', "ProcurementModesController@destroy");
     
+    Route::post('log-descriptions/import', "LogDescriptionController@import");
+    Route::get('log-descriptions/template', "LogDescriptionController@downloadTemplate");
     Route::get('log-descriptions', "LogDescriptionController@index");
     Route::post('log-descriptions', "LogDescriptionController@store");
     Route::put('log-descriptions', "LogDescriptionController@update");

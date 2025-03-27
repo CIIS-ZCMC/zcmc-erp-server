@@ -4,9 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemUnitRequest;
+use App\Imports\ItemUnitsImport;
 use App\Models\ItemUnit;
-use App\Models\LogDescription;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Excel;
 use Symfony\Component\HttpFoundation\Response;
 
 class ItemUnitController extends Controller
@@ -19,12 +20,51 @@ class ItemUnitController extends Controller
     {
         $this->is_development = env("APP_DEBUG", true);
     }
- 
+
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="item_units_template.csv"',
+        ];
+        
+        $columns = ['name', 'code', 'description'];
+        
+        $callback = function() use ($columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns);
+            fclose($file);
+        };
+        
+        return response()->stream($callback, 200, $headers);
+    }
+
     public function import(Request $request)
     {
-        return response()->json([
-            'message' => "Succesfully imported record"
-        ], Response::HTTP_OK);
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv'
+        ]);
+    
+        try {
+            $import = new ItemUnitsImport;
+            Excel::import($import, $request->file('file'));
+            
+            $successCount = $import->getRowCount() - count($import->failures());
+            $failures = $import->failures();
+            
+            return response()->json([
+                'message' => "$successCount item units imported successfully.",
+                'success_count' => $successCount,
+                'failure_count' => count($failures),
+                'failures' => $failures,
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error importing file',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
     
     private function cleanItemUnitData(array $data): array
