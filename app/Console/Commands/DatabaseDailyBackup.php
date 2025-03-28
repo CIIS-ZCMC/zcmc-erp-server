@@ -31,7 +31,7 @@ class DatabaseDailyBackup extends Command
             $this->info('Created directory: ' . $backupDirectory);
         }
         
-        $filename = 'umis_db_' . date('m-d-Y') . '.sql';
+        $filename = 'erp_db_' . date('m-d-Y') . '.sql';
         $path = $backupDirectory . '/' . $filename;
         
         $command = sprintf(
