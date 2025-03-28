@@ -28,8 +28,6 @@ class Unit extends Model
         'umis_unit_id',
         'head_id',
         'oic_id',
-        'division_id',
-        'department_id',
         'section_id',
         'name',
     ];
