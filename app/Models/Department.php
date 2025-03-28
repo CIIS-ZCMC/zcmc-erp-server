@@ -25,7 +25,10 @@ class Department extends Model
      * @var array
      */
     protected $fillable = [
+        'umis_department_id',
         'head_id',
+        'oic_id',
+        'division_id',
         'name',
     ];  
 
@@ -37,6 +40,26 @@ class Department extends Model
     public function head()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the user that OIC this department.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function oic()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the division this department belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
     }
 
     /**
