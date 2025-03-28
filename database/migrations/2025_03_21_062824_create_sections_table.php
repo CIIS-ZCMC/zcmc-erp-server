@@ -13,6 +13,12 @@ return new class extends Migration
     {
         Schema::create('sections', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('umis_section_id');
+            $table->unsignedBigInteger('head_id')->nullable();
+            $table->unsignedBigInteger('oic_id')->nullable();
+            $table->foreignId('division_id')->nullable()->constrained('divisions')->nullOnDelete();
+            $table->foreignId('department_id')->nullable()->constrained('departments')->nullOnDelete();
+            $table->string('name');
             $table->timestamps();
         });
     }

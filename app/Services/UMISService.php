@@ -27,7 +27,7 @@ class UMISService
         try {
             // Log the attempt to connect to UMIS
             Log::info('Attempting to connect to UMIS API', [
-                'url' => $this->baseUrl . '/assign-areas',
+                'url' => $this->baseUrl . '/erp-data-areas',
                 'has_api_key' => !empty($this->apiKey),
                 'api_key' => $this->apiKey ? substr($this->apiKey, 0, 5) . '...' : null,
             ]);
@@ -38,15 +38,15 @@ class UMISService
                 'UMIS-Api-Key' => $this->apiKey,
                 'X-ERP-System' => 'ZCMC-ERP',
             ];
-            
+
             Log::info('Request headers', ['headers' => $headers]);
 
             $response = Http::withoutVerifying() // Skip SSL verification for development
                 ->timeout(30) // Increase timeout to 30 seconds
                 ->withHeaders($headers);
-            
+
             // Make the request
-            $response = $response->get($this->baseUrl . '/assign-areas');
+            $response = $response->get($this->baseUrl . '/erp-data-areas');
 
             if ($response->successful()) {
                 Log::info('UMIS API - Successfully fetched areas');
@@ -54,19 +54,19 @@ class UMISService
             }
 
             Log::error('UMIS API - Failed to get areas', [
-                'url' => $this->baseUrl . '/assign-areas',
+                'url' => $this->baseUrl . '/erp-data-areas',
                 'status' => $response->status(),
                 'response' => $response->body()
             ]);
-            
+
             return null;
         } catch (Exception $e) {
             Log::error('UMIS API - Exception while getting areas', [
-                'url' => $this->baseUrl . '/assign-areas',
+                'url' => $this->baseUrl . '/erp-data-areas',
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return null;
         }
     }
@@ -94,13 +94,13 @@ class UMISService
                 'UMIS-Api-Key' => $this->apiKey,
                 'X-ERP-System' => 'ZCMC-ERP',
             ];
-            
+
             Log::info('Request headers', ['headers' => $headers]);
 
             $response = Http::withoutVerifying() // Skip SSL verification for development
                 ->timeout(30) // Increase timeout to 30 seconds
                 ->withHeaders($headers);
-            
+
             // Make the request
             $response = $response->get($this->baseUrl . '/assign-area/' . $areaId);
 
@@ -117,7 +117,7 @@ class UMISService
                 'status' => $response->status(),
                 'response' => $response->body()
             ]);
-            
+
             return null;
         } catch (Exception $e) {
             Log::error('UMIS API - Exception while getting area', [
@@ -126,7 +126,56 @@ class UMISService
                 'message' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
+            return null;
+        }
+    }
+
+    public function getOrganizationStructure()
+    {
+        try {
+            // Log the attempt to connect to UMIS
+            Log::info('Attempting to connect to UMIS API', [
+                'url' => $this->baseUrl . '/erp-data-areas',
+                'has_api_key' => !empty($this->apiKey),
+                'api_key' => $this->apiKey ? substr($this->apiKey, 0, 5) . '...' : null,
+            ]);
+
+            // Create a headers array for better debugging
+            $headers = [
+                'Accept' => 'application/json',
+                'UMIS-Api-Key' => $this->apiKey,
+                'X-ERP-System' => 'ZCMC-ERP',
+            ];
+
+            Log::info('Request headers', ['headers' => $headers]);
+
+            $response = Http::withoutVerifying() // Skip SSL verification for development
+                ->timeout(30) // Increase timeout to 30 seconds
+                ->withHeaders($headers);
+
+            // Make the request
+            $response = $response->get($this->baseUrl . '/erp-data-areas');
+
+            if ($response->successful()) {
+                Log::info('UMIS API - Successfully fetched areas');
+                return $response->json();
+            }
+
+            Log::error('UMIS API - Failed to get areas', [
+                'url' => $this->baseUrl . '/erp-data-areas',
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+
+            return null;
+        } catch (Exception $e) {
+            Log::error('UMIS API - Exception while getting areas', [
+                'url' => $this->baseUrl . '/erp-data-areas',
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return null;
         }
     }
