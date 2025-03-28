@@ -20,9 +20,9 @@ return new class extends Migration
             $table->unsignedBigInteger('item_classification_id');
             $table->foreign('item_classification_id')->references('id')->on('item_classifications');
             $table->string('name');
+            $table->string('code')->nullable();
             $table->text('image')->nullable();
             $table->string('variant')->nullable();
-            $table->string('code')->nullable();
             $table->float('estimated_budget')->default(0);
             $table->dateTime('deleted_at')->nullable();
             $table->timestamps();
