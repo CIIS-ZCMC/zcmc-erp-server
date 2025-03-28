@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::create('divisions', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('umis_division_id');
+            $table->unsignedBigInteger('head_id');
+            $table->unsignedBigInteger('oic_id')->nullable();
+            $table->string('name');
             $table->timestamps();
         });
     }

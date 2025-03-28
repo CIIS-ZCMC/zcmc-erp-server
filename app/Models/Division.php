@@ -12,7 +12,9 @@ class Division extends Model
      * @var array
      */
     protected $fillable = [
+        'umis_division_id',
         'head_id',
+        'oic_id',
         'name',
     ];
 
@@ -22,6 +24,16 @@ class Division extends Model
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function head()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the user that OIC this division.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function oic()
     {
         return $this->belongsTo(User::class);
     }

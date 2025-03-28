@@ -25,7 +25,10 @@ class Unit extends Model
      * @var array<string>
      */
     protected $fillable = [
+        'umis_unit_id',
         'head_id',
+        'oic_id',
+        'section_id',
         'name',
     ];
 
@@ -37,6 +40,46 @@ class Unit extends Model
     public function head()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the user that OIC this unit.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function oic()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the section this unit belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function section()
+    {
+        return $this->belongsTo(Section::class);
+    }
+
+    /**
+     * Get the department this unit belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    /**
+     * Get the division this unit belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
     }
 
     /**

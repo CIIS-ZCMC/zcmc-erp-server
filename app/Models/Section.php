@@ -25,7 +25,11 @@ class Section extends Model
      * @var array
      */
     protected $fillable = [
+        'umis_section_id',
         'head_id',
+        'oic_id',
+        'division_id',
+        'department_id',
         'name',
     ];
 
@@ -37,6 +41,36 @@ class Section extends Model
     public function head()
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the user that OIC this section.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function oic()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the division this section belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
+    }
+
+    /**
+     * Get the department this section belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
     }
 
     /**
