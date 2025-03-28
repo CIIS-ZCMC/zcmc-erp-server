@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('units', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('umis_section_id');
+            $table->unsignedBigInteger('umis_unit_id');
             $table->unsignedBigInteger('head_id')->nullable();
             $table->unsignedBigInteger('oic_id')->nullable();
             $table->foreignId('section_id')->constrained('sections')->nullOnDelete();
