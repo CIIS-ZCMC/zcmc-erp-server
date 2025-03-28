@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\FileUploadCheckForMalwareAttack;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemRequestRequest;
 use App\Http\Resources\ItemRequestResource;
 use App\Http\Resources\ItemResource;
+use App\Models\FileRecord;
 use App\Models\ItemCategory;
 use App\Models\ItemRequest;
 use App\Models\ItemClassification;
@@ -334,22 +336,59 @@ class ItemRequestController extends Controller
 
         $cleanData = [
             "name" => strip_tags($request->input('name')),
+            "code" => strip_tags($request->input('code')),
+            "variant" => strip_tags($request->input('variant')),
             "estimated_budget" => strip_tags($request->input('estimated_budget')),
             "item_unit_id" => strip_tags($request->input('item_unit_id')),
             "item_category_id" => strip_tags($request->input('item_category_id')),
             "item_classification_id" => strip_tags($request->input('item_classification_id')),
             "request_by" => auth()->user()->id,
-            "specs" => strip_tags($request->specs)
+            "reason" => strip_tags($request->reason),
         ];
         
         $new_item = ItemRequest::create($cleanData);
+        
+        $metadata = ["methods" => ['GET, POST, PUT, DELETE']];
+
+        if($request->hasFile('file'))
+        {
+            try{
+                $fileChecker = new FileUploadCheckForMalwareAttack();
+            
+                // Check if file is safe
+                if (!$fileChecker->isFileSafe($request->file('file'))) {
+                    return response()->json([
+                        "message" => 'File upload failed security checks'
+                    ], Response::HTTP_BAD_REQUEST);
+                }
+    
+                // File is safe, proceed with saving
+                $file = $request->file('file');
+                $fileExtension = $file->getClientOriginalExtension();
+                $hashedFileName = hash_file('sha256', $file->getRealPath()) . '.' . $fileExtension;
+                
+                // Store file with hashed name
+                $filePath = $file->storeAs('uploads/items', $hashedFileName, 'public');
+    
+                $file = FileRecord::create([
+                    "item_request_id" => $new_item->id,
+                    'file_path' => $filePath,
+                    'original_name' => $file->getClientOriginalName(),
+                    'file_hash' => $hashedFileName,
+                    'file_size' => $file->getSize(),
+                    'file_type' => $fileExtension,
+                ]);
+
+                $new_item->update(['image' => $filePath]);
+            }catch(\Throwable $th){
+                $metadata['error'] = "Failed to save item image.";
+            }
+        }
 
         return response()->json([
             "data" => new ItemRequestResource($new_item),
             "message" => "Successfully created item record.",
-            "metadata" => [
-                "methods" => ['GET, POST, PUT, DELETE'],
-            ]
+            "metadata" => $metadata
         ], Response::HTTP_CREATED);
     }
 
