@@ -84,4 +84,9 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('log-descriptions', "LogDescriptionController@store");
     Route::put('log-descriptions', "LogDescriptionController@update");
     Route::delete('log-descriptions', "LogDescriptionController@destroy");
+    
+    // AssignedArea Routes - UMIS Integration
+    Route::get('assigned-areas', "AssignedAreaController@index");
+    Route::get('assigned-areas/{id}', "AssignedAreaController@show");
+    Route::post('umis/areas/update', "AssignedAreaController@processUMISUpdate");
 });
