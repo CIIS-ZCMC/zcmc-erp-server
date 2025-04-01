@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\DepartmentResource;
 use App\Models\Department;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -73,7 +74,7 @@ class DepartmentController extends Controller
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
             ];
 
-            $metadata["fields"] =  ["type"];
+            $metadata["fields"] = ["type"];
         }
 
         return $metadata;
@@ -118,7 +119,7 @@ class DepartmentController extends Controller
             }
 
             return response()->json([
-                'data' => $department,
+                'data' => new DepartmentResource($department),
                 "metadata" => $this->getMetadata('get', [])
             ], 200);
         }
@@ -153,13 +154,13 @@ class DepartmentController extends Controller
 
         if ($search) {
             $query->where('name', 'LIKE', "%{$search}%")
-                  ->orWhere('code', 'LIKE', "%{$search}%");
+                ->orWhere('code', 'LIKE', "%{$search}%");
         }
 
         if ($mode === 'selection') {
             $departments = $query->select('id', 'name', 'code')->get();
             return response()->json([
-                'data' => $departments,
+                'data' => new DepartmentResource($departments),
                 'metadata' => $this->getMetadata('get', [])
             ], 200);
         }
@@ -197,7 +198,7 @@ class DepartmentController extends Controller
         ];
 
         return response()->json([
-            'data' => $departments,
+            'data' => new DepartmentResource($departments),
             'metadata' => [
                 'pagination' => $pagination,
                 'page' => $page,
@@ -218,11 +219,11 @@ class DepartmentController extends Controller
             'name' => 'required|string|max:255|unique:departments,name,' . $department->id,
             'code' => 'nullable|string|max:50|unique:departments,code,' . $department->id,
         ]);
-        
+
         $department->update($this->cleanDepartmentData($validated));
-        
+
         return response()->json([
-            'data' => $department,
+            'data' => new DepartmentResource($department),
             'message' => 'Department updated successfully',
             'metadata' => $this->getMetadata('put', [])
         ], Response::HTTP_OK);
@@ -234,12 +235,10 @@ class DepartmentController extends Controller
     public function destroy(Department $department)
     {
         $department->delete();
-        
+
         return response()->json([
             'message' => 'Department deleted successfully',
-            'metadata' => [
-                'methods' => ['DELETE']
-            ]
+            'metadata' => $this->getMetadata('delete', $department->toArray())
         ], Response::HTTP_OK);
     }
 }

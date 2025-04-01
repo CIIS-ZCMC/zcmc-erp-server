@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'umis' => [
+        'base_url' => env('UMIS_API_URL', 'http://zcmc.online/api'),
+        'api_key' => env('UMIS_API_KEY'),
+    ],
+
 ];

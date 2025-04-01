@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\TransactionLog;  
+use App\Models\TransactionLog;
 use App\Models\User;
 
 /**
@@ -25,12 +25,13 @@ class Department extends Model
      * @var array
      */
     protected $fillable = [
+        'umis_department_id',
         'head_id',
         'oid_id',
         'division_id',
         'umis_department_id',
         'name',
-    ];  
+    ];
 
     /**
      * Get the user who heads this department.
@@ -40,7 +41,7 @@ class Department extends Model
     public function head()
     {
         return $this->belongsTo(User::class);
-    }  
+    }
 
     /**
      * Get the division where the department belongs.
@@ -55,6 +56,26 @@ class Department extends Model
     public function sections()
     {
         return $this->hasMany(Section::class);
+    }
+
+    /**
+     * Get the user that OIC this department.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function oic()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the division this department belongs to.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
     }
 
     /**

@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
-use App\Models\TransactionLog;  
+use App\Models\TransactionLog;
 
 /**
  * Unit Model
@@ -25,6 +25,7 @@ class Unit extends Model
      * @var array<string>
      */
     protected $fillable = [
+        'umis_unit_id',
         'head_id',
         'oic_id',
         'division_id',

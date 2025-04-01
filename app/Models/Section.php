@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\TransactionLog;  
+use App\Models\TransactionLog;
 use App\Models\User;
 
 /**
@@ -25,6 +25,7 @@ class Section extends Model
      * @var array
      */
     protected $fillable = [
+        'umis_section_id',
         'head_id',
         'oic_id',
         'division_id',
@@ -56,6 +57,16 @@ class Section extends Model
     public function units()
     {
         return $this->hasMany(Unit::class);
+    }
+
+    /**
+     * Get the user that OIC this section.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function oic()
+    {
+        return $this->belongsTo(User::class);
     }
 
     /**

@@ -6,6 +6,7 @@ use App\Models\Section;
 use App\Helpers\PaginationHelper;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Http\Resources\SectionResource;
 
 class SectionController extends Controller
 {
@@ -16,7 +17,7 @@ class SectionController extends Controller
     {
         $this->is_development = env("APP_DEBUG", true);
     }
-    
+
     private function cleanSectionData(array $data)
     {
         return [
@@ -24,7 +25,7 @@ class SectionController extends Controller
             'code' => $data['code'] ?? null,
         ];
     }
-    
+
     private function getMetadata($method, array $data = [])
     {
         if (strtolower($method) === 'get') {
@@ -66,7 +67,7 @@ class SectionController extends Controller
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
             ];
 
-            $metadata["fields"] =  ["type"];
+            $metadata["fields"] = ["type"];
         }
 
         return $metadata;
@@ -111,7 +112,7 @@ class SectionController extends Controller
             }
 
             return response()->json([
-                'data' => $section,
+                'data' => new SectionResource($section),
                 "metadata" => $this->getMetadata('get', [])
             ], 200);
         }
@@ -146,13 +147,13 @@ class SectionController extends Controller
 
         if ($search) {
             $query->where('name', 'LIKE', "%{$search}%")
-                  ->orWhere('code', 'LIKE', "%{$search}%");
+                ->orWhere('code', 'LIKE', "%{$search}%");
         }
 
         if ($mode === 'selection') {
             $sections = $query->select('id', 'name', 'code')->get();
             return response()->json([
-                'data' => $sections,
+                'data' => new SectionResource($sections),
                 'metadata' => $this->getMetadata('get', [])
             ], 200);
         }
@@ -190,7 +191,7 @@ class SectionController extends Controller
         ];
 
         return response()->json([
-            'data' => $sections,
+            'data' => new SectionResource($sections),
             'metadata' => [
                 'pagination' => $pagination,
                 'page' => $page,
@@ -211,11 +212,11 @@ class SectionController extends Controller
             'name' => 'required|string|max:255|unique:sections,name,' . $section->id,
             'code' => 'nullable|string|max:50|unique:sections,code,' . $section->id,
         ]);
-        
+
         $section->update($this->cleanSectionData($validated));
-        
+
         return response()->json([
-            'data' => $section,
+            'data' => new SectionResource($section),
             'metadata' => $this->getMetadata('put', $section->toArray())
         ]);
     }
@@ -226,9 +227,10 @@ class SectionController extends Controller
     public function destroy(Section $section)
     {
         $section->delete();
-        
+
         return response()->json([
-            'message' => 'Section deleted successfully'
+            'message' => 'Section deleted successfully',
+            'metadata' => $this->getMetadata('delete', $section->toArray())
         ], Response::HTTP_OK);
     }
 }

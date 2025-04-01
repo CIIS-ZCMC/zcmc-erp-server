@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\UnitResource;
 use App\Models\Unit;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +27,7 @@ class UnitController extends Controller
         }
 
         if (isset($data['head_id'])) {
-            $cleanData['head_id'] = (int)$data['head_id'];
+            $cleanData['head_id'] = (int) $data['head_id'];
         }
 
         return $cleanData;
@@ -73,7 +74,7 @@ class UnitController extends Controller
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
             ];
 
-            $metadata["fields"] =  ["type"];
+            $metadata["fields"] = ["type"];
         }
 
         return $metadata;
@@ -118,7 +119,7 @@ class UnitController extends Controller
             }
 
             return response()->json([
-                'data' => $unit,
+                'data' => new UnitResource($unit),
                 "metadata" => $this->getMetadata('get', [])
             ], 200);
         }
@@ -158,7 +159,7 @@ class UnitController extends Controller
         if ($mode === 'selection') {
             $units = $query->select('id', 'name')->get();
             return response()->json([
-                'data' => $units,
+                'data' => new UnitResource($units),
                 'metadata' => $this->getMetadata('get', [])
             ], 200);
         }
@@ -196,7 +197,7 @@ class UnitController extends Controller
         ];
 
         return response()->json([
-            'data' => $units,
+            'data' => new UnitResource($units),
             'metadata' => [
                 'pagination' => $pagination,
                 'page' => $page,
@@ -214,11 +215,11 @@ class UnitController extends Controller
     public function update(Request $request, Unit $unit)
     {
         $cleanData = $this->cleanUnitData($request->all());
-        
+
         $unit->update($cleanData);
-        
+
         return response()->json([
-            'data' => $unit,
+            'data' => new UnitResource($unit),
             'message' => 'Unit updated successfully',
             'metadata' => $this->getMetadata('put', [])
         ], Response::HTTP_OK);
@@ -230,12 +231,10 @@ class UnitController extends Controller
     public function destroy(Unit $unit)
     {
         $unit->delete();
-        
+
         return response()->json([
             'message' => 'Unit deleted successfully',
-            'metadata' => [
-                'methods' => ['DELETE']
-            ]
+            'metadata' => $this->getMetadata('delete', $unit->toArray())
         ], Response::HTTP_OK);
     }
 }

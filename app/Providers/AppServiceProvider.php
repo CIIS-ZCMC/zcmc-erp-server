@@ -6,6 +6,7 @@ use App\Auth\AuthCookieGuard;
 use App\Auth\AuthUserProvider;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Schema;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -14,7 +15,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Register the UMIS service
+        $this->app->singleton('App\Services\UMISService', function ($app) {
+            return new \App\Services\UMISService();
+        });
     }
 
     /**
@@ -34,5 +38,7 @@ class AppServiceProvider extends ServiceProvider
         Auth::provider('auth_user_provider', function ($app, array $config) {
             return new AuthUserProvider($config['model']);
         });
+
+        Schema::defaultStringLength(191);
     }
 }

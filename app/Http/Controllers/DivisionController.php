@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Division;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Http\Resources\DivisionResource;
 
 class DivisionController extends Controller
 {
@@ -73,7 +74,7 @@ class DivisionController extends Controller
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
             ];
 
-            $metadata["fields"] =  ["type"];
+            $metadata["fields"] = ["type"];
         }
 
         return $metadata;
@@ -118,7 +119,7 @@ class DivisionController extends Controller
             }
 
             return response()->json([
-                'data' => $division,
+                'data' => new DivisionResource($division),
                 "metadata" => $this->getMetadata('get', [])
             ], 200);
         }
@@ -153,13 +154,13 @@ class DivisionController extends Controller
 
         if ($search) {
             $query->where('name', 'LIKE', "%{$search}%")
-                  ->orWhere('code', 'LIKE', "%{$search}%");
+                ->orWhere('code', 'LIKE', "%{$search}%");
         }
 
         if ($mode === 'selection') {
             $divisions = $query->select('id', 'name', 'code')->get();
             return response()->json([
-                'data' => $divisions,
+                'data' => new DivisionResource($divisions),
                 'metadata' => $this->getMetadata('get', [])
             ], 200);
         }
@@ -197,7 +198,7 @@ class DivisionController extends Controller
         ];
 
         return response()->json([
-            'data' => $divisions,
+            'data' => new DivisionResource($divisions),
             'metadata' => [
                 'pagination' => $pagination,
                 'page' => $page,
@@ -218,11 +219,11 @@ class DivisionController extends Controller
             'name' => 'required|string|max:255|unique:divisions,name,' . $division->id,
             'code' => 'nullable|string|max:50|unique:divisions,code,' . $division->id,
         ]);
-        
+
         $division->update($this->cleanDivisionData($validated));
-        
+
         return response()->json([
-            'data' => $division,
+            'data' => new DivisionResource($division),
             'message' => 'Division updated successfully',
             'metadata' => $this->getMetadata('put', [])
         ], Response::HTTP_OK);
@@ -234,12 +235,10 @@ class DivisionController extends Controller
     public function destroy(Division $division)
     {
         $division->delete();
-        
+
         return response()->json([
             'message' => 'Division deleted successfully',
-            'metadata' => [
-                'methods' => ['DELETE']
-            ]
+            'metadata' => $this->getMetadata('delete', $division->toArray())
         ], Response::HTTP_OK);
     }
 }

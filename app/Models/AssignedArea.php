@@ -27,16 +27,23 @@ use App\Models\Unit;
 class AssignedArea extends Pivot
 {
     /**
+     * The table associated with the model.
+     *
+     * @var string
+     */
+    protected $table = 'assigned_areas';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var array<int, string>
      */
     protected $fillable = [
+        'user_id',
         'division_id',
         'department_id',
         'section_id',
         'unit_id',
-        'user_id',
     ];
 
     /**
