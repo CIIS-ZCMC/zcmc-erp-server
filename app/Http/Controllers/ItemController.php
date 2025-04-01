@@ -27,77 +27,77 @@ class ItemController extends Controller
     private function cleanItemData(array $data): array
     {
         $cleanData = [];
-        
+
         // Only include fields that exist in the request
         if (isset($data['name'])) {
             $cleanData['name'] = strip_tags($data['name']);
         }
-        
+
         if (isset($data['estimated_budget'])) {
             $cleanData['estimated_budget'] = filter_var(
-                $data['estimated_budget'], 
-                FILTER_SANITIZE_NUMBER_FLOAT, 
+                $data['estimated_budget'],
+                FILTER_SANITIZE_NUMBER_FLOAT,
                 FILTER_FLAG_ALLOW_FRACTION
             );
         }
-        
+
         if (isset($data['item_unit_id'])) {
-            $cleanData['item_unit_id'] = (int)$data['item_unit_id'];
+            $cleanData['item_unit_id'] = (int) $data['item_unit_id'];
         }
-        
+
         if (isset($data['item_category_id'])) {
-            $cleanData['item_category_id'] = (int)$data['item_category_id'];
+            $cleanData['item_category_id'] = (int) $data['item_category_id'];
         }
-        
+
         if (isset($data['item_classification_id'])) {
-            $cleanData['item_classification_id'] = (int)$data['item_classification_id'];
+            $cleanData['item_classification_id'] = (int) $data['item_classification_id'];
         }
-        
+
         return $cleanData;
     }
-    
+
     protected function getMetadata($method): array
     {
-        if($method === 'get'){
+        if ($method === 'get') {
             $metadata['methods'] = ["GET, POST, PUT, DELETE"];
             $metadata['modes'] = ['selection', 'pagination'];
 
-            if($this->is_development){
+            if ($this->is_development) {
                 $metadata['urls'] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?item_id=[primary-key]",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?item_id=[primary-key]",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&search=value",
                 ];
             }
 
             return $metadata;
         }
-        
-        if($method === 'put'){
+
+        if ($method === 'put') {
             $metadata = ["methods" => "[PUT]"];
-        
+
             if ($this->is_development) {
                 $metadata["urls"] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2"
                 ];
                 $metadata['fields'] = ["type"];
             }
-            
+
             return $metadata;
         }
-        
+
         $metadata = ['methods' => ["GET, PUT, DELETE"]];
 
-        if($this->is_development) {
+        if ($this->is_development) {
             $metadata["urls"] = [
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
             ];
 
-            $metadata["fields"] =  ["type"];
+            $metadata["fields"] = ["type"];
         }
 
         return $metadata;
@@ -112,7 +112,7 @@ class ItemController extends Controller
 
     public function index(Request $request)
     {
-        $page = $request->query('page') > 0? $request->query('page'): 1;
+        $page = $request->query('page') > 0 ? $request->query('page') : 1;
         $per_page = $request->query('per_page');
         $mode = $request->query('mode') ?? 'pagination';
         $search = $request->query('search');
@@ -121,10 +121,10 @@ class ItemController extends Controller
         $page_item = $request->query('page_item') ?? 0;
         $item_id = $request->query('item_id') ?? null;
 
-        if($item_id){
+        if ($item_id) {
             $item = Item::find($item_id);
 
-            if(!$item){
+            if (!$item) {
                 return response()->json([
                     'message' => "No record found.",
                     "metadata" => $this->getMetadata('get')
@@ -137,10 +137,10 @@ class ItemController extends Controller
             ], Response::HTTP_OK);
         }
 
-        if($page < 0 || $per_page < 0){
+        if ($page < 0 || $per_page < 0) {
             $response = ["message" => "Invalid request."];
-            
-            if($this->is_development){
+
+            if ($this->is_development) {
                 $response = [
                     "message" => "Invalid value of parameters",
                     "metadata" => $this->getMetadata('get')
@@ -150,33 +150,33 @@ class ItemController extends Controller
             return response()->json([$response], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        if(!$page && !$per_page){
+        if (!$page && !$per_page) {
             $response = ["message" => "Invalid request."];
 
-            if($this->is_development){
+            if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
                     "metadata" => $this->getMetadata('get')
                 ];
             }
 
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
+            return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         // Handle return for selection record
-        if($mode === 'selection'){
-            if($search !== null){
-                $items = Item::select('id','name','estimated_budget')
-                    ->where('name', 'like', "%".$search."%")
+        if ($mode === 'selection') {
+            if ($search !== null) {
+                $items = Item::select('id', 'name', 'estimated_budget')
+                    ->where('name', 'like', "%" . $search . "%")
                     ->where("deleted_at", NULL)->get();
-    
+
                 $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-    
-                if($this->is_development){
+
+                if ($this->is_development) {
                     $metadata['content'] = "This type of response is for selection component.";
                     $metadata['mode'] = "selection";
                 }
-                
+
                 return response()->json([
                     "data" => ItemResource::collection($items),
                     "metadata" => $metadata,
@@ -187,27 +187,27 @@ class ItemController extends Controller
 
             $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
 
-            if($this->is_development){
+            if ($this->is_development) {
                 $metadata['content'] = "This type of response is for selection component.";
                 $metadata['mode'] = "selection";
             }
-            
+
             return response()->json([
-                    "data" => ItemResource::collection($items),
+                "data" => ItemResource::collection($items),
                 "metadata" => $metadata,
             ], Response::HTTP_OK);
         }
-        
 
-        if($search !== null){
-            if($last_id === 0 || $page_item != null){
-                $items = Item::where('name', 'like', '%'.$search.'%')
-                    ->where('id','>', $last_id)
+
+        if ($search !== null) {
+            if ($last_id === 0 || $page_item != null) {
+                $items = Item::where('name', 'like', '%' . $search . '%')
+                    ->where('id', '>', $last_id)
                     ->orderBy('id')
                     ->limit($per_page)
                     ->get();
 
-                if(count($items)  === 0){
+                if (count($items) === 0) {
                     return response()->json([
                         'data' => [],
                         'metadata' => [
@@ -219,16 +219,16 @@ class ItemController extends Controller
                     ], Response::HTTP_OK);
                 }
 
-                $allIds = Item::where('name', 'like', '%'.$search.'%')
+                $allIds = Item::where('name', 'like', '%' . $search . '%')
                     ->orderBy('id')
                     ->pluck('id');
 
                 $chunks = $allIds->chunk($per_page);
-                
+
                 $pagination_helper = new PaginationHelper('items', $page, $per_page, 0);
-                $pagination = $pagination_helper->createSearchPagination( $page_item, $chunks, $search, $per_page, $last_initial_id);
+                $pagination = $pagination_helper->createSearchPagination($page_item, $chunks, $search, $per_page, $last_initial_id);
                 $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
-                
+
                 /**
                  * Save the metadata in database unique per module and user to ensure reuse of metadata
                  */
@@ -247,8 +247,8 @@ class ItemController extends Controller
             /**
              * Reuse existing pagination and update the existing pagination next and previous data
              */
-            $items = Item::where('name', 'like', '%'.$search.'%')
-                ->where('id','>', $last_id)
+            $items = Item::where('name', 'like', '%' . $search . '%')
+                ->where('id', '>', $last_id)
                 ->orderBy('id')->limit($per_page)->get();
 
             // Return the response
@@ -257,12 +257,12 @@ class ItemController extends Controller
                 'metadata' => []
             ], Response::HTTP_OK);
         }
-        
+
         $total_page = Item::all()->pluck('id')->chunk($per_page);
         $items = Item::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
         $total_page = ceil(count($total_page));
-        
-        $pagination_helper = new PaginationHelper(  $this->module,$page, $per_page, $total_page > 10 ? 10: $total_page);
+
+        $pagination_helper = new PaginationHelper($this->module, $page, $per_page, $total_page > 10 ? 10 : $total_page);
 
         return response()->json([
             "data" => ItemResource::collection($items),
@@ -296,7 +296,7 @@ class ItemController extends Controller
             $existing_item_category_id = array_column($existing_items, 'item_category_id');
             $existing_item_classification_id = array_column($existing_items, 'item_classification_id');
 
-            if(!empty($existing_items)){
+            if (!empty($existing_items)) {
                 $existing_item_collection = Item::whereIn("name", $existing_names)
                     ->whereIn('estimated_budget', collect($existing_estimated_budget)->pluck('estimated_budget'))
                     ->whereIn('item_unit_id', collect($existing_item_unit_id)->pluck('item_unit_id'))
@@ -311,10 +311,12 @@ class ItemController extends Controller
                 $is_valid_category_id = ItemCategory::find($item['item_category_id']);
                 $is_valid_classification_id = ItemClassification::find($item['item_classification_id']);
 
-                if($is_valid_unit_id && $is_valid_category_id && $is_valid_classification_id){
-                    if (!in_array($item['name'], $existing_names) &&  !in_array($item['estimated_budget'], $existing_estimated_budget)
-                    &&  !in_array($item['item_unit_id'], $existing_item_unit_id) &&  !in_array($item['item_category_id'], $existing_item_category_id)
-                    &&  !in_array($item['item_classification_id'], $existing_item_classification_id)) {
+                if ($is_valid_unit_id && $is_valid_category_id && $is_valid_classification_id) {
+                    if (
+                        !in_array($item['name'], $existing_names) && !in_array($item['estimated_budget'], $existing_estimated_budget)
+                        && !in_array($item['item_unit_id'], $existing_item_unit_id) && !in_array($item['item_category_id'], $existing_item_category_id)
+                        && !in_array($item['item_classification_id'], $existing_item_classification_id)
+                    ) {
                         $cleanData[] = [
                             "name" => strip_tags($item['name']),
                             "estimated_budget" => strip_tags($item['estimated_budget']),
@@ -342,14 +344,14 @@ class ItemController extends Controller
                     'message' => "Failed to bulk insert all items already exist.",
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-    
+
             Item::insert($cleanData);
 
             $latest_items = Item::orderBy('id', 'desc')
                 ->limit(count($cleanData))->get()
                 ->sortBy('id')->values();
 
-            $message = count($latest_items) > 1? $base_message."s record": $base_message." record.";
+            $message = count($latest_items) > 1 ? $base_message . "s record" : $base_message . " record.";
 
             return response()->json([
                 "data" => ItemResource::collection($latest_items),
@@ -365,7 +367,7 @@ class ItemController extends Controller
         $is_valid_category_id = ItemCategory::find($request->item_category_id);
         $is_valid_classification_id = ItemClassification::find($request->item_classification_id);
 
-        if(!($is_valid_unit_id && $is_valid_category_id && $is_valid_classification_id)){
+        if (!($is_valid_unit_id && $is_valid_category_id && $is_valid_classification_id)) {
             return response()->json([
                 "message" => "Invalid data given.",
                 "metadata" => [
@@ -381,12 +383,12 @@ class ItemController extends Controller
             "item_category_id" => strip_tags($request->input('item_category_id')),
             "item_classification_id" => strip_tags($request->input('item_classification_id')),
         ];
-        
+
         $new_item = Item::create($cleanData);
 
         return response()->json([
             "data" => new ItemResource($new_item),
-            "message" => $base_message." record.",
+            "message" => $base_message . " record.",
             "metadata" => [
                 "methods" => ['GET, POST, PUT, DELETE'],
             ]
@@ -396,21 +398,21 @@ class ItemController extends Controller
     public function update(Request $request): Response
     {
         $item_ids = $request->query('id') ?? null;
-        
+
         // Validate request has IDs
         if (!$item_ids) {
             $response = ["message" => "ID parameter is required."];
-            
+
             if ($this->is_development) {
                 $response['metadata'] = $this->getMetadata('put');
             }
-            
+
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         // Convert single ID to array for consistent processing
         $item_ids = is_array($item_ids) ? $item_ids : [$item_ids];
-        
+
         // For bulk update - validate items array matches IDs count
         if ($request->has('items')) {
             if (count($item_ids) !== count($request->input('items'))) {
@@ -419,67 +421,67 @@ class ItemController extends Controller
                     "metadata" => $this->getMetadata('put')
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
-            
+
             $updated_items = [];
             $errors = [];
-            
+
             foreach ($item_ids as $index => $id) {
                 $item = Item::find($id);
-                
+
                 if (!$item) {
                     $errors[] = "Item with ID {$id} not found.";
                     continue;
                 }
-                
+
                 $itemData = $request->input('items')[$index];
                 $cleanData = $this->cleanItemData($itemData);
-                
+
                 $item->update($cleanData);
                 $updated_items[] = $item;
             }
-            
+
             if (!empty($errors)) {
                 return response()->json([
                     "data" => ItemResource::collection($updated_items),
                     "message" => "Partial update completed with errors.",
-                    "metadata" => [                    
+                    "metadata" => [
                         "method" => "[PUT]",
                         "errors" => $errors,
                     ]
                 ], Response::HTTP_MULTI_STATUS);
             }
-            
+
             return response()->json([
                 "data" => ItemResource::collection($updated_items),
-                "message" => "Successfully updated ".count($updated_items)." items.",
-                "metadata" => $this->getMetadata()
+                "message" => "Successfully updated " . count($updated_items) . " items.",
+                "metadata" => $this->getMetadata('put')
             ], Response::HTTP_OK);
         }
-        
+
         // Single item update
         if (count($item_ids) > 1) {
             return response()->json([
                 "message" => "Multiple IDs provided but no items array for bulk update.",
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        
+
         $item = Item::find($item_ids[0]);
-        
+
         if (!$item) {
             return response()->json([
                 "message" => "Item not found."
             ], Response::HTTP_NOT_FOUND);
         }
-        
+
         $cleanData = $this->cleanItemData($request->all());
         $item->update($cleanData);
-        
+
         $response = [
             "data" => new ItemResource($item),
             "message" => "Item updated successfully.",
             "metadata" => $this->getMetadata('put')
         ];
-        
+
         return response()->json($response, Response::HTTP_OK);
     }
 
@@ -487,53 +489,53 @@ class ItemController extends Controller
     {
         $item_ids = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
-    
+
         if (!$item_ids && !$query) {
             $response = ["message" => "Invalid request."];
-    
+
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
                     "metadata" => $this->getMetadata('delete')
                 ];
             }
-    
+
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-    
+
         if ($item_ids) {
-            $item_ids = is_array($item_ids) 
-                ? $item_ids 
-                : (str_contains($item_ids, ',') 
-                    ? explode(',', $item_ids) 
+            $item_ids = is_array($item_ids)
+                ? $item_ids
+                : (str_contains($item_ids, ',')
+                    ? explode(',', $item_ids)
                     : [$item_ids]
-                  );
-    
+                );
+
             // Ensure all IDs are integers
             $item_ids = array_filter(array_map('intval', $item_ids));
-    
+
             if (empty($item_ids)) {
                 return response()->json(["message" => "Invalid ID format."], Response::HTTP_BAD_REQUEST);
             }
-    
+
             $items = Item::whereIn('id', $item_ids)->whereNull('deleted_at')->get();
-    
+
             if ($items->isEmpty()) {
                 return response()->json(["message" => "No active records found for the given IDs."], Response::HTTP_NOT_FOUND);
             }
-    
+
             // Only soft-delete records that were actually found
             $found_ids = $items->pluck('id')->toArray();
             Item::whereIn('id', $found_ids)->update(['deleted_at' => now()]);
-    
+
             return response()->json([
                 "message" => "Successfully deleted " . count($found_ids) . " record(s).",
                 "deleted_ids" => $found_ids
             ], Response::HTTP_OK); // Changed from NO_CONTENT to OK to allow response body
         }
-    
+
         $items = Item::where($query)->whereNull('deleted_at')->get();
-    
+
         if ($items->count() > 1) {
             return response()->json([
                 'data' => $items,
@@ -548,7 +550,7 @@ class ItemController extends Controller
         }
 
         $item->update(['deleted_at' => now()]);
-        
+
         return response()->json([
             "message" => "Successfully deleted record.",
             "deleted_id" => $item->id
