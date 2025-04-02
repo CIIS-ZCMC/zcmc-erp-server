@@ -58,7 +58,8 @@ class Activity extends Model
         return $this->hasMany(Resource::class);
     }
 
-    
-
-
+    public function responsiblePeople(): HasMany
+    {
+        return $this->hasMany(ResponsiblePerson::class);
+    }
 }

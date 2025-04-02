@@ -32,4 +32,9 @@ class ApplicationObjective extends Model
     {
         return $this->hasMany(Activity::class);
     }
+
+    public function othersObjective()
+    {
+        return $this->hasOne(OthersObjective::class, 'application_objective_id');
+    }
 }
