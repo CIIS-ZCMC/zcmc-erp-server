@@ -27,6 +27,13 @@ class PpmpItemResource extends JsonResource
             'comment' => $this->comment,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
+
+            'meta' => [
+                'current_page' => $this->currentPage(),
+                'last_page' => $this->lastPage(),
+                'per_page' => $this->perPage(),
+                'total' => $this->total(),
+            ],
         ];
     }
 }

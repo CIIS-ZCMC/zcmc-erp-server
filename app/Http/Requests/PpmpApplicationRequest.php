@@ -26,7 +26,8 @@ class PpmpApplicationRequest extends FormRequest
             'user_id' => 'required|integer',
             'division_chief_id' => 'required|integer',
             'budget_officer_id' => 'required|integer',
-            'ppmp_total' => 'required|numeric',
+            'ppmp_total' => 'required|numeric|min:0',
+            'remarks' => 'nullable|string'
         ];
     }
 }
