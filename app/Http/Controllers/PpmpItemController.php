@@ -2,74 +2,119 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\PpmpItemResource;
+use App\Models\AopApplication;
+use App\Models\PpmpItem;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 class PpmpItemController extends Controller
 {
-    public function store(Request $request): Response
+    private $is_development;
+
+    private $module = 'ppmp_items';
+
+    public function __construct()
     {
-        /**
-         * REGISTRATION OF NEW ITEM ON USER PPMP
-         * 
-         * This task will handle registration of ppmp items 
-         * it must support registration of existing and non existing item.
-         * 
-         * Check first if new item has value
-         * 
-         * request body
-         * {
-         *  ppmp_application_id: 1,
-         *  item_id: 1,
-         *  modes_of_procurement_id,
-         *  remarks: "New Item",
-         *  total_amount: 250.00,
-         *  new_item: { // Nullable
-         *      name: "Desktop",
-         *      estimated_budget: 120,000.00,
-         *      unit_id: 1,
-         *      category_id: 1,
-         *      classification_id: 1,
-         *      ppmp_application_id: 1,
-         *      modes_of_procurement_id: 1,
-         *      remarks: "New Item",
-         *      total_amount: 120,000.00
-         *  }
-         * }
-         * 
-         * priority new_item if has value register first item_request then create ppmp
-         */
+        $this->is_development = env("APP_DEBUG", true);
+    }
 
-         $new_item = $request->new_item;
+    protected function getMetadata($method): array
+    {
+        if ($method === 'get') {
+            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
+            $metadata['modes'] = ['selection', 'pagination'];
 
-         if($new_item){
-            /**
-             * 1st Regsiter new item to item request
-             * 2nd Register register ppmp items associate the new item request
-             * 
-             * return the ppmp items structure must be the same with the registered item.
-             */
+            if ($this->is_development) {
+                $metadata['urls'] = [
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?ppmp_item_id=[primary-key]",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                ];
+            }
 
+            return $metadata;
+        }
+
+        if ($method === 'put') {
+            $metadata = ["methods" => "[PUT]"];
+
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["type"];
+            }
+
+            return $metadata;
+        }
+
+        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+
+        if ($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+
+            $metadata["fields"] = ["type"];
+        }
+
+        return $metadata;
+    }
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        //paginate display 10 data per page
+        $ppmp_item = PpmpItem::whereNull('deleted_at')->paginate(10);
+
+        if (!$ppmp_item) {
             return response()->json([
-                "data" => null,
-                "message" => "Successfully created item request and ppmp item",
-                "metadata" => [
-                    "methods" => ["GET, POST, PUT, DELETE"]
-                ]
-            ], Response::HTTP_CREATED);
-         }
+                'message' => "No record found.",
+                "metadata" => $this->getMetadata('get')
+            ]);
+        }
 
-         /**
-          * Register ppmp item
-          * Return ppmp items
-          */
+        return response()->json([
+            'data' => PpmpItemResource::collection($ppmp_item),
+            'message' => $this->getMetadata('get')
+        ], Response::HTTP_OK);
+    }
 
-          return response()->json([
-            "data" => null,
-            "message" => "Successfully created ppmp item.",
-            "metadata" => [
-                "methods" => ["GET, POST, PUT, DELETE"]
-            ]
-          ], Response::HTTP_CREATED);
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        //
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(PpmpItem $ppmpItem)
+    {
+        //
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, PpmpItem $ppmpItem)
+    {
+        //
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(PpmpItem $ppmpItem)
+    {
+        //
     }
 }
