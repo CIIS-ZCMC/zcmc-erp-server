@@ -13,11 +13,15 @@ class ItemRequest extends Model
         "item_category_id",
         "item_classification_id",
         "name",
+        "code",
+        "image",
+        "variant",
         "estimated_budget",
+        "status",
+        "reason",
         "deleted_at",
         "requested_by",
-        "action_by",
-        "status"
+        "action_by"
     ];
 
     public $timestamps = true;
@@ -35,6 +39,11 @@ class ItemRequest extends Model
     public function itemClassification()
     {
         return $this->belongsTo(ItemClassification::class);
+    }
+
+    public function itemSpecification()
+    {
+        return $this->hasMany(ItemSpecification::class);
     }
 
     public function logs()

@@ -22,11 +22,14 @@ class ItemRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required_without:items|string|max:255',
+            'name' => 'required|string|max:255',
+            'code' => 'nullable|string|max:255',
+            'variant' => 'nullable|string|max:255',
             'estimated_budget' => 'nullable|numeric',
             'item_unit_id' => 'required|int',     
             'item_category_id' => 'required|int',     
-            'item_classification_id' => 'required|int',     
+            'item_classification_id' => 'required|int',    
+            'reason' => 'nullable|string', 
         ];
     }
 }

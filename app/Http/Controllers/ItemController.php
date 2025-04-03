@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\FileUploadCheckForMalwareAttack;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemRequest;
 use App\Http\Resources\ItemDuplicateResource;
 use App\Http\Resources\ItemResource;
+use App\Models\FileRecord;
 use App\Models\ItemCategory;
 use App\Models\Item;
 use App\Models\ItemClassification;
@@ -33,6 +35,14 @@ class ItemController extends Controller
             $cleanData['name'] = strip_tags($data['name']);
         }
 
+        if (isset($data['code'])) {
+            $cleanData['code'] = strip_tags($data['code']);
+        }
+
+        if (isset($data['variant'])) {
+            $cleanData['variant'] = strip_tags($data['variant']);
+        }
+        
         if (isset($data['estimated_budget'])) {
             $cleanData['estimated_budget'] = filter_var(
                 $data['estimated_budget'],
@@ -234,7 +244,7 @@ class ItemController extends Controller
                  */
 
                 return response()->json([
-                    'data' => $items,
+                    'data' => ItemResource::collection($items),
                     'metadata' => [
                         'methods' => '[GET,POST,PUT,DELETE]',
                         'pagination' => $pagination,
@@ -253,7 +263,7 @@ class ItemController extends Controller
 
             // Return the response
             return response()->json([
-                'data' => $items,
+                'data' => ItemResource::collection($items),
                 'metadata' => []
             ], Response::HTTP_OK);
         }
@@ -275,7 +285,7 @@ class ItemController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function store(ItemRequest $request)
+    public function store(ItemRequest $request):Response
     {
         $base_message = "Successfully created items";
 
@@ -319,6 +329,8 @@ class ItemController extends Controller
                     ) {
                         $cleanData[] = [
                             "name" => strip_tags($item['name']),
+                            "code" => strip_tags($item['code']),
+                            "variant" => strip_tags($item['variant']),
                             "estimated_budget" => strip_tags($item['estimated_budget']),
                             "item_unit_id" => strip_tags($item['item_unit_id']),
                             "item_category_id" => strip_tags($item['item_category_id']),
@@ -378,6 +390,8 @@ class ItemController extends Controller
 
         $cleanData = [
             "name" => strip_tags($request->input('name')),
+            "code" => strip_tags($request->input('code')),
+            "variant" => strip_tags($request->input('variant')),
             "estimated_budget" => strip_tags($request->input('estimated_budget')),
             "item_unit_id" => strip_tags($request->input('item_unit_id')),
             "item_category_id" => strip_tags($request->input('item_category_id')),
@@ -385,6 +399,43 @@ class ItemController extends Controller
         ];
 
         $new_item = Item::create($cleanData);
+
+        $metadata = ["methods" => ['GET, POST, PUT, DELETE']];
+
+        if($request->hasFile('file'))
+        {
+            try{
+                $fileChecker = new FileUploadCheckForMalwareAttack();
+            
+                // Check if file is safe
+                if (!$fileChecker->isFileSafe($request->file('file'))) {
+                    return response()->json([
+                        "message" => 'File upload failed security checks'
+                    ], Response::HTTP_BAD_REQUEST);
+                }
+    
+                // File is safe, proceed with saving
+                $file = $request->file('file');
+                $fileExtension = $file->getClientOriginalExtension();
+                $hashedFileName = hash_file('sha256', $file->getRealPath()) . '.' . $fileExtension;
+                
+                // Store file with hashed name
+                $filePath = $file->storeAs('uploads/items', $hashedFileName, 'public');
+    
+                $file = FileRecord::create([
+                    "item_id" => $new_item->id,
+                    'file_path' => $filePath,
+                    'original_name' => $file->getClientOriginalName(),
+                    'file_hash' => $hashedFileName,
+                    'file_size' => $file->getSize(),
+                    'file_type' => $fileExtension,
+                ]);
+
+                $new_item->update(['image' => $filePath]);
+            }catch(\Throwable $th){
+                $metadata['error'] = "Failed to save item image.";
+            }
+        }
 
         return response()->json([
             "data" => new ItemResource($new_item),
