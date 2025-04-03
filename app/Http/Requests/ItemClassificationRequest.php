@@ -29,12 +29,10 @@ class ItemClassificationRequest extends FormRequest
             'item_classifications.*.name' => 'required_with:item_classifications|string|max:255',
             'item_classifications.*.code' => 'required_with:item_classifications|string|max:255',
             'item_classifications.*.description' => 'nullable|string',
-            'item_classifications.*.category_id' => 'nullable|int',
     
             'name' => 'required_without:item_classifications|string|max:255',
             'code' => 'required_without:item_classifications|string|max:255',
-            'description' => 'nullable|string',     
-            'category_id' => 'nullable|int',     
+            'description' => 'nullable|string',  
         ];
     }
 }

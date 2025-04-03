@@ -107,14 +107,16 @@ class ItemRequestController extends Controller
         return $metadata;
     }
 
-    protected function registerApprovedItem(ItemRequest $itemRequest)
+    protected function registerApprovedItem(Request $request,ItemRequest $itemRequest)
     {
         $data = [
             "name" => $itemRequest->name,
             "estimated_budget" => $itemRequest->estimated_budget,
             "item_unit_id" => $itemRequest->item_unit_id,
             "item_category_id" => $itemRequest->item_category_id,
-            "item_classification_id" => $itemRequest->item_classification_id
+            "item_classification_id" => $itemRequest->item_classification_id,
+            "variant" => $request->variant,
+            "code" => $request->code
         ];
 
         $newItem = Item::create($data);
@@ -138,7 +140,7 @@ class ItemRequestController extends Controller
             ], Response::HTTP_OK);
         }
 
-        $newItem = $this->registerApprovedItem($itemRequest);
+        $newItem = $this->registerApprovedItem($request,$itemRequest);
 
         return response()->json([
             "data" => new ItemResource($newItem),

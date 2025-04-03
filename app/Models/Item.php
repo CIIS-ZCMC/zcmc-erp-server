@@ -13,6 +13,9 @@ class Item extends Model
         "item_category_id",
         "item_classification_id",
         "name",
+        "image",
+        "variant",
+        "code",
         "estimated_budget",
         "deleted_at"
     ];

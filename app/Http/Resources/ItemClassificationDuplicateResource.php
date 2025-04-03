@@ -19,7 +19,6 @@ class ItemClassificationDuplicateResource extends JsonResource
             "name" => $this->name,
             "code" => $this->code,
             "description" => $this->description,
-            "category" => $this->category,
             "created_at" => $this->created_at,
             "updated_at" => $this->updated_at
         ];

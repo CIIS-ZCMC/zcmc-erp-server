@@ -14,6 +14,12 @@ class ObjectiveSuccessIndicatorResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            "id" => $this->id,
+            "objective" => $this->objective,
+            "success_indicator" => $this->successIndicator,
+            "created_at" => $this->created_at,
+            "updated_at" => $this->updated_at
+        ];
     }
 }
