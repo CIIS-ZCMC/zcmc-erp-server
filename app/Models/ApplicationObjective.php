@@ -16,6 +16,8 @@ class ApplicationObjective extends Model
         'aop_application_id',
         'function_objective_id',
         'objective_code',
+        'success_indicator_id'
+
     ];
 
     public function aopApplication(): BelongsTo
@@ -36,5 +38,10 @@ class ApplicationObjective extends Model
     public function othersObjective()
     {
         return $this->hasOne(OthersObjective::class, 'application_objective_id');
+    }
+
+    public function successIndicator()
+    {
+        return $this->belongsTo(SuccessIndicator::class, 'success_indicator_id');
     }
 }

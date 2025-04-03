@@ -31,6 +31,9 @@ class ApplicationObjectiveResource extends JsonResource
 
                 return $description;
             }),
+            'success_indicator_description' => $this->whenLoaded('successIndicator', function () {
+                return $this->successIndicator->description ?? null;
+            }),
             'activities' => ActivityResource::collection($this->whenLoaded('activities')),
         ];
     }
