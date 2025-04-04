@@ -20,10 +20,13 @@ return new class extends Migration
             $table->unsignedBigInteger('item_classification_id');
             $table->foreign('item_classification_id')->references('id')->on('item_classifications');
             $table->string('name');
+            $table->string('code')->nullable();
+            $table->text('image')->nullable();
+            $table->string('variant')->nullable();
             $table->float('estimated_budget')->default(0);
-            $table->string('specs')->nullable();
             $table->string('status')->default("pending");
             $table->dateTime('deleted_at')->nullable();
+            $table->text('reason')->nullable();
             $table->unsignedBigInteger('request_by');
             $table->foreign('request_by')->references('id')->on('users');
             $table->unsignedBigInteger('action_by');

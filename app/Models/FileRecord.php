@@ -4,16 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class ItemSpecification extends Model
+class FileRecord extends Model
 {
-    protected $table = 'item_specifications';
+    protected $tables = 'file_records';
 
     public $fillable = [
         'item_id',
         'item_request_id',
-        'month',
-        'year',
-        'quantity'
+        'path',
+        'name',
+        'size',
+        'type'
     ];
 
     public $timestamps = true;

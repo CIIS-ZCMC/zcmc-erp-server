@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ItemSpecification;
+use App\Models\FileRecord;
 use Illuminate\Http\Request;
 
-class ItemSpecificationController extends Controller
+class FileRecordController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -16,8 +16,6 @@ class ItemSpecificationController extends Controller
     }
 
     /**
-<<<<<<< HEAD
-=======
      * Show the form for creating a new resource.
      */
     public function create()
@@ -26,7 +24,6 @@ class ItemSpecificationController extends Controller
     }
 
     /**
->>>>>>> a9b687f1162e2438b4656ec0d4489852eb019963
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
@@ -37,26 +34,23 @@ class ItemSpecificationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(ItemSpecification $itemSpecification)
+    public function show(FileRecord $fileRecord)
     {
         //
     }
 
     /**
-<<<<<<< HEAD
-=======
      * Show the form for editing the specified resource.
      */
-    public function edit(ItemSpecification $itemSpecification)
+    public function edit(FileRecord $fileRecord)
     {
         //
     }
 
     /**
->>>>>>> a9b687f1162e2438b4656ec0d4489852eb019963
      * Update the specified resource in storage.
      */
-    public function update(Request $request, ItemSpecification $itemSpecification)
+    public function update(Request $request, FileRecord $fileRecord)
     {
         //
     }
@@ -64,7 +58,7 @@ class ItemSpecificationController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(ItemSpecification $itemSpecification)
+    public function destroy(FileRecord $fileRecord)
     {
         //
     }

@@ -13,11 +13,15 @@ return new class extends Migration
     {
         Schema::create('sections', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('umis_section_id');
-            $table->unsignedBigInteger('head_id')->nullable();
+            $table->unsignedBigInteger('head_id');
+            $table->foreign('head_id')->references('id')->on('users');
             $table->unsignedBigInteger('oic_id')->nullable();
-            $table->foreignId('division_id')->nullable()->constrained('divisions')->nullOnDelete();
-            $table->foreignId('department_id')->nullable()->constrained('departments')->nullOnDelete();
+            $table->foreign('oic_id')->references('id')->on('users');
+            $table->unsignedBigInteger('division_id')->nullable();
+            $table->foreign('division_id')->references('id')->on('divisions');
+            $table->unsignedBigInteger('department_id')->nullable();
+            $table->foreign('department_id')->references('id')->on('departments');
+            $table->unsignedBigInteger('umis_section_id');
             $table->string('name');
             $table->timestamps();
         });

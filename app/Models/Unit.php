@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use App\Models\User;
-use App\Models\TransactionLog;  
+use App\Models\TransactionLog;
 
 /**
  * Unit Model
@@ -28,7 +28,9 @@ class Unit extends Model
         'umis_unit_id',
         'head_id',
         'oic_id',
+        'division_id',
         'section_id',
+        'umis_unit_id',
         'name',
     ];
 
@@ -42,44 +44,14 @@ class Unit extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the user that OIC this unit.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function oic()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Get the section this unit belongs to.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function section()
-    {
-        return $this->belongsTo(Section::class);
-    }
-
-    /**
-     * Get the department this unit belongs to.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function department()
-    {
-        return $this->belongsTo(Department::class);
-    }
-
-    /**
-     * Get the division this unit belongs to.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
     public function division()
     {
         return $this->belongsTo(Division::class);
+    }
+
+    public function section()
+    {
+        return $this->belongsTo(Section::class);
     }
 
     /**

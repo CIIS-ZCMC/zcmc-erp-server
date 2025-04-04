@@ -3,7 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\TransactionLog;  
+use App\Models\TransactionLog;
 use App\Models\User;
 
 /**
@@ -30,6 +30,7 @@ class Section extends Model
         'oic_id',
         'division_id',
         'department_id',
+        'umis_section_id',
         'name',
     ];
 
@@ -43,6 +44,21 @@ class Section extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
+    }
+
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function units()
+    {
+        return $this->hasMany(Unit::class);
+    }
+
     /**
      * Get the user that OIC this section.
      *
@@ -51,26 +67,6 @@ class Section extends Model
     public function oic()
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Get the division this section belongs to.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function division()
-    {
-        return $this->belongsTo(Division::class);
-    }
-
-    /**
-     * Get the department this section belongs to.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function department()
-    {
-        return $this->belongsTo(Department::class);
     }
 
     /**

@@ -13,6 +13,9 @@ class Item extends Model
         "item_category_id",
         "item_classification_id",
         "name",
+        "code",
+        "image",
+        "variant",
         "estimated_budget",
         "deleted_at"
     ];
@@ -32,6 +35,11 @@ class Item extends Model
     public function itemClassification()
     {
         return $this->belongsTo(ItemClassification::class);
+    }
+
+    public function itemSpecification()
+    {
+        return $this->hasMany(ItemSpecification::class);
     }
 
     public function logs()

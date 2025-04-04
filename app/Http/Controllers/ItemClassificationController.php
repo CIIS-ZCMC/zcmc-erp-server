@@ -41,10 +41,6 @@ class ItemClassificationController extends Controller
             $cleanData['description'] = strip_tags($data['description']);
         }
         
-        if (isset($data['item_category_id'])) {
-            $cleanData['item_category_id'] = (int)$data['item_category_id'];
-        }
-        
         return $cleanData;
     }
     
@@ -102,13 +98,9 @@ class ItemClassificationController extends Controller
             'Content-Disposition' => 'attachment; filename="item_classifications_template.csv"',
         ];
         
-        $columns = ['name', 'code', 'category_code', 'description'];
+        $columns = ['name', 'code', 'description'];
         
-        // Get sample category codes for the template
-        $sampleCategories = ItemCategory::limit(3)->pluck('code')->toArray();
-        $sampleCategoryText = implode(', ', $sampleCategories);
-        
-        $callback = function() use ($columns, $sampleCategoryText) {
+        $callback = function() use ($columns) {
             $file = fopen('php://output', 'w');
             
             fputcsv($file, $columns);
@@ -116,7 +108,6 @@ class ItemClassificationController extends Controller
             fputcsv($file, [
                 'Sample Name',
                 'SAMPLE-CODE',
-                $sampleCategoryText ? "Example codes: $sampleCategoryText" : 'CAT-CODE',
                 'Optional description'
             ]);
             
@@ -379,28 +370,15 @@ class ItemClassificationController extends Controller
             }
 
             foreach ($request->item_classifications as $item) {
-                $is_valid_category_id = ItemCategory::find($item['item_category_id']);
-
-                if($is_valid_category_id){
-                    if (!in_array($item['name'], $existing_names) &&  !in_array($item['code'], $existing_codes)) {
-                        $cleanData[] = [
-                            "name" => strip_tags($item['name']),
-                            "code" => strip_tags($item['code']),
-                            "description" => isset($item['description']) ? strip_tags($item['description']) : null,
-                            "item_category_id" => strip_tags($item['item_category_id']),
-                            "created_at" => now(),
-                            "updated_at" => now()
-                        ];
-                    }
-                    continue;
+                if (!in_array($item['name'], $existing_names) &&  !in_array($item['code'], $existing_codes)) {
+                    $cleanData[] = [
+                        "name" => strip_tags($item['name']),
+                        "code" => strip_tags($item['code']),
+                        "description" => isset($item['description']) ? strip_tags($item['description']) : null,
+                        "created_at" => now(),
+                        "updated_at" => now()
+                    ];
                 }
-
-                return response()->json([
-                    "message" => "Found invalid Cateogry ID.",
-                    "metadata" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                    ]
-                ], Response::HTTP_BAD_REQUEST);
             }
 
             if (empty($cleanData) && count($existing_items) > 0) {
@@ -431,8 +409,7 @@ class ItemClassificationController extends Controller
         $cleanData = [
             "name" => strip_tags($request->input('name')),
             "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
-            "item_category_id" => strip_tags($request->input('item_category_id')),
+            "description" => strip_tags($request->input('description'))
         ];
         
         $new_item = ItemClassification::create($cleanData);

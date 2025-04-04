@@ -18,10 +18,10 @@ return new class extends Migration {
             $table->foreign('item_category_id')->references('id')->on('item_categories');
             $table->unsignedBigInteger('item_unit_id');
             $table->foreign('item_unit_id')->references('id')->on('item_units');
-            $table->string('image');
-            $table->string('variant');
             $table->string('name');
-            $table->string('code');
+            $table->string('code')->nullable();
+            $table->text('image')->nullable();
+            $table->string('variant')->nullable();
             $table->float('estimated_budget')->default(0);
             $table->dateTime('deleted_at')->nullable();
             $table->timestamps();

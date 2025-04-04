@@ -74,10 +74,24 @@ class DepartmentController extends Controller
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
             ];
 
-            $metadata["fields"] =  ["type"];
+            $metadata["fields"] = ["type"];
         }
 
         return $metadata;
+    }
+
+    /**
+     * Summary of import
+     * 
+     * This endpoint stands as entry point of department record from umis
+     * it will request all departments from umis and register to the system
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return mixed|\Illuminate\Http\JsonResponse
+     */
+    public function import(Request $request)
+    {
+        return response()->json(['message' => "COMPLETE THIS ENDPOINT"], Response::HTTP_PARTIAL_CONTENT);
     }
 
     /**
@@ -140,7 +154,7 @@ class DepartmentController extends Controller
 
         if ($search) {
             $query->where('name', 'LIKE', "%{$search}%")
-                  ->orWhere('code', 'LIKE', "%{$search}%");
+                ->orWhere('code', 'LIKE', "%{$search}%");
         }
 
         if ($mode === 'selection') {
@@ -194,89 +208,10 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $base_message = "Successfully created department";
-
-        // Bulk Insert
-        if ($request->departments !== null || $request->departments > 1) {
-            $existing_departments = [];
-            $existing_items = Department::whereIn('name', collect($request->departments)->pluck('name'))
-                ->get(['name'])->toArray();
-
-            // Convert existing items into a searchable format
-            $existing_names = array_column($existing_items, 'name');
-
-            if(!empty($existing_items)){
-                $existing_departments = Department::whereIn("name", $existing_names)->get();
-            }
-
-            foreach ($request->departments as $item) {
-                if (!in_array($item['name'], $existing_names)) {
-                    $cleanData[] = [
-                        "name" => strip_tags($item['name']),
-                        "code" => isset($item['code']) ? strip_tags($item['code']) : null,
-                        "created_at" => now(),
-                        "updated_at" => now()
-                    ];
-                }
-            }
-
-            if (empty($cleanData) && count($existing_items) > 0) {
-                return response()->json([
-                    'data' => $existing_departments,
-                    'message' => "Failed to bulk insert all departments already exist.",
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            Department::insert($cleanData);
-
-            $latest_departments = Department::orderBy('id', 'desc')
-                ->limit(count($cleanData))->get()
-                ->sortBy('id')->values();
-
-            $message = count($latest_departments) > 1 ? $base_message."s record" : $base_message." record.";
-
-            return response()->json([
-                "data" => new DepartmentResource($latest_departments),
-                "message" => $message,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "duplicate_items" => $existing_departments
-                ]
-            ], Response::HTTP_CREATED);
-        }
-        
-        // Single insert
-        $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:departments,name',
-            'code' => 'nullable|string|max:50|unique:departments,code',
-        ]);
-        
-        $department = Department::create($this->cleanDepartmentData($validated));
-        
-        return response()->json([
-            'data' => $department,
-            'message' => $base_message,
-            'metadata' => $this->getMetadata('post', $department->toArray())
-        ], Response::HTTP_CREATED);
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Department $department)
-    {
-        return response()->json([
-            'data' => $department,
-            'metadata' => $this->getMetadata('get', [])
-        ], Response::HTTP_OK);
-    }
-
-    /**
-     * Update the specified resource in storage.
+     * UPDATE
+     * This end point is intended for umis only in a situation where
+     * a oic assign to a department the umis will also send update to this system
+     * so that it will have updated data.
      */
     public function update(Request $request, Department $department)
     {
@@ -284,9 +219,9 @@ class DepartmentController extends Controller
             'name' => 'required|string|max:255|unique:departments,name,' . $department->id,
             'code' => 'nullable|string|max:50|unique:departments,code,' . $department->id,
         ]);
-        
+
         $department->update($this->cleanDepartmentData($validated));
-        
+
         return response()->json([
             'data' => new DepartmentResource($department),
             'message' => 'Department updated successfully',
@@ -300,7 +235,7 @@ class DepartmentController extends Controller
     public function destroy(Department $department)
     {
         $department->delete();
-        
+
         return response()->json([
             'message' => 'Department deleted successfully',
             'metadata' => $this->getMetadata('delete', $department->toArray())

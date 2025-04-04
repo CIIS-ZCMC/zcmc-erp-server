@@ -15,6 +15,7 @@ class Division extends Model
         'umis_division_id',
         'head_id',
         'oic_id',
+        'umis_division_id',
         'name',
     ];
 
@@ -28,16 +29,11 @@ class Division extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Get the user that OIC this division.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function oic()
+    public function departments()
     {
-        return $this->belongsTo(User::class);
+        return $this->hasMany(Department::class);
     }
-    
+
     /**
      * Get the transaction logs for this division.
      *

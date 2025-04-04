@@ -17,6 +17,9 @@ class ItemResource extends JsonResource
         return [
             "id" => $this->id,
             "name" => $this->name,
+            "code" => $this->code,
+            "variant" => $this->variant,
+            "image" => $this->image !== null? env("SERVER_DOMAIN").$this->image: null,
             "estimated_budget" => $this->estimated_budget,
             "unit" => $this->itemUnit->code,
             "category" => $this->itemCategory->code,

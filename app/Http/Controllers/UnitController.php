@@ -27,7 +27,7 @@ class UnitController extends Controller
         }
 
         if (isset($data['head_id'])) {
-            $cleanData['head_id'] = (int)$data['head_id'];
+            $cleanData['head_id'] = (int) $data['head_id'];
         }
 
         return $cleanData;
@@ -74,10 +74,24 @@ class UnitController extends Controller
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
             ];
 
-            $metadata["fields"] =  ["type"];
+            $metadata["fields"] = ["type"];
         }
 
         return $metadata;
+    }
+
+    /**
+     * Summary of import
+     * 
+     * This endpoint stands as entry point of unit record from umis
+     * it will request all units from umis and register to the system
+     * 
+     * @param \Illuminate\Http\Request $request
+     * @return mixed|\Illuminate\Http\JsonResponse
+     */
+    public function import(Request $request)
+    {
+        return response()->json(['message' => "COMPLETE THIS ENDPOINT"], Response::HTTP_PARTIAL_CONTENT);
     }
 
     /**
@@ -193,82 +207,17 @@ class UnitController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        $base_message = "Successfully created unit";
-
-        // Bulk Insert
-        if ($request->units !== null || $request->units > 1) {
-            $existing_units = [];
-            $existing_items = Unit::whereIn('name', collect($request->units)->pluck('name'))
-                ->get(['name'])->toArray();
-
-            // Convert existing items into a searchable format
-            $existing_names = array_column($existing_items, 'name');
-
-            if(!empty($existing_items)){
-                $existing_units = Unit::whereIn("name", $existing_names)->get();
-            }
-
-            foreach ($request->units as $item) {
-                if (!in_array($item['name'], $existing_names)) {
-                    $cleanData[] = [
-                        "name" => strip_tags($item['name']),
-                        "description" => isset($item['description']) ? strip_tags($item['description']) : null,
-                        "created_at" => now(),
-                        "updated_at" => now()
-                    ];
-                }
-            }
-
-            if (empty($cleanData) && count($existing_items) > 0) {
-                return response()->json([
-                    'data' => new UnitResource($existing_units),
-                    'message' => "Failed to bulk insert all units already exist.",
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            Unit::insert($cleanData);
-
-            $latest_units = Unit::orderBy('id', 'desc')
-                ->limit(count($cleanData))->get()
-                ->sortBy('id')->values();
-
-            $message = count($latest_units) > 1 ? $base_message."s record" : $base_message." record.";
-
-            return response()->json([
-                "data" => new UnitResource($latest_units),
-                "message" => $message,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "duplicate_items" => $existing_units
-                ]
-            ], Response::HTTP_CREATED);
-        }
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(Unit $unit)
-    {
-        return response()->json([
-            'data' => new UnitResource($unit),
-            'metadata' => $this->getMetadata('get', [])
-        ], Response::HTTP_OK);
-    }
-
-    /**
-     * Update the specified resource in storage.
+     * UPDATE
+     * This end point is intended for umis only in a situation where
+     * a oic assign to a unit the umis will also send update to this system
+     * so that it will have updated data.
      */
     public function update(Request $request, Unit $unit)
     {
         $cleanData = $this->cleanUnitData($request->all());
-        
+
         $unit->update($cleanData);
-        
+
         return response()->json([
             'data' => new UnitResource($unit),
             'message' => 'Unit updated successfully',
@@ -282,7 +231,7 @@ class UnitController extends Controller
     public function destroy(Unit $unit)
     {
         $unit->delete();
-        
+
         return response()->json([
             'message' => 'Unit deleted successfully',
             'metadata' => $this->getMetadata('delete', $unit->toArray())

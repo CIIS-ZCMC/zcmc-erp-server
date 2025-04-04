@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class ItemClassificationDuplicateResource extends JsonResource
+class ObjectiveSuccessIndicatorResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,9 +16,8 @@ class ItemClassificationDuplicateResource extends JsonResource
     {
         return [
             "id" => $this->id,
-            "name" => $this->name,
-            "code" => $this->code,
-            "description" => $this->description,
+            "objective" => $this->objective,
+            "success_indicator" => $this->successIndicator,
             "created_at" => $this->created_at,
             "updated_at" => $this->updated_at
         ];

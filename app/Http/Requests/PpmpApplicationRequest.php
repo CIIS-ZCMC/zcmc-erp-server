@@ -11,7 +11,7 @@ class PpmpApplicationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,12 @@ class PpmpApplicationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'aop_application_id' => 'required|array',
+            'user_id' => 'required|integer',
+            'division_chief_id' => 'required|integer',
+            'budget_officer_id' => 'required|integer',
+            'ppmp_total' => 'required|numeric|min:0',
+            'remarks' => 'nullable|string'
         ];
     }
 }
