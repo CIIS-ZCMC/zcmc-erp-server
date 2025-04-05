@@ -20,6 +20,8 @@ return new class extends Migration
             $table->integer('month');
             $table->integer('year');
             $table->integer('quantity');
+            $table->unsignedBigInteger('item_specification_id')->nullable();
+            $table->foreign('item_specification_id')->references('id')->on('item_specifications');
             $table->timestamps();
         });
     }

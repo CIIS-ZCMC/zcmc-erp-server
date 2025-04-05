@@ -12,7 +12,8 @@ class ItemCategory extends Model
         "name",
         "code",
         "description",
-        "deleted_at"
+        "deleted_at",
+        "item_category_id"
     ];
 
     public $timestamps = true;
@@ -30,5 +31,15 @@ class ItemCategory extends Model
     public function logs()
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
+    }
+
+    public function itemCategory()
+    {
+        return $this->belongsTo(ItemCategory::class);
+    }
+
+    public function itemCategories()
+    {
+        return $this->hasMany(ItemCategory::class);
     }
 }

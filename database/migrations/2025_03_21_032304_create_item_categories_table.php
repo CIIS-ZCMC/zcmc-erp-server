@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('code');
             $table->string('description')->nullable();
             $table->datetime('deleted_at')->nullable();
+            $table->unsignedBigInteger('item_category_id')->nullable();
+            $table->foreign('item_category_id')->references('id')->on('item_categories');
             $table->timestamps();
         });
     }

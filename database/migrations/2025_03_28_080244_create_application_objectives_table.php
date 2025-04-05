@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('aop_application_id');
             $table->foreign('aop_application_id')->references('id')->on('aop_applications');
             $table->unsignedBigInteger('function_objective_id');
-            $table->foreign('function_objective_id')->references('id')->on('function_objective');
+            $table->foreign('function_objective_id')->references('id')->on('function_objectives');
             $table->string('objective_code');
             $table->softDeletes();
             $table->timestamps();
