@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class GetObjectiveSuccessIndicatorRequest extends FormRequest
+class GetWithPaginatedSearchModeRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,21 +23,31 @@ class GetObjectiveSuccessIndicatorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'search' => 'nullable|string',
+            'id' => 'nullable|integer',
+            'search' => [
+                'nullable',
+                'string',
+            ],
             'mode' => 'nullable|string',
             'per_page' => [
                 'nullable',
                 'integer',
                 Rule::requiredIf(function () {
-                    return !request()->has('mode') && request()->has('search');
+                    // Required only if search exists without mode
+                    return !request()->has('id') && 
+                           !request()->has('mode');
                 }),
+                'min:1',
+                'max:100'
             ],
             'page' => [
                 'nullable',
                 'integer',
                 Rule::requiredIf(function () {
-                    return !request()->has('mode') && request()->has('search');
+                    // Required only if per_page exists
+                    return request()->has('per_page');
                 }),
+                'min:1'
             ],
         ];
     }

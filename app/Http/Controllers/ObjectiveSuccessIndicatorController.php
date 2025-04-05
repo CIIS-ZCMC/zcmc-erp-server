@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\MetadataComposerHelper;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\GetObjectiveSuccessIndicatorRequest;
+use App\Http\Requests\GetWithPaginatedSearchModeRequest;
 use App\Http\Resources\ObjectiveSuccessIndicatorResource;
 use App\Models\Objective;
 use App\Models\ObjectiveSuccessIndicator;
@@ -21,7 +22,7 @@ class ObjectiveSuccessIndicatorController extends Controller
 
     private $module = 'objective-success-indicators';
 
-    private $modes = '[GET, POST, PUT, DELETE]';
+    private $methods = '[GET, POST, PUT, DELETE]';
 
     public function __construct()
     {
@@ -55,7 +56,7 @@ class ObjectiveSuccessIndicatorController extends Controller
         return ObjectiveSuccessIndicatorResource::collection($results)
             ->additional([
                 'meta' => [
-                    'modes' => $this->modes,
+                    'methods' => $this->methods,
                     'search' => [
                         'term' => $validated['search'],
                         'time_ms' => round((microtime(true) - $start) * 1000), // in milliseconds
@@ -80,7 +81,7 @@ class ObjectiveSuccessIndicatorController extends Controller
         return ObjectiveSuccessIndicatorResource::collection($objective_success_indicator)
             ->additional([
                 'meta' => [
-                    'modes' => $this->modes,
+                    'methods' => $this->methods,
                     'time_ms' => round((microtime(true) - $start) * 1000),
                 ],
                 'message' => 'Successfully retrieve all records.'
@@ -108,7 +109,7 @@ class ObjectiveSuccessIndicatorController extends Controller
         return ObjectiveSuccessIndicatorResource::collection($objective_success_indicator)
             ->additional([
                 'meta' => [
-                    'modes' => $this->modes,
+                    'methods' => $this->methods,
                     'time_ms' => round((microtime(true) - $start) * 1000),
                     'pagination' => [
                         'total' => $objective_success_indicator->total(),
@@ -121,10 +122,27 @@ class ObjectiveSuccessIndicatorController extends Controller
             ]);
     }  
     
-    public function index(GetObjectiveSuccessIndicatorRequest $request)
+    public function index(GetWithPaginatedSearchModeRequest $request)
     {
+        $objective_success_indicator_id = $request->query('id');
         $search = $request->search;
         $mode = $request->mode;
+
+        if($objective_success_indicator_id){
+            $objective_success_indicator = ObjectiveSuccessIndicator::find($objective_success_indicator_id);
+            
+            if (!$objective_success_indicator) {
+                return response()->json(["message" => "Objective success indicator not found."], Response::HTTP_NOT_FOUND);
+            }
+        
+            return new ObjectiveSuccessIndicatorResource($objective_success_indicator)
+                ->additional([
+                    "meta" => [
+                        "methods" => $this->methods,
+                        "message" => "Successfully retrieved record."
+                    ]
+                ]);
+        }
 
         if($mode && $mode === 'selection'){
             return $this->all();

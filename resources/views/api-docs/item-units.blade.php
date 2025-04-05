@@ -393,38 +393,44 @@
                         <th>Type</th>
                         <th>Description</th>
                         <th>Required</th>
+                        <th>Constraints</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
+                        <td>id</td>
+                        <td>integer</td>
+                        <td>The ID of a specific item unit to retrieve.</td>
+                        <td>No</td>
+                        <td></td>
+                    </tr>
+                    <tr>
                         <td>page</td>
                         <td>integer</td>
-                        <td>The current page number for pagination. Default is 1.</td>
-                        <td>No</td>
+                        <td>The current page number for pagination.</td>
+                        <td>Yes, if per_page is provided</td>
+                        <td>min:1</td>
                     </tr>
                     <tr>
                         <td>per_page</td>
                         <td>integer</td>
                         <td>The number of records to return per page.</td>
-                        <td>No</td>
+                        <td>Yes, if neither id nor mode is provided</td>
+                        <td>min:1, max:100</td>
                     </tr>
                     <tr>
                         <td>mode</td>
                         <td>string</td>
                         <td>The mode of retrieval. Options: <code>pagination</code> (default) or <code>selection</code>.</td>
                         <td>No</td>
+                        <td></td>
                     </tr>
                     <tr>
                         <td>search</td>
                         <td>string</td>
                         <td>A search term to filter item units by name.</td>
                         <td>No</td>
-                    </tr>
-                    <tr>
-                        <td>item_unit_id</td>
-                        <td>integer</td>
-                        <td>The ID of a specific item unit to retrieve.</td>
-                        <td>No</td>
+                        <td></td>
                     </tr>
                 </tbody>
             </table>
@@ -442,54 +448,144 @@
 
             <h4>Example Request for Pagination Mode</h4>
             <pre>
-GET {{ env('SERVER_DOMAIN') }}/api/item-units?page=1&per_page=10&search=Ton
-                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-units?page=1&per_page=10&search=Ton')">
+        GET {{ env('SERVER_DOMAIN') }}/api/item-units?page=1&per_page=2
+                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-units?page=1&per_page=2')">
                     <i class="fas fa-copy"></i> Copy URL
                 </button>
             </pre>
 
             <h4>Example Response for Pagination Mode</h4>
             <pre>
-{
-    "data": [
         {
-            "id": 1,
-            "name": "Ton",
-            "code": "T"
+            "data": [
+                {
+                    "id": 1,
+                    "name": "Piece",
+                    "code": "PC",
+                    "description": null,
+                    "meta": {
+                        "created_at": "2025-04-05T18:07:54.000000Z",
+                        "updated_at": "2025-04-05T18:07:54.000000Z"
+                    }
+                },
+                {
+                    "id": 2,
+                    "name": "Pack",
+                    "code": "PK",
+                    "description": null,
+                    "meta": {
+                        "created_at": "2025-04-05T18:07:54.000000Z",
+                        "updated_at": "2025-04-05T18:07:54.000000Z"
+                    }
+                }
+            ],
+            "links": {
+                "first": "http://localhost:8000/api/item-units?page=1",
+                "last": "http://localhost:8000/api/item-units?page=23",
+                "prev": null,
+                "next": "http://localhost:8000/api/item-units?page=2"
+            },
+            "meta": {
+                "current_page": 1,
+                "from": 1,
+                "last_page": 23,
+                "links": [
+                    {
+                        "url": null,
+                        "label": "&laquo; Previous",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=1",
+                        "label": "1",
+                        "active": true
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=2",
+                        "label": "2",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=3",
+                        "label": "3",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=4",
+                        "label": "4",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=5",
+                        "label": "5",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=6",
+                        "label": "6",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=7",
+                        "label": "7",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=8",
+                        "label": "8",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=9",
+                        "label": "9",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=10",
+                        "label": "10",
+                        "active": false
+                    },
+                    {
+                        "url": null,
+                        "label": "...",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=22",
+                        "label": "22",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=23",
+                        "label": "23",
+                        "active": false
+                    },
+                    {
+                        "url": "http://localhost:8000/api/item-units?page=2",
+                        "label": "Next &raquo;",
+                        "active": false
+                    }
+                ],
+                "path": "http://localhost:8000/api/item-units",
+                "per_page": 2,
+                "to": 2,
+                "total": 45,
+                "methods": "[GET, POST, PUT, DELETE]",
+                "time_ms": 28,
+                "pagination": {
+                    "total": 45,
+                    "per_page": 2,
+                    "current_page": 1,
+                    "last_page": 23
+                }
+            },
+            "message": "Successfully retrieve all records."
         }
-    ],
-    "metadata": {
-        "pagination": [
-            {
-                "title": "previous",
-                "link": null,
-                "is_active": false
-            },
-            {
-                "title": 1,
-                "link": "http://localhost:8000/api/item-units?search=Ton&per_page=10&last_initial_id=0&last_id=0",
-                "is_active": true
-            },
-            {
-                "title": 2,
-                "link": "http://localhost:8000/api/item-units?search=Ton&per_page=10&last_initial_id=7&last_id=20",
-                "is_active": false
-            },
-            {
-                "title": "next",
-                "link": "http://localhost:8000/api/item-units?search=Ton&per_page=10&last_initial_id=0&last_id=0",
-                "is_active": true
-            }
-        ],
-        "page": 1,
-        "total_page": 2
-    }
-}
             </pre>
 
             <h4>Example Request for Selection Mode</h4>
             <pre>
-GET {{ env('SERVER_DOMAIN') }}/api/item-units?mode=selection
+        GET {{ env('SERVER_DOMAIN') }}/api/item-units?mode=selection
                 <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-units?mode=selection')">
                     <i class="fas fa-copy"></i> Copy URL
                 </button>
@@ -497,63 +593,67 @@ GET {{ env('SERVER_DOMAIN') }}/api/item-units?mode=selection
 
             <h4>Example Response for Selection Mode</h4>
             <pre>
-{
-    "data": [
         {
-            "id": 4,
-            "name": "Ounces",
-            "code": "ozx"
-        },
-        {
-            "id": 5,
-            "name": "Liter",
-            "code": "L"
-        },
-        {
-            "id": 6,
-            "name": "Milliliter",
-            "code": "mL"
-        },
-        {
-            "id": 7,
-            "name": "Ton",
-            "code": "t"
+            "data": [
+                {
+                    "id": 4,
+                    "name": "Ounces",
+                    "code": "ozx"
+                },
+                {
+                    "id": 5,
+                    "name": "Liter",
+                    "code": "L"
+                },
+                {
+                    "id": 6,
+                    "name": "Milliliter",
+                    "code": "mL"
+                },
+                {
+                    "id": 7,
+                    "name": "Ton",
+                    "code": "t"
+                }
+            ],
+            "metadata": {
+                "methods": "[GET, POST, PUT, DELETE]",
+                "content": "This type of response is for selection component.",
+                "mode": "selection"
+            }
         }
-    ],
-    "metadata": {
-        "methods": "[GET, POST, PUT, DELETE]",
-        "content": "This type of response is for selection component.",
-        "mode": "selection"
-    }
-}
             </pre>
 
             <h4>Example Request for Single Record by ID</h4>
             <pre>
-GET {{ env('SERVER_DOMAIN') }}/api/item-units?item_unit_id=1
-                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-units?item_unit_id=1')">
+        GET {{ env('SERVER_DOMAIN') }}/api/item-units?id=1
+                <button class="copy-button" onclick="copyToClipboard('{{ env('SERVER_DOMAIN') }}/api/item-units?id=1')">
                     <i class="fas fa-copy"></i> Copy URL
                 </button>
             </pre>
 
             <h4>Example Response for Single Record by ID</h4>
             <pre>
-{
-    "data": {
-        "id": 1,
-        "name": "Ton",
-        "code": "T"
-    },
-    "metadata": {
-        "methods": "[GET, POST, PUT, DELETE]",
-        "urls": [
-            "{{ env('SERVER_DOMAIN') }}/api/item-units?item_unit_id=1",
-            "{{ env('SERVER_DOMAIN') }}/api/item-units?page=1&per_page=10",
-            "{{ env('SERVER_DOMAIN') }}/api/item-units?page=1&per_page=10&mode=selection",
-            "{{ env('SERVER_DOMAIN') }}/api/item-units?page=1&per_page=10&search=Ton"
-        ]
-    }
-}
+        {
+            "data": {
+                "id": 1,
+                "name": "Piece",
+                "code": "PC",
+                "description": null,
+                "meta": {
+                    "created_at": "2025-04-05T18:07:54.000000Z",
+                    "updated_at": "2025-04-05T18:07:54.000000Z"
+                }
+            },
+            "metadata": {
+                "methods": "[GET, POST, PUT, DELETE]",
+                "urls": [
+                    "{{ env('SERVER_DOMAIN') }}/api/item-units?id=1",
+                    "{{ env('SERVER_DOMAIN') }}/api/item-units?page=1&per_page=10",
+                    "{{ env('SERVER_DOMAIN') }}/api/item-units?page=1&per_page=10&mode=selection"
+                ]
+            }
+        }
             </pre>
 
             <h3>Error Responses</h3>
@@ -569,12 +669,18 @@ GET {{ env('SERVER_DOMAIN') }}/api/item-units?item_unit_id=1
                     <tr>
                         <td>404</td>
                         <td>No record found.</td>
-                        <td>Returned when no item unit is found for the given <code>item_unit_id</code>.</td>
+                        <td>Returned when no item unit is found for the given <code>id</code>.</td>
                     </tr>
                     <tr>
                         <td>422</td>
                         <td>Invalid request.</td>
-                        <td>Returned when invalid parameters are provided.</td>
+                        <td>Returned when invalid parameters are provided, such as:
+                            <ul>
+                                <li>Missing required parameters (page when per_page is provided)</li>
+                                <li>per_page value outside 1-100 range</li>
+                                <li>page value less than 1</li>
+                            </ul>
+                        </td>
                     </tr>
                 </tbody>
             </table>

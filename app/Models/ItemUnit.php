@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemUnit extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'item_units';
 
     public $fillable = [
@@ -16,6 +19,8 @@ class ItemUnit extends Model
     ];
 
     public $timestamps = true;
+
+    protected $casts = ['deleted_at' => 'datetime'];
 
     public function items()
     {

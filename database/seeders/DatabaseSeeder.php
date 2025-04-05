@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        $this->call(ItemUnitSeeder::class);
         $this->call(ObjectiveSeeder::class);
         $this->call(SuccessIndicatorSeeder::class);
         $this->call(ObjectiveSuccessIndicatorSeeder::class);
