@@ -4,7 +4,17 @@ namespace App\Helpers;
 
 class MetadataComposerHelper
 {
-    protected bool $is_development = env('APP_END') === 'local';
+    protected bool $is_development;
+    
+    public function __construct()
+    {
+        $this->is_development = $this->shouldEnableDevMode();
+    }
+    
+    protected function shouldEnableDevMode(): bool
+    {
+        return app()->environment('local') || config('app.debug');
+    }
 
     public static function compose($method, $module)
     {

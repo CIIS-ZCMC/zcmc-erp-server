@@ -1,7 +1,18 @@
 <?php
 
-use Illuminate\Support\Facades\Http;
+namespace App\Helpers;
 
+use Illuminate\Support\Facades\Http;
+use OpenApi\Attributes as OA;
+
+#[OA\Schema(
+    schema: "HttpRequestHelper",
+    description: "Helper for making external API requests",
+    properties: [
+        new OA\Property(property: "base_url", type: "string"),
+        new OA\Property(property: "timeout", type: "integer")
+    ]
+)]
 class HttpRequestHelper
 {
     public static function forwardRequestToExternalApi($endpoint, $method = 'GET', $data = [], $headers = [])

@@ -16,7 +16,9 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Maatwebsite\Excel\Excel;
 use Symfony\Component\HttpFoundation\Response;
+use OpenApi\Attributes as OA;
 
+#[OA\Info(title: "Laravel 11 API", version: "1.0")]
 class ItemUnitController extends Controller
 {
     private $is_development;
@@ -328,7 +330,15 @@ class ItemUnitController extends Controller
             ], 500);
         }
     }
-
+    
+    #[OA\Get(
+        path: "/api/users",
+        summary: "List all users",
+        responses: [
+            new OA\Response(response: 200, description: "OK"),
+            new OA\Response(response: 500, description: "Server Error")
+        ]
+    )]
     public function index(GetWithPaginatedSearchModeRequest $request): ItemUnitResource|AnonymousResourceCollection|JsonResponse   
     {
         $start = microtime(true);

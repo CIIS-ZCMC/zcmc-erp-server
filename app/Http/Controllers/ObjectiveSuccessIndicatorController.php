@@ -11,6 +11,7 @@ use App\Models\Objective;
 use App\Models\ObjectiveSuccessIndicator;
 use App\Models\SuccessIndicator;
 use App\Models\Target;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Ramsey\Uuid\Type\Integer;
@@ -122,26 +123,33 @@ class ObjectiveSuccessIndicatorController extends Controller
             ]);
     }  
     
-    public function index(GetWithPaginatedSearchModeRequest $request)
+    protected function singleRecord($objective_success_indicator_id, $start):JsonResponse
     {
+        $objectiveSuccessIndicator = ObjectiveSuccessIndicator::find($objective_success_indicator_id);
+            
+        if (!$objectiveSuccessIndicator) {
+            return response()->json(["message" => "Item unit not found."], Response::HTTP_NOT_FOUND);
+        }
+    
+        return (new ObjectiveSuccessIndicatorResource($objectiveSuccessIndicator))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000)
+                ],
+                "message" => "Successfully retrieved record."
+            ])->response();
+    }
+    
+    public function index(GetWithPaginatedSearchModeRequest $request): JsonResponse|AnonymousResourceCollection
+    {
+        $start = microtime(true);
         $objective_success_indicator_id = $request->query('id');
         $search = $request->search;
         $mode = $request->mode;
 
         if($objective_success_indicator_id){
-            $objective_success_indicator = ObjectiveSuccessIndicator::find($objective_success_indicator_id);
-            
-            if (!$objective_success_indicator) {
-                return response()->json(["message" => "Objective success indicator not found."], Response::HTTP_NOT_FOUND);
-            }
-        
-            return new ObjectiveSuccessIndicatorResource($objective_success_indicator)
-                ->additional([
-                    "meta" => [
-                        "methods" => $this->methods,
-                        "message" => "Successfully retrieved record."
-                    ]
-                ]);
+            return $this->singleRecord($objective_success_indicator_id, $start);
         }
 
         if($mode && $mode === 'selection'){

@@ -3,11 +3,16 @@
 namespace App\Auth;
 
 use App\Models\AccessToken;
-use HttpRequestHelper;
+use App\Helpers\HttpRequestHelper;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Symfony\Component\HttpFoundation\Request;
+use OpenApi\Attributes as OA;
 
+#[OA\Schema(
+    schema: "AuthCookieGuard",
+    description: "Custom authentication guard using cookies"
+)]
 class AuthCookieGuard implements Guard
 {
     protected $provider;
