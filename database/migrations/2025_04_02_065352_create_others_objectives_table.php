@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('function_objective', function (Blueprint $table) {
+        Schema::create('others_objectives', function (Blueprint $table) {
             $table->id();
-            
+            $table->unsignedBigInteger('application_objective_id');
+            $table->foreign('application_objective_id')->references('id')->on('application_objectives');
+            $table->string('description');
             $table->timestamps();
         });
     }
@@ -23,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('function_objective');
+        Schema::dropIfExists('others_objectives');
     }
 };

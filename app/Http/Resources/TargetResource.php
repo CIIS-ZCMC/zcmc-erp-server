@@ -14,6 +14,14 @@ class TargetResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->id,
+            'first_quarter' => $this->first_quarter,
+            'second_quarter' => $this->second_quarter,
+            'third_quarter' => $this->third_quarter,
+            'fourth_quarter' => $this->fourth_quarter,
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+        ];
     }
 }
