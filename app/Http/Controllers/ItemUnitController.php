@@ -482,7 +482,6 @@ class ItemUnitController extends Controller
 
     protected function bulkStore(Request $request, $start):ItemUnitResource|AnonymousResourceCollection|JsonResponse  
     {
-        
         $existing_items = ItemUnit::whereIn('name', collect($request->item_units)->pluck('name'))
         ->orWhereIn('code', collect($request->item_units)->pluck('code'))
         ->get(['name', 'code'])->toArray();
@@ -521,7 +520,7 @@ class ItemUnitController extends Controller
                 'meta' => [
                     "methods" => $this->methods,
                     'time_ms' => round((microtime(true) - $start) * 1000),
-                    "existings" => ItemUnitResource::collection($existing_items),
+                    "existings" => $existing_items,
                 ],
                 "message" => "Successfully store data."
             ]);
@@ -823,6 +822,11 @@ class ItemUnitController extends Controller
             }
             
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        // Bulk Insert
+        if ($request->item_units !== null || $request->item_units > 1) {
+            return $this->bulkUpdate($request, $start);
         }
     
         return $this->singleRecordUpdate($request, $start);
