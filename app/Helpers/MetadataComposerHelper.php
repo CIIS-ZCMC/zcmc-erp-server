@@ -19,47 +19,47 @@ class MetadataComposerHelper
     public static function compose($method, $module)
     {
         if($method === 'get'){
-            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
-            $metadata['modes'] = ['selection', 'pagination'];
+            $meta['methods'] = ["GET, POST, PUT, DELETE"];
+            $meta['modes'] = ['selection', 'pagination'];
 
             if(self::$is_development){
-                $metadata['urls'] = [
-                    env("SERVER_DOMAIN")."/api/".$module."?item_unit_id=[primary-key]",
+                $meta['urls'] = [
+                    env("SERVER_DOMAIN")."/api/".$module."?id=[primary-key]",
                     env("SERVER_DOMAIN")."/api/".$module."?page={currentPage}&per_page={number_of_record_to_return}",
                     env("SERVER_DOMAIN")."/api/".$module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
                     env("SERVER_DOMAIN")."/api/".$module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
                 ];
             }
 
-            return $metadata;
+            return $meta;
         }
         
         if($method === 'put'){
-            $metadata = ["methods" => "[PUT]"];
+            $meta = ["methods" => "[PUT]"];
         
             if (self::$is_development) {
-                $metadata["urls"] = [
+                $meta["urls"] = [
                     env("SERVER_DOMAIN")."/api/".$module."?id=1",
                     env("SERVER_DOMAIN")."/api/".$module."?id[]=1&id[]=2"
                 ];
-                $metadata['fields'] = ["title", "code", "description"];
+                $meta['fields'] = ["title", "code", "description"];
             }
             
-            return $metadata;
+            return $meta;
         }
         
-        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+        $meta = ['methods' => ["GET, PUT, DELETE"]];
 
         if(self::$is_development) {
-            $metadata["urls"] = [
+            $meta["urls"] = [
                 env("SERVER_DOMAIN") . "/api/" . $module . "?id=1",
                 env("SERVER_DOMAIN") . "/api/" . $module . "?id[]=1&id[]=2",
                 env("SERVER_DOMAIN") . "/api/" . $module . "?query[target_field]=value"
             ];
 
-            $metadata["fields"] =  ["code"];
+            $meta["fields"] =  ["code"];
         }
 
-        return $metadata;
+        return $meta;
     }
 }

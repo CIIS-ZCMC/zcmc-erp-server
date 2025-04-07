@@ -109,6 +109,7 @@ class LogDescriptionController extends Controller
         $page = $validated['page'] ?? 1;
 
         $results = LogDescription::where('title', 'like', "%{$searchTerm}%")
+            ->orWhere('code', 'like', "%{$searchTerm}%")
             ->orWhere('description', 'like', "%{$searchTerm}%")
             ->paginate(
                 perPage: $perPage,
@@ -186,8 +187,7 @@ class LogDescriptionController extends Controller
 
         if (count($log_description_ids) !== count($request->input('log_descriptions'))) {
             return response()->json([
-                "message" => "Number of IDs does not match number of log descriptions provided.",
-                "meta" => MetadataComposerHelper::compose('put', $this->module)
+                "message" => "Number of IDs does not match number of log descriptions provided."
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
     
@@ -213,8 +213,7 @@ class LogDescriptionController extends Controller
                     "meta" => [
                         'methods' => $this->methods,
                         'time_ms' => round((microtime(true) - $start) * 1000),
-                        'issue' => $errors,
-                        "url_formats" => MetadataComposerHelper::compose('put', $this->module)
+                        'issue' => $errors
                     ],
                     "message" => "Partial update completed with errors.",
                 ])
@@ -226,8 +225,7 @@ class LogDescriptionController extends Controller
             ->additional([
                 "meta" => [
                     'methods' => $this->methods,
-                    'time_ms' => round((microtime(true) - $start) * 1000),
-                    "url_formats" => MetadataComposerHelper::compose('put', $this->module)
+                    'time_ms' => round((microtime(true) - $start) * 1000)
                 ],
                 "message" => "Successfully updated log descriptions",
             ]);
@@ -629,13 +627,13 @@ class LogDescriptionController extends Controller
             )
         ]
     )]
-    public function update(Request $request): Response
+    public function update(Request $request):AnonymousResourceCollection|JsonResponse
     {
         $start = microtime(true);
-        $item_unit_ids = $request->query('id') ?? null;
+        $log_description_ids = $request->query('id') ?? null;
     
         // Validate ID parameter exists
-        if (!$item_unit_ids) {
+        if (!$log_description_ids) {
             $response = ["message" => "ID parameter is required."];
             
             if ($this->is_development) {
@@ -646,7 +644,7 @@ class LogDescriptionController extends Controller
         }
 
         // Bulk Insert
-        if ($request->item_units !== null || $request->item_units > 1) {
+        if ($request->log_descriptions !== null || $request->log_descriptions > 1) {
             return $this->bulkUpdate($request, $start);
         }
     
