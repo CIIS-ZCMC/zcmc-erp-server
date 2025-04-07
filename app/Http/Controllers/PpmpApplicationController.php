@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PpmpApplicationRequest;
 use App\Http\Resources\PpmpApplicationResource;
+use App\Models\AopApplication;
 use App\Models\PpmpApplication;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -119,11 +120,10 @@ class PpmpApplicationController extends Controller
         //paginate display 10 data per page
         $ppmp_application = PpmpApplication::whereNull('deleted_at')->paginate(10);
 
-        if ($ppmp_application->isEmpty()) {
+        if (!$ppmp_application) {
             return response()->json([
                 'message' => "No record found.",
-                "metadata" => $this->getMetadata('get')
-            ], Response::HTTP_OK);
+            ], Response::HTTP_NOT_FOUND);
         }
 
         return response()->json([
@@ -134,7 +134,7 @@ class PpmpApplicationController extends Controller
                 'per_page' => $ppmp_application->perPage(),
                 'total' => $ppmp_application->total(),
             ],
-            'message' => $this->getMetadata('get'),
+            // 'message' => $this->getMetadata('get'),
         ], Response::HTTP_OK);
     }
 
@@ -168,14 +168,26 @@ class PpmpApplicationController extends Controller
     )]
     public function store(PpmpApplicationRequest $request)
     {
-        $data = new PpmpApplication();
-        $data->aop_application_id = strip_tags($request['aop_application_id']);
-        $data->user_id = strip_tags($request['user_id']);
-        $data->division_chief_id = strip_tags($request['division_chief_id']);
-        $data->budget_officer_id = strip_tags($request['budget_officer_id']);
-        $data->ppmp_total = strip_tags($request['ppmp_total']);
-        $data->remarks = strip_tags($request['remarks']);
-        $data->save();
+        $budget_officer_id = null;
+        foreach ($request->aop_application_id as $aop_id) {
+            $aop = AopApplication::find($aop_id);
+
+            if (!$aop) {
+                return response()->json([
+                    'message' => "AOP Application with ID {$aop_id} not found.",
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $data = new PpmpApplication();
+            $data->aop_application_id = $aop->id;
+            $data->user_id = $aop->user_id;
+            $data->division_chief_id = $aop->division_chief_id;
+            $data->budget_officer_id = $aop->budget_officer_id;
+
+            $data->ppmp_total = strip_tags($request['ppmp_total']);
+            $data->remarks = strip_tags($request['remarks']);
+            $data->save();
+        }
 
         return response()->json([
             'data' => new PpmpApplicationResource($data),

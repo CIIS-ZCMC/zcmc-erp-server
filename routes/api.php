@@ -113,6 +113,6 @@ Route::
             Route::get('assigned-areas/{id}', "AssignedAreaController@show");
             Route::post('umis/areas/update', "AssignedAreaController@processUMISUpdate");
 
-            Route::apiResource('ppmp_applications', 'PpmpApplicationController');
-            Route::apiResource('ppmp_items', 'PpmpItemController');
+            Route::apiResource('ppmp-applications', 'PpmpApplicationController');
+            Route::apiResource('ppmp-items', 'PpmpItemController');
         });
