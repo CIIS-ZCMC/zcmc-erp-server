@@ -25,4 +25,9 @@ class ObjectiveSuccessIndicator extends Model
     { 
         return $this->belongsTo(SuccessIndicator::class);
     }
+    
+    public function otherSuccessIndicator()
+    {
+        return $this->hasOne(OtherSuccessIndicator::class, 'application_objective_id');
+    }
 }

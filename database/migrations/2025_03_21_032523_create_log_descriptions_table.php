@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('code')->nullable();
-            $table->dateTime('deleted_at')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
