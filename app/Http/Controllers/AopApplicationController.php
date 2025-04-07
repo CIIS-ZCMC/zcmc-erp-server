@@ -44,10 +44,10 @@ class AopApplicationController extends Controller
         try {
             // Create AOP Application
             $aopApplication = AopApplication::create([
-                'user_id' => $validatedData['user_id'],
-                'division_chief_id' => $validatedData['division_chief_id'],
-                'mcc_chief_id' => $validatedData['mcc_chief_id'],
-                'planning_officer_id' => $validatedData['planning_officer_id'],
+                // 'user_id' => $validatedData['user_id'],
+                // 'division_chief_id' => $validatedData['division_chief_id'],
+                // 'mcc_chief_id' => $validatedData['mcc_chief_id'],
+                // 'planning_officer_id' => $validatedData['planning_officer_id'],
                 'aop_application_uuid' => Str::uuid(),
                 'mission' => $validatedData['mission'],
                 'status' => $validatedData['status'],
