@@ -14,7 +14,7 @@ class ItemCategorySeeder extends Seeder
     public function run(): void
     {
         // Clear existing data to prevent duplicates
-        ItemCategory::truncate();
+        // ItemCategory::truncate();
 
         // Main categories to be seeded
         $mainCategories = [

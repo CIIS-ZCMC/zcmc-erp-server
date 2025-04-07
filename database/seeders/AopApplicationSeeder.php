@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\AssignedArea;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -85,16 +86,20 @@ class AopApplicationSeeder extends Seeder
         
         // Find users for various roles
         $user = User::first() ?? User::factory()->create([
-            'designation_id' => $designation->id,
-            'division_id' => $division->id,
-            'department_id' => $department->id,
-            'section_id' => $section->id,
-            'unit_id' => $unit->id,
             'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
             'name' => 'Sample User',
             'email' => 'user@example.com',
             'profile_url' => 'https://randomuser.me/api/portraits/men/' . rand(1, 99) . '.jpg',
             'is_active' => true
+        ]);
+
+        AssignedArea::create([
+            'user_id'=> $user->id,
+            'designation_id' => $designation->id,
+            'division_id' => $division->id,
+            'department_id' => $department->id,
+            'section_id' => $section->id,
+            'unit_id' => $unit->id,
         ]);
         
         // Create Division Chief Designation
@@ -102,19 +107,29 @@ class AopApplicationSeeder extends Seeder
             'name' => 'Division Chief',
             'code' => 'DC',
         ]);
+
         
-        $divisionChief = User::where('id', '!=', $user->id)->first() ?? User::factory()->create([
-            'designation_id' => $divisionChiefDesignation->id,
-            'division_id' => $division->id,
-            'department_id' => null,
-            'section_id' => null,
-            'unit_id' => null,
-            'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
-            'name' => 'Division Chief',
-            'email' => 'division.chief@example.com',
-            'profile_url' => 'https://randomuser.me/api/portraits/men/' . rand(1, 99) . '.jpg',
-            'is_active' => true
-        ]);
+        
+        $divisionChief = User::where('id', '!=', $user->id)->first();
+
+        if(!$divisionChief){
+            $user = User::factory()->create([
+                'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
+                'name' => 'Division Chief',
+                'email' => 'division.chief@example.com',
+                'profile_url' => 'https://randomuser.me/api/portraits/men/' . rand(1, 99) . '.jpg',
+                'is_active' => true
+            ]);
+
+            AssignedArea::create([
+                'user_id'=> $user->id,
+                'designation_id' => $divisionChiefDesignation->id,
+                'division_id' => $division->id,
+                'department_id' => null,
+                'section_id' => null,
+                'unit_id' => null,
+            ]);
+        }
         
         // Create MCC Chief Designation
         $mccChiefDesignation = Designation::where('name', 'MCC Chief')->first() ?? Designation::create([
@@ -124,18 +139,26 @@ class AopApplicationSeeder extends Seeder
         
         $mccChief = User::where('id', '!=', $user->id)
             ->where('id', '!=', $divisionChief->id)
-            ->first() ?? User::factory()->create([
-                'designation_id' => $mccChiefDesignation->id,
-                'division_id' => null,
-                'department_id' => null,
-                'section_id' => null,
-                'unit_id' => null,
+            ->first();
+
+        if(!$mccChief){
+            $mccChief = User::factory()->create([
                 'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
                 'name' => 'MCC Chief',
                 'email' => 'mcc.chief@example.com',
                 'profile_url' => 'https://randomuser.me/api/portraits/women/' . rand(1, 99) . '.jpg',
                 'is_active' => true
             ]);
+
+            AssignedArea::create([
+                'user_id'=> $mccChief->id,
+                'designation_id' => $mccChiefDesignation->id,
+                'division_id' => null,
+                'department_id' => null,
+                'section_id' => null,
+                'unit_id' => null,
+            ]);
+        }
         
         // Create Planning Officer Designation
         $planningOfficerDesignation = Designation::where('name', 'Planning Officer')->first() ?? Designation::create([
@@ -146,18 +169,27 @@ class AopApplicationSeeder extends Seeder
         $planningOfficer = User::where('id', '!=', $user->id)
             ->where('id', '!=', $divisionChief->id)
             ->where('id', '!=', $mccChief->id)
-            ->first() ?? User::factory()->create([
-                'designation_id' => $planningOfficerDesignation->id,
-                'division_id' => null,
-                'department_id' => null,
-                'section_id' => null,
-                'unit_id' => null,
+            ->first();
+            
+
+        if(!$planningOfficer){
+            $planningOfficer =  User::factory()->create([
                 'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
                 'name' => 'Planning Officer',
                 'email' => 'planning.officer@example.com',
                 'profile_url' => 'https://randomuser.me/api/portraits/women/' . rand(1, 99) . '.jpg',
                 'is_active' => true
             ]);
+
+            AssignedArea::create([
+                'user_id'=> $planningOfficer->id,
+                'designation_id' => $planningOfficerDesignation->id,
+                'division_id' => null,
+                'department_id' => null,
+                'section_id' => null,
+                'unit_id' => null,
+            ]);
+        }
 
         // Create 5 AOP Applications with different data
         $missionStatements = [
@@ -258,7 +290,7 @@ class AopApplicationSeeder extends Seeder
                 
                 foreach ($selectedObjectives as $index => $objectiveName) {
                     // Create function objective directly into the table
-                    $functionObjective = DB::table('function_objective')->insertGetId([
+                    $functionObjective = DB::table('function_objectives')->insertGetId([
                         'type_of_function_id' => $typeOfFunction->id,
                         'objective' => $objectiveName,
                         'created_at' => now(),
@@ -376,6 +408,7 @@ class AopApplicationSeeder extends Seeder
             
             // Create or use sample Purchase Type
             $purchaseType = DB::table('purchase_types')->first();
+            
             if (!$purchaseType) {
                 $purchaseTypeId = DB::table('purchase_types')->insertGetId([
                     'description' => 'Sample Purchase Type',
@@ -402,11 +435,11 @@ class AopApplicationSeeder extends Seeder
             ]);
             
             // Get valid division, department, section, unit, and designation IDs
-            $divisionId = $user->division_id ?? Division::first()->id;
-            $departmentId = $user->department_id ?? Department::first()->id;
-            $sectionId = $user->section_id ?? Section::first()->id;
-            $unitId = $user->unit_id ?? Unit::first()->id;
-            $designationId = $user->designation_id ?? Designation::first()->id;
+            $divisionId = $user->assignedArea->division_id ?? Division::first()->id;
+            $departmentId = $user->assignedArea->department_id ?? Department::first()->id;
+            $sectionId = $user->assignedArea->section_id ?? Section::first()->id;
+            $unitId = $user->assignedArea->unit_id ?? Unit::first()->id;
+            $designationId = $user->assignedArea->designation_id ?? Designation::first()->id;
             
             // Create responsible person (person in-charge)
             ResponsiblePerson::create([
