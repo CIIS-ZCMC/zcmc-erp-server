@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->unsignedBigInteger('activity_id');
             $table->foreign('activity_id')->references('id')->on('activities');
-            $table->string('status');
+            $table->string('comment');
             $table->timestamps();
         });
     }

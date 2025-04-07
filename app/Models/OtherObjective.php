@@ -19,4 +19,6 @@ class OtherObjective extends Model
     {
         return $this->belongsTo(ApplicationObjective::class);
     }
+
+    
 }

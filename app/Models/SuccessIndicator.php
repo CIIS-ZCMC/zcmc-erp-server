@@ -17,10 +17,10 @@ class SuccessIndicator extends Model
     public $timestamps = true;
 
     // Uncomment once the Objective Success Indicators Models exist
-    // public function objectiveSuccessIndicators()
-    // {
-    //     return $this->hasMany(ObjectiveSuccessIndicator::class);
-    // }
+    public function objectiveSuccessIndicators()
+    {
+        return $this->hasMany(ObjectiveSuccessIndicator::class);
+    }
     
     public function logs()
     {

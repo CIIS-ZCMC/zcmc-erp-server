@@ -382,4 +382,124 @@ class ObjectiveSuccessIndicatorController extends Controller
 
         return response()->json([], Response::HTTP_NO_CONTENT);
     }
+
+    #[OA\Put(
+        path: "/api/objective-success-indicators/{id}",
+        summary: "Update an objective success indicator",
+        tags: ["Objective Success Indicators"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Objective Success Indicator ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            description: "Objective Success Indicator data",
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "objective_id", type: "integer"),
+                    new OA\Property(property: "success_indicator_id", type: "integer"),
+                    new OA\Property(property: "objective", type: "object"),
+                    new OA\Property(property: "success_indicator", type: "object")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Objective Success Indicator updated",
+                content: new OA\JsonContent(ref: "#/components/schemas/ObjectiveSuccessIndicator")
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Objective Success Indicator not found"
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: "Validation error"
+            )
+        ]
+    )]
+    public function update(Request $request, ObjectiveSuccessIndicator $objectiveSuccessIndicator): JsonResponse
+    {
+        $start = microtime(true);
+        $objective_id = $request->objective_id;
+        $success_indicator_id = $request->success_indicator_id;
+        $objective = $request->objective;
+        $success_indicator = $request->success_indicator;
+        $updated = false;
+
+        // Update with both primary keys
+        if ($objective_id && $success_indicator_id) {
+            if (!($this->doesObjectiveExist($objective_id) && $this->doesSuccessIndicatorExist($success_indicator_id))) {
+                return response()->json(['message' => "Data of objective/success indicator doesn't exist."], Response::HTTP_NOT_FOUND);
+            }
+            
+            $objectiveSuccessIndicator->update([
+                'objective_id' => $objective_id,
+                'success_indicator_id' => $success_indicator_id
+            ]);
+            $updated = true;
+        }
+
+        // Update with objective_id and new success indicator
+        if ($objective_id && $success_indicator && !$updated) {
+            if (!$this->doesObjectiveExist($objective_id)) {
+                return response()->json(['message' => "Data of objective doesn't exist."], Response::HTTP_NOT_FOUND);
+            }
+            
+            $new_success_indicator = SuccessIndicator::create($success_indicator);
+            $objectiveSuccessIndicator->update([
+                'objective_id' => $objective_id,
+                'success_indicator_id' => $new_success_indicator->id
+            ]);
+            $updated = true;
+        }
+
+        // Update with success_indicator_id and new objective
+        if ($success_indicator_id && $objective && !$updated) {
+            if (!$this->doesSuccessIndicatorExist($success_indicator_id)) {
+                return response()->json(['message' => "Data of success indicator doesn't exist."], Response::HTTP_NOT_FOUND);
+            }
+            
+            $new_objective = Objective::create($objective);
+            $objectiveSuccessIndicator->update([
+                'objective_id' => $new_objective->id,
+                'success_indicator_id' => $success_indicator_id
+            ]);
+            $updated = true;
+        }
+
+        // Update with new objective and new success indicator
+        if ($objective && $success_indicator && !$updated) {
+            $new_objective = Objective::create($objective);
+            $new_success_indicator = SuccessIndicator::create($success_indicator);
+
+            $objectiveSuccessIndicator->update([
+                'objective_id' => $new_objective->id,
+                'success_indicator_id' => $new_success_indicator->id
+            ]);
+            $updated = true;
+        }
+
+        if (!$updated) {
+            return response()->json(['message' => "No valid update data provided."], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+        
+        // Refresh the model to get updated relationships
+        $objectiveSuccessIndicator->refresh();
+        
+        return (new ObjectiveSuccessIndicatorResource($objectiveSuccessIndicator))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000)
+                ],
+                "message" => "Successfully updated record."
+            ])->response();
+    }
 }

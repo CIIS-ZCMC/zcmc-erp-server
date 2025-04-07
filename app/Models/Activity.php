@@ -62,4 +62,9 @@ class Activity extends Model
     {
         return $this->hasMany(ResponsiblePerson::class);
     }
+
+    public function comments(): HasMany
+    {
+        return $this->hasMany(ActivityComment::class);
+    }
 }
