@@ -26,6 +26,11 @@ class Objective extends Model
     {
         return $this->hasMany(ObjectiveSuccessIndicator::class);
     }
+    
+    public function otherObjective()
+    {
+        return $this->hasOne(OtherObjective::class, 'application_objective_id');
+    }
 
     public function logs()
     {
