@@ -18,12 +18,12 @@ use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
-    schema: "ActivityComment",
+    schema: "Item Unit",
     properties: [
         new OA\Property(property: "id", type: "integer"),
-        new OA\Property(property: "activity_id", type: "integer"),
-        new OA\Property(property: "user_id", type: "integer", nullable: true),
-        new OA\Property(property: "content", type: "string"),
+        new OA\Property(property: "name", type: "string"),
+        new OA\Property(property: "code", type: "string", nullable: true),
+        new OA\Property(property: "description", type: "string", nullable: true),
         new OA\Property(
             property: "created_at",
             type: "string",
