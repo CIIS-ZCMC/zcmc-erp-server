@@ -22,7 +22,10 @@ class PpmpItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'item_id' => 'required|integer',
+            'ppmp_application_id' => 'required|integer',
+            'procurement_mode_id' => 'required|integer',
+            'item_request_id' => 'required|integer',
         ];
     }
 }

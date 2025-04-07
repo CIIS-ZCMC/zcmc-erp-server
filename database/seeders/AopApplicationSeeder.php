@@ -15,7 +15,7 @@ use App\Models\SuccessIndicator;
 use App\Models\Target;
 use App\Models\Resource;
 use App\Models\ResponsiblePerson;
-use App\Models\OthersObjective;
+use App\Models\OtherObjective;
 use App\Models\User;
 use App\Models\Designation;
 use App\Models\Division;
@@ -38,26 +38,26 @@ class AopApplicationSeeder extends Seeder
             'email' => 'division.head@example.com',
             'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
         ]);
-        
+
         $sampleUser2 = User::factory()->create([
             'name' => 'Department Head',
             'email' => 'department.head@example.com',
             'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
         ]);
-        
+
         // Create or get organizational structure data
         $designation = Designation::first() ?? Designation::create([
             'name' => 'Staff Nurse',
             'code' => 'SN',
         ]);
-        
+
         $division = Division::first() ?? Division::create([
             'head_id' => $sampleUser1->id,
             'oic_id' => null,
             'umis_division_id' => rand(1000, 9999),
             'name' => 'Medical Division',
         ]);
-        
+
         $department = Department::first() ?? Department::create([
             'head_id' => $sampleUser2->id,
             'oic_id' => null,
@@ -65,7 +65,7 @@ class AopApplicationSeeder extends Seeder
             'umis_department_id' => rand(1000, 9999),
             'name' => 'Nursing Department',
         ]);
-        
+
         $section = Section::first() ?? Section::create([
             'head_id' => null,
             'oic_id' => null,
@@ -74,7 +74,7 @@ class AopApplicationSeeder extends Seeder
             'umis_section_id' => rand(1000, 9999),
             'name' => 'Emergency Room',
         ]);
-        
+
         $unit = Unit::first() ?? Unit::create([
             'head_id' => null,
             'oic_id' => null,
@@ -83,7 +83,7 @@ class AopApplicationSeeder extends Seeder
             'umis_unit_id' => rand(1000, 9999),
             'name' => 'Triage Unit',
         ]);
-        
+
         // Find users for various roles
         $user = User::first() ?? User::factory()->create([
             'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
@@ -94,25 +94,25 @@ class AopApplicationSeeder extends Seeder
         ]);
 
         AssignedArea::create([
-            'user_id'=> $user->id,
+            'user_id' => $user->id,
             'designation_id' => $designation->id,
             'division_id' => $division->id,
             'department_id' => $department->id,
             'section_id' => $section->id,
             'unit_id' => $unit->id,
         ]);
-        
+
         // Create Division Chief Designation
         $divisionChiefDesignation = Designation::where('name', 'Division Chief')->first() ?? Designation::create([
             'name' => 'Division Chief',
             'code' => 'DC',
         ]);
 
-        
-        
+
+
         $divisionChief = User::where('id', '!=', $user->id)->first();
 
-        if(!$divisionChief){
+        if (!$divisionChief) {
             $user = User::factory()->create([
                 'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
                 'name' => 'Division Chief',
@@ -122,7 +122,7 @@ class AopApplicationSeeder extends Seeder
             ]);
 
             AssignedArea::create([
-                'user_id'=> $user->id,
+                'user_id' => $user->id,
                 'designation_id' => $divisionChiefDesignation->id,
                 'division_id' => $division->id,
                 'department_id' => null,
@@ -130,18 +130,18 @@ class AopApplicationSeeder extends Seeder
                 'unit_id' => null,
             ]);
         }
-        
+
         // Create MCC Chief Designation
         $mccChiefDesignation = Designation::where('name', 'MCC Chief')->first() ?? Designation::create([
             'name' => 'MCC Chief',
             'code' => 'MCC',
         ]);
-        
+
         $mccChief = User::where('id', '!=', $user->id)
             ->where('id', '!=', $divisionChief->id)
             ->first();
 
-        if(!$mccChief){
+        if (!$mccChief) {
             $mccChief = User::factory()->create([
                 'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
                 'name' => 'MCC Chief',
@@ -151,7 +151,7 @@ class AopApplicationSeeder extends Seeder
             ]);
 
             AssignedArea::create([
-                'user_id'=> $mccChief->id,
+                'user_id' => $mccChief->id,
                 'designation_id' => $mccChiefDesignation->id,
                 'division_id' => null,
                 'department_id' => null,
@@ -159,21 +159,21 @@ class AopApplicationSeeder extends Seeder
                 'unit_id' => null,
             ]);
         }
-        
+
         // Create Planning Officer Designation
         $planningOfficerDesignation = Designation::where('name', 'Planning Officer')->first() ?? Designation::create([
             'name' => 'Planning Officer',
             'code' => 'PO',
         ]);
-        
+
         $planningOfficer = User::where('id', '!=', $user->id)
             ->where('id', '!=', $divisionChief->id)
             ->where('id', '!=', $mccChief->id)
             ->first();
-            
 
-        if(!$planningOfficer){
-            $planningOfficer =  User::factory()->create([
+
+        if (!$planningOfficer) {
+            $planningOfficer = User::factory()->create([
                 'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
                 'name' => 'Planning Officer',
                 'email' => 'planning.officer@example.com',
@@ -182,7 +182,7 @@ class AopApplicationSeeder extends Seeder
             ]);
 
             AssignedArea::create([
-                'user_id'=> $planningOfficer->id,
+                'user_id' => $planningOfficer->id,
                 'designation_id' => $planningOfficerDesignation->id,
                 'division_id' => null,
                 'department_id' => null,
@@ -199,7 +199,7 @@ class AopApplicationSeeder extends Seeder
             'To be the leading healthcare provider committed to excellence, innovation, and patient satisfaction',
             'To enhance public health through preventive care, education, and advanced medical services'
         ];
-        
+
         $statusOptions = ['draft', 'submitted', 'approved', 'rejected', 'in_review'];
         $remarkOptions = [
             'Initial AOP application draft',
@@ -208,9 +208,9 @@ class AopApplicationSeeder extends Seeder
             'Rejected due to budget constraints',
             'Currently under review by planning officer'
         ];
-        
+
         $aopApplications = [];
-        
+
         for ($i = 0; $i < 5; $i++) {
             $aopApplication = AopApplication::create([
                 'user_id' => $user->id,
@@ -222,14 +222,14 @@ class AopApplicationSeeder extends Seeder
                 'has_discussed' => ($i % 2 == 0), // Alternate between true and false
                 'remarks' => $remarkOptions[$i]
             ]);
-            
+
             $aopApplications[] = $aopApplication;
         }
 
         // Get or create Type of Functions (strategic, core, support)
         $typeOfFunctions = TypeOfFunction::all();
         if ($typeOfFunctions->isEmpty()) {
-            $typeOfFunctions = collect(['strategic', 'core', 'support'])->map(function($type) {
+            $typeOfFunctions = collect(['strategic', 'core', 'support'])->map(function ($type) {
                 return TypeOfFunction::create(['type' => $type]);
             });
         }
@@ -240,13 +240,13 @@ class AopApplicationSeeder extends Seeder
             'Enhance medical facility infrastructure',
             'Develop workforce capabilities'
         ];
-        
+
         $coreObjectives = [
             'Provide accessible and affordable healthcare services',
             'Implement innovative medical treatments',
             'Strengthen community health programs'
         ];
-        
+
         $supportObjectives = [
             'Optimize resource allocation and utilization',
             'Enhance information management systems',
@@ -283,11 +283,11 @@ class AopApplicationSeeder extends Seeder
             // For each type of function, create application objectives
             foreach ($typeOfFunctions as $typeOfFunction) {
                 $objectives = $objectivesByType[$typeOfFunction->type] ?? [];
-                
+
                 // Use different objectives based on the application index to create variety
                 $startIndex = $appIndex % count($objectives);
                 $selectedObjectives = array_slice($objectives, $startIndex, min(2, count($objectives)));
-                
+
                 foreach ($selectedObjectives as $index => $objectiveName) {
                     // Create function objective directly into the table
                     $functionObjective = DB::table('function_objectives')->insertGetId([
@@ -296,7 +296,7 @@ class AopApplicationSeeder extends Seeder
                         'created_at' => now(),
                         'updated_at' => now()
                     ]);
-                    
+
                     // Create application objective
                     $applicationObjective = ApplicationObjective::create([
                         'aop_application_id' => $aopApplication->id,
@@ -304,15 +304,15 @@ class AopApplicationSeeder extends Seeder
                         'objective_code' => strtoupper(substr($typeOfFunction->type, 0, 1)) . '-' . ($appIndex + 1) . '-' . ($index + 1),
                         'success_indicator_id' => $createdSuccessIndicators[array_rand($createdSuccessIndicators)]->id
                     ]);
-                    
-                    // For objectives not in the list, create OthersObjective
+
+                    // For objectives not in the list, create OtherObjective
                     if ($index == 0 && $appIndex % 2 == 0) { // Only for even-indexed applications
-                        OthersObjective::create([
+                        OtherObjective::create([
                             'application_objective_id' => $applicationObjective->id,
                             'description' => 'Custom objective description for ' . $typeOfFunction->type . ' (Application ' . ($appIndex + 1) . ')'
                         ]);
                     }
-                    
+
                     // Create activities for this objective
                     $this->createActivities($applicationObjective, $user);
                 }
@@ -337,37 +337,37 @@ class AopApplicationSeeder extends Seeder
             'Technology implementation',
             'Facility maintenance and upgrade'
         ];
-        
+
         $expenseClasses = ['MOOE', 'CO', 'PS'];
-        
+
         // Create 1-2 activities per objective (reduced from 1-3 to avoid creating too many records)
         $activityCount = rand(1, 2);
         for ($i = 0; $i < $activityCount; $i++) {
             $activityName = $activityNames[array_rand($activityNames)];
             $startMonth = Carbon::now()->startOfYear()->addMonths(rand(0, 6));
             $endMonth = (clone $startMonth)->addMonths(rand(1, 5));
-            
+
             // Input Activity details
             $activity = Activity::create([
                 'application_objective_id' => $applicationObjective->id,
                 'activity_code' => $applicationObjective->objective_code . '-ACT-' . ($i + 1),
                 'name' => $activityName . ' ' . ($i + 1),
-                'is_gad_related' => (bool)rand(0, 1),
+                'is_gad_related' => (bool) rand(0, 1),
                 'cost' => rand(10000, 100000) / 100,
                 'start_month' => $startMonth,
                 'end_month' => $endMonth,
             ]);
-            
+
             // Create target by Quarter (including unit of target)
             $target = Target::create([
                 'activity_id' => $activity->id,
-                'first_quarter' => (string)rand(1, 10),
-                'second_quarter' => (string)rand(1, 10),
-                'third_quarter' => (string)rand(1, 10),
-                'fourth_quarter' => (string)rand(1, 10)
+                'first_quarter' => (string) rand(1, 10),
+                'second_quarter' => (string) rand(1, 10),
+                'third_quarter' => (string) rand(1, 10),
+                'fourth_quarter' => (string) rand(1, 10)
                 // Note: The migration doesn't have unit and quantity fields
             ]);
-            
+
             // Create or use sample Item
             $item = DB::table('items')->first();
             if (!$item) {
@@ -378,21 +378,21 @@ class AopApplicationSeeder extends Seeder
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);
-                
-                $categoryId = DB::table('item_categories')->first()->id ?? 
+
+                $categoryId = DB::table('item_categories')->first()->id ??
                     DB::table('item_categories')->insertGetId([
                         'name' => 'Sample Category',
                         'created_at' => now(),
                         'updated_at' => now()
                     ]);
-                
+
                 $unitId = DB::table('item_units')->insertGetId([
                     'name' => 'piece',
                     'code' => 'pc',
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);
-                
+
                 $itemId = DB::table('items')->insertGetId([
                     'item_classification_id' => $classificationId,
                     'item_category_id' => $categoryId,
@@ -405,10 +405,10 @@ class AopApplicationSeeder extends Seeder
             } else {
                 $itemId = $item->id;
             }
-            
+
             // Create or use sample Purchase Type
             $purchaseType = DB::table('purchase_types')->first();
-            
+
             if (!$purchaseType) {
                 $purchaseTypeId = DB::table('purchase_types')->insertGetId([
                     'description' => 'Sample Purchase Type',
@@ -419,11 +419,11 @@ class AopApplicationSeeder extends Seeder
             } else {
                 $purchaseTypeId = $purchaseType->id;
             }
-            
+
             // Set expense class and object category
             $expenseClass = $expenseClasses[array_rand($expenseClasses)];
             $objectCategories = ['Equipment', 'Supplies', 'Services', 'Infrastructure'];
-            
+
             // Create resource with correct fields
             Resource::create([
                 'activity_id' => $activity->id,
@@ -433,14 +433,14 @@ class AopApplicationSeeder extends Seeder
                 'object_category' => $objectCategories[array_rand($objectCategories)],
                 'quantity' => rand(1, 20)
             ]);
-            
+
             // Get valid division, department, section, unit, and designation IDs
             $divisionId = $user->assignedArea->division_id ?? Division::first()->id;
             $departmentId = $user->assignedArea->department_id ?? Department::first()->id;
             $sectionId = $user->assignedArea->section_id ?? Section::first()->id;
             $unitId = $user->assignedArea->unit_id ?? Unit::first()->id;
             $designationId = $user->assignedArea->designation_id ?? Designation::first()->id;
-            
+
             // Create responsible person (person in-charge)
             ResponsiblePerson::create([
                 'activity_id' => $activity->id,

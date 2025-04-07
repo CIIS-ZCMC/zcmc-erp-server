@@ -35,9 +35,9 @@ class ApplicationObjective extends Model
         return $this->hasMany(Activity::class);
     }
 
-    public function othersObjective()
+    public function otherObjective()
     {
-        return $this->hasOne(OthersObjective::class, 'application_objective_id');
+        return $this->hasOne(OtherObjective::class, 'application_objective_id');
     }
 
     public function successIndicator()
