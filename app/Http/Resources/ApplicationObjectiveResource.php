@@ -25,8 +25,8 @@ class ApplicationObjectiveResource extends JsonResource
                 $description = $this->functionObjective->objective->description ?? null;
 
                 // If description is "Others", combine with others_objective description
-                if ($description === 'Others' && $this->othersObjective) {
-                    return $description . ': ' . $this->othersObjective->description;
+                if ($description === 'Others' && $this->otherObjective) {
+                    return $description . ': ' . $this->otherObjective->description;
                 }
 
                 return $description;

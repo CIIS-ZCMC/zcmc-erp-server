@@ -71,7 +71,7 @@ class AopApplicationController extends Controller
             ->with([
                 'applicationObjectives.functionObjective.function',
                 'applicationObjectives.functionObjective.objective',
-                'applicationObjectives.othersObjective',
+                'applicationObjectives.otherObjective',
                 'applicationObjectives.activities.target',
                 'applicationObjectives.activities.resources',
                 'applicationObjectives.activities.responsiblePeople.user'
@@ -146,13 +146,13 @@ class AopApplicationController extends Controller
 
                 $applicationObjective = $aopApplication->applicationObjectives()->create([
                     'function_objective_id' => $functionObjective->id,
-                    'objective_code'       => $objectiveData['objective_code'],
-                    'success_indicator_id'  => $objectiveData['success_indicator_id'],
+                    'objective_code' => $objectiveData['objective_code'],
+                    'success_indicator_id' => $objectiveData['success_indicator_id'],
                 ]);
 
 
                 if ($applicationObjective->functionObjective->objective->description === 'Others' && isset($objectiveData['others_objective'])) {
-                    $applicationObjective->othersObjective()->create([
+                    $applicationObjective->otherObjective()->create([
                         'description' => $objectiveData['others_objective'],
                     ]);
                 }
