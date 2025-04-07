@@ -100,7 +100,7 @@ class AopApplicationController extends Controller
                     $activity->resources()->createMany($activityData['resources']);
 
 
-                    $activity->responsiblePeople()->createMany($activityData['responsible_people']);
+                    $activity->responsiblePeople()->createMany($activityData['responsible_person']);
                 }
             }
 
