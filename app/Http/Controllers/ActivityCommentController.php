@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Activity;
 use App\Models\ActivityComment;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
+use Illuminate\Support\Facades\Auth;
+
 
 #[OA\Info(
     title: "Activity Comments API",
@@ -110,8 +113,8 @@ class ActivityCommentController extends Controller
     public function index()
     {
         return ActivityComment::when(request('activity_id'), function ($query) {
-                $query->where('activity_id', request('activity_id'));
-            })
+            $query->where('activity_id', request('activity_id'));
+        })
             ->paginate(request('per_page', 15));
     }
 
@@ -150,7 +153,8 @@ class ActivityCommentController extends Controller
                             type: "object",
                             additionalProperties: new OA\Property(
                                 type: "array",
-                                items: new OA\Items(type: "string"))
+                                items: new OA\Items(type: "string")
+                            )
                         )
                     ]
                 )
@@ -165,11 +169,20 @@ class ActivityCommentController extends Controller
     {
         $validated = $request->validate([
             'activity_id' => 'required|integer|exists:activities,id',
-            'content' => 'required|string|max:500',
-            'user_id' => 'nullable|integer|exists:users,id'
+            'comment' => 'required|string|max:500',
         ]);
 
-        return ActivityComment::create($validated);
+        $activity = Activity::findOrFail($validated['activity_id']);
+        $activity->comments()->create([
+            'comment' => $validated['comment']
+        ]);
+
+        $comment = $activity->comments()->latest()->first();
+        
+        return response()->json([
+            'data' => $comment,
+            'message' => 'Comment added successfully'
+        ], 201);
     }
 
     #[OA\Get(
