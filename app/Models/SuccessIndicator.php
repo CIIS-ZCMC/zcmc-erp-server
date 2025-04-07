@@ -10,11 +10,12 @@ class SuccessIndicator extends Model
 
     public $fillable = [
         'code',
-        'description',
-        'deleted_at'
+        'description'
     ];
 
     public $timestamps = true;
+
+    protected $casts = ['deleted_at' => 'datetime'];
 
     // Uncomment once the Objective Success Indicators Models exist
     public function objectiveSuccessIndicators()
