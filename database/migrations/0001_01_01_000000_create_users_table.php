@@ -13,16 +13,6 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('designation_id')->nullable();
-            $table->foreign('designation_id')->references('id')->on('designations')->onDelete('set null');
-            $table->unsignedBigInteger('division_id')->nullable();
-            $table->foreign('division_id')->references('id')->on('divisions')->onDelete('set null');
-            $table->unsignedBigInteger('department_id')->nullable();
-            $table->foreign('department_id')->references('id')->on('departments')->onDelete('set null');
-            $table->unsignedBigInteger('section_id')->nullable();
-            $table->foreign('section_id')->references('id')->on('sections')->onDelete('set null');
-            $table->unsignedBigInteger('unit_id')->nullable();
-            $table->foreign('unit_id')->references('id')->on('units')->onDelete('set null');
             $table->string('umis_employee_profile_id')->nullable();
             $table->string('name');
             $table->string('email')->unique();

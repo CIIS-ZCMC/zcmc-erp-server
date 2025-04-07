@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('function_objective', function (Blueprint $table) {
+        Schema::create('function_objectives', function (Blueprint $table) {
             $table->id();
             $table->foreignId('type_of_function_id')->constrained()->cascadeOnDelete();
             $table->string('objective');

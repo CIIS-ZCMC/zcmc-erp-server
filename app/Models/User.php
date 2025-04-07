@@ -50,4 +50,9 @@ class User extends Authenticatable
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
     }
+
+    public function assignedArea()
+    {
+        return $this->hasOne(AssignedArea::class);
+    }
 }

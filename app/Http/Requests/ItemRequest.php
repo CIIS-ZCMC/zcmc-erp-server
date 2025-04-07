@@ -31,12 +31,16 @@ class ItemRequest extends FormRequest
             'items.*.item_unit_id' => 'nullable|int',
             'items.*.item_category_id' => 'nullable|int',
             'items.*.item_classification_id' => 'nullable|int',
+            'items.*.specifications' => ['array'],
+            'items.*.specifications.description' => 'required_with:items|string',
     
             'name' => 'required_without:items|string|max:255',
             'estimated_budget' => 'nullable|numeric',
             'item_unit_id' => 'required|int',     
             'item_category_id' => 'required|int',     
-            'item_classification_id' => 'required|int',     
+            'item_classification_id' => 'required|int',
+            'specifications' => ['array'],
+            'specifications.description' => 'required|string'     
         ];
     }
 }

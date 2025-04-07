@@ -2,160 +2,381 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\MetadataComposerHelper;
+use App\Helpers\PaginationHelper;
+use App\Http\Requests\GetObjectiveSuccessIndicatorRequest;
+use App\Http\Requests\GetWithPaginatedSearchModeRequest;
 use App\Http\Resources\ObjectiveSuccessIndicatorResource;
 use App\Models\Objective;
 use App\Models\ObjectiveSuccessIndicator;
 use App\Models\SuccessIndicator;
+use App\Models\Target;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Ramsey\Uuid\Type\Integer;
 use Symfony\Component\HttpFoundation\Response;
+use OpenApi\Attributes as OA;
 
+#[OA\Schema(
+    schema: "ActivityComment",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "activity_id", type: "integer"),
+        new OA\Property(property: "user_id", type: "integer", nullable: true),
+        new OA\Property(property: "content", type: "string"),
+        new OA\Property(
+            property: "created_at",
+            type: "string",
+            format: "date-time"
+        ),
+        new OA\Property(
+            property: "updated_at",
+            type: "string",
+            format: "date-time"
+        )
+    ]
+)]
 class ObjectiveSuccessIndicatorController extends Controller
 {
-    
-    public function index(Request $request)
-    {
-        $objective_success_indicator = ObjectiveSuccessIndicator::where('deleted_at', NULL)->get();
+    private $is_development;
 
-        return response()->json([
-            "data" => ObjectiveSuccessIndicatorResource::collection($objective_success_indicator),
-            "metadata" => [
-                "methods" => ["GET, POST, PUT, DELETE"]
-            ]
-        ], Response::HTTP_OK);
+    private $module = 'objective-success-indicators';
+
+    private $methods = '[GET, POST, PUT, DELETE]';
+
+    public function __construct()
+    {
+        $this->is_development = env("APP_DEBUG", true);
+    }
+
+    public function search(Request $request):AnonymousResourceCollection
+    {
+        $start = microtime(true);
+        
+        $validated = $request->validate([
+            'search' => 'required|string|min:2|max:100',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
+        
+        $searchTerm = '%'.trim($validated['search']).'%';
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
+
+        $results = ObjectiveSuccessIndicator::whereHas('objective', fn($q) => $q->where('code', 'like', "%{$searchTerm}%")
+                ->orWhere('description', 'like', "%{$searchTerm}%"))
+            ->orWhereHas('successIndicator', fn($q) => $q->where('code', 'like', "%{$searchTerm}%")
+                ->orWhere('description', 'like', "%{$searchTerm}%"))
+            ->with(['objective', 'successIndicator'])
+            ->paginate(
+                perPage: $perPage,
+                page: $page
+            );
+
+        return ObjectiveSuccessIndicatorResource::collection($results)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'search' => [
+                        'term' => $validated['search'],
+                        'time_ms' => round((microtime(true) - $start) * 1000), // in milliseconds
+                    ],
+                    'pagination' => [
+                        'total' => $results->total(),
+                        'per_page' => $results->perPage(),
+                        'current_page' => $results->currentPage(),
+                        'last_page' => $results->lastPage(),
+                    ]
+                ],
+                'message' => 'Search completed successfully'
+            ]);
+    }
+
+    public function all()
+    {
+        $start = microtime(true);
+
+        $objective_success_indicator = ObjectiveSuccessIndicator::with(['objective', 'successIndicator'])->get();
+
+        return ObjectiveSuccessIndicatorResource::collection($objective_success_indicator)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }
+
+    public function pagination(Request $request)
+    {
+        $start = microtime(true);
+        
+        $validated = $request->validate([
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
+
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
+
+        $objective_success_indicator = ObjectiveSuccessIndicator::with(['objective', 'successIndicator'])
+            ->paginate(
+                perPage: $perPage,
+                page: $page
+            );
+
+        return ObjectiveSuccessIndicatorResource::collection($objective_success_indicator)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    'pagination' => [
+                        'total' => $objective_success_indicator->total(),
+                        'per_page' => $objective_success_indicator->perPage(),
+                        'current_page' => $objective_success_indicator->currentPage(),
+                        'last_page' => $objective_success_indicator->lastPage(),
+                    ]
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }  
+    
+    protected function singleRecord($objective_success_indicator_id, $start):JsonResponse
+    {
+        $objectiveSuccessIndicator = ObjectiveSuccessIndicator::find($objective_success_indicator_id);
+            
+        if (!$objectiveSuccessIndicator) {
+            return response()->json(["message" => "Item unit not found."], Response::HTTP_NOT_FOUND);
+        }
+    
+        return (new ObjectiveSuccessIndicatorResource($objectiveSuccessIndicator))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000)
+                ],
+                "message" => "Successfully retrieved record."
+            ])->response();
+    }
+
+    #[OA\Get(
+        path: "/api/activity-comments",
+        summary: "List all activity comments",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "per_page",
+                in: "query",
+                description: "Items per page",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 15)
+            ),
+            new OA\Parameter(
+                name: "page",
+                in: "query",
+                description: "Page number",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 1)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Successful operation",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/ActivityComment")
+                )
+            )
+        ]
+    )]
+    public function index(GetWithPaginatedSearchModeRequest $request): JsonResponse|AnonymousResourceCollection
+    {
+        $start = microtime(true);
+        $objective_success_indicator_id = $request->query('id');
+        $search = $request->search;
+        $mode = $request->mode;
+
+        if($objective_success_indicator_id){
+            return $this->singleRecord($objective_success_indicator_id, $start);
+        }
+
+        if($mode && $mode === 'selection'){
+            return $this->all();
+        }
+        
+        if($search){
+            return $this->search($request);
+        }
+
+        return $this->pagination($request);
+    }
+
+    protected function doesObjectiveExist(Integer $objective_id): bool
+    {
+        return Objective::where('id', $objective_id)->exists();
+    }
+
+    protected function doesSuccessIndicatorExist(Integer $success_indicator_id): bool
+    {
+        return SuccessIndicator::where('id', $success_indicator_id)->exists();
+    }
+
+    protected function registerOSIWithoutExistingSuccessIndicator(Integer $objective_id, $success_indicator): ObjectiveSuccessIndicator
+    {
+        if(!$this->doesObjectiveExist($objective_id)){
+            return response()->json(['message' => "Data of objective doesn't exist."], Response::HTTP_NOT_FOUND);
+        }
+
+        $new_success_indicator = SuccessIndicator::create($success_indicator);
+
+        return ObjectiveSuccessIndicator::create([
+            'objective_id' => $objective_id,
+            'success_indicator_id' => $new_success_indicator->id
+        ]);
+    }
+
+    protected function registerOSIWithoutExistingObjective(Integer $success_indicator_id, $objective): ObjectiveSuccessIndicator
+    {
+        if(!$this->doesSuccessIndicatorExist($success_indicator_id)){
+            return response()->json(['message' => "Data of success indicator doesn't exist."], Response::HTTP_NOT_FOUND);
+        }
+
+        $new_objective = Objective::create($objective);
+
+        return ObjectiveSuccessIndicator::create([
+            'objective_id' => $new_objective->id,
+            'success_indicator_id' => $success_indicator_id
+        ]);
     }
 
     /**
-     * This function handles registration of 
+     * Registration of Objective Success Indicator (OSI)
+     * 
+     * 1. [Objective] and [SuccessIndicator] can Exist so registration can be base on objective_id and success_indicator_id. (COMPLETE)
+     * 2. [Objective] exist [SuccessIndicator] not, registration will be base on objective_id and success indicator data.
+     * 3. [SuccessIndicator] exist [Objective] not, registration will be base on success_indicator_id and objective data.
+     * 4. [SuccessIndicator] and Objective may not exist, registration will base on success indicator dat and objective data
+     * 
+     * To deliver a flexible single registration of data.
+     * Body Structure: 
      * {
-     *    objective_id: 1, //optional
-     *    objective_description: "value" //optional,
-     *    objective_code: "value //optional,
-     *    success_indicators: [
-     *      {
-     *          success_indicator_id: 1 // optional,
-     *          success_indicator_description: "value" // optional,
-     *          success_indicator_code: "value" //optional
-     *      }  
-     *    ]
+     *  objective_id: primary_key // optional
+     *  success_indicator: primary_key // optional
+     *  objective: {
+     *      code: code_value // optional
+     *      description: description_value // required
+     *  },
+     *  success_indicator: {
+     *      code: code_value // optional
+     *      description: description_value // required
+     *  }
      * }
      */
+
+    #[OA\Post(
+        path: "/api/activity-comments",
+        summary: "Create a new activity comment",
+        tags: ["Activity Comments"],
+        requestBody: new OA\RequestBody(
+            description: "Comment data",
+            required: true,
+            content: new OA\JsonContent(
+                required: ["activity_id", "content"],
+                properties: [
+                    new OA\Property(property: "activity_id", type: "integer"),
+                    new OA\Property(property: "content", type: "string"),
+                    new OA\Property(property: "user_id", type: "integer", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_CREATED,
+                description: "Comment created",
+                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: "Validation error"
+            )
+        ]
+    )]
     public function store(Request $request):Response
     {
         $objective_id = $request->objective_id;
-        $objective_code = $request->objective_code;
-        $objective_description = $request->objective_description;
-        $success_indicators_param = $request->success_indicators;
+        $success_indicator_id = $request->success_indicator_id;
+        $objective = $request->objective;
+        $success_indicator = $request->success_indicator;
+        $new_objective_success_indicator = null;
 
-        if($objective_id !== null){
-            $objective = Objective::find($objective_id);
+        // Both Primary key is given
+        if($objective_id && $success_indicator_id){
 
-            if(!$objective){
-                return response()->json(["message" => "Objective not found"], Response::HTTP_UNPROCESSABLE_ENTITY);
+            if(!($this->doesObjectiveExist($objective_id) || $this->doesSuccessIndicatorExist($success_indicator_id))){
+                return response()->json(['message' => "Data of objective/success indicator doesn't exist."], Response::HTTP_NOT_FOUND);
             }
-
-            $objective_success_indicators = [];
-
-            foreach($success_indicators_param as $success_indicator)
-            {
-                // Both objective_id and success_indicator_id specified
-                if(!$success_indicator['success_indicator_id']){
-                    $success_indicator_data = SuccessIndicator::find($success_indicator['success_indicator_id']);
-
-                    if(!$success_indicator_data){
-                        return response()->json(["message" => "Success indicator not found"], Response::HTTP_UNPROCESSABLE_ENTITY);
-                    }
-
-                    $new_objective_success_indicator = ObjectiveSuccessIndicator::create([
-                        "objective_id" => $objective_id,
-                        "success_indicator_id" => $success_indicator['success_indicator_id']
-                    ]);
-
-                    $objective_success_indicators[] = $new_objective_success_indicator;
-                    continue;
-                }
-
-                if(!$success_indicator['success_indicator_code']){
-                    return response()->json(["message" => "Success indicator id or code is required."], Response::HTTP_UNPROCESSABLE_ENTITY);
-                }
-
-                $new_success_indicator = SuccessIndicator::create([
-                    "code" => $success_indicator['code'],
-                    "description" => $success_indicator['description'] !== null? strip_tags($success_indicator['description']): null
-                ]);
-
-                $new_objective_success_indicator = ObjectiveSuccessIndicator::create([
-                    "objective_id" => $objective_id,
-                    "success_indicator_id" => $new_success_indicator->id
-                ]);
-
-                $objective_success_indicators[] = $new_objective_success_indicator;
-            }
-        
-            return response()->json([
-                "data" => ObjectiveSuccessIndicatorResource::collection($objective_success_indicators),
-                "metadata" => [
-                    "methods" => ["GET, POST, DELETE"]
-                ]
-            ], Response::HTTP_CREATED);
-        }
-
-        if(!$objective_code){
-            return response()->json(["message" => "Objective code is required."], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-
-        $new_objective = Objective::create([
-            "code" => $objective_code,
-            "description" => $objective_description !== null? strip_tags($objective_description): null
-        ]);
-
-        $objective_success_indicators = [];
-
-        foreach($success_indicators_param as $success_indicator)
-        {
-            // Both objective_id and success_indicator_id specified
-            if(!$success_indicator['success_indicator_id']){
-                $success_indicator_data = SuccessIndicator::find($success_indicator['success_indicator_id']);
-
-                if(!$success_indicator_data){
-                    return response()->json(["message" => "Success indicator not found"], Response::HTTP_UNPROCESSABLE_ENTITY);
-                }
-
-                $new_objective_success_indicator = ObjectiveSuccessIndicator::create([
-                    "objective_id" => $new_objective->id,
-                    "success_indicator_id" => $success_indicator['success_indicator_id']
-                ]);
-
-                $objective_success_indicators[] = $new_objective_success_indicator;
-                continue;
-            }
-
-            if(!$success_indicator['success_indicator_code']){
-                return response()->json(["message" => "Success indicator id or code is required."], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            $new_success_indicator = SuccessIndicator::create([
-                "code" => $success_indicator['code'],
-                "description" => $success_indicator['description'] !== null? strip_tags($success_indicator['description']): null
+            
+            $new_objective_success_indicator = ObjectiveSuccessIndicator::create([
+                'objective_id' => $objective_id,
+                'success_indicator_id' => $success_indicator_id
             ]);
+        }
+
+        if($objective_id && $success_indicator){
+
+            $new_objective_success_indicator = $this->registerOSIWithoutExistingSuccessIndicator($objective_id, $success_indicator);
+        }
+
+        if($success_indicator_id && $objective){
+
+            $new_objective_success_indicator = $this->registerOSIWithoutExistingSuccessIndicator($objective_id, $success_indicator);
+        }
+
+        if($success_indicator && $objective){
+            $new_objective = Objective::create($objective);
+            $new_success_indicator = SuccessIndicator::create($success_indicator);
 
             $new_objective_success_indicator = ObjectiveSuccessIndicator::create([
-                "objective_id" => $new_objective->id,
-                "success_indicator_id" => $new_success_indicator->id
+                'objective_id' => $new_objective->id,
+                'success_indicator_id' => $new_success_indicator->id
             ]);
-
-            $objective_success_indicators[] = $new_objective_success_indicator;
         }
         
         return response()->json([
-            "data" => ObjectiveSuccessIndicatorResource::collection($objective_success_indicators),
+            "data" => new ObjectiveSuccessIndicatorResource($new_objective_success_indicator),
             "metadata" => [
                 "methods" => ["GET, POST, DELETE"]
             ]
         ], Response::HTTP_CREATED);
     }
 
-    public function destroy(Request $request, ObjectiveSuccessIndicator $objectiveSuccessIndicator)
+    #[OA\Delete(
+        path: "/api/activity-comments/{id}",
+        summary: "Delete an activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_NO_CONTENT,
+                description: "Comment deleted"
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]    public function destroy(Request $request, ObjectiveSuccessIndicator $objectiveSuccessIndicator)
     {
         $objectiveSuccessIndicator->update(['deleted_at' => now()]);
 

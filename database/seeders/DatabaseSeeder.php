@@ -18,7 +18,11 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ItemCategorySeeder::class,
             TypeOfFunctionSeeder::class,
-            AopApplicationSeeder::class,
+            AopApplicationSeeder::class,     
+            ItemUnitSeeder::class,
+            ObjectiveSeeder::class,
+            SuccessIndicatorSeeder::class,
+            ObjectiveSuccessIndicatorSeeder::class
         ]);
     }
 }

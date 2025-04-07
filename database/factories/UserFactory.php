@@ -24,11 +24,6 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'designation_id' => null, // Will be set in the seeder if needed
-            'division_id' => null,
-            'department_id' => null,
-            'section_id' => null,
-            'unit_id' => null,
             'umis_employee_profile_id' => 'EMP' . fake()->unique()->randomNumber(5, true),
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
