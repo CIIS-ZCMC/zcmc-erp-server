@@ -9,6 +9,7 @@ class ItemCategory extends Model
     protected $table = "item_categories";
 
     public $fillable = [
+        "parent_id",
         "name",
         "code",
         "description",
