@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FunctionObjective;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(

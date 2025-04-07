@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AopApplication;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -29,7 +30,7 @@ class AopApplicationController extends Controller
 {
 
     #[OA\Get(
-        path: "/api/activity-comments",
+        path: "/api/aop-applications",
         summary: "List all activity comments",
         tags: ["Activity Comments"],
         parameters: [
@@ -65,7 +66,7 @@ class AopApplicationController extends Controller
     }
 
     #[OA\Post(
-        path: "/api/activity-comments",
+        path: "/api/aop-applications",
         summary: "Create a new activity comment",
         tags: ["Activity Comments"],
         requestBody: new OA\RequestBody(
@@ -98,7 +99,7 @@ class AopApplicationController extends Controller
     }
 
     #[OA\Get(
-        path: "/api/activity-comments/{id}",
+        path: "/api/aop-applications/{id}",
         summary: "Show specific activity comment",
         tags: ["Activity Comments"],
         parameters: [
@@ -128,7 +129,7 @@ class AopApplicationController extends Controller
     }
 
     #[OA\Put(
-        path: "/api/activity-comments/{id}",
+        path: "/api/aop-applications/{id}",
         summary: "Update an activity comment",
         tags: ["Activity Comments"],
         parameters: [
@@ -171,7 +172,7 @@ class AopApplicationController extends Controller
     }
 
     #[OA\Delete(
-        path: "/api/activity-comments/{id}",
+        path: "/api/aop-applications/{id}",
         summary: "Delete an activity comment",
         tags: ["Activity Comments"],
         parameters: [

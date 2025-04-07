@@ -41,6 +41,41 @@ class ItemCategoryController extends Controller
         $this->is_development = env("APP_DEBUG", true);
     }
     
+    #[OA\Get(
+        path: '/api/item-categories/template',
+        summary: 'Download CSV template for log descriptions',
+        description: 'Returns a CSV template file with example log description entries',
+        tags: ['Log Descriptions'],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: 'CSV template file download',
+                content: new OA\MediaType(
+                    mediaType: 'text/csv',
+                    schema: new OA\Schema(
+                        type: 'string',
+                        format: 'binary'
+                    )
+                ),
+                headers: [
+                    new OA\Header(
+                        header: 'Content-Disposition',
+                        description: 'Attachment with filename',
+                        schema: new OA\Schema(type: 'string'))
+                ]
+            ),
+            new OA\Response(
+                response: Response::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string')
+                    ],
+                    example: ['message' => 'Could not generate template file']
+                )
+            )
+        ]
+    )]
     public function downloadTemplate()
     {
         $headers = [

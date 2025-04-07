@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Activity;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 
 
@@ -29,9 +30,9 @@ use OpenApi\Attributes as OA;
 class ActivityController extends Controller
 {
     #[OA\Get(
-        path: "/api/activity-comments",
+        path: "/api/activities",
         summary: "List all activity comments",
-        tags: ["Activity Comments"],
+        tags: ["Activity"],
         parameters: [
             new OA\Parameter(
                 name: "per_page",
@@ -65,7 +66,7 @@ class ActivityController extends Controller
     }
 
     #[OA\Post(
-        path: "/api/activity-comments",
+        path: "/api/activities",
         summary: "Create a new activity comment",
         tags: ["Activity Comments"],
         requestBody: new OA\RequestBody(
@@ -98,7 +99,7 @@ class ActivityController extends Controller
     }
 
     #[OA\Get(
-        path: "/api/activity-comments/{id}",
+        path: "/api/activities/{id}",
         summary: "Show specific activity comment",
         tags: ["Activity Comments"],
         parameters: [
@@ -128,7 +129,7 @@ class ActivityController extends Controller
     }
 
     #[OA\Put(
-        path: "/api/activity-comments/{id}",
+        path: "/api/activities/{id}",
         summary: "Update an activity comment",
         tags: ["Activity Comments"],
         parameters: [
@@ -171,7 +172,7 @@ class ActivityController extends Controller
     }
 
     #[OA\Delete(
-        path: "/api/activity-comments/{id}",
+        path: "/api/activities/{id}",
         summary: "Delete an activity comment",
         tags: ["Activity Comments"],
         parameters: [

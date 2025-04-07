@@ -55,38 +55,23 @@ class LogDescriptionController extends Controller
                     schema: new OA\Schema(
                         type: 'string',
                         format: 'binary'
-                    ),
-                    headers: [
-                        new OA\Header(
-                            header: 'Content-Disposition',
-                            description: 'Attachment with filename',
-                            schema: new OA\Schema(
-                                type: 'string',
-                                example: 'attachment; filename="log_descriptions_template.csv"'
-                            )
-                        ),
-                        new OA\Header(
-                            header: 'Content-Type',
-                            description: 'MIME type',
-                            schema: new OA\Schema(
-                                type: 'string',
-                                example: 'text/csv'
-                            )
-                        )
-                    ]
-                )
+                    )
+                ),
+                headers: [
+                    new OA\Header(
+                        header: 'Content-Disposition',
+                        description: 'Attachment with filename',
+                        schema: new OA\Schema(type: 'string'))
+                ]
             ),
             new OA\Response(
                 response: Response::HTTP_INTERNAL_SERVER_ERROR,
                 description: 'Server error',
                 content: new OA\JsonContent(
                     properties: [
-                        new OA\Property(
-                            property: 'message',
-                            type: 'string',
-                            example: 'Could not generate template file'
-                        )
-                    ]
+                        new OA\Property(property: 'message', type: 'string')
+                    ],
+                    example: ['message' => 'Could not generate template file']
                 )
             )
         ]
