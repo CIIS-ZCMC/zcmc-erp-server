@@ -194,8 +194,7 @@ class ItemUnitController extends Controller
                 ],
                 'message' => 'Successfully retrieve all records.'
             ]);
-    }
-    
+    }    
     protected function singleRecord($item_unit_id, $start):JsonResponse
     {
         $itemUnit = ItemUnit::find($item_unit_id);

@@ -10,26 +10,16 @@ class Objective extends Model
 
     protected $fillable = [
         'code',
-        'description',
-        'deleted_at'
+        'description'
     ];
 
     public $timestamps = true;
 
-    // Uncomment this if FunctionObjective Exist.
+    protected $casts = ['deleted_at' => 'datetime'];
+
     public function functionObjectives()
     {
         return $this->hasMany(FunctionObjective::class);
-    }
-
-    public function objectiveSuccessIndicators()
-    {
-        return $this->hasMany(ObjectiveSuccessIndicator::class);
-    }
-    
-    public function otherObjective()
-    {
-        return $this->hasOne(OtherObjective::class, 'application_objective_id');
     }
 
     public function logs()
