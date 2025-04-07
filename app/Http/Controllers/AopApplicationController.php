@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
+use App\Http\Resources\ShowAopApplicationResource;
 use App\Models\AopApplication;
 use App\Models\FunctionObjective;
 use Illuminate\Http\Request;
@@ -216,7 +217,17 @@ class AopApplicationController extends Controller
     )]
     public function show(AopApplication $aopApplication)
     {
-        //
+        $aopApplication->load([
+            'user',
+            'divisionChief',
+            'mccChief',
+            'planningOfficer',
+            'applicationObjectives',
+            'applicationObjectives.functionObjective',
+            'applicationObjectives.activities'
+        ]);
+
+        return new ShowAopApplicationResource($aopApplication);
     }
 
     #[OA\Put(

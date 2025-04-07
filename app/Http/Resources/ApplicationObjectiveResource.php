@@ -17,23 +17,9 @@ class ApplicationObjectiveResource extends JsonResource
         return [
             'id' => $this->id,
             'objective_code' => $this->objective_code,
-            'function_type' => $this->whenLoaded('functionObjective', function () {
-                return $this->functionObjective->function->type ?? null; // Get type from functions table
-            }),
-            'objective_description' => $this->whenLoaded('functionObjective', function () {
-                // Get the objective description
-                $description = $this->functionObjective->objective->description ?? null;
-
-                // If description is "Others", combine with others_objective description
-                if ($description === 'Others' && $this->otherObjective) {
-                    return $description . ': ' . $this->otherObjective->description;
-                }
-
-                return $description;
-            }),
-            'success_indicator_description' => $this->whenLoaded('successIndicator', function () {
-                return $this->successIndicator->description ?? null;
-            }),
+            'function_type' => $this->functionObjective->typeOfFunction->type ?? null,
+            'objective_description' => $this->functionObjective->objective,
+            'success_indicator_description' => $this->successIndicator->description ?? null,
             'activities' => ActivityResource::collection($this->whenLoaded('activities')),
         ];
     }
