@@ -72,11 +72,10 @@ class PpmpApplicationController extends Controller
         //paginate display 10 data per page
         $ppmp_application = PpmpApplication::whereNull('deleted_at')->paginate(10);
 
-        if ($ppmp_application->isEmpty()) {
+        if (!$ppmp_application) {
             return response()->json([
                 'message' => "No record found.",
-                "metadata" => $this->getMetadata('get')
-            ], Response::HTTP_OK);
+            ], Response::HTTP_NOT_FOUND);
         }
 
         return response()->json([
@@ -87,7 +86,7 @@ class PpmpApplicationController extends Controller
                 'per_page' => $ppmp_application->perPage(),
                 'total' => $ppmp_application->total(),
             ],
-            'message' => $this->getMetadata('get'),
+            // 'message' => $this->getMetadata('get'),
         ], Response::HTTP_OK);
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PpmpItemRequest;
 use App\Http\Resources\PpmpItemResource;
 use App\Models\AopApplication;
 use App\Models\PpmpItem;
@@ -68,7 +69,7 @@ class PpmpItemController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index()
     {
         //paginate display 10 data per page
         $ppmp_item = PpmpItem::whereNull('deleted_at')->paginate(10);
@@ -77,7 +78,7 @@ class PpmpItemController extends Controller
             return response()->json([
                 'message' => "No record found.",
                 "metadata" => $this->getMetadata('get')
-            ]);
+            ], Response::HTTP_NOT_FOUND);
         }
 
         return response()->json([
@@ -89,7 +90,7 @@ class PpmpItemController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(PpmpItemRequest $request)
     {
         //
     }
