@@ -6,7 +6,6 @@ use App\Helpers\PaginationHelper;
 use App\Http\Requests\GetWithPaginatedSearchModeRequest;
 use App\Http\Requests\ItemUnitGetRequest;
 use App\Http\Requests\ItemUnitRequest;
-use App\Http\Resources\ItemRequestResource;
 use App\Http\Resources\ItemUnitResource;
 use App\Imports\ItemUnitsImport;
 use App\Models\ItemUnit;
@@ -18,7 +17,25 @@ use Maatwebsite\Excel\Excel;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 
-#[OA\Info(title: "Laravel 11 API", version: "1.0")]
+#[OA\Schema(
+    schema: "ActivityComment",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "activity_id", type: "integer"),
+        new OA\Property(property: "user_id", type: "integer", nullable: true),
+        new OA\Property(property: "content", type: "string"),
+        new OA\Property(
+            property: "created_at",
+            type: "string",
+            format: "date-time"
+        ),
+        new OA\Property(
+            property: "updated_at",
+            type: "string",
+            format: "date-time"
+        )
+    ]
+)]
 class ItemUnitController extends Controller
 {
     private $is_development;
@@ -302,7 +319,75 @@ class ItemUnitController extends Controller
         
         return response()->stream($callback, 200, $headers);
     }
-
+    
+    #[OA\Post(
+        path: '/api/import',
+        summary: 'Import item units from Excel/CSV file',
+        requestBody: new OA\RequestBody(
+            description: 'Excel/CSV file containing item units',
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(
+                            property: 'file',
+                            type: 'string',
+                            format: 'binary',
+                            description: 'Excel file (xlsx, xls, csv)'
+                        )
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Successful import',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(property: 'success_count', type: 'integer'),
+                        new OA\Property(property: 'failure_count', type: 'integer'),
+                        new OA\Property(
+                            property: 'failures',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'row', type: 'integer'),
+                                    new OA\Property(property: 'errors', type: 'array', items: new OA\Items(type: 'string'))
+                                ]
+                            )
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            additionalProperties: new OA\Property(type: 'array', items: new OA\Items(type: 'string')))
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 500,
+                description: 'Server error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(property: 'error', type: 'string')
+                    ]
+                )
+            )
+        ],
+        tags: ['Item Units']
+    )]
     public function import(Request $request)
     {
         $request->validate([
@@ -408,6 +493,145 @@ class ItemUnitController extends Controller
             ]);
     }
 
+    #[OA\Post(
+        path: '/api/item-units',
+        summary: 'Create item unit(s) - single or bulk',
+        requestBody: new OA\RequestBody(
+            description: 'Item unit data',
+            required: true,
+            content: new OA\JsonContent(
+                oneOf: [
+                    new OA\Schema(
+                        properties: [
+                            new OA\Property(
+                                property: 'name',
+                                type: 'string',
+                                example: 'Piece'
+                            ),
+                            new OA\Property(
+                                property: 'code',
+                                type: 'string',
+                                example: 'PC'
+                            ),
+                            new OA\Property(
+                                property: 'description',
+                                type: 'string',
+                                example: 'Individual pieces',
+                                nullable: true
+                            )
+                        ]
+                    ),
+                    new OA\Schema(
+                        properties: [
+                            new OA\Property(
+                                property: 'item_units',
+                                type: 'array',
+                                items: new OA\Items(
+                                    properties: [
+                                        new OA\Property(
+                                            property: 'name',
+                                            type: 'string'
+                                        ),
+                                        new OA\Property(
+                                            property: 'code',
+                                            type: 'string'
+                                        ),
+                                        new OA\Property(
+                                            property: 'description',
+                                            type: 'string',
+                                            nullable: true
+                                        )
+                                    ]
+                                ),
+                                minItems: 2
+                            )
+                        ]
+                    )
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 201,
+                description: 'Successfully stored item unit(s)',
+                content: new OA\JsonContent(
+                    oneOf: [
+                        new OA\Schema(
+                            properties: [
+                                new OA\Property(
+                                    property: 'data',
+                                    ref: '#/components/schemas/ItemUnit'
+                                ),
+                                new OA\Property(
+                                    property: 'meta',
+                                    properties: [
+                                        new OA\Property(
+                                            property: 'methods',
+                                            type: 'array',
+                                            items: new OA\Items(type: 'string')
+                                        ),
+                                        new OA\Property(
+                                            property: 'time_ms',
+                                            type: 'integer'
+                                        )
+                                    ]
+                                ),
+                                new OA\Property(
+                                    property: 'message',
+                                    type: 'string'
+                                )
+                            ]
+                        ),
+                        new OA\Schema(
+                            properties: [
+                                new OA\Property(
+                                    property: 'data',
+                                    type: 'array',
+                                    items: new OA\Items(ref: '#/components/schemas/ItemUnit')
+                                ),
+                                new OA\Property(
+                                    property: 'meta',
+                                    properties: [
+                                        new OA\Property(
+                                            property: 'methods',
+                                            type: 'array',
+                                            items: new OA\Items(type: 'string')
+                                        ),
+                                        new OA\Property(
+                                            property: 'time_ms',
+                                            type: 'integer'
+                                        )
+                                    ]
+                                ),
+                                new OA\Property(
+                                    property: 'message',
+                                    type: 'string'
+                                )
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            additionalProperties: new OA\Property(
+                                type: 'array',
+                                items: new OA\Items(type: 'string')
+                            )
+                        )
+                    ]
+                )
+            )
+        ],
+        tags: ['Item Units']
+    )]
     public function store(ItemUnitRequest $request): ItemUnitResource|AnonymousResourceCollection|JsonResponse
     {
         $start = microtime(true);
@@ -435,7 +659,122 @@ class ItemUnitController extends Controller
                 "message" => "Successfully store data."
             ])->response();
     }
-    
+
+    #[OA\Put(
+        path: '/api/item-units',
+        summary: 'Update item unit(s)',
+        description: 'Updates one or multiple item units. Requires ID parameter in query string.',
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'query',
+                description: 'Comma-separated list of item unit IDs',
+                required: true,
+                schema: new OA\Schema(
+                    type: 'string',
+                    example: '1,2,3'
+                )
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            description: 'Item unit update data',
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(
+                        property: 'name',
+                        type: 'string',
+                        example: 'Updated Unit Name',
+                        nullable: true
+                    ),
+                    new OA\Property(
+                        property: 'code',
+                        type: 'string',
+                        example: 'UPD',
+                        nullable: true
+                    ),
+                    new OA\Property(
+                        property: 'description',
+                        type: 'string',
+                        example: 'Updated description',
+                        nullable: true
+                    )
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: 'Successfully updated item unit(s)',
+                content: new OA\JsonContent(
+                    oneOf: [
+                        new OA\Schema(ref: '#/components/schemas/ItemUnitResource'),
+                        new OA\Schema(
+                            properties: [
+                                new OA\Property(
+                                    property: 'data',
+                                    type: 'array',
+                                    items: new OA\Items(ref: '#/components/schemas/ItemUnitResource')
+                                )
+                            ]
+                        )
+                    ],
+                    example: [
+                        'data' => [
+                            'id' => 1,
+                            'name' => 'Updated Unit',
+                            'code' => 'UPD',
+                            'description' => 'Updated description'
+                        ],
+                        'meta' => [
+                            'methods' => ['PUT'],
+                            'time_ms' => 25
+                        ],
+                        'message' => 'Successfully updated record'
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'message',
+                            type: 'string',
+                            example: 'ID parameter is required.'
+                        ),
+                        new OA\Property(
+                            property: 'meta',
+                            type: 'object',
+                            nullable: true,
+                            properties: [
+                                new OA\Property(
+                                    property: 'endpoint',
+                                    type: 'string',
+                                    example: 'PUT /api/item-units'
+                                )
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: 'Item unit not found',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(
+                            property: 'message',
+                            type: 'string',
+                            example: 'Item unit not found.'
+                        )
+                    ]
+                )
+            )
+        ],
+        tags: ['Item Units']
+    )]
     public function update(Request $request): ItemUnitResource|AnonymousResourceCollection|JsonResponse
     {
         $start = microtime(true);
@@ -455,6 +794,144 @@ class ItemUnitController extends Controller
         return $this->singleRecordUpdate($request, $start);
     }
 
+    #[OA\Delete(
+        path: '/api/item-units',
+        summary: 'Delete item unit(s)',
+        description: 'Deletes one or multiple item units by ID or query parameters',
+        parameters: [
+            new OA\Parameter(
+                name: 'id',
+                in: 'query',
+                description: 'Single ID or comma-separated list of IDs',
+                required: false,
+                schema: new OA\Schema(
+                    oneOf: [
+                        new OA\Schema(type: 'integer', example: 1),
+                        new OA\Schema(type: 'string', example: '1,2,3')
+                    ]
+                )
+            ),
+            new OA\Parameter(
+                name: 'query',
+                in: 'query',
+                description: 'JSON query for filtering (use with caution)',
+                required: false,
+                schema: new OA\Schema(type: 'string', example: '{"code":"PC"}')
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: 'Successful deletion',
+                content: new OA\JsonContent(
+                    oneOf: [
+                        new OA\Schema(
+                            properties: [
+                                new OA\Property(property: 'message', type: 'string'),
+                                new OA\Property(
+                                    property: 'deleted_ids',
+                                    type: 'array',
+                                    items: new OA\Items(type: 'integer'))
+                            ],
+                            example: [
+                                'message' => 'Successfully deleted 3 item unit(s).',
+                                'deleted_ids' => [1, 2, 3]
+                            ]
+                        ),
+                        new OA\Schema(
+                            properties: [
+                                new OA\Property(property: 'message', type: 'string'),
+                                new OA\Property(property: 'deleted_id', type: 'integer')
+                            ],
+                            example: [
+                                'message' => 'Successfully deleted item unit.',
+                                'deleted_id' => 1
+                            ]
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: Response::HTTP_BAD_REQUEST,
+                description: 'Invalid ID format',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string')
+                    ],
+                    example: [
+                        'message' => 'Invalid ID format provided.'
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: 'No items found',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string')
+                    ],
+                    example: [
+                        'message' => 'No active item units found with the provided IDs.'
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: Response::HTTP_CONFLICT,
+                description: 'Query matches multiple records',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(property: 'suggestion', type: 'string'),
+                        new OA\Property(
+                            property: 'data',
+                            type: 'array',
+                            items: new OA\Items(ref: '#/components/schemas/ItemUnit')
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(
+                            property: 'meta',
+                            type: 'object',
+                            nullable: true,
+                            properties: [
+                                new OA\Property(property: 'endpoint', type: 'string')
+                            ]
+                        )
+                    ],
+                    examples: [
+                        'production' => [
+                            'value' => [
+                                'message' => 'Invalid request.'
+                            ]
+                        ],
+                        'development' => [
+                            'value' => [
+                                'message' => 'No parameters found.',
+                                'meta' => [
+                                    'endpoint' => 'DELETE /api/item-units'
+                                ]
+                            ]
+                        ]
+                    ]
+                )
+            )
+        ],
+        tags: ['Item Units'],
+        security: [
+            new OA\SecurityScheme(
+                securityScheme: 'bearerAuth',
+                type: 'http',
+                scheme: 'bearer'
+            )
+        ]
+    )]
     public function destroy(Request $request): Response
     {
         $item_unit_ids = $request->query('id') ?? null;
