@@ -6,6 +6,7 @@ use App\Http\Requests\PpmpApplicationRequest;
 use App\Http\Resources\PpmpApplicationResource;
 use App\Models\AopApplication;
 use App\Models\PpmpApplication;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
@@ -168,7 +169,14 @@ class PpmpApplicationController extends Controller
     )]
     public function store(PpmpApplicationRequest $request)
     {
-        $budget_officer_id = null;
+        $budget_officer_id = User::budgetOfficer();
+
+        if (!$budget_officer_id) {
+            return response()->json([
+                'message' => "Budget Officer not found.",
+            ], Response::HTTP_NOT_FOUND);
+        }
+
         foreach ($request->aop_application_id as $aop_id) {
             $aop = AopApplication::find($aop_id);
 
@@ -182,8 +190,7 @@ class PpmpApplicationController extends Controller
             $data->aop_application_id = $aop->id;
             $data->user_id = $aop->user_id;
             $data->division_chief_id = $aop->division_chief_id;
-            $data->budget_officer_id = $aop->budget_officer_id;
-
+            $data->budget_officer_id = $budget_officer_id->head_id;
             $data->ppmp_total = strip_tags($request['ppmp_total']);
             $data->remarks = strip_tags($request['remarks']);
             $data->save();

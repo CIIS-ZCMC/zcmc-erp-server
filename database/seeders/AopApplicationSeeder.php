@@ -191,6 +191,47 @@ class AopApplicationSeeder extends Seeder
             ]);
         }
 
+        // Create Budget Officer Designation
+        $budgetOfficerDesignation = Designation::where('name', 'Budget Officer')->first() ?? Designation::create([
+            'name' => 'Budget Officer',
+            'code' => 'BO',
+        ]);
+
+        $budgetOfficer = User::where('id', '!=', $user->id)
+            ->where('id', '!=', optional($divisionChief)->id)
+            ->where('id', '!=', optional($mccChief)->id)
+            ->where('id', '!=', optional($planningOfficer)->id)
+            ->first();
+
+        if (!$budgetOfficer) {
+            $budgetOfficer = User::factory()->create([
+                'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
+                'name' => 'Budget Officer',
+                'email' => 'budget.officer@example.com',
+                'profile_url' => 'https://randomuser.me/api/portraits/men/' . rand(1, 99) . '.jpg',
+                'is_active' => true
+            ]);
+
+            AssignedArea::create([
+                'user_id' => $budgetOfficer->id,
+                'designation_id' => $budgetOfficerDesignation->id,
+                'division_id' => null,
+                'department_id' => null,
+                'section_id' => null,
+                'unit_id' => null,
+            ]);
+
+            Section::create([
+                'head_id' => $budgetOfficer->id,
+                'oic_id' => null,
+                'division_id' => $division->id,
+                'department_id' => $department->id,
+                'umis_section_id' => rand(1000, 9999),
+                'name' => 'Budget Section',
+            ]);
+        }
+
+
         // Create 5 AOP Applications with different data
         $missionStatements = [
             'To provide excellent healthcare services to the community through strategic planning and resource management',
