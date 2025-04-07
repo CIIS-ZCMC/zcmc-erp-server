@@ -14,6 +14,15 @@ class ResourceResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        return [
+            'id' => $this->id,
+            'object_category' => $this->object_category,
+            'quantity' => $this->quantity,
+            'expense_class' => $this->expense_class,
+            'item' => new ItemResource($this->whenLoaded('item')), // Assuming you have an ItemResource
+            'purchase_type' => new PurchaseTypeResource($this->whenLoaded('purchaseType')), // Assuming you have a PurchaseTypeResource
+            'created_at' => $this->created_at,
+            'updated_at' => $this->updated_at,
+        ];
     }
 }

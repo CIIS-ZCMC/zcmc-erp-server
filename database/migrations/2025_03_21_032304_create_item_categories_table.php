@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('item_categories', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('parent_id')->nullable();
+            $table->foreign('parent_id')->references('id')->on('item_categories')->onDelete('set null');
             $table->string('name');
             $table->string('code');
             $table->string('description')->nullable();

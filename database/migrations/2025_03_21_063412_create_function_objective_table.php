@@ -13,10 +13,8 @@ return new class extends Migration
     {
         Schema::create('function_objectives', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('type_of_function_id');
-            $table->foreign('type_of_function_id')->references('id')->on('type_of_functions');
-            $table->unsignedBigInteger('objective_id');
-            $table->foreign('objective_id')->references('id')->on('objectives');
+            $table->foreignId('type_of_function_id')->constrained()->cascadeOnDelete();
+            $table->string('objective');
             $table->timestamps();
         });
     }

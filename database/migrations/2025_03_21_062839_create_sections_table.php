@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('sections', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('head_id');
+            $table->unsignedBigInteger('head_id')->nullable();
             $table->foreign('head_id')->references('id')->on('users');
             $table->unsignedBigInteger('oic_id')->nullable();
             $table->foreign('oic_id')->references('id')->on('users');

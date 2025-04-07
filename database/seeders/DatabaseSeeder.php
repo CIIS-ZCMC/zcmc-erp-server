@@ -13,9 +13,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(ItemUnitSeeder::class);
-        $this->call(ObjectiveSeeder::class);
-        $this->call(SuccessIndicatorSeeder::class);
-        $this->call(ObjectiveSuccessIndicatorSeeder::class);
+        // User::factory(10)->create();
+        
+        $this->call([
+            ItemCategorySeeder::class,
+            TypeOfFunctionSeeder::class,
+            AopApplicationSeeder::class,     
+            ItemUnitSeeder::class,
+            ObjectiveSeeder::class,
+            SuccessIndicatorSeeder::class,
+            ObjectiveSuccessIndicatorSeeder::class
+        ]);
     }
 }
