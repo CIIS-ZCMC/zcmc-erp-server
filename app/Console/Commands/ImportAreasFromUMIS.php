@@ -136,7 +136,7 @@ class ImportAreasFromUMIS extends Command
                             'name' => $department['name'],
                             'umis_department_id' => $department['id'],
                             'division_id' => $department['division_id'],
-                            'head_id' => $department['chief_employee_profile_id'] ?? null,
+                            'head_id' => $department['head_employee_profile_id'] ?? null,
                             'oic_id' => $department['oic_employee_profile_id'] ?? null
                         ]
                     );
@@ -156,7 +156,7 @@ class ImportAreasFromUMIS extends Command
                             'umis_section_id' => $section['id'],
                             'division_id' => $section['division_id'],
                             'department_id' => $section['department_id'],
-                            'head_id' => $section['chief_employee_profile_id'] ?? null,
+                            'head_id' => $section['supervisor_employee_profile_id'] ?? null,
                             'oic_id' => $section['oic_employee_profile_id'] ?? null
                         ]
                     );
@@ -175,7 +175,7 @@ class ImportAreasFromUMIS extends Command
                             'name' => $unit['name'],
                             'umis_unit_id' => $unit['id'],
                             'section_id' => $unit['section_id'],
-                            'head_id' => $unit['chief_employee_profile_id'] ?? null,
+                            'head_id' => $unit['head_employee_profile_id'] ?? null,
                             'oic_id' => $unit['oic_employee_profile_id'] ?? null
                         ]
                     );
