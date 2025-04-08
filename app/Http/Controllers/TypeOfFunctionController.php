@@ -2,22 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\MetadataComposerHelper;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\TypeOfFunctionRequest;
 use App\Http\Resources\TypeOfFunctionDuplicateResource;
 use App\Http\Resources\TypeOfFunctionResource;
 use App\Models\TypeOfFunction;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
-    schema: "ActivityComment",
+    schema: "Type of Function",
     properties: [
         new OA\Property(property: "id", type: "integer"),
-        new OA\Property(property: "activity_id", type: "integer"),
-        new OA\Property(property: "user_id", type: "integer", nullable: true),
-        new OA\Property(property: "content", type: "string"),
+        new OA\Property(property: "type", type: "string"),
         new OA\Property(
             property: "created_at",
             type: "string",
@@ -35,6 +35,8 @@ class TypeOfFunctionController extends Controller
     private $is_development;
 
     private $module = 'type-of-functions';
+    
+    private $methods = '[GET, POST, PUT, DELETE]';
 
     public function __construct()
     {
@@ -51,133 +53,62 @@ class TypeOfFunctionController extends Controller
 
         return $cleanData;
     }
-    
-    protected function getMetadata($method): array
+
+    protected function updateBulk(Request $request): JsonResponse
     {
-        if($method === 'get'){
-            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
-            $metadata['modes'] = ['selection', 'pagination'];
-
-            if($this->is_development){
-                $metadata['urls'] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?type_of_function_id=[primary-key]",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                ];
-            }
-
-            return $metadata;
+        $type_of_functions = $request->query('id') ?? null;
+        
+        if (count($type_of_functions) !== count($request->input('type_of_functions'))) {
+            return response()->json([
+                "message" => "Number of IDs does not match number of type of functions provided.",
+                "meta" => MetadataComposerHelper::compose('put', $this->module, $this->is_development)
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
         
-        if($method === 'put'){
-            $metadata = ["methods" => "[PUT]"];
+        $updated_type_of_functions = [];
+        $errors = [];
         
-            if ($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
-                ];
-                $metadata['fields'] = ["type"];
+        foreach ($type_of_functions as $index => $id) {
+            $type_of_function = TypeOfFunction::find($id);
+            
+            if (!$type_of_function) {
+                $errors[] = "TypeOfFunction with ID {$id} not found.";
+                continue;
             }
             
-            return $metadata;
+            $type_of_functionData = $request->input('type_of_functions')[$index];
+            $cleanData = $this->cleanTypeOfFunctionData($type_of_functionData);
+            
+            $type_of_function->update($cleanData);
+            $updated_type_of_functions[] = $type_of_function;
         }
         
-        $metadata = ['methods' => ["GET, PUT, DELETE"]];
-
-        if($this->is_development) {
-            $metadata["urls"] = [
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-            ];
-
-            $metadata["fields"] =  ["type"];
+        if (!empty($errors)) {
+            return TypeOfFunctionResource::collection($updated_type_of_functions)
+                ->additional([
+                    "meta" => [
+                        "methods" => $this->methods,
+                        "issue" => $errors
+                    ],
+                    "message" => "Partial update completed with errors.",
+                ])
+                ->response()
+                ->setStatusCode(Response::HTTP_MULTI_STATUS);
         }
 
-        return $metadata;
-    }
-    
-    #[OA\Post(
-        path: '/api/import',
-        summary: 'Import item units from Excel/CSV file',
-        requestBody: new OA\RequestBody(
-            description: 'Excel/CSV file containing item units',
-            required: true,
-            content: new OA\MediaType(
-                mediaType: 'multipart/form-data',
-                schema: new OA\Schema(
-                    properties: [
-                        new OA\Property(
-                            property: 'file',
-                            type: 'string',
-                            format: 'binary',
-                            description: 'Excel file (xlsx, xls, csv)'
-                        )
-                    ]
-                )
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: 200,
-                description: 'Successful import',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(property: 'success_count', type: 'integer'),
-                        new OA\Property(property: 'failure_count', type: 'integer'),
-                        new OA\Property(
-                            property: 'failures',
-                            type: 'array',
-                            items: new OA\Items(
-                                properties: [
-                                    new OA\Property(property: 'row', type: 'integer'),
-                                    new OA\Property(property: 'errors', type: 'array', items: new OA\Items(type: 'string'))
-                                ]
-                            )
-                        )
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 422,
-                description: 'Validation error',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(
-                            property: 'errors',
-                            type: 'object',
-                            additionalProperties: new OA\Property(type: 'array', items: new OA\Items(type: 'string')))
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 500,
-                description: 'Server error',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(property: 'error', type: 'string')
-                    ]
-                )
-            )
-        ],
-        tags: ['Item Units']
-    )]
-    public function import(Request $request)
-    {
-        return response()->json([
-            'message' => "Succesfully imported record"
-        ], Response::HTTP_OK);
+        
+        return TypeOfFunctionResource::collection($updated_type_of_functions)
+            ->additional([
+                "meta" => ["methods" => $this->methods],
+                "message" => "Successfully updated ".count($updated_type_of_functions)." type of functions.",
+            ])
+            ->response();
     }
 
     #[OA\Get(
-        path: "/api/activity-comments",
-        summary: "List all activity comments",
-        tags: ["Activity Comments"],
+        path: "/api/type-of-functions?per_page=15&page=1",
+        summary: "List all type of functions",
+        tags: ["Type of Functions"],
         parameters: [
             new OA\Parameter(
                 name: "per_page",
@@ -205,178 +136,23 @@ class TypeOfFunctionController extends Controller
             )
         ]
     )]
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        $page = $request->query('page') > 0? $request->query('page'): 1;
-        $per_page = $request->query('per_page');
-        $mode = $request->query('mode') ?? 'pagination';
-        $search = $request->query('search');
-        $last_id = $request->query('last_id') ?? 0;
-        $last_initial_id = $request->query('last_initial_id') ?? 0;
-        $page_item = $request->query('page_item') ?? 0;
-        $type_of_function_id = $request->query('type_of_function_id') ?? null;
+        $type_of_functions = TypeOfFunction::all();
 
-        if($type_of_function_id){
-            $type_of_function = TypeOfFunction::find($type_of_function_id);
-
-            if(!$type_of_function){
-                return response()->json([
-                    'message' => "No record found.",
-                    "metadata" => $this->getMetadata('get')
-                ]);
-            }
-
-            return response()->json([
-                'data' => $type_of_function,
-                "metadata" => $this->getMetadata('get')
-            ], Response::HTTP_OK);
-        }
-
-        if($page < 0 || $per_page < 0){
-            $response = ["message" => "Invalid request."];
-            
-            if($this->is_development){
-                $response = [
-                    "message" => "Invalid value of parameters",
-                    "metadata" => $this->getMetadata('get')
-                ];
-            }
-
-            return response()->json([$response], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        if(!$page && !$per_page){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => $this->getMetadata('get')
-                ];
-            }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        // Handle return for selection record
-        if($mode === 'selection'){
-            if($search !== null){
-                $type_of_functions = TypeOfFunction::select('id','type')
-                    ->where('type', 'like', "%".$search."%")
-                    ->where("deleted_at", NULL)->get();
-    
-                $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-    
-                if($this->is_development){
-                    $metadata['content'] = "This type of response is for selection component.";
-                    $metadata['mode'] = "selection";
-                }
-                
-                return response()->json([
-                    "data" => $type_of_functions,
-                    "metadata" => $metadata,
-                ], Response::HTTP_OK);
-            }
-
-            $type_of_functions = TypeOfFunction::select('id','type')->where("deleted_at", NULL)->get();
-
-            $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-
-            if($this->is_development){
-                $metadata['content'] = "This type of response is for selection component.";
-                $metadata['mode'] = "selection";
-            }
-            
-            return response()->json([
-                "data" => $type_of_functions,
-                "metadata" => $metadata,
-            ], Response::HTTP_OK);
-        }
-        
-
-        if($search !== null){
-            if($last_id === 0 || $page_item != null){
-                $type_of_functions = TypeOfFunction::where('type', 'like', '%'.$search.'%')
-                    ->where('id','>', $last_id)
-                    ->orderBy('id')
-                    ->limit($per_page)
-                    ->get();
-
-                if(count($type_of_functions)  === 0){
-                    return response()->json([
-                        'data' => [],
-                        'metadata' => [
-                            'methods' => '[GET,POST,PUT,DELETE]',
-                            'pagination' => [],
-                            'page' => 0,
-                            'total_page' => 0
-                        ],
-                    ], Response::HTTP_OK);
-                }
-
-                $allIds = TypeOfFunction::where('type', 'like', '%'.$search.'%')
-                    ->orderBy('id')
-                    ->pluck('id');
-
-                $chunks = $allIds->chunk($per_page);
-                
-                $pagination_helper = new PaginationHelper('type-of-functions', $page, $per_page, 0);
-                $pagination = $pagination_helper->createSearchPagination( $page_item, $chunks, $search, $per_page, $last_initial_id);
-                $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
-                
-                /**
-                 * Save the metadata in database unique per module and user to ensure reuse of metadata
-                 */
-
-                return response()->json([
-                    'data' => $type_of_functions,
-                    'metadata' => [
-                        'methods' => '[GET,POST,PUT,DELETE]',
-                        'pagination' => $pagination,
-                        'page' => $page,
-                        'total_page' => count($chunks)
-                    ],
-                ], Response::HTTP_OK);
-            }
-
-            /**
-             * Reuse existing pagination and update the existing pagination next and previous data
-             */
-
-            $type_of_functions = TypeOfFunction::where('type', 'like', '%'.$search.'%')
-                ->where('id','>', $last_id)
-                ->orderBy('id')
-                ->limit($per_page)
-                ->get();
-
-            // Return the response
-            return response()->json([
-                'data' => $type_of_functions,
-                'metadata' => []
-            ], Response::HTTP_OK);
-        }
-        
-        $total_page = TypeOfFunction::all()->pluck('id')->chunk($per_page);
-        $type_of_functions = TypeOfFunction::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
-        $total_page = ceil(count($total_page));
-        
-        $pagination_helper = new PaginationHelper(  $this->module,$page, $per_page, $total_page > 10 ? 10: $total_page);
-
-        return response()->json([
-            "data" => $type_of_functions,
-            "metadata" => [
-                "methods" => "[GET, POST, PUT, DELETE]",
-                "pagination" => $pagination_helper->create(),
-                "page" => $page,
-                "total_page" => $total_page
-            ]
-        ], Response::HTTP_OK);
+        return TypeOfFunctionResource::collection($type_of_functions)
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods
+                ],
+                "message" => "Success fetch type of functions."
+            ])->response();
     }
 
     #[OA\Post(
-        path: "/api/activity-comments",
-        summary: "Create a new activity comment",
-        tags: ["Activity Comments"],
+        path: "/api/type-of-functions",
+        summary: "Create a new type of function",
+        tags: ["Type of Functions"],
         requestBody: new OA\RequestBody(
             description: "Comment data",
             required: true,
@@ -403,73 +179,44 @@ class TypeOfFunctionController extends Controller
     )]
     public function store(TypeOfFunctionRequest $request)
     {
-        $base_message = "Successfully created item category";
+        // Bulk insert
+        if($request->type_of_functions !== null && count($request->type_of_functions) > 0){
+            $type_of_functions_result = [];
 
-        // Bulk Insert
-        if ($request->type_of_functions !== null || $request->type_of_functions > 1) {
-            $existing_type_of_functions = [];
-            $existing_items = TypeOfFunction::whereIn('type', collect($request->type_of_functions)->pluck('type'))
-                ->get(['type'])->toArray();
-
-            // Convert existing items into a searchable format
-            $existing_types = array_column($existing_items, 'type');
-
-            if(!empty($existing_items)){
-                $existing_type_of_functions = TypeOfFunctionDuplicateResource::collection(TypeOfFunction::whereIn("type", $existing_types)->get());
+            foreach($request->type_of_functions as $function){
+                $type = strip_tags($function['type']);
+                $new_type_of_function = TypeOfFunction::create(['type' => $type]);
+                $type_of_functions_result[] = $new_type_of_function;
             }
 
-            foreach ($request->type_of_functions as $item) {
-                if ( !in_array($item['type'], $existing_types)) {
-                    $cleanData[] = [
-                        "type" => strip_tags($item['type']),
-                        "created_at" => now(),
-                        "updated_at" => now()
-                    ];
-                }
-            }
+            return TypeOfFunctionResource::collection($type_of_functions_result)
+                ->additional([
+                    "meta" => [
+                        "methods" => $this->methods
+                    ],
+                    "message" => "Successfully register types."
+                ])
+                ->response()
+                ->setStatusCode(Response::HTTP_CREATED);
+        }   
 
-            if (empty($cleanData) && count($existing_items) > 0) {
-                return response()->json([
-                    'data' => $existing_type_of_functions,
-                    'message' => "Failed to bulk insert all item categories already exist.",
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-    
-            TypeOfFunction::insert($cleanData);
+        $type = strip_tags($request->type);
 
-            $latest_type_of_functions = TypeOfFunction::orderBy('id', direction: 'desc')
-                ->limit(count($cleanData))->get()
-                ->sortBy('id')->values();
+        $new_type_of_function = TypeOfFunction::create(['type' => $type]);
 
-            $message = count($latest_type_of_functions) > 1? $base_message."s record": $base_message." record.";
-
-            return response()->json([
-                "data" => $latest_type_of_functions,
-                "message" => $message,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT ,DELETE]",
-                    "duplicate_items" => $existing_type_of_functions
-                ]
-            ], Response::HTTP_CREATED);
-        }
-
-        $cleanData = [
-            "type" => strip_tags($request->input('type'))
-        ];
-        
-        $new_item = TypeOfFunction::create($cleanData);
-
-        return response()->json([
-            "data" => $new_item,
-            "message" => $base_message." record.",
-            "metadata" => [
-                "methods" => ['GET, POST, PUT, DELET'],
-            ]
-        ], Response::HTTP_CREATED);
+        return (new TypeOfFunctionResource($new_type_of_function))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods
+                ],
+                "message" => "Success register type of function."
+            ])
+            ->response()
+            ->setStatusCode(Response::HTTP_CREATED);
     }
 
     #[OA\Put(
-        path: "/api/activity-comments/{id}",
+        path: "/api/type-of-functions?id[]=1&id[]=2",
         summary: "Update an activity comment",
         tags: ["Activity Comments"],
         parameters: [
@@ -515,7 +262,7 @@ class TypeOfFunctionController extends Controller
             $response = ["message" => "ID parameter is required."];
             
             if ($this->is_development) {
-                $response['metadata'] = $this->getMetadata('put');
+                $response['meta'] = MetadataComposerHelper::compose('put', $this->module, $this->is_development);
             }
             
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -526,47 +273,7 @@ class TypeOfFunctionController extends Controller
         
         // For bulk update - validate items array matches IDs count
         if ($request->has('type_of_functions')) {
-            if (count($type_of_functions) !== count($request->input('type_of_functions'))) {
-                return response()->json([
-                    "message" => "Number of IDs does not match number of type of functions provided.",
-                    "metadata" => $this->getMetadata('put')
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-            
-            $updated_type_of_functions = [];
-            $errors = [];
-            
-            foreach ($type_of_functions as $index => $id) {
-                $type_of_function = TypeOfFunction::find($id);
-                
-                if (!$type_of_function) {
-                    $errors[] = "TypeOfFunction with ID {$id} not found.";
-                    continue;
-                }
-                
-                $type_of_functionData = $request->input('type_of_functions')[$index];
-                $cleanData = $this->cleanTypeOfFunctionData($type_of_functionData);
-                
-                $type_of_function->update($cleanData);
-                $updated_type_of_functions[] = $type_of_function;
-            }
-            
-            if (!empty($errors)) {
-                return response()->json([
-                    "data" => TypeOfFunctionResource::collection($updated_type_of_functions),
-                    "message" => "Partial update completed with errors.",
-                    "metadata" => [                    
-                        "method" => "[PUT]",
-                        "errors" => $errors,
-                    ]
-                ], Response::HTTP_MULTI_STATUS);
-            }
-            
-            return response()->json([
-                "data" => TypeOfFunctionResource::collection($updated_type_of_functions),
-                "message" => "Successfully updated ".count($updated_type_of_functions)." type of functions.",
-                "metadata" => $this->getMetadata('put')
-            ], Response::HTTP_OK);
+            return $this->updateBulk($request);
         }
         
         // Single type_of_function update
@@ -584,29 +291,108 @@ class TypeOfFunctionController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
         
-        $cleanData = $this->cleanTypeOfFunctionData($request->all());
-        $type_of_function->update($cleanData);
-        
-        $response = [
-            "data" => new TypeOfFunctionResource($type_of_function),
-            "message" => "Type of Function updated successfully.",
-            "metadata" => $this->getMetadata('put')
-        ];
-        
-        if ($this->is_development) {
-            $response['metadata'] = [
-                "methods" => "[PUT]",
-                "required_fields" => ["type"]
-            ];
+        $type = strip_tags($request->type);
+        $type_of_function->update(['type' => $type]);
+
+        return (new TypeOfFunctionResource($type_of_function))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods
+                ],
+                "message" => "Success update type of function."
+            ])
+            ->response();
+    }
+
+
+    #[OA\Put(
+        path: "/api/type-of-functions/{id}/restore",
+        summary: "Restore delete record",
+        tags: ["Type of Functions"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_NO_CONTENT,
+                description: "Comment deleted"
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]
+    public function trash(Request $request)
+    {
+        $search = $request->get("search");
+
+        if($search){
+            return TypeOfFunctionResource::collection(TypeOfFunction::onlyTrashed()->where('type', "like", "%".$search."%")->get())
+                ->additional([
+                    "meta" => [
+                        "methods" => $this->methods
+                    ],
+                    "message" => "Successfully restore data."
+                ]);
         }
-        
-        return response()->json($response, Response::HTTP_OK);
+
+        return TypeOfFunctionResource::collection(TypeOfFunction::onlyTrashed()->get())
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods
+                ],
+                "message" => "Successfully restore data."
+            ]);
+    }
+
+    #[OA\Put(
+        path: "/api/type-of-functions/{id}/restore",
+        summary: "Restore delete record",
+        tags: ["Type of Functions"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_NO_CONTENT,
+                description: "Comment deleted"
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]
+    public function restore($id, Request $request): TypeOfFunctionResource
+    {
+        TypeOfFunction::withTrashed()->where("id", $id)->restore();
+
+        return (new TypeOfFunctionResource(TypeOfFunction::find($id)))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods
+                ],
+                "message" => "Successfully restore type of function data."
+            ]);
     }
 
     #[OA\Delete(
-        path: "/api/activity-comments/{id}",
-        summary: "Delete an activity comment",
-        tags: ["Activity Comments"],
+        path: "/api/type-of-functions/{id}",
+        summary: "Delete an type of function",
+        tags: ["Type of Functions"],
         parameters: [
             new OA\Parameter(
                 name: "id",
@@ -638,7 +424,7 @@ class TypeOfFunctionController extends Controller
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found for deletion.",
-                    "metadata" => $this->getMetadata('delete'),
+                    "metadata" => MetadataComposerHelper::compose('delete', $this->module, $this->is_development),
                     "hint" => "Provide either 'id' or 'query' parameter"
                 ];
             }
@@ -679,8 +465,7 @@ class TypeOfFunctionController extends Controller
             }
     
             // Perform soft delete
-            $deleted_count = TypeOfFunction::whereIn('id', $valid_ids)
-                ->update(['deleted_at' => now()]);
+            $deleted_count = TypeOfFunction::whereIn('id', $valid_ids)->delete();
     
             return response()->json([
                 "message" => "Successfully deleted {$deleted_count} function type(s).",
@@ -710,7 +495,7 @@ class TypeOfFunctionController extends Controller
             );
         }
 
-        $type_of_function->update(['deleted_at' => now()]);
+        $type_of_function->delete();
 
         return response()->json([
             "message" => "Successfully deleted function type.",
