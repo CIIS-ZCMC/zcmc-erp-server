@@ -4,25 +4,13 @@ namespace App\Helpers;
 
 class MetadataComposerHelper
 {
-    protected bool $is_development;
-    
-    public function __construct()
-    {
-        $this->is_development = $this->shouldEnableDevMode();
-    }
-    
-    protected function shouldEnableDevMode(): bool
-    {
-        return app()->environment('local') || config('app.debug');
-    }
-
-    public static function compose($method, $module)
+    public static function compose($method, $module, $is_development)
     {
         if($method === 'get'){
             $meta['methods'] = ["GET, POST, PUT, DELETE"];
             $meta['modes'] = ['selection', 'pagination'];
 
-            if(self::$is_development){
+            if($is_development){
                 $meta['urls'] = [
                     env("SERVER_DOMAIN")."/api/".$module."?id=[primary-key]",
                     env("SERVER_DOMAIN")."/api/".$module."?page={currentPage}&per_page={number_of_record_to_return}",
@@ -37,7 +25,7 @@ class MetadataComposerHelper
         if($method === 'put'){
             $meta = ["methods" => "[PUT]"];
         
-            if (self::$is_development) {
+            if ($is_development) {
                 $meta["urls"] = [
                     env("SERVER_DOMAIN")."/api/".$module."?id=1",
                     env("SERVER_DOMAIN")."/api/".$module."?id[]=1&id[]=2"
@@ -50,7 +38,7 @@ class MetadataComposerHelper
         
         $meta = ['methods' => ["GET, PUT, DELETE"]];
 
-        if(self::$is_development) {
+        if($is_development) {
             $meta["urls"] = [
                 env("SERVER_DOMAIN") . "/api/" . $module . "?id=1",
                 env("SERVER_DOMAIN") . "/api/" . $module . "?id[]=1&id[]=2",

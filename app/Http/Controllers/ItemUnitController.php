@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\MetadataComposerHelper;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\GetWithPaginatedSearchModeRequest;
 use App\Http\Requests\ItemUnitGetRequest;
@@ -67,53 +68,6 @@ class ItemUnitController extends Controller
         }
 
         return $cleanData;
-    }
-    
-    protected function getMetadata($method): array
-    {
-        if($method === 'get'){
-            $meta['methods'] = ["GET, POST, PUT, DELETE"];
-            $meta['modes'] = ['selection', 'pagination'];
-
-            if($this->is_development){
-                $meta['urls'] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?item_unit_id=[primary-key]",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                ];
-            }
-
-            return $meta;
-        }
-        
-        if($method === 'put'){
-            $meta = ["methods" => "[PUT]"];
-        
-            if ($this->is_development) {
-                $meta["urls"] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
-                ];
-                $meta['fields'] = ["title", "code", "description"];
-            }
-            
-            return $meta;
-        }
-        
-        $meta = ['methods' => ["GET, PUT, DELETE"]];
-
-        if($this->is_development) {
-            $meta["urls"] = [
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-            ];
-
-            $meta["fields"] =  ["code"];
-        }
-
-        return $meta;
     }
     
     protected function search(Request $request, $start): AnonymousResourceCollection
@@ -194,8 +148,7 @@ class ItemUnitController extends Controller
                 ],
                 'message' => 'Successfully retrieve all records.'
             ]);
-    }
-    
+    }     
     protected function singleRecord($item_unit_id, $start):JsonResponse
     {
         $itemUnit = ItemUnit::find($item_unit_id);
@@ -213,6 +166,52 @@ class ItemUnitController extends Controller
                 "message" => "Successfully retrieved record."
             ])->response();
     }
+
+    protected function bulkStore(Request $request, $start):ItemUnitResource|AnonymousResourceCollection|JsonResponse  
+    {
+        $existing_items = ItemUnit::whereIn('name', collect($request->item_units)->pluck('name'))
+        ->orWhereIn('code', collect($request->item_units)->pluck('code'))
+        ->get(['name', 'code'])->toArray();
+
+        // Convert existing items into a searchable format
+        $existing_names = array_column($existing_items, 'name');
+        $existing_codes = array_column($existing_items, 'code');
+
+        foreach ($request->item_units as $item) {
+            if (!in_array($item['name'], $existing_names) && !in_array($item['code'], $existing_codes)) {
+                $cleanData[] = [
+                    "name" => strip_tags($item['name']),
+                    "code" => strip_tags($item['code']),
+                    "description" => isset($item['description']) ? strip_tags($item['description']) : null,
+                    "created_at" => now(),
+                    "updated_at" => now()
+                ];
+            }
+        }
+
+        if (empty($cleanData) && count($existing_items) > 0) {
+            return response()->json([
+                'data' => $existing_items,
+                'message' => "Failed to bulk insert all item units already exist.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        ItemUnit::insert($cleanData);
+
+        $latest_item_units = ItemUnit::orderBy('id', 'desc')
+            ->limit(count($cleanData))->get()
+            ->sortBy('id')->values();
+
+        return ItemUnitResource::collection($latest_item_units)
+            ->additional([
+                'meta' => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    "existings" => $existing_items,
+                ],
+                "message" => "Successfully store data."
+            ]);
+    }
     
     protected function bulkUpdate(Request $request, $start):AnonymousResourceCollection|JsonResponse
     {
@@ -221,7 +220,7 @@ class ItemUnitController extends Controller
         if (count($item_unit_ids) !== count($request->input('item_units'))) {
             return response()->json([
                 "message" => "Number of IDs does not match number of item units provided.",
-                "meta" => $this->getMetadata('put')
+                "meta" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
     
@@ -248,7 +247,7 @@ class ItemUnitController extends Controller
                         'methods' => $this->methods,
                         'time_ms' => round((microtime(true) - $start) * 1000),
                         'issue' => $errors,
-                        'url_format' => $this->getMetadata('put'),
+                        "url_formats" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
                     ],
                     "message" => "Partial update completed with errors.",
                 ])
@@ -261,7 +260,7 @@ class ItemUnitController extends Controller
                 "meta" => [
                     'methods' => $this->methods,
                     'time_ms' => round((microtime(true) - $start) * 1000),
-                    'url_format' => $this->getMetadata('put')
+                    "url_formats" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
                 ],
                 "message" => "Partial update completed with errors.",
             ]);
@@ -478,52 +477,6 @@ class ItemUnitController extends Controller
         }
 
         return $this->pagination($request, $start);
-    }
-
-    protected function bulkStore(Request $request, $start):ItemUnitResource|AnonymousResourceCollection|JsonResponse  
-    {
-        $existing_items = ItemUnit::whereIn('name', collect($request->item_units)->pluck('name'))
-        ->orWhereIn('code', collect($request->item_units)->pluck('code'))
-        ->get(['name', 'code'])->toArray();
-
-        // Convert existing items into a searchable format
-        $existing_names = array_column($existing_items, 'name');
-        $existing_codes = array_column($existing_items, 'code');
-
-        foreach ($request->item_units as $item) {
-            if (!in_array($item['name'], $existing_names) && !in_array($item['code'], $existing_codes)) {
-                $cleanData[] = [
-                    "name" => strip_tags($item['name']),
-                    "code" => strip_tags($item['code']),
-                    "description" => isset($item['description']) ? strip_tags($item['description']) : null,
-                    "created_at" => now(),
-                    "updated_at" => now()
-                ];
-            }
-        }
-
-        if (empty($cleanData) && count($existing_items) > 0) {
-            return response()->json([
-                'data' => $existing_items,
-                'message' => "Failed to bulk insert all item units already exist.",
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        ItemUnit::insert($cleanData);
-
-        $latest_item_units = ItemUnit::orderBy('id', 'desc')
-            ->limit(count($cleanData))->get()
-            ->sortBy('id')->values();
-
-        return ItemUnitResource::collection($latest_item_units)
-            ->additional([
-                'meta' => [
-                    "methods" => $this->methods,
-                    'time_ms' => round((microtime(true) - $start) * 1000),
-                    "existings" => $existing_items,
-                ],
-                "message" => "Successfully store data."
-            ]);
     }
 
     #[OA\Post(
@@ -818,7 +771,7 @@ class ItemUnitController extends Controller
             $response = ["message" => "ID parameter is required."];
             
             if ($this->is_development) {
-                $response['meta'] = $this->getMetadata('put');
+                $response['meta'] = MetadataComposerHelper::compose('put', $this->methods, $this->is_development);
             }
             
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -981,7 +934,7 @@ class ItemUnitController extends Controller
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "meta" => $this->getMetadata("delete")
+                    "meta" => MetadataComposerHelper::compose('delete', $this->methods, $this->is_development)
                 ];
             }
 
