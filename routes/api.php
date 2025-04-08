@@ -61,8 +61,10 @@ Route::namespace('App\Http\Controllers')->group(function () {
         Route::delete('success-indicators', "SuccessIndicatorController@destroy");
 
         Route::get('type-of-functions', "TypeOfFunctionController@index");
+        Route::get('type-of-functions/trashbin', "TypeOfFunctionController@trash");
         Route::post('type-of-functions', "TypeOfFunctionController@store");
         Route::put('type-of-functions', "TypeOfFunctionController@update");
+        Route::put('type-of-functions/{id}/restore', "TypeOfFunctionController@restore");
         Route::delete('type-of-functions', "TypeOfFunctionController@destroy");
 
         Route::get('purchase-types', "PurchaseTypeController@index");
