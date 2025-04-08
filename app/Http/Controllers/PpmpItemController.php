@@ -123,7 +123,7 @@ class PpmpItemController extends Controller
         //paginate display 10 data per page
         $ppmp_item = PpmpItem::whereNull('deleted_at')->paginate(10);
 
-        if (!$ppmp_item) {
+        if ($ppmp_item->isEmpty()) {
             return response()->json([
                 'message' => "No record found.",
                 "metadata" => $this->getMetadata('get')
@@ -132,7 +132,12 @@ class PpmpItemController extends Controller
 
         return response()->json([
             'data' => PpmpItemResource::collection($ppmp_item),
-            'message' => $this->getMetadata('get')
+            'meta' => [
+                'current_page' => $ppmp_item->currentPage(),
+                'last_page' => $ppmp_item->lastPage(),
+                'per_page' => $ppmp_item->perPage(),
+                'total' => $ppmp_item->total()
+            ],
         ], Response::HTTP_OK);
     }
 
@@ -164,9 +169,31 @@ class PpmpItemController extends Controller
             )
         ]
     )]
-    public function store(Request $request)
+    public function store(PpmpItemRequest $request)
     {
-        //
+        $createdItems = [];
+
+        foreach ($request['ppmp_item'] as $item) {
+            $total_amount = $item['total_quantity'] * $item['estimated_budget'];
+
+            $ppmpItem = new PpmpItem();
+            $ppmpItem->ppmp_application_id = $item['ppmp_application_id'];
+            $ppmpItem->item_id = $item['item_id'];
+            $ppmpItem->procurement_mode_id = $item['procurement_mode_id'];
+            $ppmpItem->item_request_id = $item['item_request_id'];
+            $ppmpItem->remarks = $item['remarks'] ?? null;
+            $ppmpItem->estimated_budget = $item['estimated_budget'] ?? null;
+            $ppmpItem->total_quantity = $item['total_quantity'] ?? null;
+            $ppmpItem->total_amount = $total_amount;
+            $ppmpItem->save();
+
+            $createdItems[] = $ppmpItem;
+        }
+
+        return response()->json([
+            'data' => PpmpItemResource::collection($createdItems),
+            'message' => "PPMP Item created successfully."
+        ], Response::HTTP_CREATED);
     }
 
     #[OA\Get(

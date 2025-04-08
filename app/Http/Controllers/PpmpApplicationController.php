@@ -180,7 +180,7 @@ class PpmpApplicationController extends Controller
         foreach ($request->aop_application_id as $aop_id) {
             $aop = AopApplication::find($aop_id);
 
-            if (!$aop) {
+            if ($aop->isEmpty()) {
                 return response()->json([
                     'message' => "AOP Application with ID {$aop_id} not found.",
                 ], Response::HTTP_NOT_FOUND);
@@ -205,7 +205,7 @@ class PpmpApplicationController extends Controller
                 'total' => $data->total(),
             ],
             'message' => $this->getMetadata('post'),
-        ]);
+        ], Response::HTTP_CREATED);
 
     }
 
@@ -280,7 +280,7 @@ class PpmpApplicationController extends Controller
     public function update(PpmpApplicationRequest $request, PpmpApplication $ppmpApplication)
     {
         $data = $request->all();
-        $ppmpApplication->update($data);
+        $ppmpApplication->update(attributes: $data);
 
         return response()->json([
             'data' => new PpmpApplicationResource($data),
@@ -291,7 +291,7 @@ class PpmpApplicationController extends Controller
                 'total' => $ppmpApplication->total(),
             ],
             'message' => $this->getMetadata('put'),
-        ]);
+        ], Response::HTTP_OK);
     }
 
     #[OA\Delete(
@@ -321,7 +321,7 @@ class PpmpApplicationController extends Controller
     public function destroy(PpmpApplication $ppmpApplication)
     {
         // Check if the record exists
-        if (!$ppmpApplication) {
+        if ($ppmpApplication->isEmpty()) {
             return response()->json([
                 'message' => 'Record not found.',
             ], Response::HTTP_NOT_FOUND);
