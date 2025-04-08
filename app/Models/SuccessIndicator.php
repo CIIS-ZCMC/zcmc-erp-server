@@ -21,7 +21,7 @@ class SuccessIndicator extends Model
     // {
     //     return $this->hasMany(ObjectiveSuccessIndicator::class);
     // }
-    
+
     public function logs()
     {
         return $this->morphMany(TransactionLog::class, 'referrence');

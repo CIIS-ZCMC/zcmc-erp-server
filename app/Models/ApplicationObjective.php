@@ -40,6 +40,11 @@ class ApplicationObjective extends Model
         return $this->hasOne(OthersObjective::class, 'application_objective_id');
     }
 
+    public function otherSuccessIndicator()
+    {
+        return $this->hasOne(OtherSuccessIndicator::class);
+    }
+
     public function successIndicator()
     {
         return $this->belongsTo(SuccessIndicator::class, 'success_indicator_id');
