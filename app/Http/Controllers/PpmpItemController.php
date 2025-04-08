@@ -264,9 +264,16 @@ class PpmpItemController extends Controller
             )
         ]
     )]
-    public function update(Request $request, PpmpItem $ppmpItem)
+    public function update(PpmpItemRequest $request, PpmpItem $ppmpItem)
     {
-        //
+        $data = $request->all();
+        $ppmpItem->update($data);
+
+        return response()->json([
+            'data' => new PpmpItemResource($ppmpItem),
+            'message' => "PPMP Item updated successfully."
+        ], Response::HTTP_OK);
+
     }
 
     #[OA\Delete(
