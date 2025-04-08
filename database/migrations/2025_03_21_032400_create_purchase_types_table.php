@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->text('description')->nullable();
             $table->string('code')->nullable();
-            $table->dateTime('deleted_at')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
@@ -25,6 +25,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('purchase_types', function(Blueprint $table){
+            $table->dropSoftDeletes();
+        });
+
         Schema::dropIfExists('purchase_types');
     }
 };
