@@ -335,7 +335,7 @@ class AopApplicationSeeder extends Seeder
                         ['description' => $objectiveName],
                         ['code' => 'OBJ-' . strtoupper(substr(str_replace(' ', '', $objectiveName), 0, 5)) . '-' . rand(100, 999)]
                     );
-                    
+
                     // Create function objective with the updated schema
                     $functionObjective = DB::table('function_objectives')->insertGetId([
                         'type_of_function_id' => $typeOfFunction->id,
