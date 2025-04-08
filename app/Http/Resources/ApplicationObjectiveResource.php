@@ -32,7 +32,14 @@ class ApplicationObjectiveResource extends JsonResource
                 return $description;
             }),
             'success_indicator_description' => $this->whenLoaded('successIndicator', function () {
-                return $this->successIndicator->description ?? null;
+                $description = $this->successIndicator->description ?? null;
+
+                // If the description is "Others" and otherSuccessIndicator exists, append or replace it
+                if ($description === 'Others' && $this->otherSuccessIndicator) {
+                    return $description . ': ' . $this->otherSuccessIndicator->description;
+                }
+
+                return $description;
             }),
             'activities' => ActivityResource::collection($this->whenLoaded('activities')),
         ];

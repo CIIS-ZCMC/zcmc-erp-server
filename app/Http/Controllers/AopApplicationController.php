@@ -6,6 +6,7 @@ use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
 use App\Models\AopApplication;
 use App\Models\FunctionObjective;
+use App\Models\SuccessIndicator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -79,6 +80,18 @@ class AopApplicationController extends Controller
                 if ($applicationObjective->functionObjective->objective->description === 'Others' && isset($objectiveData['others_objective'])) {
                     $applicationObjective->othersObjective()->create([
                         'description' => $objectiveData['others_objective'],
+                    ]);
+                }
+
+                $successIndicator = SuccessIndicator::find($objectiveData['success_indicator_id']);
+
+                if (
+                    $successIndicator &&
+                    $successIndicator->description === 'Others' &&
+                    isset($objectiveData['other_success_indicator'])
+                ) {
+                    $applicationObjective->otherSuccessIndicator()->create([
+                        'description' => $objectiveData['other_success_indicator'],
                     ]);
                 }
 
