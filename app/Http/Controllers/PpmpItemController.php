@@ -302,6 +302,17 @@ class PpmpItemController extends Controller
     )]
     public function destroy(PpmpItem $ppmpItem)
     {
-        //
+        // Check if the PPMP Item exists
+        if (!$ppmpItem) {
+            return response()->json([
+                'message' => "PPMP Item not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $ppmpItem->delete();
+
+        return response()->json([
+            'message' => "PPMP Item deleted successfully."
+        ], Response::HTTP_NO_CONTENT);
     }
 }
