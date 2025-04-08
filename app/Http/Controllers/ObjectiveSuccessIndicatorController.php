@@ -9,6 +9,7 @@ use App\Http\Requests\GetWithPaginatedSearchModeRequest;
 use App\Http\Resources\ObjectiveSuccessIndicatorResource;
 use App\Models\Objective;
 use App\Models\ObjectiveSuccessIndicator;
+use App\Models\OtherObjective;
 use App\Models\SuccessIndicator;
 use App\Models\Target;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +18,8 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Ramsey\Uuid\Type\Integer;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
+use Illuminate\Support\Facades\DB;
+use App\Models\OtherSuccessIndicator;
 
 #[OA\Schema(
     schema: "ActivityComment",
@@ -50,22 +53,37 @@ class ObjectiveSuccessIndicatorController extends Controller
         $this->is_development = env("APP_DEBUG", true);
     }
 
-    public function search(Request $request):AnonymousResourceCollection
+    private function cleanObjectiveSuccessIndicatorData(array $data): array
+    {
+        $cleanData = [];
+
+        if (isset($data['objective_id'])) {
+            $cleanData['objective_id'] = strip_tags($data['objective_id']);
+        }
+
+        if (isset($data['success_indicator_id'])) {
+            $cleanData['success_indicator_id'] = strip_tags($data['success_indicator_id']);
+        }
+
+        return $cleanData;
+    }
+
+    public function search(Request $request): AnonymousResourceCollection
     {
         $start = microtime(true);
-        
+
         $validated = $request->validate([
             'search' => 'required|string|min:2|max:100',
             'per_page' => 'sometimes|integer|min:1|max:100',
             'page' => 'sometimes|integer|min:1|max:100'
         ]);
-        
-        $searchTerm = '%'.trim($validated['search']).'%';
+
+        $searchTerm = '%' . trim($validated['search']) . '%';
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
 
         $results = ObjectiveSuccessIndicator::whereHas('objective', fn($q) => $q->where('code', 'like', "%{$searchTerm}%")
-                ->orWhere('description', 'like', "%{$searchTerm}%"))
+            ->orWhere('description', 'like', "%{$searchTerm}%"))
             ->orWhereHas('successIndicator', fn($q) => $q->where('code', 'like', "%{$searchTerm}%")
                 ->orWhere('description', 'like', "%{$searchTerm}%"))
             ->with(['objective', 'successIndicator'])
@@ -112,7 +130,7 @@ class ObjectiveSuccessIndicatorController extends Controller
     public function pagination(Request $request)
     {
         $start = microtime(true);
-        
+
         $validated = $request->validate([
             'per_page' => 'sometimes|integer|min:1|max:100',
             'page' => 'sometimes|integer|min:1|max:100'
@@ -141,16 +159,16 @@ class ObjectiveSuccessIndicatorController extends Controller
                 ],
                 'message' => 'Successfully retrieve all records.'
             ]);
-    }  
-    
-    protected function singleRecord($objective_success_indicator_id, $start):JsonResponse
+    }
+
+    protected function singleRecord($objective_success_indicator_id, $start): JsonResponse
     {
         $objectiveSuccessIndicator = ObjectiveSuccessIndicator::find($objective_success_indicator_id);
-            
+
         if (!$objectiveSuccessIndicator) {
             return response()->json(["message" => "Item unit not found."], Response::HTTP_NOT_FOUND);
         }
-    
+
         return (new ObjectiveSuccessIndicatorResource($objectiveSuccessIndicator))
             ->additional([
                 "meta" => [
@@ -199,15 +217,15 @@ class ObjectiveSuccessIndicatorController extends Controller
         $search = $request->search;
         $mode = $request->mode;
 
-        if($objective_success_indicator_id){
+        if ($objective_success_indicator_id) {
             return $this->singleRecord($objective_success_indicator_id, $start);
         }
 
-        if($mode && $mode === 'selection'){
+        if ($mode && $mode === 'selection') {
             return $this->all();
         }
-        
-        if($search){
+
+        if ($search) {
             return $this->search($request);
         }
 
@@ -226,7 +244,7 @@ class ObjectiveSuccessIndicatorController extends Controller
 
     protected function registerOSIWithoutExistingSuccessIndicator(Integer $objective_id, $success_indicator): ObjectiveSuccessIndicator
     {
-        if(!$this->doesObjectiveExist($objective_id)){
+        if (!$this->doesObjectiveExist($objective_id)) {
             return response()->json(['message' => "Data of objective doesn't exist."], Response::HTTP_NOT_FOUND);
         }
 
@@ -240,7 +258,7 @@ class ObjectiveSuccessIndicatorController extends Controller
 
     protected function registerOSIWithoutExistingObjective(Integer $success_indicator_id, $objective): ObjectiveSuccessIndicator
     {
-        if(!$this->doesSuccessIndicatorExist($success_indicator_id)){
+        if (!$this->doesSuccessIndicatorExist($success_indicator_id)) {
             return response()->json(['message' => "Data of success indicator doesn't exist."], Response::HTTP_NOT_FOUND);
         }
 
@@ -304,7 +322,7 @@ class ObjectiveSuccessIndicatorController extends Controller
             )
         ]
     )]
-    public function store(Request $request):Response
+    public function store(Request $request): Response
     {
         $objective_id = $request->objective_id;
         $success_indicator_id = $request->success_indicator_id;
@@ -313,29 +331,29 @@ class ObjectiveSuccessIndicatorController extends Controller
         $new_objective_success_indicator = null;
 
         // Both Primary key is given
-        if($objective_id && $success_indicator_id){
+        if ($objective_id && $success_indicator_id) {
 
-            if(!($this->doesObjectiveExist($objective_id) || $this->doesSuccessIndicatorExist($success_indicator_id))){
+            if (!($this->doesObjectiveExist($objective_id) || $this->doesSuccessIndicatorExist($success_indicator_id))) {
                 return response()->json(['message' => "Data of objective/success indicator doesn't exist."], Response::HTTP_NOT_FOUND);
             }
-            
+
             $new_objective_success_indicator = ObjectiveSuccessIndicator::create([
                 'objective_id' => $objective_id,
                 'success_indicator_id' => $success_indicator_id
             ]);
         }
 
-        if($objective_id && $success_indicator){
+        if ($objective_id && $success_indicator) {
 
             $new_objective_success_indicator = $this->registerOSIWithoutExistingSuccessIndicator($objective_id, $success_indicator);
         }
 
-        if($success_indicator_id && $objective){
+        if ($success_indicator_id && $objective) {
 
             $new_objective_success_indicator = $this->registerOSIWithoutExistingSuccessIndicator($objective_id, $success_indicator);
         }
 
-        if($success_indicator && $objective){
+        if ($success_indicator && $objective) {
             $new_objective = Objective::create($objective);
             $new_success_indicator = SuccessIndicator::create($success_indicator);
 
@@ -344,7 +362,7 @@ class ObjectiveSuccessIndicatorController extends Controller
                 'success_indicator_id' => $new_success_indicator->id
             ]);
         }
-        
+
         return response()->json([
             "data" => new ObjectiveSuccessIndicatorResource($new_objective_success_indicator),
             "metadata" => [
@@ -438,7 +456,7 @@ class ObjectiveSuccessIndicatorController extends Controller
             if (!($this->doesObjectiveExist($objective_id) && $this->doesSuccessIndicatorExist($success_indicator_id))) {
                 return response()->json(['message' => "Data of objective/success indicator doesn't exist."], Response::HTTP_NOT_FOUND);
             }
-            
+
             $objectiveSuccessIndicator->update([
                 'objective_id' => $objective_id,
                 'success_indicator_id' => $success_indicator_id
@@ -451,7 +469,7 @@ class ObjectiveSuccessIndicatorController extends Controller
             if (!$this->doesObjectiveExist($objective_id)) {
                 return response()->json(['message' => "Data of objective doesn't exist."], Response::HTTP_NOT_FOUND);
             }
-            
+
             $new_success_indicator = SuccessIndicator::create($success_indicator);
             $objectiveSuccessIndicator->update([
                 'objective_id' => $objective_id,
@@ -465,7 +483,7 @@ class ObjectiveSuccessIndicatorController extends Controller
             if (!$this->doesSuccessIndicatorExist($success_indicator_id)) {
                 return response()->json(['message' => "Data of success indicator doesn't exist."], Response::HTTP_NOT_FOUND);
             }
-            
+
             $new_objective = Objective::create($objective);
             $objectiveSuccessIndicator->update([
                 'objective_id' => $new_objective->id,
@@ -489,10 +507,10 @@ class ObjectiveSuccessIndicatorController extends Controller
         if (!$updated) {
             return response()->json(['message' => "No valid update data provided."], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        
+
         // Refresh the model to get updated relationships
         $objectiveSuccessIndicator->refresh();
-        
+
         return (new ObjectiveSuccessIndicatorResource($objectiveSuccessIndicator))
             ->additional([
                 "meta" => [
@@ -501,5 +519,103 @@ class ObjectiveSuccessIndicatorController extends Controller
                 ],
                 "message" => "Successfully updated record."
             ])->response();
+    }
+
+    /**
+     * Update an objective and success indicator for the approver module
+     * 
+     * This method handles updating an existing objective success indicator with either
+     * existing objective/success indicator IDs or creating new "other" entries when provided.
+     * It handles transaction management to ensure data integrity.
+     * 
+     * @param Request $request The HTTP request containing validation data
+     * @param int $id The ID of the objective success indicator to update
+     * @return JsonResponse Returns the updated resource or error response
+     */
+    public function updateForApproverModule(Request $request, $id)
+    {
+        $data = $request->validate([
+            'application_objective_id' => 'required_without_all:other_objective,other_success_indicator|integer',
+            'objective_id' => 'nullable|integer',
+            'success_indicator_id' => 'nullable|integer',
+            'other_objective' => 'nullable|string',
+            'other_success_indicator' => 'nullable|string',
+        ]);
+
+        $start = microtime(true);
+        $objectiveSuccessIndicator = ObjectiveSuccessIndicator::find($id);
+
+        if (!$objectiveSuccessIndicator) {
+            return response()->json(['message' => 'Objective Success Indicator not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Check if the passed ids exist when provided
+        if (isset($data['objective_id'])) {
+            $isObjectiveIdExist = Objective::where('id', $data['objective_id'])->exists();
+            if (!$isObjectiveIdExist) {
+                return response()->json(['message' => 'Objective not found'], Response::HTTP_NOT_FOUND);
+            }
+        }
+
+        if (isset($data['success_indicator_id'])) {
+            $isSuccessIndicatorIdExist = SuccessIndicator::where('id', $data['success_indicator_id'])->exists();
+            if (!$isSuccessIndicatorIdExist) {
+                return response()->json(['message' => 'Success Indicator not found'], Response::HTTP_NOT_FOUND);
+            }
+        }
+
+        DB::beginTransaction();
+        try {
+
+            // Only create other objective if it's provided
+            $otherObjective = null;
+            if (!empty($data['other_objective'])) {
+                $otherObjective = OtherObjective::create([
+                    'application_objective_id' => $data['application_objective_id'],
+                    'description' => $data['other_objective']
+                ]);
+
+                if (!$otherObjective) {
+                    DB::rollBack();
+                    return response()->json(['message' => 'Failed to create other objective'], Response::HTTP_INTERNAL_SERVER_ERROR);
+                }
+            }
+
+            // Only create other success indicator if it's provided
+            $otherSuccessIndicator = null;
+            if (!empty($data['other_success_indicator'])) {
+                $otherSuccessIndicator = OtherSuccessIndicator::create([
+                    'application_objective_id' => $data['application_objective_id'],
+                    'description' => $data['other_success_indicator']
+                ]);
+
+                if (!$otherSuccessIndicator) {
+                    DB::rollBack();
+                    return response()->json(['message' => 'Failed to create other success indicator'], Response::HTTP_INTERNAL_SERVER_ERROR);
+                }
+            }
+            
+            $objectiveSuccessIndicator->update([
+                'objective_id' => $data['objective_id'] ?? $objectiveSuccessIndicator->objective_id,
+                'success_indicator_id' => $data['success_indicator_id'] ?? $objectiveSuccessIndicator->success_indicator_id
+            ]);
+
+            DB::commit();
+
+            return (new ObjectiveSuccessIndicatorResource($objectiveSuccessIndicator))
+                ->additional([
+                    "meta" => [
+                        "methods" => $this->methods,
+                        'time_ms' => round((microtime(true) - $start) * 1000)
+                    ],
+                    "message" => "Successfully updated record."
+                ])->response();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to update objective and success indicator',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }
