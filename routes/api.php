@@ -68,8 +68,10 @@ Route::namespace('App\Http\Controllers')->group(function () {
         Route::delete('type-of-functions', "TypeOfFunctionController@destroy");
 
         Route::get('purchase-types', "PurchaseTypeController@index");
+        Route::get('purchase-types/trashbin', "PurchaseTypeController@trash");
         Route::post('purchase-types', "PurchaseTypeController@store");
         Route::put('purchase-types', "PurchaseTypeController@update");
+        Route::put('purchase-types/{id}/restore', "PurchaseTypeController@restore");
         Route::delete('purchase-types', "PurchaseTypeController@destroy");
 
         Route::get('objectives', "ObjectiveController@index");
