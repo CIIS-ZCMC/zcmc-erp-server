@@ -56,12 +56,13 @@ class User extends Authenticatable
         return $this->hasOne(AssignedArea::class);
     }
 
-    public function budgetOfficer()
-    {
-        return Section::where('name', 'Budget Section')->first(); //Temporary solution
-    }
     public function comments()
     {
         return $this->hasMany(ActivityComment::class);
+    }
+
+    public function budgetOfficer()
+    {
+        return Section::where('name', 'Budget Section')->first(); //Temporary solution
     }
 }
