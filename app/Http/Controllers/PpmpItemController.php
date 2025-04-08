@@ -223,7 +223,10 @@ class PpmpItemController extends Controller
     )]
     public function show(PpmpItem $ppmpItem)
     {
-        //
+        return response()->json([
+            'data' => new PpmpItemResource($ppmpItem),
+            'message' => "PPMP Item retrieved successfully."
+        ], Response::HTTP_OK);
     }
 
     #[OA\Put(
