@@ -12,6 +12,8 @@ return new class extends Migration {
     {
         Schema::create('activity_comments', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')->references('id')->on('users');
             $table->unsignedBigInteger('activity_id');
             $table->foreign('activity_id')->references('id')->on('activities');
             $table->string('comment');
