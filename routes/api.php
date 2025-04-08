@@ -116,5 +116,5 @@ Route::namespace('App\Http\Controllers')->group(function () {
         Route::apiResource('ppmp-items', 'PpmpItemController');
 
         Route::apiResource('activity-comments', 'ActivityCommentController');
-        Route::apiResource('objective-success-indicators', 'ObjectiveSuccessIndicatorController');
+        Route::post('update-osi/{id}', 'ObjectiveSuccessIndicatorController@updateForApproverModule');
     });
