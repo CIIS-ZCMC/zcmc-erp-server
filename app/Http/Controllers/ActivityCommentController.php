@@ -7,8 +7,7 @@ use App\Models\ActivityComment;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
-use Illuminate\Support\Facades\Auth;
-
+use App\Http\Resources\ActivityCommentResource;
 
 #[OA\Info(
     title: "Activity Comments API",
@@ -44,6 +43,72 @@ use Illuminate\Support\Facades\Auth;
 )]
 class ActivityCommentController extends Controller
 {
+
+    private $is_development;
+    private $module = 'activity-comments';
+
+    public function __construct()
+    {
+        $this->is_development = env("APP_DEBUG", true);
+    }
+
+    private function cleanActivityCommentData(array $data): array
+    {
+        $cleanData = [];
+        
+        if (isset($data['comment'])) {
+            $cleanData['comment'] = strip_tags($data['comment']);
+        }
+        
+        return $cleanData;
+    }
+
+    protected function getMetadata($method): array {
+        if($method === 'get') {
+            $metadata = ["methods" => ["GET, POST, PUT, DELETE"]];
+            $metadata['modes'] = ['selection', 'pagination'];
+
+            if($this->is_development) {
+                $metadata['urls'] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?activity_comment_id=[primary-key]",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                ];
+            }
+
+            return $metadata;
+        }
+
+        if($method === 'put') {
+            $metadata = ["methods" => ["PUT"]];
+            
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
+                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["comment"];
+            }
+            
+            return $metadata;
+        }
+
+        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+
+        if($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+
+            $metadata["fields"] =  ["comment"];
+        }
+
+        return $metadata;
+    }
+
     #[OA\Get(
         path: "/api/activity-comments",
         summary: "List all activity comments",
@@ -110,12 +175,28 @@ class ActivityCommentController extends Controller
             )
         ]
     )]
-    public function index()
+    public function index(Request $request)
     {
-        return ActivityComment::when(request('activity_id'), function ($query) {
-            $query->where('activity_id', request('activity_id'));
-        })
-            ->paginate(request('per_page', 15));
+       $activity_comments = ActivityComment::with('user', 'activity')->get();
+
+       if (!$activity_comments) {
+           return response()->json([
+               'message' => 'No activity comments found'
+           ], Response::HTTP_NOT_FOUND);
+       }
+
+       return response()->json([
+           'data' => ActivityCommentResource::collection($activity_comments),
+           "metadata" => [
+               "methods" => "[GET, POST, PUT, DELETE]",
+               "urls" => [
+                   env("SERVER_DOMAIN")."/api/".$this->module."?activity_id=[primary-key]",
+                   env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
+                   env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                   env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+               ]
+           ]
+       ]);
     }
 
     #[OA\Post(
@@ -173,8 +254,10 @@ class ActivityCommentController extends Controller
         ]);
 
         $activity = Activity::findOrFail($validated['activity_id']);
+
         $activity->comments()->create([
-            'comment' => $validated['comment']
+            'comment' => $validated['comment'],
+            'user_id' => 1
         ]);
 
         $comment = $activity->comments()->latest()->first();

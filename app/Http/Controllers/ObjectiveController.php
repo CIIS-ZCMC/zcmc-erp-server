@@ -540,59 +540,6 @@ class ObjectiveController extends Controller
         return $this->singleRecordUpdate($request, $start);
     }
 
-    public function updateForApproverModule($id)
-    {
-        $objectiveSuccessIndicator = ObjectiveSuccessIndicator::with(
-            'objective',
-            'successIndicator'
-        )->findOrFail($id);
-
-        try {
-            DB::beginTransaction();
-
-            // Update objective if provided
-            if (request()->has('objective')) {
-                $cleanData = $this->cleanObjectivesData(request()->input('objective'));
-                $objectiveSuccessIndicator->objective->update($cleanData);
-            }
-
-            // Update success indicator if provided
-            if (request()->has('success_indicator')) {
-                $successIndicatorId = request()->input('success_indicator')['success_indicator_id'] ?? null;
-                
-                if ($successIndicatorId) {
-                    $objectiveSuccessIndicator->update([
-                        'success_indicator_id' => $successIndicatorId,
-                    ]);
-                }
-            }
-
-            // Create new objective success indicator if requested
-            if (request()->has('new_success_indicator') && !request()->has('objective_success_indicator_id')) {
-                $newSuccessIndicatorId = request()->input('new_success_indicator')['success_indicator_id'] ?? null;
-                
-                if ($newSuccessIndicatorId) {
-                    $objectiveSuccessIndicator->objective->objectiveSuccessIndicators()->create([
-                        'success_indicator_id' => $newSuccessIndicatorId,
-                    ]);
-                }
-            }
-
-            DB::commit();
-            
-            return response()->json([
-                'data' => $objectiveSuccessIndicator->objective->fresh(['objectiveSuccessIndicators', 'objectiveSuccessIndicators.successIndicator']),
-                'message' => 'Objective and success indicator updated successfully'
-            ], Response::HTTP_OK);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'message' => 'Failed to update objective and success indicator',
-                'error' => $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
-        }
-    }
-
     #[OA\Delete(
         path: "/api/objectives/{id}",
         summary: "Delete an activity comment",

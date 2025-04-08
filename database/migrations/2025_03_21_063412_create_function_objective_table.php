@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('function_objectives', function (Blueprint $table) {
             $table->id();
             $table->foreignId('type_of_function_id')->constrained()->cascadeOnDelete();
-            $table->string('objective');
+            $table->foreignId('objective_id')->constrained()->cascadeOnDelete();
             $table->timestamps();
         });
     }

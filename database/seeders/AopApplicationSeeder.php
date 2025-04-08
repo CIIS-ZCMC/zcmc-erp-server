@@ -10,8 +10,8 @@ use App\Models\AopApplication;
 use App\Models\ApplicationObjective;
 use App\Models\Activity;
 use App\Models\TypeOfFunction;
-use App\Models\FunctionObjective;
 use App\Models\SuccessIndicator;
+use App\Models\Objective;
 use App\Models\Target;
 use App\Models\Resource;
 use App\Models\ResponsiblePerson;
@@ -330,10 +330,16 @@ class AopApplicationSeeder extends Seeder
                 $selectedObjectives = array_slice($objectives, $startIndex, min(2, count($objectives)));
 
                 foreach ($selectedObjectives as $index => $objectiveName) {
-                    // Create function objective directly into the table
+                    // Create or find an objective
+                    $objective = Objective::firstOrCreate(
+                        ['description' => $objectiveName],
+                        ['code' => 'OBJ-' . strtoupper(substr(str_replace(' ', '', $objectiveName), 0, 5)) . '-' . rand(100, 999)]
+                    );
+                    
+                    // Create function objective with the updated schema
                     $functionObjective = DB::table('function_objectives')->insertGetId([
                         'type_of_function_id' => $typeOfFunction->id,
-                        'objective' => $objectiveName,
+                        'objective_id' => $objective->id,
                         'created_at' => now(),
                         'updated_at' => now()
                     ]);

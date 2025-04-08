@@ -60,4 +60,8 @@ class User extends Authenticatable
     {
         return Section::where('name', 'Budget Section')->first(); //Temporary solution
     }
+    public function comments()
+    {
+        return $this->hasMany(ActivityComment::class);
+    }
 }
