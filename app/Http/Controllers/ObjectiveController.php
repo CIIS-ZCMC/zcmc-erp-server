@@ -526,7 +526,7 @@ class ObjectiveController extends Controller
             $response = ["message" => "ID parameter is required."];
 
             if ($this->is_development) {
-                $response['meta'] = MetadataComposerHelper::compose('put', $this->module);
+                $response['meta'] = MetadataComposerHelper::compose('put', $this->module, $this->is_development);
             }
 
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -575,7 +575,7 @@ class ObjectiveController extends Controller
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    $response['meta'] = MetadataComposerHelper::compose('delete', $this->module)
+                    $response['meta'] = MetadataComposerHelper::compose('delete', $this->module, $this->is_development)
                 ];
             }
 
