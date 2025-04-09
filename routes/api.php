@@ -122,5 +122,6 @@ Route::namespace('App\Http\Controllers')->group(function () {
 
     // Approver  Module
     Route::get('aop-requests', 'AopApplicationController@listOfAopRequests');
+    Route::get('manage-aop-requset/{id}', 'AopApplicationController@manageAopRequest');
     Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
 });
