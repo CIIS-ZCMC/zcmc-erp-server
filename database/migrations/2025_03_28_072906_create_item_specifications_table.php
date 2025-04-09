@@ -13,15 +13,14 @@ return new class extends Migration
     {
         Schema::create('item_specifications', function (Blueprint $table) {
             $table->id();
+            $table->text('description');
             $table->unsignedBigInteger('item_id')->nullable();
             $table->foreign('item_id')->references('id')->on('items');
             $table->unsignedBigInteger('item_request_id')->nullable();
             $table->foreign('item_request_id')->references('id')->on('item_requests');
-            $table->integer('month');
-            $table->integer('year');
-            $table->integer('quantity');
             $table->unsignedBigInteger('item_specification_id')->nullable();
             $table->foreign('item_specification_id')->references('id')->on('item_specifications');
+            $table->softDeletes();
             $table->timestamps();
         });
     }
@@ -31,6 +30,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('item_specifications', function(Blueprint $table){
+            $table->dropSoftDeletes();
+        });
+
         Schema::dropIfExists('item_specifications');
     }
 };
