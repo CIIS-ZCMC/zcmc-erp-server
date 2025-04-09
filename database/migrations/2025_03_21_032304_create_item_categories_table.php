@@ -13,14 +13,12 @@ return new class extends Migration
     {
         Schema::create('item_categories', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('parent_id')->nullable();
-            $table->foreign('parent_id')->references('id')->on('item_categories')->onDelete('set null');
             $table->string('name');
             $table->string('code');
             $table->string('description')->nullable();
-            $table->datetime('deleted_at')->nullable();
             $table->unsignedBigInteger('item_category_id')->nullable();
-            $table->foreign('item_category_id')->references('id')->on('item_categories');
+            $table->foreign('item_category_id')->references('id')->on('item_categories')->onDelete('set null');
+            $table->softDeletes();
             $table->timestamps();
         });
     }
@@ -30,6 +28,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('item_categories', function(Blueprint $table){
+            $table->dropSoftDeletes();
+        });
+
         Schema::dropIfExists('item_categories');
     }
 };

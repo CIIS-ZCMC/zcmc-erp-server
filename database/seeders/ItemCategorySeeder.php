@@ -79,7 +79,7 @@ class ItemCategorySeeder extends Seeder
         // Create all sub-categories
         foreach ($subCategories as $subCategory) {
             ItemCategory::create([
-                'parent_id' => $categoryMap[$subCategory['parent']],
+                'item_category_id' => $categoryMap[$subCategory['parent']],
                 'name' => $subCategory['name'],
                 'code' => $subCategory['code'],
                 'description' => 'Sub-category of ' . $subCategory['parent'],
