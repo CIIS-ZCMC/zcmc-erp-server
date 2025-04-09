@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\ShowAopApplicationResource;
+use App\Http\Resources\AopRequestResource;
 use App\Models\AopApplication;
 use App\Models\FunctionObjective;
 use Illuminate\Http\Request;
@@ -34,6 +35,59 @@ use Illuminate\Support\Str;
 )]
 class AopApplicationController extends Controller
 {
+    private $is_development;
+    private $module = 'aop-applications';
+
+    public function __construct()
+    {
+        $this->is_development = env("APP_DEBUG", true);
+    }
+
+    protected function getMetadata($method): array
+    {
+        if ($method === 'get') {
+            $metadata = ["methods" => ["GET, POST, PUT, DELETE"]];
+            $metadata['modes'] = ['selection', 'pagination'];
+
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?item_category_id=[primary-key]",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&search=value"
+                ];
+            }
+
+            return $metadata;
+        }
+
+        if ($method === 'put') {
+            $metadata = ["methods" => ["PUT"]];
+
+            if ($this->is_development) {
+                $metadata["urls"] = [
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2"
+                ];
+                $metadata['fields'] = ["name", "code"];
+            }
+
+            return $metadata;
+        }
+
+        $metadata = ["methods" => ["GET, PUT, DELETE"]];
+
+        if ($this->is_development) {
+            $metadata["urls"] = [
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
+                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
+            ];
+            $metadata['fields'] = ["code"];
+        }
+
+        return $metadata;
+    }
 
     #[OA\Get(
         path: "/api/aop-applications",
@@ -300,5 +354,76 @@ class AopApplicationController extends Controller
     public function destroy(AopApplication $aopApplication)
     {
         //
+    }
+
+    #[OA\Get(
+        path: "/api/aop-requests",
+        summary: "List all AOP requests",
+        tags: ["AOP Requests"],
+        parameters: [
+            new OA\Parameter(
+                name: "status",
+                in: "query",
+                description: "Filter by status",
+                required: false,
+                schema: new OA\Schema(type: "string")
+            ),
+            new OA\Parameter(
+                name: "year",
+                in: "query",
+                description: "Filter by year",
+                required: false,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Successful operation",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/AopRequest")
+                )
+            )
+        ]
+    )]
+    public function listOfAopRequests(Request $request)
+    {
+        $page = $request->query('page') > 0 ? $request->query('page') : 1;
+        $per_page = $request->query('per_page') ?? 15;
+        
+        $query = AopApplication::with([
+            'user',
+            'applicationTimeline',
+        ]);
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('year')) {
+            $query->whereYear('created_at', $request->year);
+        }
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('mission', 'like', "%{$search}%")
+                  ->orWhere('remarks', 'like', "%{$search}%");
+            });
+        }
+
+        $aopApplications = $query->paginate($per_page, ['*'], 'page', $page);
+
+        return response()->json([
+            'data' => AopRequestResource::collection($aopApplications),
+            'pagination' => [
+                'total' => $aopApplications->total(),
+                'per_page' => $aopApplications->perPage(),
+                'current_page' => $aopApplications->currentPage(),
+                'last_page' => $aopApplications->lastPage(),
+            ],
+            'metadata' => $this->getMetadata('get')
+        ], Response::HTTP_OK);
     }
 }
