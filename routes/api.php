@@ -44,15 +44,19 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('item-categories/import', "ItemCategoryController@import");
     Route::get('item-categories/template', "ItemCategoryController@downloadTemplate");
     Route::get('item-categories', "ItemCategoryController@index");
+    Route::get('item-categories/trashbin', "ItemCategoryController@trash");
     Route::post('item-categories', "ItemCategoryController@store");
     Route::put('item-categories', "ItemCategoryController@update");
+    Route::put('item-categories/{id}/restore', "ItemCategoryController@restore");
     Route::delete('item-categories', "ItemCategoryController@destroy");
 
     Route::post('item-classifications/import', "itemClassificationController@import");
     Route::get('item-classifications/template', "itemClassificationController@downloadTemplate");
     Route::get('item-classifications', "itemClassificationController@index");
+    Route::get('item-classifications/trashbin', "itemClassificationController@trash");
     Route::post('item-classifications', "itemClassificationController@store");
     Route::put('item-classifications', "itemClassificationController@update");
+    Route::put('item-classifications/{id}/restore', "itemClassificationController@restore");
     Route::delete('item-classifications', "itemClassificationController@destroy");
 
     Route::get('success-indicators', "SuccessIndicatorController@index");
@@ -68,8 +72,10 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::delete('type-of-functions', "TypeOfFunctionController@destroy");
 
     Route::get('purchase-types', "PurchaseTypeController@index");
+    Route::get('purchase-types/trashbin', "PurchaseTypeController@trash");
     Route::post('purchase-types', "PurchaseTypeController@store");
     Route::put('purchase-types', "PurchaseTypeController@update");
+    Route::put('purchase-types/{id}/restore', "PurchaseTypeController@restore");
     Route::delete('purchase-types', "PurchaseTypeController@destroy");
 
     Route::get('objectives', "ObjectiveController@index");

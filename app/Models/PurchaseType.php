@@ -3,24 +3,27 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PurchaseType extends Model
 {   
+    use SoftDeletes;
+
     protected $table = "purchase_types";
 
     public $fillable = [
         "code",
-        "description",
-        "deleted_at"
+        "description"
     ];
 
     public $timestamps = true;
 
-    // Uncomment once the Resource
-    // public function resources()
-    // {
-    //   return $this->hasMany(Resource::class);
-    // }
+    protected $casts = ["deleted_at" => 'datetime'];
+
+    public function resources()
+    {
+      return $this->hasMany(Resource::class);
+    }
     
     public function logs()
     {

@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class PurchaseTypeResource extends JsonResource
+class ItemClassificationTrashResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,12 +16,13 @@ class PurchaseTypeResource extends JsonResource
     {
         return [
             "id" => $this->id,
-            "code" => $this->code,
+            "name" => $this->name,
+            "code" => $this->code, 
             "description" => $this->description,
             "meta" => [
                 "created_at" => $this->created_at,
                 "updated_at" => $this->updated_at
             ]
-         ];
+            ];
     }
 }

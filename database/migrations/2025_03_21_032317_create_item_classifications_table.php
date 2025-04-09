@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->string('name');
             $table->string('code');
             $table->string('description')->nullable();
-            $table->dateTime('deleted_at')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
@@ -25,6 +25,10 @@ return new class extends Migration {
      */
     public function down(): void
     {
+        Schema::table('item_categories', function(Blueprint $table){
+            $table->dropSoftDeletes();
+        });
+
         Schema::dropIfExists('item_classifications');
     }
 };

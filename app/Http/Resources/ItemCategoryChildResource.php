@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class ItemCategoryResource extends JsonResource
+class ItemCategoryChildResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -15,25 +15,18 @@ class ItemCategoryResource extends JsonResource
     public function toArray(Request $request): array
     {
         $label = $this->name;
-        $subcategory = [];
-        $parentCategory = null;
-
-        if(count($this->itemCategories) > 0){
-            $subcategory = ItemCategoryChildResource::collection($this->itemCategories);
-        }
-
+        
         if($this->itemCategory){
-            $parentCategory = new ItemCategoryParentResource($this->itemCategory);
-            $label = $label.":".$this->itemCategory->name;
+            $label = $this->itemCategory->name.":".$label;
         }
 
         return [
             'id' => $this->id,
-            'name' => $label,
+            'label' => $label, 
+            'name' => $this->name, 
             'code' => $this->code,
             'description' => $this->description,
-            'parent_category' => $parentCategory,
-            'sub_category' => $subcategory,
+            'parent_category_id' => $this->itemCategory->id,
             'meta' => [
                 "created_at" => $this->created_at,
                 "updated_at" => $this->updated_at
