@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\ShowAopApplicationResource;
+use App\Http\Resources\AopRequestResource;
 use App\Models\AopApplication;
 use App\Models\FunctionObjective;
 use Illuminate\Http\Request;
@@ -300,5 +301,56 @@ class AopApplicationController extends Controller
     public function destroy(AopApplication $aopApplication)
     {
         //
+    }
+
+    #[OA\Get(
+        path: "/api/aop-requests",
+        summary: "List all AOP requests",
+        tags: ["AOP Requests"],
+        parameters: [
+            new OA\Parameter(
+                name: "status",
+                in: "query",
+                description: "Filter by status",
+                required: false,
+                schema: new OA\Schema(type: "string")
+            ),
+            new OA\Parameter(
+                name: "year",
+                in: "query",
+                description: "Filter by year",
+                required: false,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Successful operation",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/AopRequest")
+                )
+            )
+        ]
+    )]
+    public function listOfAopRequests(Request $request)
+    {
+        $query = AopApplication::with([
+            'user', 
+            'applicationTimeline',
+        ]);
+        
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+        
+        if ($request->has('year')) {
+            $query->whereYear('created_at', $request->year);
+        }
+        
+        $aopApplications = $query->get();
+        
+        return AopRequestResource::collection($aopApplications);
     }
 }
