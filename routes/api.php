@@ -120,5 +120,7 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::apiResource('activity-comments', 'ActivityCommentController');
     Route::post('update-osi/{id}', 'ObjectiveSuccessIndicatorController@updateForApproverModule');
 
+    // Approver  Module
     Route::get('aop-requests', 'AopApplicationController@listOfAopRequests');
+    Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
 });
