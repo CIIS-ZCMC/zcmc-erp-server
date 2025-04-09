@@ -11,11 +11,12 @@ class LogDescription extends Model
     public $fillable = [
         'title',
         'code',
-        'description',
-        'deleted_at'
+        'description'
     ];
 
     public $timestamps = true;
+
+    protected $casts = ['deleted_at' => 'datetime'];
 
     public function transactionLogs()
     {

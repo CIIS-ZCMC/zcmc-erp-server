@@ -17,6 +17,7 @@ class ApplicationObjectiveResource extends JsonResource
         return [
             'id' => $this->id,
             'objective_code' => $this->objective_code,
+<<<<<<< HEAD
             'function_type' => $this->whenLoaded('functionObjective', function () {
                 return $this->functionObjective->function->type ?? null; // Get type from functions table
             }),
@@ -41,6 +42,11 @@ class ApplicationObjectiveResource extends JsonResource
 
                 return $description;
             }),
+=======
+            'function_type' => $this->functionObjective->typeOfFunction->type ?? null,
+            'objective_description' => $this->functionObjective->objective,
+            'success_indicator_description' => $this->successIndicator->description ?? null,
+>>>>>>> 9202c67c6f8317e9af0cfd626b2ac71eec2096fb
             'activities' => ActivityResource::collection($this->whenLoaded('activities')),
         ];
     }

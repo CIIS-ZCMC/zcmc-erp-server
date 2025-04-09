@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('title');
             $table->text('description')->nullable();
             $table->string('code')->nullable();
-            $table->dateTime('deleted_at')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
@@ -26,6 +26,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('log_descriptions', function(Blueprint $table){
+            $table->dropSoftDeletes();
+        });
+
         Schema::dropIfExists('log_descriptions');
     }
 };

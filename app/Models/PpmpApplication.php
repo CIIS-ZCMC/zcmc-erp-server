@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PpmpApplication extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, HasFactory;
 
     protected $table = 'ppmp_applications';
 
@@ -24,10 +25,10 @@ class PpmpApplication extends Model
 
     public $timestamps = true;
 
-    // public function aop_application_id()
-    // {
-    //     return $this->belongsTo(AopApplication::class, 'aop_application_id');
-    // }
+    public function aop_application_id()
+    {
+        return $this->belongsTo(AopApplication::class, 'aop_application_id');
+    }
 
     public function user_id()
     {
@@ -52,5 +53,16 @@ class PpmpApplication extends Model
     public function logs()
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
+    }
+
+    public function calculatePpmpTotal()
+    {
+        return $this->ppmpItem->sum(function ($item) {
+            $itemBudget = $item->item->estimated_budget ?? 0;
+            $itemTotalAmount = $itemBudget * $item->total_quantity;
+
+            return $itemTotalAmount;
+        });
+
     }
 }

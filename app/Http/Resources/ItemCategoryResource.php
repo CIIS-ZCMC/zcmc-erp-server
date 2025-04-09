@@ -14,6 +14,30 @@ class ItemCategoryResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        $label = $this->name;
+        $subcategory = [];
+        $parentCategory = null;
+
+        if(count($this->itemCategories) > 0){
+            $subcategory = ItemCategoryChildResource::collection($this->itemCategories);
+        }
+
+        if($this->itemCategory){
+            $parentCategory = new ItemCategoryParentResource($this->itemCategory);
+            $label = $label.":".$this->itemCategory->name;
+        }
+
+        return [
+            'id' => $this->id,
+            'name' => $label,
+            'code' => $this->code,
+            'description' => $this->description,
+            'parent_category' => $parentCategory,
+            'sub_category' => $subcategory,
+            'meta' => [
+                "created_at" => $this->created_at,
+                "updated_at" => $this->updated_at
+            ]
+        ];
     }
 }

@@ -20,9 +20,9 @@ return new class extends Migration
             $table->unsignedBigInteger('user_id')->comment('Approve by user');
             $table->foreign('user_id')->references('id')->on('users');
             $table->unsignedBigInteger('current_area_id');
-            $table->foreign('current_area_id')->references('id')->on('areas');
+            $table->foreign('current_area_id')->references('id')->on('assigned_areas');
             $table->unsignedBigInteger('next_area_id');
-            $table->foreign('next_area_id')->references('id')->on('areas');
+            $table->foreign('next_area_id')->references('id')->on('assigned_areas');
             $table->enum('status', ['pending', 'approved', 'rejected'])->default('pending');
             $table->text('remarks')->nullable();
             $table->timestamp('date_created')->nullable();

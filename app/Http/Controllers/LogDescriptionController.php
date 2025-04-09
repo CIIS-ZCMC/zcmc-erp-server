@@ -2,25 +2,305 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\MetadataComposerHelper;
 use App\Helpers\PaginationHelper;
+use App\Http\Requests\GetWithPaginatedSearchModeRequest;
 use App\Http\Requests\LogDescriptionRequest;
+use App\Http\Resources\LogDescriptionResource;
 use App\Imports\LogDescriptionsImport;
 use App\Models\LogDescription;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Maatwebsite\Excel\Excel;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use OpenApi\Attributes as OA;
 
+#[OA\Schema(
+    schema: "Log Description",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "title", type: "string"),
+        new OA\Property(property: "code", type: "string", nullable: true),
+        new OA\Property(property: "description", type: "string", nullable: true),
+        new OA\Property(
+            property: "created_at",
+            type: "string",
+            format: "date-time"
+        ),
+        new OA\Property(
+            property: "updated_at",
+            type: "string",
+            format: "date-time"
+        )
+    ]
+)]
 class LogDescriptionController extends Controller
 {
     private $is_development;
 
     private $module = 'log-descriptions';
+    private $methods = '[GET, POST, PUT, DELETE]';
 
     public function __construct()
     {
         $this->is_development = env("APP_DEBUG", true);
     }
+    
+    protected function cleanData(array $data): array
+    {
+        $cleanData = [];
+        
+        if (isset($data['title'])) {
+            $cleanData['title'] = strip_tags($data['title']);
+        }
+        
+        if (isset($data['description'])) {
+            $cleanData['description'] = strip_tags($data['description']);
+        }
 
+        return $cleanData;
+    }
+    
+    protected function cleanLogDescriptionData(array $data): array
+    {
+        $cleanData = [];
+
+        if (isset($data['title'])) {
+            $cleanData['title'] = strip_tags($data['title']);
+        }
+
+        if (isset($data['code'])) {
+            $cleanData['code'] = strip_tags($data['code']);
+        }
+
+        if (isset($data['description'])) {
+            $cleanData['description'] = strip_tags($data['description']);
+        }
+
+        return $cleanData;
+    }
+
+    protected function all($start)
+    {
+        $objective_success_indicator = LogDescription::all();
+
+        return LogDescriptionResource::collection($objective_success_indicator)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }
+    
+    protected function search(Request $request, $start): JsonResource
+    {   
+        $validated = $request->validate([
+            'search' => 'required|string|min:2|max:100',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
+        
+        $searchTerm = '%'.trim($validated['search']).'%';
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
+
+        $results = LogDescription::where('title', 'like', "%{$searchTerm}%")
+            ->orWhere('code', 'like', "%{$searchTerm}%")
+            ->orWhere('description', 'like', "%{$searchTerm}%")
+            ->paginate(
+                perPage: $perPage,
+                page: $page
+            );
+
+        return LogDescriptionResource::collection($results)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'search' => [
+                        'term' => $validated['search'],
+                        'time_ms' => round((microtime(true) - $start) * 1000), // in milliseconds
+                    ],
+                    'pagination' => [
+                        'total' => $results->total(),
+                        'per_page' => $results->perPage(),
+                        'current_page' => $results->currentPage(),
+                        'last_page' => $results->lastPage(),
+                    ]
+                ],
+                'message' => 'Search completed successfully'
+            ]);
+    }
+    
+    protected function pagination(Request $request, $start)
+    {   
+        $validated = $request->validate([
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
+
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
+        
+        $objective_success_indicator = LogDescription::paginate($perPage, ['*'], 'page', $page);
+
+        return LogDescriptionResource::collection($objective_success_indicator)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    'pagination' => [
+                        'total' => $objective_success_indicator->total(),
+                        'per_page' => $objective_success_indicator->perPage(),
+                        'current_page' => $objective_success_indicator->currentPage(),
+                        'last_page' => $objective_success_indicator->lastPage(),
+                    ]
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }
+    
+    protected function singleRecord($log_description_id, $start):LogDescriptionResource|Response
+    {
+        $logDescription = LogDescription::find($log_description_id);
+            
+        if (!$logDescription) {
+            return response()->json(["message" => "Log description not found."], Response::HTTP_NOT_FOUND);
+        }
+    
+        return (new LogDescriptionResource($logDescription))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000)
+                ],
+                "message" => "Successfully retrieved record."
+            ])->response();
+    }
+    
+    protected function bulkUpdate(Request $request, $start):AnonymousResourceCollection|JsonResponse
+    {
+        $log_description_ids = $request->query('id') ?? null;
+
+        if (count($log_description_ids) !== count($request->input('log_descriptions'))) {
+            return response()->json([
+                "message" => "Number of IDs does not match number of log descriptions provided."
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    
+        $updated_log_descriptions = [];
+        $errors = [];
+    
+        foreach ($log_description_ids as $index => $id) {
+            $log_description = LogDescription::find($id);
+            
+            if (!$log_description) {
+                $errors[] = "Log description with ID {$id} not found.";
+                continue;
+            }
+    
+            $cleanData = $this->cleanData($request->input('log_descriptions')[$index]);
+            $log_description->update($cleanData);
+            $updated_log_descriptions[] = $log_description;
+        }
+    
+        if (!empty($errors)) {
+            return LogDescriptionResource::collection($updated_log_descriptions)
+                ->additional([
+                    "meta" => [
+                        'methods' => $this->methods,
+                        'time_ms' => round((microtime(true) - $start) * 1000),
+                        'issue' => $errors
+                    ],
+                    "message" => "Partial update completed with errors.",
+                ])
+                ->response()
+                ->setStatusCode(Response::HTTP_MULTI_STATUS);
+        }
+        
+        return LogDescriptionResource::collection($updated_log_descriptions)
+            ->additional([
+                "meta" => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000)
+                ],
+                "message" => "Successfully updated log descriptions",
+            ]);
+    }
+    
+    protected function singleRecordUpdate(Request $request, $start): JsonResource|LogDescriptionResource|JsonResponse
+    {
+        $log_description_ids = $request->query('id') ?? null;
+        
+        // Convert single ID to array for consistent processing
+        $log_description_ids = is_array($log_description_ids) ? $log_description_ids : [$log_description_ids];
+    
+        // Handle bulk update
+        if ($request->has('log_descriptions')) {
+            $this->bulkUpdate($request, $start);
+        }
+    
+        // Handle single update
+        $log_description = LogDescription::find($log_description_ids[0]);
+        
+        if (!$log_description) {
+            return response()->json([
+                "message" => "Log description not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+    
+        $cleanData = $this->cleanData($request->all());
+        $log_description->update($cleanData);
+
+        return (new LogDescriptionResource($log_description))
+            ->additional([
+                "meta" => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                'message' => 'Successfully update log description record.'
+            ])->response();
+    }
+
+    // Public
+    #[OA\Get(
+        path: '/api/log-descriptions/template',
+        summary: 'Download CSV template for log descriptions',
+        description: 'Returns a CSV template file with example log description entries',
+        tags: ['Log Descriptions'],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: 'CSV template file download',
+                content: new OA\MediaType(
+                    mediaType: 'text/csv',
+                    schema: new OA\Schema(
+                        type: 'string',
+                        format: 'binary'
+                    )
+                ),
+                headers: [
+                    new OA\Header(
+                        header: 'Content-Disposition',
+                        description: 'Attachment with filename',
+                        schema: new OA\Schema(type: 'string'))
+                ]
+            ),
+            new OA\Response(
+                response: Response::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string')
+                    ],
+                    example: ['message' => 'Could not generate template file']
+                )
+            )
+        ]
+    )]
     public function downloadTemplate()
     {
         $headers = [
@@ -53,6 +333,74 @@ class LogDescriptionController extends Controller
         return response()->stream($callback, 200, $headers);
     }
     
+    #[OA\Post(
+        path: '/api/import',
+        summary: 'Import item units from Excel/CSV file',
+        requestBody: new OA\RequestBody(
+            description: 'Excel/CSV file containing item units',
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(
+                            property: 'file',
+                            type: 'string',
+                            format: 'binary',
+                            description: 'Excel file (xlsx, xls, csv)'
+                        )
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Successful import',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(property: 'success_count', type: 'integer'),
+                        new OA\Property(property: 'failure_count', type: 'integer'),
+                        new OA\Property(
+                            property: 'failures',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'row', type: 'integer'),
+                                    new OA\Property(property: 'errors', type: 'array', items: new OA\Items(type: 'string'))
+                                ]
+                            )
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            additionalProperties: new OA\Property(type: 'array', items: new OA\Items(type: 'string')))
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 500,
+                description: 'Server error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(property: 'error', type: 'string')
+                    ]
+                )
+            )
+        ],
+        tags: ['Item Units']
+    )]
     public function import(Request $request)
     {
         $request->validate([
@@ -86,252 +434,91 @@ class LogDescriptionController extends Controller
             ], 500);
         }
     }
-    
-    protected function cleanLogDescriptionData(array $data): array
+
+    #[OA\Get(
+        path: "/api/activity-comments",
+        summary: "List all activity comments",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "per_page",
+                in: "query",
+                description: "Items per page",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 15)
+            ),
+            new OA\Parameter(
+                name: "page",
+                in: "query",
+                description: "Page number",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 1)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Successful operation",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/ActivityComment")
+                )
+            )
+        ]
+    )]
+    public function index(GetWithPaginatedSearchModeRequest $request):AnonymousResourceCollection|JsonResponse|LogDescriptionResource
     {
-        $cleanData = [];
-
-        if (isset($data['title'])) {
-            $cleanData['title'] = strip_tags($data['title']);
-        }
-
-        if (isset($data['code'])) {
-            $cleanData['code'] = strip_tags($data['code']);
-        }
-
-        if (isset($data['description'])) {
-            $cleanData['description'] = strip_tags($data['description']);
-        }
-
-        return $cleanData;
-    }
-    
-    protected function getMetadata($method): array
-    {
-        if($method === 'get'){
-            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
-            $metadata['modes'] = ['selection', 'pagination'];
-
-            if($this->is_development){
-                $metadata['urls'] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?log_description_id=[primary-key]",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                ];
-            }
-
-            return $metadata;
-        }
-        
-        if($method === 'put'){
-            $metadata = ["methods" => "[PUT]"];
-        
-            if ($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
-                ];
-                $metadata['fields'] = ["title", "code", "description"];
-            }
-            
-            return $metadata;
-        }
-        
-        $metadata = ['methods' => ["GET, PUT, DELETE"]];
-
-        if($this->is_development) {
-            $metadata["urls"] = [
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-            ];
-
-            $metadata["fields"] =  ["code"];
-        }
-
-        return $metadata;
-    }
-
-    public function index(Request $request)
-    {
-        $page = $request->query('page') > 0? $request->query('page'): 1;
-        $per_page = $request->query('per_page');
-        $mode = $request->query('mode') ?? 'pagination';
-        $search = $request->query('search');
-        $last_id = $request->query('last_id') ?? 0;
-        $last_initial_id = $request->query('last_initial_id') ?? 0;
-        $page_item = $request->query('page_item') ?? 0;
-        $log_description_id = $request->query('log_description_id') ?? null;
+        $start = microtime(true);
+        $log_description_id = $request->query('id');
+        $search = $request->search;
+        $mode = $request->mode;
 
         if($log_description_id){
-            $log_description = LogDescription::find($log_description_id);
-
-            if(!$log_description){
-                return response()->json([
-                    'message' => "No record found.",
-                    "metadata" => $this->getMetadata('get')
-                ]);
-            }
-
-            return response()->json([
-                'data' => $log_description,
-                "metadata" => $this->getMetadata('get')
-            ], Response::HTTP_OK);
+            return $this->singleRecord($log_description_id, $start);
         }
 
-        if($page < 0 || $per_page < 0){
-            $response = ["message" => "Invalid request."];
-            
-            if($this->is_development){
-                $response = [
-                    "message" => "Invalid value of parameters",
-                    "metadata" => $this->getMetadata('get')
-                ];
-            }
-
-            return response()->json([$response], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        if(!$page && !$per_page){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?log_description_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
-                ];
-            }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        // Handle return for selection record
-        if($mode === 'selection'){
-            if($search  !== null){
-                $log_descriptions = LogDescription::select('id','title','code')
-                    ->where('title', 'like', '%'.$search.'%')
-                    ->where("deleted_at", NULL)->get();
-    
-                $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-    
-                if($this->is_development){
-                    $metadata['content'] = "This type of response is for selection component.";
-                    $metadata['mode'] = "selection";
-                }
-                
-                return response()->json([
-                    "data" => $log_descriptions,
-                    "metadata" => $metadata,
-                ], Response::HTTP_OK);
-            }
-
-            $log_descriptions = LogDescription::select('id','title','code')->where("deleted_at", NULL)->get();
-
-            $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-
-            if($this->is_development){
-                $metadata['content'] = "This type of response is for selection component.";
-                $metadata['mode'] = "selection";
-            }
-            
-            return response()->json([
-                "data" => $log_descriptions,
-                "metadata" => $metadata,
-            ], Response::HTTP_OK);
+        if($mode && $mode === 'selection'){
+            return $this->all($start);
         }
         
-
-        if($search !== null){
-            if($last_id === 0 || $page_item != null){
-                $log_descriptions = LogDescription::where('title', 'like', '%'.$search.'%')
-                    ->where('id','>', $last_id)
-                    ->orderBy('id')
-                    ->limit($per_page)
-                    ->get();
-
-                if(count($log_descriptions)  === 0){
-                    return response()->json([
-                        'data' => [],
-                        'metadata' => [
-                            'methods' => '[GET,POST,PUT,DELETE]',
-                            'pagination' => [],
-                            'page' => 0,
-                            'total_page' => 0
-                        ],
-                    ], Response::HTTP_OK);
-                }
-
-                $allIds = LogDescription::where('title', 'like', '%'.$search.'%')
-                    ->orderBy('id')
-                    ->pluck('id');
-
-                $chunks = $allIds->chunk($per_page);
-                
-                $pagination_helper = new PaginationHelper('log-descriptions', $page, $per_page, 0);
-                $pagination = $pagination_helper->createSearchPagination( $page_item, $chunks, $search, $per_page, $last_initial_id);
-                $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
-                
-                /**
-                 * Save the metadata in database unique per module and user to ensure reuse of metadata
-                 */
-
-                return response()->json([
-                    'data' => $log_descriptions,
-                    'metadata' => [
-                        'methods' => '[GET,POST,PUT,DELETE]',
-                        'pagination' => $pagination,
-                        'page' => $page,
-                        'total_page' => count($chunks)
-                    ],
-                ], Response::HTTP_OK);
-            }
-
-            /**
-             * Reuse existing pagination and update the existing pagination next and previous data
-             */
-
-            $log_descriptions = LogDescription::where('title', 'like', '%'.$search.'%')
-                ->where('id','>', $last_id)
-                ->orderBy('id')
-                ->limit($per_page)
-                ->get();
-
-            // Return the response
-            return response()->json([
-                'data' => $log_descriptions,
-                'metadata' => []
-            ], Response::HTTP_OK);
+        if($search){
+            return $this->search($request, $start);
         }
-        
-        $total_page = LogDescription::all()->pluck('id')->chunk($per_page);
-        $log_descriptions = LogDescription::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
-        $total_page = ceil(count($total_page));
-        
-        $pagination_helper = new PaginationHelper(  $this->module,$page, $per_page, $total_page > 10 ? 10: $total_page);
 
-        return response()->json([
-            "data" => $log_descriptions,
-            "metadata" => [
-                "methods" => "[GET, POST, PUT, DELETE]",
-                "pagination" => $pagination_helper->create(),
-                "page" => $page,
-                "total_page" => $total_page
-            ]
-        ], Response::HTTP_OK);
+        return $this->pagination($request, $start);
     }
 
+    #[OA\Post(
+        path: "/api/activity-comments",
+        summary: "Create a new activity comment",
+        tags: ["Activity Comments"],
+        requestBody: new OA\RequestBody(
+            description: "Comment data",
+            required: true,
+            content: new OA\JsonContent(
+                required: ["activity_id", "content"],
+                properties: [
+                    new OA\Property(property: "activity_id", type: "integer"),
+                    new OA\Property(property: "content", type: "string"),
+                    new OA\Property(property: "user_id", type: "integer", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_CREATED,
+                description: "Comment created",
+                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: "Validation error"
+            )
+        ]
+    )]
     public function store(LogDescriptionRequest $request)
     {
+        $start = microtime(true);
         $base_message = "Successfully created item category";
 
         // Bulk Insert
@@ -368,17 +555,16 @@ class LogDescriptionController extends Controller
             $latest_item_log_descriptions = LogDescription::orderBy('id', 'desc')
                 ->limit(count($cleanData))->get()
                 ->sortBy('id')->values();
-
-            $message = count($latest_item_log_descriptions) > 1? $base_message."s record": $base_message." record.";
-
-            return response()->json([
-                "data" => $latest_item_log_descriptions,
-                "message" => $message,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT ,DELETE]",
-                    "duplicate_items" => $existing_items
-                ]
-            ], Response::HTTP_CREATED);
+            
+            return LogDescriptionResource::collection($latest_item_log_descriptions)
+                ->additional([
+                    'meta' => [
+                        'methods' => $this->methods,
+                        'time_ms' => round((microtime(true) - $start) * 1000),
+                        "duplicate_items" => $existing_items
+                    ],
+                    'message' => 'Successfully stores log descriptions.'
+                ]);
         }
 
         $cleanData = [
@@ -393,107 +579,102 @@ class LogDescriptionController extends Controller
             "description" => strip_tags($request->description),
         ]);
 
-        return response()->json([
-            "data" => $new_item,
-            "message" => $base_message." record.",
-            "metadata" => [
-                "methods" => ['GET, POST, PUT, DELET'],
-            ]
-        ], Response::HTTP_CREATED);
+        return (new LogDescriptionResource($new_item))
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000)
+                ],
+                'message' => 'Successfully store log description.'
+            ])->response();
     }
-    
-    public function update(Request $request): Response
-    {
-        $log_description_ids = $request->query('id') ?? null;
 
+    #[OA\Put(
+        path: "/api/activity-comments/{id}",
+        summary: "Update an activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            description: "Comment data",
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "content", type: "string")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Comment updated",
+                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: "Validation error"
+            )
+        ]
+    )]
+    public function update(Request $request):AnonymousResourceCollection|JsonResponse
+    {
+        $start = microtime(true);
+        $log_description_ids = $request->query('id') ?? null;
+    
+        // Validate ID parameter exists
         if (!$log_description_ids) {
             $response = ["message" => "ID parameter is required."];
-
+            
             if ($this->is_development) {
-                $response['metadata'] = $this->getMetadata('put');
+                $response['meta'] = MetadataComposerHelper::compose('put', $this->module, $this->is_development);
             }
-
+            
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        // Convert single ID to array for consistent processing
-        $log_description_ids = is_array($log_description_ids) ? $log_description_ids : [$log_description_ids];
-
-        // For bulk update
-        if ($request->has('log_descriptions')) {
-            if (count($log_description_ids) !== count($request->input('log_descriptions'))) {
-                return response()->json([
-                    "message" => "Number of IDs does not match number of log descriptions provided.",
-                    "metadata" => $this->getMetadata('put')
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            $updated_logs = [];
-            $errors = [];
-
-            foreach ($log_description_ids as $index => $id) {
-                $log_description = LogDescription::find($id);
-
-                if (!$log_description) {
-                    $errors[] = "Log description with ID {$id} not found.";
-                    continue;
-                }
-
-                $logData = $request->input('log_descriptions')[$index];
-                $cleanData = $this->cleanLogDescriptionData($logData);
-                
-                if (!empty($cleanData)) {
-                    $log_description->update($cleanData);
-                    $updated_logs[] = $log_description;
-                }
-            }
-
-            if (!empty($errors)) {
-                return response()->json([
-                    "data" => $updated_logs,
-                    "message" => "Partial update completed with errors.",
-                    "errors" => $errors,
-                    "metadata" => ["method" => "[PUT]"]
-                ], Response::HTTP_MULTI_STATUS);
-            }
-
-            return response()->json([
-                "data" => $updated_logs,
-                "message" => "Successfully updated " . count($updated_logs) . " log descriptions.",
-                "metadata" => ["method" => "[PUT]"]
-            ], Response::HTTP_OK);
+        // Bulk Insert
+        if ($request->log_descriptions !== null || $request->log_descriptions > 1) {
+            return $this->bulkUpdate($request, $start);
         }
-
-        // Single item update
-        if (count($log_description_ids) > 1) {
-            return response()->json([
-                "message" => "Multiple IDs provided but no log_descriptions array for bulk update.",
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        $log_description = LogDescription::find($log_description_ids[0]);
-
-        if (!$log_description) {
-            return response()->json([
-                "message" => "Log description not found."
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        $cleanData = $this->cleanLogDescriptionData($request->all());
-        
-        if (!empty($cleanData)) {
-            $log_description->update($cleanData);
-        }
-
-        $response = [
-            "data" => $log_description,
-            "message" => "Log description updated successfully.",
-            "metadata" => $this->getMetadata('put')
-        ];
-
-        return response()->json($response, Response::HTTP_OK);
-    }
     
+        return $this->singleRecordUpdate($request, $start);
+    }
+
+    #[OA\Delete(
+        path: "/api/activity-comments/{id}",
+        summary: "Delete an activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_NO_CONTENT,
+                description: "Comment deleted"
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]
     public function destroy(Request $request): Response
     {
         $log_description_ids = $request->query('id') ?? null;
@@ -505,7 +686,7 @@ class LogDescriptionController extends Controller
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => $this->getMetadata('delete')
+                    "meta" => MetadataComposerHelper::compose('delete', $this->module, $this->is_development)
                 ];
             }
     
@@ -542,8 +723,7 @@ class LogDescriptionController extends Controller
     
             $found_ids = $log_descriptions->pluck('id')->toArray();
             
-            $deleted_count = LogDescription::whereIn('id', $found_ids)
-                ->update(['deleted_at' => now()]);
+            $deleted_count = LogDescription::whereIn('id', $found_ids)->delete();
     
             return response()->json([
                 "message" => "Successfully deleted {$deleted_count} log description(s).",
@@ -573,7 +753,7 @@ class LogDescriptionController extends Controller
             );
         }
 
-        $log_description->update(['deleted_at' => now()]);
+        $log_description->delete();
 
         return response()->json([
             "message" => "Successfully deleted log description.",

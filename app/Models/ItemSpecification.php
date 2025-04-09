@@ -13,7 +13,8 @@ class ItemSpecification extends Model
         'item_request_id',
         'month',
         'year',
-        'quantity'
+        'quantity',
+        'item_specification_id'
     ];
 
     public $timestamps = true;
@@ -26,5 +27,15 @@ class ItemSpecification extends Model
     public function itemRequest()
     {
         return $this->belongsTo(ItemRequest::class);
+    }
+
+    public function itemSpecification()
+    {
+        return $this->belongsTo(ItemSpecification::class);
+    }
+
+    public function itemSpecifications()
+    {
+        return $this->hasMany(ItemSpecification::class);
     }
 }

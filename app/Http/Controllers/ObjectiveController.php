@@ -2,33 +2,61 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\MetadataComposerHelper;
 use App\Helpers\PaginationHelper;
+use App\Http\Requests\GetWithPaginatedSearchModeRequest;
 use App\Http\Requests\ObjectiveRequest;
 use App\Http\Resources\ObjectiveDuplicateResource;
 use App\Http\Resources\ObjectiveResource;
 use App\Models\Objective;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Resources\Json\JsonResource;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use OpenApi\Attributes as OA;
+use Illuminate\Support\Facades\DB;
+use App\Models\ObjectiveSuccessIndicator;
 
+#[OA\Schema(
+    schema: "Objective",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "code", type: "string", nullable: true),
+        new OA\Property(property: "description", type: "string"),
+        new OA\Property(
+            property: "created_at",
+            type: "string",
+            format: "date-time"
+        ),
+        new OA\Property(
+            property: "updated_at",
+            type: "string",
+            format: "date-time"
+        )
+    ]
+)]
 class ObjectiveController extends Controller
 {
     private $is_development;
 
     private $module = 'objectives';
 
+    private $methods = '[GET, POST, PUT, DELETE]';
+
     public function __construct()
     {
         $this->is_development = env("APP_DEBUG", true);
     }
-    
+
     private function cleanObjectivesData(array $data): array
     {
         $cleanData = [];
-        
+
         if (isset($data['code'])) {
             $cleanData['code'] = strip_tags($data['code']);
         }
-        
+
         if (isset($data['description'])) {
             $cleanData['description'] = strip_tags($data['description']);
         }
@@ -36,53 +64,305 @@ class ObjectiveController extends Controller
         return $cleanData;
     }
     
-    protected function getMetadata($method): array
+    // Protected function
+    protected function search(Request $request, $start): JsonResource
+    {   
+        $validated = $request->validate([
+            'search' => 'required|string|min:2|max:100',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
+        
+        $searchTerm = '%'.trim($validated['search']).'%';
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
+
+        $results = Objective::where('code', 'like', "%{$searchTerm}%")
+            ->orWhere('description', 'like', "%{$searchTerm}%")
+            ->paginate(
+                perPage: $perPage,
+                page: $page
+            );
+
+        return ObjectiveResource::collection($results)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'search' => [
+                        'term' => $validated['search'],
+                        'time_ms' => round((microtime(true) - $start) * 1000), // in milliseconds
+                    ],
+                    'pagination' => [
+                        'total' => $results->total(),
+                        'per_page' => $results->perPage(),
+                        'current_page' => $results->currentPage(),
+                        'last_page' => $results->lastPage(),
+                    ]
+                ],
+                'message' => 'Search completed successfully'
+            ]);
+    }
+    
+    protected function all($start)
     {
-        if($method === 'get'){
-            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
-            $metadata['modes'] = ['selection', 'pagination'];
+        $objective_success_indicator = Objective::all();
 
-            if($this->is_development){
-                $metadata['urls'] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?objective_id=[primary-key]",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                ];
-            }
+        return ObjectiveResource::collection($objective_success_indicator)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }
+    
+    protected function pagination(Request $request, $start): AnonymousResourceCollection
+    {   
+        $validated = $request->validate([
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
 
-            return $metadata;
-        }
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
         
-        if($method === 'put'){
-            $metadata = ["methods" => "[PUT]"];
-        
-            if ($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
-                ];
-                $metadata['fields'] = ["title", "code", "description"];
-            }
+        $objective_success_indicator = Objective::paginate($perPage, ['*'], 'page', $page);
+
+        return ObjectiveResource::collection($objective_success_indicator)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    'pagination' => [
+                        'total' => $objective_success_indicator->total(),
+                        'per_page' => $objective_success_indicator->perPage(),
+                        'current_page' => $objective_success_indicator->currentPage(),
+                        'last_page' => $objective_success_indicator->lastPage(),
+                    ]
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }     
+
+    protected function singleRecord($item_unit_id, $start):JsonResponse
+    {
+        $itemUnit = Objective::find($item_unit_id);
             
-            return $metadata;
+        if (!$itemUnit) {
+            return response()->json(["message" => "Item unit not found."], Response::HTTP_NOT_FOUND);
         }
-        
-        $metadata = ['methods' => ["GET, PUT, DELETE"]];
-
-        if($this->is_development) {
-            $metadata["urls"] = [
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-            ];
-
-            $metadata["fields"] =  ["code"];
-        }
-
-        return $metadata;
+    
+        return (new ObjectiveResource($itemUnit))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000)
+                ],
+                "message" => "Successfully retrieved record."
+            ])->response();
     }
 
+    protected function bulkStore(Request $request, $start):ObjectiveResource|AnonymousResourceCollection|JsonResponse  
+    {
+        $existing_items = Objective::whereIn('code', collect($request->objectives)->pluck('code'))
+        ->orWhereIn('description', collect($request->objectives)->pluck('description'))
+        ->get(['code', 'description'])->toArray();
+
+        // Convert existing items into a searchable format
+        $existing_names = array_column($existing_items, 'code');
+        $existing_codes = array_column($existing_items, 'description');
+
+        foreach ($request->objectives as $objective) {
+            if (!in_array($objective['code'], $existing_names) && !in_array($objective['description'], $existing_codes)) {
+                $cleanData[] = [
+                    "code" => strip_tags($objective['code']),
+                    "description" => isset($objective['description']) ? strip_tags($objective['description']) : null,
+                    "created_at" => now(),
+                    "updated_at" => now()
+                ];
+            }
+        }
+
+        if (empty($cleanData) && count($existing_items) > 0) {
+            return response()->json([
+                'data' => $existing_items,
+                'message' => "Failed to bulk insert all objectives already exist.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        Objective::insert($cleanData);
+
+        $latest_objective = Objective::orderBy('id', 'desc')
+            ->limit(count($cleanData))->get()
+            ->sortBy('id')->values();
+
+        return ObjectiveResource::collection($latest_objective)
+            ->additional([
+                'meta' => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    "existings" => $existing_items,
+                ],
+                "message" => "Successfully store data."
+            ]);
+    }
+    
+    protected function bulkUpdate(Request $request, $start):AnonymousResourceCollection|JsonResponse
+    {
+        $objective_ids = $request->query('id') ?? null;
+
+        if (count($objective_ids) !== count($request->input('objectives'))) {
+            return response()->json([
+                "message" => "Number of IDs does not match number of objectives provided.",
+                // "meta" => MetadataComposerHelper::compose('put', $this->module)
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    
+        $updated_objectives = [];
+        $errors = [];
+    
+        foreach ($objective_ids as $index => $id) {
+            $objective = Objective::find($id);
+            
+            if (!$objective) {
+                $errors[] = "Log description with ID {$id} not found.";
+                continue;
+            }
+    
+            $cleanData = $this->cleanObjectivesData($request->input('objectives')[$index]);
+            $objective->update($cleanData);
+            $updated_objectives[] = $objective;
+        }
+    
+        if (!empty($errors)) {
+            return ObjectiveResource::collection($updated_objectives)
+                ->additional([
+                    "meta" => [
+                        'methods' => $this->methods,
+                        'time_ms' => round((microtime(true) - $start) * 1000),
+                        'issue' => $errors,
+                    ],
+                    "message" => "Partial update completed with errors.",
+                ])
+                ->response()
+                ->setStatusCode(Response::HTTP_MULTI_STATUS);
+        }
+        
+        return ObjectiveResource::collection($updated_objectives)
+            ->additional([
+                "meta" => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    // "url_format" => MetadataComposerHelper::compose('put', $this->module)
+                ],
+                "message" => "Partial update completed with errors.",
+            ]);
+    }
+
+    protected function singleRecordUpdate(Request $request, $start): JsonResource|ObjectiveResource|JsonResponse
+    {
+        $objectives = $request->query('id') ?? null;
+        
+        // Convert single ID to array for consistent processing
+        $objectives = is_array($objectives) ? $objectives : [$objectives];
+    
+        // Handle bulk update
+        if ($request->has('objectives')) {
+            $this->bulkUpdate($request, $start);
+        }
+    
+        // Handle single update
+        $objective = Objective::find($objectives[0]);
+        
+        if (!$objective) {
+            return response()->json([
+                "message" => "Objective not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+    
+        $cleanData = $this->cleanObjectivesData($request->all());
+        $objective->update($cleanData);
+
+        return (new ObjectiveResource($objective))
+            ->additional([
+                "meta" => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                'message' => 'Successfully update objective record.'
+            ])->response();
+    }
+
+    #[OA\Post(
+        path: '/api/import',
+        summary: 'Import item units from Excel/CSV file',
+        requestBody: new OA\RequestBody(
+            description: 'Excel/CSV file containing item units',
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(
+                            property: 'file',
+                            type: 'string',
+                            format: 'binary',
+                            description: 'Excel file (xlsx, xls, csv)'
+                        )
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Successful import',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(property: 'success_count', type: 'integer'),
+                        new OA\Property(property: 'failure_count', type: 'integer'),
+                        new OA\Property(
+                            property: 'failures',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'row', type: 'integer'),
+                                    new OA\Property(property: 'errors', type: 'array', items: new OA\Items(type: 'string'))
+                                ]
+                            )
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            additionalProperties: new OA\Property(type: 'array', items: new OA\Items(type: 'string'))
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 500,
+                description: 'Server error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(property: 'error', type: 'string')
+                    ]
+                )
+            )
+        ],
+        tags: ['Objectives']
+    )]
     public function import(Request $request)
     {
         return response()->json([
@@ -90,381 +370,249 @@ class ObjectiveController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function index(Request $request)
+    #[OA\Get(
+        path: "/api/objectives",
+        summary: "List all activity comments",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "per_page",
+                in: "query",
+                description: "Items per page",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 15)
+            ),
+            new OA\Parameter(
+                name: "page",
+                in: "query",
+                description: "Page number",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 1)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Successful operation",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/ActivityComment")
+                )
+            )
+        ]
+    )]
+    public function index(GetWithPaginatedSearchModeRequest $request): AnonymousResourceCollection|JsonResource|JsonResponse
     {
-        $page = $request->query('page') > 0? $request->query('page'): 1;
-        $per_page = $request->query('per_page');
-        $mode = $request->query('mode') ?? 'pagination';
-        $search = $request->query('search');
-        $last_id = $request->query('last_id') ?? 0;
-        $last_initial_id = $request->query('last_initial_id') ?? 0;
-        $page_item = $request->query('page_item') ?? 0;
-        $objective_id = $request->query('objective_id') ?? null;
+        $start = microtime(true);
+        $item_unit_id = $request->query('id');
+        $search = $request->search;
+        $mode = $request->mode;
 
-        if($objective_id){
-            $purchase_type = Objective::find($objective_id);
-
-            if(!$purchase_type){
-                return response()->json([
-                    'message' => "No record found.",
-                    "metadata" => $this->getMetadata('get')
-                ]);
-            }
-
-            return response()->json([
-                'data' => $purchase_type,
-                "metadata" => $this->getMetadata('get')
-            ], Response::HTTP_OK);
+        if($item_unit_id){
+            return $this->singleRecord($item_unit_id, $start);
         }
 
-        if($page < 0 || $per_page < 0){
-            $response = ["message" => "Invalid request."];
-            
-            if($this->is_development){
-                $response = [
-                    "message" => "Invalid value of parameters",
-                    "metadata" => $this->getMetadata('get')
-                ];
-            }
-
-            return response()->json([$response], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        if(!$page && !$per_page){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => $this->getMetadata('get')
-                ];
-            }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        // Handle return for selection record
-        if($mode === 'selection'){
-            if($search !== null){
-                $objectives = Objective::select('id','code','description')
-                    ->where('code', 'like', "%".$search."%")
-                    ->where("deleted_at", NULL)->get();
-    
-                $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-    
-                if($this->is_development){
-                    $metadata['content'] = "This type of response is for selection component.";
-                    $metadata['mode'] = "selection";
-                }
-                
-                return response()->json([
-                    "data" => $objectives,
-                    "metadata" => $metadata,
-                ], Response::HTTP_OK);
-            }
-
-            $objectives = Objective::select('id','code','description')->where("deleted_at", NULL)->get();
-
-            $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-
-            if($this->is_development){
-                $metadata['content'] = "This type of response is for selection component.";
-                $metadata['mode'] = "selection";
-            }
-            
-            return response()->json([
-                "data" => $objectives,
-                "metadata" => $metadata,
-            ], Response::HTTP_OK);
+        if($mode && $mode === 'selection'){
+            return $this->all($start);
         }
         
-
-        if($search !== null){
-            if($last_id === 0 || $page_item != null){
-                $objectives = Objective::where('code', 'like', '%'.$search.'%')
-                    ->where('id','>', $last_id)
-                    ->orderBy('id')
-                    ->limit($per_page)
-                    ->get();
-
-                if(count($objectives)  === 0){
-                    return response()->json([
-                        'data' => [],
-                        'metadata' => [
-                            'methods' => '[GET,POST,PUT,DELETE]',
-                            'pagination' => [],
-                            'page' => 0,
-                            'total_page' => 0
-                        ],
-                    ], Response::HTTP_OK);
-                }
-
-                $allIds = Objective::where('code', 'like', '%'.$search.'%')
-                    ->orderBy('id')
-                    ->pluck('id');
-
-                $chunks = $allIds->chunk($per_page);
-                
-                $pagination_helper = new PaginationHelper('objectives', $page, $per_page, 0);
-                $pagination = $pagination_helper->createSearchPagination( $page_item, $chunks, $search, $per_page, $last_initial_id);
-                $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
-                
-                /**
-                 * Save the metadata in database unique per module and user to ensure reuse of metadata
-                 */
-
-                return response()->json([
-                    'data' => $objectives,
-                    'metadata' => [
-                        'methods' => '[GET,POST,PUT,DELETE]',
-                        'pagination' => $pagination,
-                        'page' => $page,
-                        'total_page' => count($chunks)
-                    ],
-                ], Response::HTTP_OK);
-            }
-
-            /**
-             * Reuse existing pagination and update the existing pagination next and previous data
-             */
-
-            $objectives = Objective::where('code', 'like', '%'.$search.'%')
-                ->where('id','>', $last_id)
-                ->orderBy('id')->limit($per_page)->get();
-
-            // Return the response
-            return response()->json([
-                'data' => $objectives,
-                'metadata' => []
-            ], Response::HTTP_OK);
+        if($search){
+            return $this->search($request, $start);
         }
-        
-        $total_page = Objective::all()->pluck('id')->chunk($per_page);
-        $objectives = Objective::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
-        $total_page = ceil(count($total_page));
-        
-        $pagination_helper = new PaginationHelper(  $this->module,$page, $per_page, $total_page > 10 ? 10: $total_page);
 
-        return response()->json([
-            "data" => $objectives,
-            "metadata" => [
-                "methods" => "[GET, POST, PUT, DELETE]",
-                "pagination" => $pagination_helper->create(),
-                "page" => $page,
-                "total_page" => $total_page
-            ]
-        ], Response::HTTP_OK);
+        return $this->pagination($request, $start);
     }
 
-    public function store(ObjectiveRequest $request)
+    #[OA\Post(
+        path: "/api/objectives",
+        summary: "Create a new activity comment",
+        tags: ["Activity Comments"],
+        requestBody: new OA\RequestBody(
+            description: "Comment data",
+            required: true,
+            content: new OA\JsonContent(
+                required: ["activity_id", "content"],
+                properties: [
+                    new OA\Property(property: "activity_id", type: "integer"),
+                    new OA\Property(property: "content", type: "string"),
+                    new OA\Property(property: "user_id", type: "integer", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_CREATED,
+                description: "Comment created",
+                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: "Validation error"
+            )
+        ]
+    )]
+    public function store(ObjectiveRequest $request): AnonymousResourceCollection|JsonResponse|ObjectiveResource
     {
-        $base_message = "Successfully created objectives";
+        $start = microtime(true);
 
         // Bulk Insert
         if ($request->objectives !== null || $request->objectives > 1) {
-            $existing_objectives = [];
-            $existing_items = Objective::whereIn('code', collect($request->objectives)->pluck('code'))
-                ->get(['code'])->toArray();
-
-            // Convert existing items into a searchable format
-            $existing_codes = array_column($existing_items, 'code');
-
-            if(!empty($existing_items)){
-                $existing_objectives = ObjectiveDuplicateResource::collection(Objective::whereIn("code", $existing_codes)->get());
-            }
-
-            foreach ($request->objectives as $item) {
-                if ( !in_array($item['code'], $existing_codes)) {
-                    $cleanData[] = [
-                        "code" => strip_tags($item['code']),
-                        "description" => isset($item['description']) ? strip_tags($item['description']) : null,
-                        "created_at" => now(),
-                        "updated_at" => now()
-                    ];
-                }
-            }
-
-            if (empty($cleanData) && count($existing_items) > 0) {
-                return response()->json([
-                    'data' => $existing_objectives,
-                    'message' => "Failed to bulk insert all objectives already exist.",
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-    
-            Objective::insert($cleanData);
-
-            $latest_objectives = Objective::orderBy('id', 'desc')
-                ->limit(count($cleanData))->get()
-                ->sortBy('id')->values();
-
-            $message = count($latest_objectives) > 1? $base_message."s record": $base_message." record.";
-
-            return response()->json([
-                "data" => $latest_objectives,
-                "message" => $message,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT ,DELETE]",
-                    "duplicate_items" => $existing_objectives
-                ]
-            ], Response::HTTP_CREATED);
+            return $this->bulkStore($request, $start);
         }
 
+        // Single insert
         $cleanData = [
             "code" => strip_tags($request->input('code')),
             "description" => strip_tags($request->input('description')),
         ];
-        
-        $new_item = Objective::create($cleanData);
 
-        return response()->json([
-            "data" => $new_item,
-            "message" => $base_message." record.",
-            "metadata" => [
-                "methods" => ['GET, POST, PUT, DELET'],
-            ]
-        ], Response::HTTP_CREATED);
+        $new_item = Objective::create($cleanData);
+        
+        return (new ObjectiveResource($new_item))
+            ->additional([
+                'meta' => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                "message" => "Successfully store data."
+            ])->response();
     }
 
-    public function update(Request $request):Response    
+    #[OA\Put(
+        path: "/api/objectives/{id}",
+        summary: "Update an activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            description: "Comment data",
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "content", type: "string")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Comment updated",
+                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: "Validation error"
+            )
+        ]
+    )]
+    public function update(Request $request): AnonymousResourceCollection|JsonResource|JsonResponse    
     {
+        $start = microtime(true);
         $objectives = $request->query('id') ?? null;
-        
-        // Validate request has IDs
+    
+        // Validate ID parameter exists
         if (!$objectives) {
             $response = ["message" => "ID parameter is required."];
-            
+
             if ($this->is_development) {
-                $response['metadata'] = $this->getMetadata('put');
+                $response['meta'] = MetadataComposerHelper::compose('put', $this->module, $this->is_development);
             }
-            
+
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        // Convert single ID to array for consistent processing
-        $objectives = is_array($objectives) ? $objectives : [$objectives];
-        
-        // For bulk update - validate items array matches IDs count
-        if ($request->has('items')) {
-            if (count($objectives) !== count($request->input('items'))) {
-                return response()->json([
-                    "message" => "Number of IDs does not match number of objectives provided.",
-                    "metadata" => $this->getMetadata("put"),
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-            
-            $updated_items = [];
-            $errors = [];
-            
-            foreach ($objectives as $index => $id) {
-                $item = Objective::find($id);
-                
-                if (!$item) {
-                    $errors[] = "Objectives with ID {$id} not found.";
-                    continue;
-                }
-                
-                $itemData = $request->input('items')[$index];
-                $cleanData = $this->cleanObjectivesData($itemData);
-                
-                $item->update($cleanData);
-                $updated_items[] = $item;
-            }
-            
-            if (!empty($errors)) {
-                return response()->json([
-                    "data" => ObjectiveResource::collection($updated_items),
-                    "message" => "Partial update completed with errors.",
-                    "metadata" => [                    
-                        "method" => "[PUT]",
-                        "errors" => $errors,
-                    ]
-                ], Response::HTTP_MULTI_STATUS);
-            }
-            
-            return response()->json([
-                "data" => ObjectiveResource::collection($updated_items),
-                "message" => "Successfully updated ".count($updated_items)." items.",
-                "metadata" => $this->getMetadata('put')
-            ], Response::HTTP_OK);
+        // Bulk Insert
+        if ($request->objectives !== null || $request->objectives > 1) {
+            return $this->bulkUpdate($request, $start);
         }
-        
-        // Single item update
-        if (count($objectives) > 1) {
-            return response()->json([
-                "message" => "Multiple IDs provided but no items array for bulk update.",
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-        
-        $item = Objective::find($objectives[0]);
-        
-        if (!$item) {
-            return response()->json([
-                "message" => "Objectives not found."
-            ], Response::HTTP_NOT_FOUND);
-        }
-        
-        $cleanData = $this->cleanObjectivesData($request->all());
-        $item->update($cleanData);
-        
-        $response = [
-            "data" => new ObjectiveResource($item),
-            "message" => "Objective updated successfully.",
-            "metadata" => $this->getMetadata('put')
-        ];
-
-        return response()->json($response, Response::HTTP_OK);
+    
+        return $this->singleRecordUpdate($request, $start);
     }
 
+    #[OA\Delete(
+        path: "/api/objectives/{id}",
+        summary: "Delete an activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_NO_CONTENT,
+                description: "Comment deleted"
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]
     public function destroy(Request $request): Response
     {
         $objective_ids = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
-    
+
         if (!$objective_ids && !$query) {
             $response = ["message" => "Invalid request."];
-    
+
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => $this->getMetadata('delete')
+                    $response['meta'] = MetadataComposerHelper::compose('delete', $this->module, $this->is_development)
                 ];
             }
-    
+
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-    
+
         if ($objective_ids) {
-            $objective_ids = is_array($objective_ids) 
-                ? $objective_ids 
-                : (str_contains($objective_ids, ',') 
-                    ? explode(',', $objective_ids) 
+            $objective_ids = is_array($objective_ids)
+                ? $objective_ids
+                : (str_contains($objective_ids, ',')
+                    ? explode(',', $objective_ids)
                     : [$objective_ids]
-                  );
-    
+                );
+
             $objective_ids = array_filter(array_map('intval', $objective_ids));
-            
+
             if (empty($objective_ids)) {
                 return response()->json(
                     ["message" => "Invalid objective ID format provided."],
                     Response::HTTP_BAD_REQUEST
                 );
             }
-    
+
             $objectives = Objective::whereIn('id', $objective_ids)
                 ->whereNull('deleted_at')
                 ->get();
-    
+
             if ($objectives->isEmpty()) {
                 return response()->json(
                     ["message" => "No active objectives found with the provided IDs."],
                     Response::HTTP_NOT_FOUND
                 );
             }
-    
+
             $found_ids = $objectives->pluck('id')->toArray();
             
-            $deletedCount = Objective::whereIn('id', $found_ids)
-                ->update(['deleted_at' => now()]);
+            $deletedCount = Objective::whereIn('id', $found_ids)->delete();
     
             return response()->json([
                 "message" => "Successfully deleted {$deletedCount} objective(s).",
@@ -472,7 +620,7 @@ class ObjectiveController extends Controller
                 "count" => $deletedCount
             ], Response::HTTP_OK);
         }
-    
+
         $objectives = Objective::where($query)
             ->whereNull('deleted_at')
             ->get();
@@ -494,7 +642,7 @@ class ObjectiveController extends Controller
             );
         }
 
-        $objective->update(['deleted_at' => now()]);
+        $objective->delete();
 
         return response()->json([
             "message" => "Successfully deleted objective.",

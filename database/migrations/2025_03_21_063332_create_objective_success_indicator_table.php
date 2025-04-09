@@ -11,8 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('objective_success_indicator', function (Blueprint $table) {
+        Schema::create('objective_success_indicators', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('success_indicator_id');
+            $table->foreign('success_indicator_id')->references('id')->on('success_indicators');
+            $table->unsignedBigInteger('objective_id');
+            $table->foreign('objective_id')->references('id')->on('objectives');
             $table->timestamps();
         });
     }
@@ -22,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('objective_success_indicator');
+        Schema::dropIfExists('objective_success_indicators');
     }
 };

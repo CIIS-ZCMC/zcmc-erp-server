@@ -14,14 +14,13 @@ class ApplicationObjective extends Model
 
     protected $fillable = [
         'aop_application_id',
-        'function_objective_id',
-        'objective_code',
+        'objective_id',
         'success_indicator_id'
 
     ];
 
     public function aopApplication(): BelongsTo
-    {   
+    {
         return $this->belongsTo(AopApplication::class);
     }
 
@@ -35,9 +34,9 @@ class ApplicationObjective extends Model
         return $this->hasMany(Activity::class);
     }
 
-    public function othersObjective()
+    public function otherObjective()
     {
-        return $this->hasOne(OthersObjective::class, 'application_objective_id');
+        return $this->hasOne(OtherObjective::class, 'application_objective_id');
     }
 
     public function otherSuccessIndicator()

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class AopApplication extends Model
@@ -66,5 +67,8 @@ class AopApplication extends Model
         return $this->hasMany(ApplicationObjective::class);
     }
 
-    
+    public function applicationTimeline(): HasOne
+    {
+        return $this->hasOne(ApplicationTimeline::class);
+    }
 }

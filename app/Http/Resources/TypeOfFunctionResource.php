@@ -17,8 +17,10 @@ class TypeOfFunctionResource extends JsonResource
         return [
             'id' => $this->id,
             'type' => $this->type,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at
+            "meta" => [
+                'created_at' => $this->created_at,
+                'updated_at' => $this->updated_at
+            ]
         ];
     }
 }

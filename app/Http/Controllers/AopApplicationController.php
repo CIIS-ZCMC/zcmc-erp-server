@@ -4,18 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
+use App\Http\Resources\ShowAopApplicationResource;
+use App\Http\Resources\AopRequestResource;
 use App\Models\AopApplication;
 use App\Models\FunctionObjective;
 use App\Models\SuccessIndicator;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
+use OpenApi\Attributes as OA;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class AopApplicationController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
+
     public function index()
     {
         $aopApplications = AopApplication::query()
@@ -33,9 +35,7 @@ class AopApplicationController extends Controller
         return AopApplicationResource::collection($aopApplications);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+
     public function store(AopApplicationRequest $request)
     {
 
@@ -73,8 +73,8 @@ class AopApplicationController extends Controller
 
 
                 $applicationObjective = $aopApplication->applicationObjectives()->create([
-                    'objective_id'       => $objectiveData['objective_id'],
-                    'success_indicator_id'  => $objectiveData['success_indicator_id'],
+                    'objective_id'         => $objectiveData['objective_id'],
+                    'success_indicator_id' => $objectiveData['success_indicator_id'],
                 ]);
 
 
@@ -114,7 +114,7 @@ class AopApplicationController extends Controller
                     $activity->resources()->createMany($activityData['resources']);
 
 
-                    $activity->responsiblePeople()->createMany($activityData['responsible_people']);
+                    $activity->responsiblePeople()->createMany($activityData['responsible_person']);
                 }
             }
 
@@ -157,27 +157,19 @@ class AopApplicationController extends Controller
         ]);
     }
 
-    /**
-     * Display the specified resource.
-     */
+
     public function show(AopApplication $aopApplication)
     {
-        //
-    }
+        $aopApplication->load([
+            'user',
+            'divisionChief',
+            'mccChief',
+            'planningOfficer',
+            'applicationObjectives',
+            'applicationObjectives.functionObjective',
+            'applicationObjectives.activities'
+        ]);
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, AopApplication $aopApplication)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(AopApplication $aopApplication)
-    {
-        //
+        return new ShowAopApplicationResource($aopApplication);
     }
 }

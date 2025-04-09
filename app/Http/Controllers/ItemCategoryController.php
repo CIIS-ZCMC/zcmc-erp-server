@@ -2,25 +2,372 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\MetadataComposerHelper;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemCategoryRequest;
+use App\Http\Resources\ItemCategoryResource;
+use App\Http\Resources\ItemCategoryTrashResource;
 use App\Imports\ItemCategoriesImport;
 use App\Models\ItemCategory;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Maatwebsite\Excel\Excel;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
+use OpenApi\Attributes as OA;
 
+#[OA\Schema(
+    schema: "Item Category",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "name", type: "string"),
+        new OA\Property(property: "code", type: "string", nullable: true),
+        new OA\Property(property: "description", type: "string"),
+        new OA\Property(
+            property: "created_at",
+            type: "string",
+            format: "date-time"
+        ),
+        new OA\Property(
+            property: "updated_at",
+            type: "string",
+            format: "date-time"
+        )
+    ]
+)]
 class ItemCategoryController extends Controller
 {
     private $is_development;
 
     private $module = 'item-categories';
+    
+    private $methods = '[GET, POST, PUT, DELETE]';
 
     public function __construct()
     {
         $this->is_development = env("APP_DEBUG", true);
     }
     
+    // Protected Function
+    protected function cleanData(array $data): array
+    {
+        $cleanData = [];
+        
+        if (isset($data['name'])) {
+            $cleanData['name'] = strip_tags($data['name']);
+        }
+        
+        if (isset($data['code'])) {
+            $cleanData['code'] = strip_tags($data['code']);
+        }
+        
+        if (isset($data['description'])) {
+            $cleanData['description'] = strip_tags($data['description']);
+        }
+        
+        if (isset($data['item_category_id'])) {
+            $cleanData['item_category_id'] = strip_tags($data['item_category_id']);
+        }
+
+        return $cleanData;
+    }
+    
+    protected function search(Request $request, $start): AnonymousResourceCollection
+    {   
+        $validated = $request->validate([
+            'search' => 'required|string|min:2|max:100',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
+        
+        $searchTerm = '%'.trim($validated['search']).'%';
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
+
+        $results = ItemCategory::where('name', 'like', "%{$searchTerm}%")
+            ->orWhere('code', 'like', "%{$searchTerm}%")
+            ->orWhere('description', 'like', "%{$searchTerm}%")
+            ->paginate(
+                perPage: $perPage,
+                page: $page
+            );
+
+        return ItemCategoryResource::collection($results)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'search' => [
+                        'term' => $validated['search'],
+                        'time_ms' => round((microtime(true) - $start) * 1000), // in milliseconds
+                    ],
+                    'pagination' => [
+                        'total' => $results->total(),
+                        'per_page' => $results->perPage(),
+                        'current_page' => $results->currentPage(),
+                        'last_page' => $results->lastPage(),
+                    ]
+                ],
+                'message' => 'Search completed successfully'
+            ]);
+    }
+    
+    protected function all($start): AnonymousResourceCollection
+    {
+        $objective_success_indicator = ItemCategory::all();
+
+        return ItemCategoryResource::collection($objective_success_indicator)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }
+    
+    protected function pagination(Request $request, $start)
+    {   
+        $validated = $request->validate([
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
+
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
+        
+        $objective_success_indicator = ItemCategory::paginate($perPage, ['*'], 'page', $page);
+
+        return ItemCategoryResource::collection($objective_success_indicator)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    'pagination' => [
+                        'total' => $objective_success_indicator->total(),
+                        'per_page' => $objective_success_indicator->perPage(),
+                        'current_page' => $objective_success_indicator->currentPage(),
+                        'last_page' => $objective_success_indicator->lastPage(),
+                    ]
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }     
+
+    protected function singleRecord($item_category_id, $start):JsonResponse
+    {
+        $itemUnit = ItemCategory::find($item_category_id);
+            
+        if (!$itemUnit) {
+            return response()->json(["message" => "Item category not found."], Response::HTTP_NOT_FOUND);
+        }
+    
+        return (new ItemCategoryResource($itemUnit))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000)
+                ],
+                "message" => "Successfully retrieved record."
+            ])->response();
+    }
+
+    protected function bulkStore(Request $request, $start):ItemCategoryResource|AnonymousResourceCollection|JsonResponse  
+    {
+        $existing_items = ItemCategory::whereIn('name', collect($request->item_categories)->pluck('name'))
+            ->orWhereIn('code', collect($request->item_categories)->pluck('code'))
+            ->orWhereIn('description', collect($request->item_categories)->pluck('description'))
+            ->get(['name', 'code', 'description'])->toArray();
+
+        // Convert existing items into a searchable format
+        $existing_names = array_column($existing_items, 'name');
+        $existing_codes = array_column($existing_items, 'code');
+        $existing_description = array_column($existing_items, 'description');
+
+        $failed_store = [];
+        $toUpdate = [];
+
+        foreach ($request->item_categories as $item_category) {
+            if (!in_array($item_category['name'], $existing_names) && !in_array($item_category['code'], $existing_codes) && !in_array($item_category['description'], $existing_description)) {
+                $clean = [
+                    "name" => strip_tags($item_category['name']),
+                    "code" => strip_tags($item_category['code']),
+                    "description" => isset($item_category['description']) ? strip_tags($item_category['description']) : null,
+                    "created_at" => now(),
+                    "updated_at" => now()
+                ];
+
+                $hasItemCategoryId = is_array($item_category) 
+                    ? array_key_exists('item_category_id', $item_category)
+                    : (is_object($item_category) && property_exists($item_category, 'item_category_id'));
+
+                if ($hasItemCategoryId) {
+                    $item_category_exist = ItemCategory::find($item_category['item_category_id']);
+                    
+                    if(!$item_category_exist){
+                        $failed_store[] = [
+                            "issue" => "Item category not found.",
+                            "data" => $item_category
+                        ];
+                        continue;
+                    }
+
+                    $toUpdate[] = [
+                        'name' => $item_category['name'],
+                        'item_category_id' => $item_category['item_category_id']
+                    ];
+                }
+
+                $cleanData[] = $clean;
+            }
+        }
+
+        if (empty($cleanData) && count($existing_items) > 0) {
+            return response()->json([
+                'data' => $existing_items,
+                'message' => "Failed to bulk insert all item categories already exist.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        ItemCategory::insert($cleanData);
+
+        if(!empty($toUpdate)){
+            foreach ($toUpdate as $to_update) {
+                ItemCategory::where('name', $to_update['name'])
+                    ->update(['item_category_id' => $to_update['item_category_id']]);
+            }
+        }
+
+        $latest_item_units = ItemCategory::orderBy('id', 'desc')
+            ->limit(count($cleanData))->get()
+            ->sortBy('id')->values();
+
+        return ItemCategoryResource::collection($latest_item_units)
+            ->additional([
+                'meta' => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    "existings" => $existing_items,
+                    "failed_store" => $failed_store
+                ],
+                "message" => "Successfully store data."
+            ]);
+    }
+    
+    protected function bulkUpdate(Request $request, $start):AnonymousResourceCollection|JsonResponse
+    {
+        $item_category_ids = $request->query('id') ?? null;
+
+        if (count($item_category_ids) !== count($request->input('item_categories'))) {
+            return response()->json([
+                "message" => "Number of IDs does not match number of item categories provided.",
+                "meta" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    
+        $updated_item_units = [];
+        $errors = [];
+    
+        foreach ($item_category_ids as $index => $id) {
+            $item_unit = ItemCategory::find($id);
+            
+            if (!$item_unit) {
+                $errors[] = "Log description with ID {$id} not found.";
+                continue;
+            }
+    
+            $cleanData = $this->cleanData($request->input('item_categories')[$index]);
+            $item_unit->update($cleanData);
+            $updated_item_units[] = $item_unit;
+        }
+    
+        if (!empty($errors)) {
+            return ItemCategoryResource::collection($updated_item_units)
+                ->additional([
+                    "meta" => [
+                        'methods' => $this->methods,
+                        'time_ms' => round((microtime(true) - $start) * 1000),
+                        'issue' => $errors,
+                        "url_formats" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
+                    ],
+                    "message" => "Partial update completed with errors.",
+                ])
+                ->response()
+                ->setStatusCode(Response::HTTP_MULTI_STATUS);
+        }
+        
+        return ItemCategoryResource::collection($updated_item_units)
+            ->additional([
+                "meta" => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    "url_formats" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
+                ],
+                "message" => "Partial update completed with errors.",
+            ]);
+    }
+
+    protected function singleRecordUpdate(Request $request, $start): JsonResource|ItemCategoryResource|JsonResponse
+    {
+        $item_category_ids = $request->query('id') ?? null;
+    
+        // Handle single update
+        $item_category = ItemCategory::find($item_category_ids[0]);
+        
+        if (!$item_category) {
+            return response()->json([
+                "message" => "Item category not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+    
+        $cleanData = $this->cleanData($request->all());
+        $item_category->update($cleanData);
+
+        return (new ItemCategoryResource($item_category))
+            ->additional([
+                "meta" => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                'message' => 'Successfully update item category record.'
+            ])->response();
+    }
+    
+    #[OA\Get(
+        path: '/api/item-categories/template',
+        summary: 'Download CSV template for log descriptions',
+        description: 'Returns a CSV template file with example log description entries',
+        tags: ['Log Descriptions'],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: 'CSV template file download',
+                content: new OA\MediaType(
+                    mediaType: 'text/csv',
+                    schema: new OA\Schema(
+                        type: 'string',
+                        format: 'binary'
+                    )
+                ),
+                headers: [
+                    new OA\Header(
+                        header: 'Content-Disposition',
+                        description: 'Attachment with filename',
+                        schema: new OA\Schema(type: 'string'))
+                ]
+            ),
+            new OA\Response(
+                response: Response::HTTP_INTERNAL_SERVER_ERROR,
+                description: 'Server error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string')
+                    ],
+                    example: ['message' => 'Could not generate template file']
+                )
+            )
+        ]
+    )]
     public function downloadTemplate()
     {
         $headers = [
@@ -38,7 +385,75 @@ class ItemCategoryController extends Controller
         
         return response()->stream($callback, 200, $headers);
     }
-
+    
+    #[OA\Post(
+        path: '/api/import',
+        summary: 'Import item units from Excel/CSV file',
+        requestBody: new OA\RequestBody(
+            description: 'Excel/CSV file containing item units',
+            required: true,
+            content: new OA\MediaType(
+                mediaType: 'multipart/form-data',
+                schema: new OA\Schema(
+                    properties: [
+                        new OA\Property(
+                            property: 'file',
+                            type: 'string',
+                            format: 'binary',
+                            description: 'Excel file (xlsx, xls, csv)'
+                        )
+                    ]
+                )
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Successful import',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(property: 'success_count', type: 'integer'),
+                        new OA\Property(property: 'failure_count', type: 'integer'),
+                        new OA\Property(
+                            property: 'failures',
+                            type: 'array',
+                            items: new OA\Items(
+                                properties: [
+                                    new OA\Property(property: 'row', type: 'integer'),
+                                    new OA\Property(property: 'errors', type: 'array', items: new OA\Items(type: 'string'))
+                                ]
+                            )
+                        )
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 422,
+                description: 'Validation error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(
+                            property: 'errors',
+                            type: 'object',
+                            additionalProperties: new OA\Property(type: 'array', items: new OA\Items(type: 'string')))
+                    ]
+                )
+            ),
+            new OA\Response(
+                response: 500,
+                description: 'Server error',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'message', type: 'string'),
+                        new OA\Property(property: 'error', type: 'string')
+                    ]
+                )
+            )
+        ],
+        tags: ['Item Units']
+    )]
     public function import(Request $request)
     {
         $request->validate([
@@ -91,371 +506,271 @@ class ItemCategoryController extends Controller
         
         return $cleanData;
     }
-    
-    protected function getMetadata($method): array
-    {
-        if($method === 'get'){
-            $metadata = ["methods" => ["GET, POST, PUT, DELETE"]];
-            $metadata['modes'] = ['selection', 'pagination'];
 
-            if($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?item_category_id=[primary-key]",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value"
-                ];
-            }
-            
-            return $metadata;
-        }
-
-        if($method === 'put'){
-            $metadata = ["methods" => ["PUT"]];
-            
-            if ($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
-                ];
-                $metadata['fields'] = ["name", "code"];
-            }
-            
-            return $metadata;
-        }
-
-        $metadata = ["methods" => ["GET, PUT, DELETE"]];
-        
-        if ($this->is_development) {
-            $metadata["urls"] = [
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-            ];
-            $metadata['fields'] = ["code"];
-        }
-        
-        return $metadata;
-    }
-
+    #[OA\Get(
+        path: "/api/activity-comments",
+        summary: "List all activity comments",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "per_page",
+                in: "query",
+                description: "Items per page",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 15)
+            ),
+            new OA\Parameter(
+                name: "page",
+                in: "query",
+                description: "Page number",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 1)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Successful operation",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/ActivityComment")
+                )
+            )
+        ]
+    )]
     public function index(Request $request)
     {
-        $page = $request->query('page') > 0? $request->query('page'): 1;
-        $per_page = $request->query('per_page');
-        $mode = $request->query('mode') ?? 'pagination';
-        $search = $request->query('search');
-        $last_id = $request->query('last_id') ?? 0;
-        $last_initial_id = $request->query('last_initial_id') ?? 0;
-        $page_item = $request->query('page_item') ?? 0;
-        $item_category_id = $request->query('item_category_id') ?? null;
+        $start = microtime(true);
+        $item_unit_id = $request->query('id');
+        $search = $request->search;
+        $mode = $request->mode;
 
-        if($item_category_id){
-            $item_category = ItemCategory::find($item_category_id);
-
-            if(!$item_category){
-                return response()->json([
-                    'message' => "No record found.",
-                    "metadata" => $this->getMetadata('get')
-                ]);
-            }
-
-            return response()->json([
-                'data' => $item_category,
-                "metadata" => $this->getMetadata('get')
-            ], Response::HTTP_OK);
+        if($item_unit_id){
+            return $this->singleRecord($item_unit_id, $start);
         }
 
-        if($page < 0 || $per_page < 0){
-            $response = ["message" => "Invalid request."];
-            
-            if($this->is_development){
-                $response = [
-                    "message" => "Invalid value of parameters",
-                    "metadata" => $this->getMetadata('get')
-                ];
-            }
-
-            return response()->json([$response], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        if(!$page && !$per_page){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => $this->getMetadata('get')
-                ];
-            }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        // Handle return for selection record
-        if($mode === 'selection'){
-            if($search !== null){
-                $item_categories = ItemCategory::select('id','name','code')
-                    ->where('name', 'like', '%'.$search.'%')
-                    ->where("deleted_at", NULL)->get();
-    
-                $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-    
-                if($this->is_development){
-                    $metadata['content'] = "This type of response is for selection component.";
-                    $metadata['mode'] = "selection";
-                }
-                
-                return response()->json([
-                    "data" => $item_categories,
-                    "metadata" => $metadata,
-                ], Response::HTTP_OK);
-            }
-
-            $item_categories = ItemCategory::select('id','name','code')->where("deleted_at", NULL)->get();
-
-            $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-
-            if($this->is_development){
-                $metadata['content'] = "This type of response is for selection component.";
-                $metadata['mode'] = "selection";
-            }
-            
-            return response()->json([
-                "data" => $item_categories,
-                "metadata" => $metadata,
-            ], Response::HTTP_OK);
+        if($mode && $mode === 'selection'){
+            return $this->all($start);
         }
         
-
-        if($search !== null){
-            if($last_id === 0 || $page_item != null){
-                $item_categories = ItemCategory::where('name', 'like', '%'.$search.'%')
-                    ->where('id','>', $last_id)
-                    ->orderBy('id')
-                    ->limit($per_page)
-                    ->get();
-                    
-
-                if(count($item_categories)  === 0){
-                    return response()->json([
-                        'data' => [],
-                        'metadata' => [
-                            'methods' => '[GET,POST,PUT,DELETE]',
-                            'pagination' => [],
-                            'page' => 0,
-                            'total_page' => 0
-                        ],
-                    ], Response::HTTP_OK);
-                }
-
-                $allIds = ItemCategory::where('name', 'like', '%'.$search.'%')
-                    ->orderBy('id')
-                    ->pluck('id');
-
-                $chunks = $allIds->chunk($per_page);
-                
-                $pagination_helper = new PaginationHelper('item-categories', $page, $per_page, 0);
-                $pagination = $pagination_helper->createSearchPagination( $page_item, $chunks, $search, $per_page, $last_initial_id);
-                $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
-                
-                /**
-                 * Save the metadata in database unique per module and user to ensure reuse of metadata
-                 */
-
-                return response()->json([
-                    'data' => $item_categories,
-                    'metadata' => [
-                        'methods' => '[GET,POST,PUT,DELETE]',
-                        'pagination' => $pagination,
-                        'page' => $page,
-                        'total_page' => count($chunks)
-                    ],
-                ], Response::HTTP_OK);
-            }
-
-            /**
-             * Reuse existing pagination and update the existing pagination next and previous data
-             */
-
-            $item_categories = ItemCategory::where('name', 'like', '%'.$search.'%')
-                ->where('id','>', $last_id)
-                ->orderBy('id')
-                ->limit($per_page)
-                ->get();
-
-            // Return the response
-            return response()->json([
-                'data' => $item_categories,
-                'metadata' => []
-            ], Response::HTTP_OK);
+        if($search){
+            return $this->search($request, $start);
         }
-        
-        $total_page = ItemCategory::all()->pluck('id')->chunk($per_page);
-        $item_categories = ItemCategory::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
-        $total_page = ceil(count($total_page));
-        
-        $pagination_helper = new PaginationHelper(  $this->module,$page, $per_page, $total_page > 10 ? 10: $total_page);
 
-        return response()->json([
-            "data" => $item_categories,
-            "metadata" => [
-                "methods" => "[GET, POST, PUT, DELETE]",
-                "pagination" => $pagination_helper->create(),
-                "page" => $page,
-                "total_page" => $total_page
-            ]
-        ], Response::HTTP_OK);
+        return $this->pagination($request, $start); 
     }
 
-    public function store(ItemCategoryRequest $request)
+    #[OA\Post(
+        path: "/api/activity-comments",
+        summary: "Create a new activity comment",
+        tags: ["Activity Comments"],
+        requestBody: new OA\RequestBody(
+            description: "Comment data",
+            required: true,
+            content: new OA\JsonContent(
+                required: ["activity_id", "content"],
+                properties: [
+                    new OA\Property(property: "activity_id", type: "integer"),
+                    new OA\Property(property: "content", type: "string"),
+                    new OA\Property(property: "user_id", type: "integer", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_CREATED,
+                description: "Comment created",
+                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: "Validation error"
+            )
+        ]
+    )]
+    public function store(ItemCategoryRequest $request): AnonymousResourceCollection|ItemCategoryResource|JsonResponse
     {
-        $base_message = "Successfully created item category";
+        $start = microtime(true);
 
         // Bulk Insert
         if ($request->item_categories !== null || $request->item_categories > 1) {
-            $existing_items = ItemCategory::whereIn('name', collect($request->item_categories)->pluck('name'))
-                ->orWhereIn('code', collect($request->item_categories)->pluck('code'))
-                ->get(['name', 'code'])->toArray();
-
-            // Convert existing items into a searchable format
-            $existing_names = array_column($existing_items, 'name');
-            $existing_codes = array_column($existing_items, 'code');
-
-            foreach ($request->item_categories as $item) {
-                if (!in_array($item['name'], $existing_names) && !in_array($item['code'], $existing_codes)) {
-                    $cleanData[] = [
-                        "name" => strip_tags($item['name']),
-                        "code" => strip_tags($item['code']),
-                        "description" => isset($item['description']) ? strip_tags($item['description']) : null,
-                        "created_at" => now(),
-                        "updated_at" => now()
-                    ];
-                }
-            }
-
-            if (empty($cleanData) && count($existing_items) > 0) {
-                return response()->json([
-                    'data' => $existing_items,
-                    'message' => "Failed to bulk insert all item categories already exist.",
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-    
-            ItemCategory::insert($cleanData);
-
-            $latest_item_categories = ItemCategory::orderBy('id', 'desc')
-                ->limit(count($cleanData))->get()
-                ->sortBy('id')->values();
-
-            $message = count($latest_item_categories) > 1? $base_message."s record": $base_message." record.";
-
-            return response()->json([
-                "data" => $latest_item_categories,
-                "message" => $message,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT ,DELETE]",
-                    "duplicate_items" => $existing_items
-                ]
-            ], Response::HTTP_CREATED);
+            return $this->bulkStore($request, $start);
         }
 
+        // Single insert
         $cleanData = [
             "name" => strip_tags($request->input('name')),
             "code" => strip_tags($request->input('code')),
             "description" => strip_tags($request->input('description')),
         ];
 
-        $new_item = ItemCategory::create([
-            "name" => strip_tags($request->name),
-            "code" => strip_tags($request->code),
-            "description" => strip_tags($request->description),
-        ]);
+        if($request->item_category_id)
+        {
+            $item_category = ItemCategory::find($request->item_category_id);
+            
+            if(!$item_category){
+                return response()->json(['message' => "Item cateogry doesn't exist"], Response::HTTP_NOT_FOUND);
+            }
 
-        return response()->json([
-            "data" => $new_item,
-            "message" => $base_message." record.",
-            "metadata" => [
-                "methods" => ['GET, POST, PUT, DELET'],
-            ]
-        ], Response::HTTP_CREATED);
+            $cleanData["item_category_id"] = $item_category->id;
+        }
+
+        $new_item = itemCategory::create($cleanData);
+        
+        return (new ItemCategoryResource($new_item))
+            ->additional([
+                'meta' => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                "message" => "Successfully store data."
+            ])->response();
     }
     
-    public function update(Request $request): Response
+    #[OA\Put(
+        path: "/api/activity-comments/{id}",
+        summary: "Update an activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            description: "Comment data",
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "content", type: "string")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Comment updated",
+                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: "Validation error"
+            )
+        ]
+    )]
+    public function update(Request $request): AnonymousResourceCollection|ItemCategoryResource|JsonResource|JsonResponse
     {
-        $item_category_ids = $request->query('id') ?? null;
+        $start = microtime(true);
+        $item_unit_ids = $request->query('id') ?? null;
     
         // Validate ID parameter exists
-        if (!$item_category_ids) {
+        if (!$item_unit_ids) {
             $response = ["message" => "ID parameter is required."];
             
             if ($this->is_development) {
-                $response['metadata'] = $this->getMetadata("put");
+                $response['meta'] = MetadataComposerHelper::compose('put', $this->methods, $this->is_development);
             }
             
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-    
-        $item_category_ids = is_array($item_category_ids) ? $item_category_ids : [$item_category_ids];
-    
-        // Handle bulk update
-        if ($request->has('item_categories')) {
-            
-            if (count($item_category_ids) !== count($request->input('item_categories'))) {
-                return response()->json([
-                    "message" => "Number of IDs does not match number of categories provided.",
-                    "metadata" => $this->getMetadata('put')
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-        
-            $updated_categories = [];
-            $errors = [];
-        
-            foreach ($item_category_ids as $index => $id) {
-                $category = ItemCategory::find($id);
-                
-                if (!$category) {
-                    $errors[] = "Category with ID {$id} not found.";
-                    continue;
-                }
-        
-                $cleanData = $this->cleanCategoryData($request->input('item_categories')[$index]);
-                $category->update($cleanData);
-                $updated_categories[] = $category;
-            }
-        
-            if (!empty($errors)) {
-                return response()->json([
-                    "data" => $updated_categories,
-                    "message" => "Partial update completed with errors.",
-                    "errors" => $errors,
-                    "metadata" => $this->getMetadata('put')
-                ], Response::HTTP_MULTI_STATUS);
-            }
-        
-            return response()->json([
-                "data" => $updated_categories,
-                "message" => "Successfully updated ".count($updated_categories)." categories.",
-                "metadata" => $this->getMetadata('put')
-            ], Response::HTTP_OK);
-        }
-        
-        $category = ItemCategory::find($item_category_ids[0]);
-        
-        if (!$category) {
-            return response()->json([
-                "message" => "Category not found."
-            ], Response::HTTP_NOT_FOUND);
+
+        // Bulk Insert
+        if ($request->item_categories !== null && $request->item_categories > 1) {
+            return $this->bulkUpdate($request, $start);
         }
     
-        $cleanData = $this->cleanCategoryData($request->all());
-        $category->update($cleanData);
-    
-        return response()->json([
-            "data" => $category,
-            "message" => "Category updated successfully.",
-            "metadata" => $this->getMetadata('put')
-        ], Response::HTTP_OK);
+        return $this->singleRecordUpdate($request, $start);
     }
 
+    public function trash(Request $request)
+    {
+        $search = $request->query('search');
+
+        $query = ItemCategory::onlyTrashed();
+
+        if ($search) {
+            $query->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+        }
+        
+        return ItemCategoryTrashResource::collection(ItemCategory::onlyTrashed()->get())
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods
+                ],
+                "message" => "Successfully retrieved deleted records."
+            ]);
+    }
+
+    #[OA\Put(
+        path: "/api/item-categories/{id}/restore",
+        summary: "Delete an activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_NO_CONTENT,
+                description: "Comment deleted"
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]
+    public function restore($id, Request $request)
+    {
+        ItemCategory::withTrashed()->where('id', $id)->restore();
+
+        return (new ItemCategoryResource(ItemCategory::find($id)))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods
+                ],
+                "message" => "Succcessfully restore record."
+            ]);
+    }
+
+    #[OA\Delete(
+        path: "/api/activity-comments/{id}",
+        summary: "Delete an activity comment",  
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_NO_CONTENT,
+                description: "Comment deleted"
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]
     public function destroy(Request $request): Response
     {
         $item_category_ids = $request->query('id') ?? null;
@@ -467,7 +782,7 @@ class ItemCategoryController extends Controller
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => $this->getMetadata("delete"),
+                    "meta" => MetadataComposerHelper::compose('delete', $this->module, $this->is_development)
                 ];
             }
 
@@ -501,7 +816,7 @@ class ItemCategoryController extends Controller
             $found_ids = $item_categories->pluck('id')->toArray();
             
             // Soft delete only the found records
-            ItemCategory::whereIn('id', $found_ids)->update(['deleted_at' => now()]);
+            ItemCategory::whereIn('id', $found_ids)->delete();
 
             return response()->json([
                 "message" => "Successfully deleted " . count($found_ids) . " record(s).",
@@ -526,7 +841,7 @@ class ItemCategoryController extends Controller
             return response()->json(["message" => "No active record found matching query."], Response::HTTP_NOT_FOUND);
         }
 
-        $item_category->update(['deleted_at' => now()]);
+        $item_category->delete();
         
         return response()->json([
             "message" => "Successfully deleted record.",

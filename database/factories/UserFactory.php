@@ -24,8 +24,11 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
+            'umis_employee_profile_id' => 'EMP' . fake()->unique()->randomNumber(5, true),
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
+            'profile_url' => null,
+            'is_active' => true,
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),

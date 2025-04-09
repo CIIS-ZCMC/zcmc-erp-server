@@ -4,10 +4,32 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PpmpApplicationRequest;
 use App\Http\Resources\PpmpApplicationResource;
+use App\Models\AopApplication;
 use App\Models\PpmpApplication;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use OpenApi\Attributes as OA;
 
+#[OA\Schema(
+    schema: "ActivityComment",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "activity_id", type: "integer"),
+        new OA\Property(property: "user_id", type: "integer", nullable: true),
+        new OA\Property(property: "content", type: "string"),
+        new OA\Property(
+            property: "created_at",
+            type: "string",
+            format: "date-time"
+        ),
+        new OA\Property(
+            property: "updated_at",
+            type: "string",
+            format: "date-time"
+        )
+    ]
+)]
 class PpmpApplicationController extends Controller
 {
     private $is_development;
@@ -18,7 +40,6 @@ class PpmpApplicationController extends Controller
     {
         $this->is_development = env("APP_DEBUG", true);
     }
-
 
     protected function getMetadata($method): array
     {
@@ -64,19 +85,46 @@ class PpmpApplicationController extends Controller
         return $metadata;
     }
 
-    /**
-     * Display a listing of the resource.
-     */
+    #[OA\Get(
+        path: "/api/activity-comments",
+        summary: "List all activity comments",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "per_page",
+                in: "query",
+                description: "Items per page",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 15)
+            ),
+            new OA\Parameter(
+                name: "page",
+                in: "query",
+                description: "Page number",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 1)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Successful operation",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/ActivityComment")
+                )
+            )
+        ]
+    )]
     public function index()
     {
         //paginate display 10 data per page
         $ppmp_application = PpmpApplication::whereNull('deleted_at')->paginate(10);
 
-        if ($ppmp_application->isEmpty()) {
+        if (!$ppmp_application) {
             return response()->json([
                 'message' => "No record found.",
-                "metadata" => $this->getMetadata('get')
-            ], Response::HTTP_OK);
+            ], Response::HTTP_NOT_FOUND);
         }
 
         return response()->json([
@@ -87,23 +135,66 @@ class PpmpApplicationController extends Controller
                 'per_page' => $ppmp_application->perPage(),
                 'total' => $ppmp_application->total(),
             ],
-            'message' => $this->getMetadata('get'),
+            // 'message' => $this->getMetadata('get'),
         ], Response::HTTP_OK);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
+    #[OA\Post(
+        path: "/api/activity-comments",
+        summary: "Create a new activity comment",
+        tags: ["Activity Comments"],
+        requestBody: new OA\RequestBody(
+            description: "Comment data",
+            required: true,
+            content: new OA\JsonContent(
+                required: ["activity_id", "content"],
+                properties: [
+                    new OA\Property(property: "activity_id", type: "integer"),
+                    new OA\Property(property: "content", type: "string"),
+                    new OA\Property(property: "user_id", type: "integer", nullable: true)
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_CREATED,
+                description: "Comment created",
+                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: "Validation error"
+            )
+        ]
+    )]
     public function store(PpmpApplicationRequest $request)
     {
-        $data = new PpmpApplication();
-        $data->aop_application_id = strip_tags($request['aop_application_id']);
-        $data->user_id = strip_tags($request['user_id']);
-        $data->division_chief_id = strip_tags($request['division_chief_id']);
-        $data->budget_officer_id = strip_tags($request['budget_officer_id']);
-        $data->ppmp_total = strip_tags($request['ppmp_total']);
-        $data->remarks = strip_tags($request['remarks']);
-        $data->save();
+        $budget_officer_id = User::budgetOfficer();
+
+        if (!$budget_officer_id) {
+            return response()->json([
+                'message' => "Budget Officer not found.",
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        foreach ($request->aop_application_id as $aop_id) {
+            $aop = AopApplication::find($aop_id);
+
+            if ($aop->isEmpty()) {
+                return response()->json([
+                    'message' => "AOP Application with ID {$aop_id} not found.",
+                ], Response::HTTP_NOT_FOUND);
+            }
+
+            $data = new PpmpApplication();
+            $data->aop_application_id = $aop->id;
+            $data->user_id = $aop->user_id;
+            $data->division_chief_id = $aop->division_chief_id;
+            $data->budget_officer_id = $budget_officer_id->head_id;
+            $data->ppmp_total = strip_tags($request['ppmp_total']);
+            $data->remarks = strip_tags($request['remarks']);
+            $data->save();
+        }
 
         return response()->json([
             'data' => new PpmpApplicationResource($data),
@@ -114,25 +205,82 @@ class PpmpApplicationController extends Controller
                 'total' => $data->total(),
             ],
             'message' => $this->getMetadata('post'),
-        ]);
+        ], Response::HTTP_CREATED);
 
     }
 
-    /**
-     * Display the specified resource.
-     */
+    #[OA\Get(
+        path: "/api/activity-comments/{id}",
+        summary: "Show specific activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Successful operation",
+                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]
     public function show(PpmpApplication $ppmpApplication)
     {
         return response()->json(new PpmpApplicationResource($ppmpApplication), Response::HTTP_OK);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
+    #[OA\Put(
+        path: "/api/activity-comments/{id}",
+        summary: "Update an activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            description: "Comment data",
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "content", type: "string")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Comment updated",
+                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: "Validation error"
+            )
+        ]
+    )]
     public function update(PpmpApplicationRequest $request, PpmpApplication $ppmpApplication)
     {
         $data = $request->all();
-        $ppmpApplication->update($data);
+        $ppmpApplication->update(attributes: $data);
 
         return response()->json([
             'data' => new PpmpApplicationResource($data),
@@ -143,16 +291,37 @@ class PpmpApplicationController extends Controller
                 'total' => $ppmpApplication->total(),
             ],
             'message' => $this->getMetadata('put'),
-        ]);
+        ], Response::HTTP_OK);
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
+    #[OA\Delete(
+        path: "/api/activity-comments/{id}",
+        summary: "Delete an activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_NO_CONTENT,
+                description: "Comment deleted"
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]
     public function destroy(PpmpApplication $ppmpApplication)
     {
         // Check if the record exists
-        if (!$ppmpApplication) {
+        if ($ppmpApplication->isEmpty()) {
             return response()->json([
                 'message' => 'Record not found.',
             ], Response::HTTP_NOT_FOUND);

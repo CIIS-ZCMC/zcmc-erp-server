@@ -46,10 +46,15 @@ Route::get('/api-docs/item-classifications', function () {
     return view('api-docs.item-classifications');
 });
 
-Route::get('/api-docs/items', function () {action: 
+Route::get('/api-docs/items', function () {
+    action:
     return view('api-docs.items');
 });
 
-Route::get('/api-docs/procurement-modes', function () {action: 
+Route::get('/api-docs/procurement-modes', function () {
     return view('api-docs.procurement-modes');
+});
+
+Route::get('/api-docs/ppmp-application', function () {
+    return view('api-docs.ppmp-application');
 });
