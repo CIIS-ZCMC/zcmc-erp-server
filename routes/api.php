@@ -44,8 +44,10 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('item-categories/import', "ItemCategoryController@import");
     Route::get('item-categories/template', "ItemCategoryController@downloadTemplate");
     Route::get('item-categories', "ItemCategoryController@index");
+    Route::get('item-categories/trashbin', "ItemCategoryController@trash");
     Route::post('item-categories', "ItemCategoryController@store");
     Route::put('item-categories', "ItemCategoryController@update");
+    Route::put('item-categories/{id}/restore', "ItemCategoryController@restore");
     Route::delete('item-categories', "ItemCategoryController@destroy");
 
     Route::post('item-classifications/import', "itemClassificationController@import");
