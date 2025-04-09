@@ -20,14 +20,16 @@ class AopApplicationController extends Controller
     {
         $aopApplications = AopApplication::query()
             ->with([
-                'applicationObjectives.functionObjective.function',
-                'applicationObjectives.functionObjective.objective',
+                'applicationObjectives.objective',
                 'applicationObjectives.othersObjective',
+                'applicationObjectives.successIndicator',
+                'applicationObjectives.otherSuccessIndicator',
                 'applicationObjectives.activities.target',
                 'applicationObjectives.activities.resources',
-                'applicationObjectives.activities.responsiblePeople.user'
+                'applicationObjectives.activities.responsiblePeople.user',
             ])
             ->get();
+
         return AopApplicationResource::collection($aopApplications);
     }
 
@@ -60,24 +62,23 @@ class AopApplicationController extends Controller
             foreach ($validatedData['application_objectives'] as $objectiveData) {
 
 
-                $functionObjective = FunctionObjective::where('objective_id', $objectiveData['objective_id'])
-                    ->where('function_id', $objectiveData['function'])
-                    ->first();
+                // $functionObjective = FunctionObjective::where('objective_id', $objectiveData['objective_id'])
+                //     ->where('function_id', $objectiveData['function'])
+                //     ->first();
 
-                if (!$functionObjective) {
+                // if (!$functionObjective) {
 
-                    return response()->json(['error' => 'FunctionObjective not found'], 404);
-                }
+                //     return response()->json(['error' => 'FunctionObjective not found'], 404);
+                // }
 
 
                 $applicationObjective = $aopApplication->applicationObjectives()->create([
-                    'function_objective_id' => $functionObjective->id,
-                    'objective_code'       => $objectiveData['objective_code'],
+                    'objective_id'       => $objectiveData['objective_id'],
                     'success_indicator_id'  => $objectiveData['success_indicator_id'],
                 ]);
 
 
-                if ($applicationObjective->functionObjective->objective->description === 'Others' && isset($objectiveData['others_objective'])) {
+                if ($applicationObjective->objective->description === 'Others' && isset($objectiveData['others_objective'])) {
                     $applicationObjective->othersObjective()->create([
                         'description' => $objectiveData['others_objective'],
                     ]);
@@ -103,7 +104,7 @@ class AopApplicationController extends Controller
                         'is_gad_related' => $activityData['is_gad_related'],
                         'cost' => $activityData['cost'],
                         'start_month' => $activityData['start_month'],
-                        ' ' => $activityData['end_month'],
+                        'end_month' => $activityData['end_month'],
                     ]);
 
 
@@ -125,6 +126,35 @@ class AopApplicationController extends Controller
             DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
         }
+    }
+
+    public function getAopApplicationSummary($aopApplicationId)
+    {
+        $aopApplication = AopApplication::with([
+            'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.responsiblePeople',
+        ])->findOrFail($aopApplicationId);
+
+        $totalObjectives = $aopApplication->applicationObjectives->count();
+
+        $totalActivities = $aopApplication->applicationObjectives->flatMap(function ($objective) {
+            return $objective->activities;
+        })->count();
+
+        $totalResources = $aopApplication->applicationObjectives->flatMap(function ($objective) {
+            return $objective->activities->flatMap->resources;
+        })->count();
+
+        $totalResponsiblePeople = $aopApplication->applicationObjectives->flatMap(function ($objective) {
+            return $objective->activities->flatMap->responsiblePeople;
+        })->count();
+
+        return response()->json([
+            'total_objectives'         => $totalObjectives,
+            'total_activities'         => $totalActivities,
+            'total_resources'          => $totalResources,
+            'total_responsible_people' => $totalResponsiblePeople,
+        ]);
     }
 
     /**

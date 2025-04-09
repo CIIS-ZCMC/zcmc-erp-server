@@ -21,13 +21,13 @@ class ApplicationObjective extends Model
     ];
 
     public function aopApplication(): BelongsTo
-    {
+    {   
         return $this->belongsTo(AopApplication::class);
     }
 
-    public function functionObjective(): BelongsTo
+    public function objective()
     {
-        return $this->belongsTo(FunctionObjective::class);
+        return $this->belongsTo(Objective::class);
     }
 
     public function activities(): HasMany

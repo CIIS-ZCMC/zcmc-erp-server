@@ -54,5 +54,4 @@ class ResponsiblePerson extends Model
     {
         return $this->belongsTo(Designation::class);
     }
-    
 }
