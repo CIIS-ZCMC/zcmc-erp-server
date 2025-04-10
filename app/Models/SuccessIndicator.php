@@ -30,10 +30,6 @@ class SuccessIndicator extends Model
         return $this->belongsTo(Objective::class);
     }
     
-    public function objective() {
-        return $this->belongsTo(Objective::class);
-    }
-    
     public function logs()
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
