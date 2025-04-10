@@ -126,14 +126,17 @@ class ActivityController extends Controller
     )]
     public function show(Activity $activity)
     {
-        $data = Activity::with([
+        $activity->with([
+            'target',
+            'resources',
+            'responsiblePeople',
             'ppmpItems' => function ($query) {
-                $query->whereNull('deleted_at');
+                $query->whereNull('ppmp_items.deleted_at');
             }
-        ])->findOrFail($activity->id);
+        ])->first();
 
         return response()->json([
-            'data' => new ActivityResource($data),
+            'data' => new ActivityResource($activity),
             'message' => 'Activity retrieved successfully'
         ], Response::HTTP_OK);
     }

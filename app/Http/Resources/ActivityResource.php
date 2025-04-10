@@ -23,10 +23,10 @@ class ActivityResource extends JsonResource
             'cost' => $this->cost,
             'start_month' => $this->start_month,
             'end_month' => $this->end_month,
-            'target' => new TargetResource($this->whenLoaded('target')),
-            'resources' => ResourceResource::collection($this->whenLoaded('resources')),
-            'responsible_people' => ResponsiblePersonResource::collection($this->whenLoaded('responsiblePeople')),
-            'ppmp_items' => PpmpItemResource::collection($this->whenLoaded('ppmpItems'))
+            'target' => new TargetResource($this->target) ?? [],
+            'resources' => ResourceResource::collection($this->resources) ?? [],
+            'responsible_people' => ResponsiblePersonResource::collection($this->responsiblePeople) ?? [],
+            'ppmp_items' => PpmpItemResource::collection($this->ppmpItems) ?? []
         ];
     }
 }
