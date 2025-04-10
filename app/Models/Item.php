@@ -3,9 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Item extends Model
 {
+    use SoftDeletes;
+    
     protected $table = 'items';
 
     public $fillable = [
@@ -16,9 +19,10 @@ class Item extends Model
         "code",
         "image",
         "variant",
-        "estimated_budget",
-        "deleted_at"
+        "estimated_budget"
     ];
+
+    protected $casts = ['deleted_at' => 'datetime'];
 
     public $timestamps = true;
 
