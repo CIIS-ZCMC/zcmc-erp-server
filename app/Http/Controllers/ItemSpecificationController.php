@@ -201,7 +201,7 @@ class ItemSpecificationController extends Controller
                     }
 
                     $toUpdate[] = [
-                        'name' => $item_specification['name'],
+                        'description' => $item_specification['description'],
                         'item_specification_id' => $item_specification['item_specification_id']
                     ];
                 }
@@ -221,7 +221,7 @@ class ItemSpecificationController extends Controller
 
         if(!empty($toUpdate)){
             foreach ($toUpdate as $to_update) {
-                ItemSpecification::where('name', $to_update['name'])
+                ItemSpecification::where('description', $to_update['description'])
                     ->update(['item_specification_id' => $to_update['item_specification_id']]);
             }
         }
