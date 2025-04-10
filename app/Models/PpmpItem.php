@@ -46,7 +46,7 @@ class PpmpItem extends Model
         return $this->belongsTo(ItemRequest::class, 'item_request_id');
     }
 
-    public function activity()
+    public function activities()
     {
         return $this->belongsToMany(Activity::class);
     }

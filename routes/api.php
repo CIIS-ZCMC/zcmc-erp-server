@@ -121,11 +121,10 @@ Route::
             Route::get('assigned-areas/{id}', "AssignedAreaController@show");
             Route::post('umis/areas/update', "AssignedAreaController@processUMISUpdate");
 
+            Route::apiResource('activities', 'ActivityController');
             Route::apiResource('ppmp-applications', 'PpmpApplicationController');
             Route::apiResource('ppmp-items', 'PpmpItemController');
-            Route::apiResource('activity-ppmp-items', 'ActivityPpmpItemController');
 
-            Route::apiResource('activity-comments', 'ActivityCommentController');
             Route::post('update-osi/{id}', 'ObjectiveSuccessIndicatorController@updateForApproverModule');
 
             // Approver  Module

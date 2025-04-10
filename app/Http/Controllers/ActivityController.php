@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ActivityResource;
 use App\Models\Activity;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -125,7 +126,16 @@ class ActivityController extends Controller
     )]
     public function show(Activity $activity)
     {
-        //
+        $data = Activity::with([
+            'ppmpItems' => function ($query) {
+                $query->whereNull('deleted_at');
+            }
+        ])->findOrFail($activity->id);
+
+        return response()->json([
+            'data' => new ActivityResource($data),
+            'message' => 'Activity retrieved successfully'
+        ], Response::HTTP_OK);
     }
 
     #[OA\Put(

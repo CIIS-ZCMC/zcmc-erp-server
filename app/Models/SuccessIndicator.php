@@ -20,7 +20,7 @@ class SuccessIndicator extends Model
 
     protected $casts = ['deleted_at' => 'datetime'];
 
-    public function applicationObjectives():HasMany
+    public function applicationObjectives(): HasMany
     {
         return $this->hasMany(ApplicationObjective::class);
     }
@@ -29,11 +29,7 @@ class SuccessIndicator extends Model
     {
         return $this->belongsTo(Objective::class);
     }
-    
-    public function objective() {
-        return $this->belongsTo(Objective::class);
-    }
-    
+
     public function logs()
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
