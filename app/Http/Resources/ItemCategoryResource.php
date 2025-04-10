@@ -33,7 +33,7 @@ class ItemCategoryResource extends JsonResource
             'code' => $this->code,
             'description' => $this->description,
             'parent_category' => $parentCategory,
-            'sub_category' => $subcategory,
+            'sub_categories' => $subcategory,
             'meta' => [
                 "created_at" => $this->created_at,
                 "updated_at" => $this->updated_at
