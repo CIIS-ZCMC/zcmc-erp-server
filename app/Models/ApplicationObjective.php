@@ -25,9 +25,7 @@ class ApplicationObjective extends Model
     }
 
     public function objective(): BelongsTo
-    public function objective()
     {
-        return $this->belongsTo(Objective::class);
         return $this->belongsTo(Objective::class);
     }
 
