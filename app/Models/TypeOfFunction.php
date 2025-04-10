@@ -14,10 +14,8 @@ class TypeOfFunction extends Model
     
     protected $casts = ['deleted_at' => 'datetime'];
     
-    //Uncomment once the Function Object Model already exist
-    public function functionObjectives()
-    {
-        return $this->hasMany(FunctionObjective::class);
+    public function objective() {
+        return $this->hasMany(Objective::class);
     }
     
     public function logs()

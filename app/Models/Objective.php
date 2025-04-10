@@ -18,6 +18,14 @@ class Objective extends Model
 
     protected $casts = ['deleted_at' => 'datetime'];
 
+    public function typeOfFunction() {
+        return $this->belongsTo(TypeOfFunction::class);
+    }
+
+    public function successIndicator() {
+        return $this->hasMany(SuccessIndicator::class);
+    }
+
     public function applicationObjectives()
     {
         return $this->hasMany(ApplicationObjective::class);
