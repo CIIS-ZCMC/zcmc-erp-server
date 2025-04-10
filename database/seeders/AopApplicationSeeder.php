@@ -300,8 +300,28 @@ class AopApplicationSeeder extends Seeder
             'core' => $coreObjectives,
             'support' => $supportObjectives
         ];
-
-        // Create sample success indicators
+        
+        // Create objectives for each type of function
+        $createdObjectives = [];
+        foreach ($typeOfFunctions as $typeOfFunction) {
+            $objectives = $objectivesByType[$typeOfFunction->type] ?? [];
+            
+            foreach ($objectives as $objectiveDescription) {
+                $objectiveCode = 'OBJ-' . strtoupper(substr(str_replace(' ', '', $objectiveDescription), 0, 5)) . '-' . rand(100, 999);
+                
+                $objective = Objective::firstOrCreate(
+                    ['code' => $objectiveCode],
+                    [
+                        'type_of_function_id' => $typeOfFunction->id,
+                        'description' => $objectiveDescription
+                    ]
+                );
+                
+                $createdObjectives[$typeOfFunction->type][] = $objective;
+            }
+        }
+        
+        // Create sample success indicators linked to objectives
         $successIndicators = [
             'SI-01' => 'Increased patient satisfaction rate by 20%',
             'SI-02' => 'Reduced waiting time by 30%',
@@ -310,37 +330,62 @@ class AopApplicationSeeder extends Seeder
             'SI-05' => 'Increased service coverage by 25%'
         ];
 
-        // Ensure we have success indicators in the database
+        // Create success indicators for each objective
+        $allObjectives = Objective::all();
         $createdSuccessIndicators = [];
-        foreach ($successIndicators as $code => $description) {
-            $createdSuccessIndicators[] = SuccessIndicator::firstOrCreate(
-                ['code' => $code],
-                ['description' => $description]
+        
+        foreach ($allObjectives as $objective) {
+            // Create at least one success indicator per objective
+            $randomCode = array_rand($successIndicators);
+            
+            $successIndicator = SuccessIndicator::firstOrCreate(
+                ['code' => $randomCode, 'objective_id' => $objective->id],
+                ['description' => $successIndicators[$randomCode]]
             );
+            
+            $createdSuccessIndicators[] = $successIndicator;
         }
 
-        // For each AOP application, create objectives for each type of function
+        // For each AOP application, create application objectives linking to existing objectives
         foreach ($aopApplications as $appIndex => $aopApplication) {
             // For each type of function, create application objectives
             foreach ($typeOfFunctions as $typeOfFunction) {
-                $objectives = $objectivesByType[$typeOfFunction->type] ?? [];
-
-                // Use different objectives based on the application index to create variety
-                $startIndex = $appIndex % count($objectives);
-                $selectedObjectives = array_slice($objectives, $startIndex, min(2, count($objectives)));
-
-                foreach ($selectedObjectives as $index => $objectiveName) {
-                    // Create or find an objective
-                    $objective = Objective::firstOrCreate(
-                        ['description' => $objectiveName],
-                        ['code' => 'OBJ-' . strtoupper(substr(str_replace(' ', '', $objectiveName), 0, 5)) . '-' . rand(100, 999)]
-                    );
-
+                // Get available objectives for this function type
+                $availableObjectives = $createdObjectives[$typeOfFunction->type] ?? [];
+                
+                // Skip if no objectives available for this type
+                if (empty($availableObjectives)) {
+                    continue;
+                }
+                
+                // Select 1-2 objectives for this application based on app index for variety
+                $objectiveCount = min(count($availableObjectives), 2);
+                $startIndex = $appIndex % count($availableObjectives);
+                
+                for ($i = 0; $i < $objectiveCount; $i++) {
+                    $index = ($startIndex + $i) % count($availableObjectives);
+                    $objective = $availableObjectives[$index];
+                    
+                    // Find success indicators for this objective
+                    $successIndicators = SuccessIndicator::where('objective_id', $objective->id)->get();
+                    
+                    // If no success indicators exist for this objective, create one
+                    if ($successIndicators->isEmpty()) {
+                        $randomCode = 'SI-' . rand(10, 99);
+                        $successIndicator = SuccessIndicator::create([
+                            'objective_id' => $objective->id,
+                            'code' => $randomCode,
+                            'description' => 'Success indicator for ' . $objective->description
+                        ]);
+                    } else {
+                        $successIndicator = $successIndicators->first();
+                    }
+                    
                     // Create application objective
                     $applicationObjective = ApplicationObjective::create([
                         'aop_application_id' => $aopApplication->id,
                         'objective_id' => $objective->id,
-                        'success_indicator_id' => $createdSuccessIndicators[array_rand($createdSuccessIndicators)]->id
+                        'success_indicator_id' => $successIndicator->id
                     ]);
 
                     // For objectives not in the list, create OtherObjective

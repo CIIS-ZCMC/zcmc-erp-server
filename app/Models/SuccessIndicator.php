@@ -10,6 +10,7 @@ class SuccessIndicator extends Model
     protected $table = "success_indicators";
 
     public $fillable = [
+        'objective_id',
         'code',
         'description'
     ];
@@ -21,6 +22,10 @@ class SuccessIndicator extends Model
     public function applicationObjectives():HasMany
     {
         return $this->hasMany(ApplicationObjective::class);
+    }
+    
+    public function objective() {
+        return $this->belongsTo(Objective::class);
     }
     
     public function logs()

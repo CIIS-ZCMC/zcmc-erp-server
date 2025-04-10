@@ -9,6 +9,7 @@ class Objective extends Model
     protected $table = 'objectives';
 
     protected $fillable = [
+        'type_of_function_id',
         'code',
         'description'
     ];
@@ -16,6 +17,14 @@ class Objective extends Model
     public $timestamps = true;
 
     protected $casts = ['deleted_at' => 'datetime'];
+
+    public function typeOfFunction() {
+        return $this->belongsTo(TypeOfFunction::class);
+    }
+
+    public function successIndicator() {
+        return $this->hasMany(SuccessIndicator::class);
+    }
 
     public function applicationObjectives()
     {
