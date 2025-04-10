@@ -59,6 +59,13 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::put('item-classifications/{id}/restore', "itemClassificationController@restore");
     Route::delete('item-classifications', "itemClassificationController@destroy");
 
+    Route::get('item-specifications', "ItemSpecification@index");
+    Route::get('item-specifications/trashbin', "ItemSpecification@trash");
+    Route::post('item-specifications', "ItemSpecification@store");
+    Route::put('item-specifications', "ItemSpecification@update");
+    Route::put('item-specifications/{id}/restore', "ItemSpecification@restore");
+    Route::delete('item-specifications', "ItemSpecification@destroy");
+
     Route::get('success-indicators', "SuccessIndicatorController@index");
     Route::post('success-indicators', "SuccessIndicatorController@store");
     Route::put('success-indicators', "SuccessIndicatorController@update");

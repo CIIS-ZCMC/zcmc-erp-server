@@ -213,7 +213,7 @@ class ItemSpecificationController extends Controller
         if (empty($cleanData) && count($existing_items) > 0) {
             return response()->json([
                 'data' => $existing_items,
-                'message' => "Failed to bulk insert all item categories already exist.",
+                'message' => "Failed to bulk insert all item specification already exist.",
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
@@ -222,7 +222,7 @@ class ItemSpecificationController extends Controller
         if(!empty($toUpdate)){
             foreach ($toUpdate as $to_update) {
                 ItemSpecification::where('name', $to_update['name'])
-                    ->update(['item_category_id' => $to_update['item_category_id']]);
+                    ->update(['item_specification_id' => $to_update['item_specification_id']]);
             }
         }
 
@@ -304,7 +304,7 @@ class ItemSpecificationController extends Controller
         
         if (!$item_specification) {
             return response()->json([
-                "message" => "Item category not found."
+                "message" => "Item specification not found."
             ], Response::HTTP_NOT_FOUND);
         }
     
@@ -317,13 +317,13 @@ class ItemSpecificationController extends Controller
                     'methods' => $this->methods,
                     'time_ms' => round((microtime(true) - $start) * 1000),
                 ],
-                'message' => 'Successfully update item category record.'
+                'message' => 'Successfully update item specification record.'
             ])->response();
     }
 
     #[OA\Post(
         path: "/api/item-specifications",
-        summary: "Create a new activity comment",
+        summary: "Create a new item specification",
         tags: ["Activity Comments"],
         requestBody: new OA\RequestBody(
             description: "Comment data",
@@ -388,7 +388,7 @@ class ItemSpecificationController extends Controller
 
     #[OA\Put(
         path: "/api/item-specifications/{id}",
-        summary: "Update an activity comment",
+        summary: "Update an item specification",
         tags: ["Activity Comments"],
         parameters: [
             new OA\Parameter(
@@ -468,8 +468,8 @@ class ItemSpecificationController extends Controller
     }
 
     #[OA\Put(
-        path: "/api/item-categories/{id}/restore",
-        summary: "Delete an activity comment",
+        path: "/api/item-specifications/{id}/restore",
+        summary: "Delete an item specification",
         tags: ["Item Specifications"],
         parameters: [
             new OA\Parameter(
@@ -506,7 +506,7 @@ class ItemSpecificationController extends Controller
 
     #[OA\Delete(
         path: "/api/activity-specifications/{id}",
-        summary: "Delete an activity comment",  
+        summary: "Delete an item specification",  
         tags: ["Item specification"],
         parameters: [
             new OA\Parameter(
