@@ -16,6 +16,7 @@ class SuccessIndicatorResource extends JsonResource
     {
         return [
             "id" => $this->id,
+            'name' => $this->code,
             "code" => $this->code,
             "description" => $this->description,
             "meta" => [

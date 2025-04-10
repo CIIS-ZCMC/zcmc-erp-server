@@ -8,13 +8,18 @@ class TypeOfFunction extends Model
 {
     protected $table = "type_of_functions";
 
-    public $fillable = ['type'];
+    public $fillable = ['code','type'];
 
     public $timestamps = true;
     
     protected $casts = ['deleted_at' => 'datetime'];
     
     public function objective() {
+        return $this->hasMany(Objective::class);
+    }
+
+    public function objectives()
+    {
         return $this->hasMany(Objective::class);
     }
     
