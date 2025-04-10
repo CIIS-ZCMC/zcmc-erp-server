@@ -24,7 +24,6 @@ return new class extends Migration {
             $table->float('estimated_budget')->default(0);
             $table->float('total_amount')->default(0);
             $table->text('remarks')->nullable();
-            $table->text('comment')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });
