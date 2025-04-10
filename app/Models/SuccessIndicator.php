@@ -11,7 +11,8 @@ class SuccessIndicator extends Model
 
     public $fillable = [
         'code',
-        'description'
+        'description',
+        'objective_id'
     ];
 
     public $timestamps = true;
@@ -21,6 +22,11 @@ class SuccessIndicator extends Model
     public function applicationObjectives():HasMany
     {
         return $this->hasMany(ApplicationObjective::class);
+    }
+
+    public function objective()
+    {
+        return $this->belongsTo(Objective::class);
     }
     
     public function logs()

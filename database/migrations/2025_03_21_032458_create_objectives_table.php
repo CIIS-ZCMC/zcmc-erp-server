@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->text('description')->nullable();
             $table->string('code');
+            $table->unsignedBigInteger('type_of_function_id');
+            $table->foreign('type_of_function_id')->references('id')->on('type_of_functions');
             $table->softDeletes();
             $table->timestamps();
         });

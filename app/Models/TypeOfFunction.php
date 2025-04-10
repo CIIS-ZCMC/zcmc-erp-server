@@ -8,7 +8,7 @@ class TypeOfFunction extends Model
 {
     protected $table = "type_of_functions";
 
-    public $fillable = ['type'];
+    public $fillable = ['code','type'];
 
     public $timestamps = true;
     
@@ -18,6 +18,11 @@ class TypeOfFunction extends Model
     public function functionObjectives()
     {
         return $this->hasMany(FunctionObjective::class);
+    }
+
+    public function objectives()
+    {
+        return $this->hasMany(Objective::class);
     }
     
     public function logs()
