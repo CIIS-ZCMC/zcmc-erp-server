@@ -50,21 +50,21 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::put('item-categories/{id}/restore', "ItemCategoryController@restore");
     Route::delete('item-categories', "ItemCategoryController@destroy");
 
-    Route::post('item-classifications/import', "itemClassificationController@import");
-    Route::get('item-classifications/template', "itemClassificationController@downloadTemplate");
-    Route::get('item-classifications', "itemClassificationController@index");
-    Route::get('item-classifications/trashbin', "itemClassificationController@trash");
-    Route::post('item-classifications', "itemClassificationController@store");
-    Route::put('item-classifications', "itemClassificationController@update");
-    Route::put('item-classifications/{id}/restore', "itemClassificationController@restore");
-    Route::delete('item-classifications', "itemClassificationController@destroy");
+    Route::post('item-classifications/import', "ItemClassificationController@import");
+    Route::get('item-classifications/template', "ItemClassificationController@downloadTemplate");
+    Route::get('item-classifications', "ItemClassificationController@index");
+    Route::get('item-classifications/trashbin', "ItemClassificationController@trash");
+    Route::post('item-classifications', "ItemClassificationController@store");
+    Route::put('item-classifications', "ItemClassificationController@update");
+    Route::put('item-classifications/{id}/restore', "ItemClassificationController@restore");
+    Route::delete('item-classifications', "ItemClassificationController@destroy");
 
-    Route::get('item-specifications', "ItemSpecification@index");
-    Route::get('item-specifications/trashbin', "ItemSpecification@trash");
-    Route::post('item-specifications', "ItemSpecification@store");
-    Route::put('item-specifications', "ItemSpecification@update");
-    Route::put('item-specifications/{id}/restore', "ItemSpecification@restore");
-    Route::delete('item-specifications', "ItemSpecification@destroy");
+    Route::get('item-specifications', "ItemSpecificationController@index");
+    Route::get('item-specifications/trashbin', "ItemSpecificationController@trash");
+    Route::post('item-specifications', "ItemSpecificationController@store");
+    Route::put('item-specifications', "ItemSpecificationController@update");
+    Route::put('item-specifications/{id}/restore', "ItemSpecificationController@restore");
+    Route::delete('item-specifications', "ItemSpecificationController@destroy");
 
     Route::get('success-indicators', "SuccessIndicatorController@index");
     Route::post('success-indicators', "SuccessIndicatorController@store");

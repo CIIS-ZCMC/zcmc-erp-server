@@ -321,6 +321,59 @@ class ItemSpecificationController extends Controller
             ])->response();
     }
 
+    #[OA\Get(
+        path: "/api/item-specifications",
+        summary: "List all item specification",
+        tags: ["Item Specification"],
+        parameters: [
+            new OA\Parameter(
+                name: "per_page",
+                in: "query",
+                description: "Item Specifications per page",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 15)
+            ),
+            new OA\Parameter(
+                name: "page",
+                in: "query",
+                description: "Page number",
+                required: false,
+                schema: new OA\Schema(type: "integer", default: 1)
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Successful operation",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/ItemSpecification")
+                )
+            )
+        ]
+    )]
+    public function index(Request $request)
+    {
+        $start = microtime(true);
+        $item_unit_id = $request->query('id');
+        $search = $request->search;
+        $mode = $request->mode;
+
+        if($item_unit_id){
+            return $this->singleRecord($item_unit_id, $start);
+        }
+
+        if($mode && $mode === 'selection'){
+            return $this->all($start);
+        }
+        
+        if($search){
+            return $this->search($request, $start);
+        }
+
+        return $this->pagination($request, $start); 
+    }
+
     #[OA\Post(
         path: "/api/item-specifications",
         summary: "Create a new item specification",
