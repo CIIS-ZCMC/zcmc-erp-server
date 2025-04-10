@@ -21,6 +21,7 @@ class Activity extends Model
         'activity_code',
         'name',
         'is_gad_related',
+        'is_reviewed',
         'cost',
         'start_month',
         'end_month',
@@ -28,6 +29,7 @@ class Activity extends Model
 
     protected $casts = [
         'is_gad_related' => 'boolean',
+        'is_reviewed' => 'boolean',
         'cost' => 'float',
         'start_month' => 'date',
         'end_month' => 'date',

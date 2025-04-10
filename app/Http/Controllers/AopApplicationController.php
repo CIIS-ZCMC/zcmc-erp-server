@@ -436,10 +436,14 @@ class AopApplicationController extends Controller
         $aopRequest = AopApplication::with([
             'applicationObjectives',
             'applicationObjectives.activities',
+            'applicationObjectives.activities.comments',
             'applicationObjectives.objective',
             'applicationObjectives.successIndicator',
         ])->findOrFail($id);
 
-        return new ManageAopRequestResource($aopRequest);
+        return response()->json([
+            'message' => 'AOP request retrieved successfully',
+            'data' => new ManageAopRequestResource($aopRequest)
+        ], Response::HTTP_OK);
     }
 }

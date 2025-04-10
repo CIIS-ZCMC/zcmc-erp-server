@@ -9,6 +9,7 @@ class Objective extends Model
     protected $table = 'objectives';
 
     protected $fillable = [
+        'type_of_function_id',
         'code',
         'description'
     ];

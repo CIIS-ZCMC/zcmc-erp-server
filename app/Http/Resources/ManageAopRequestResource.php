@@ -14,17 +14,22 @@ class ManageAopRequestResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $applicationObjectives = $this->applicationObjectives;
+        
         return [
             'id' => $this->id,
-            'aop_application_uuid' => $this->aop_application_uuid,
-            'mission' => $this->mission,
-            'status' => $this->status,
-            'has_discussed' => $this->has_discussed,
-            'remarks' => $this->remarks,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'objectives' => $this->objectives,
-            'success_indicator' => $this->successIndicator,
+            'function_description' => $this->applicationObjectives->objective->function->description,
+            'objective' => $this->applicationObjectives->objective->description,
+            'success_indicator' => $this->applicationObjectives->successIndicator->description,
+            'activity_count' => $this->applicationObjectives->activities->count(),
+            'activities' => $this->applicationObjectives->activities->map(function ($activity) {
+                return [
+                    'id' => $activity->id,
+                    'description' => $activity->name,
+                    'with_comment' => $activity->comments->isNotEmpty(),
+                    'is_reviewed' => $activity->is_reviewed ?? false,   // based on your actual Activity model
+                ];
+            }),
         ];
     }
 }
