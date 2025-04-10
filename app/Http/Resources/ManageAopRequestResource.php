@@ -16,15 +16,17 @@ class ManageAopRequestResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'aop_application_uuid' => $this->aop_application_uuid,
-            'mission' => $this->mission,
-            'status' => $this->status,
-            'has_discussed' => $this->has_discussed,
-            'remarks' => $this->remarks,
-            'created_at' => $this->created_at,
-            'updated_at' => $this->updated_at,
-            'objectives' => $this->objectives,
-            'success_indicator' => $this->successIndicator,
+            'function_description' => $this->objective->typeOfFunction->type,
+            'objective' => $this->objective->description,
+            'success_indicator' => $this->successIndicator->description,
+            'activities' => $this->activities->map(function ($activity) {
+                return [
+                    'id' => $activity->id,
+                    'description' => $activity->description,
+                    'with_comments' => $activity->comments->isNotEmpty(),
+                    'is_reviewed' => $activity->is_reviewed
+                ];
+            }),
         ];
     }
 }
