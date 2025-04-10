@@ -19,8 +19,8 @@ class ResourceResource extends JsonResource
             'object_category' => $this->object_category,
             'quantity' => $this->quantity,
             'expense_class' => $this->expense_class,
-            'item' => new ItemResource($this->whenLoaded('item')), // Assuming you have an ItemResource
-            'purchase_type' => new PurchaseTypeResource($this->whenLoaded('purchaseType')), // Assuming you have a PurchaseTypeResource
+            'item' => new ItemResource($this->whenLoaded('item')),
+            'purchase_type' => new PurchaseTypeResource($this->whenLoaded('purchaseType')), 
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

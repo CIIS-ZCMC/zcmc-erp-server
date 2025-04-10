@@ -18,12 +18,9 @@ class ApplicationObjectiveResource extends JsonResource
             'id' => $this->id,
             'objective_code' => $this->objective_code,
 
-            // New: Load function type from the linked Objective's Function
             'function_type' => $this->whenLoaded('objective', function () {
                 return $this->objective->function->type ?? null;
             }),
-
-            // New: Get the description from Objective, and include others if needed
             'objective_description' => $this->whenLoaded('objective', function () {
                 $description = $this->objective->description ?? null;
 
@@ -34,7 +31,6 @@ class ApplicationObjectiveResource extends JsonResource
                 return $description;
             }),
 
-            // Success Indicator (same logic as before)
             'success_indicator_description' => $this->whenLoaded('successIndicator', function () {
                 $description = $this->successIndicator->description ?? null;
 
