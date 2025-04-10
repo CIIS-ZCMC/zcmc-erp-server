@@ -17,36 +17,34 @@ class ApplicationObjectiveResource extends JsonResource
         return [
             'id' => $this->id,
             'objective_code' => $this->objective_code,
-<<<<<<< HEAD
-            'function_type' => $this->whenLoaded('functionObjective', function () {
-                return $this->functionObjective->function->type ?? null; // Get type from functions table
-            }),
-            'objective_description' => $this->whenLoaded('functionObjective', function () {
-                // Get the objective description
-                $description = $this->functionObjective->objective->description ?? null;
 
-                // If description is "Others", combine with others_objective description
+            // New: Load function type from the linked Objective's Function
+            'function_type' => $this->whenLoaded('objective', function () {
+                return $this->objective->function->type ?? null;
+            }),
+
+            // New: Get the description from Objective, and include others if needed
+            'objective_description' => $this->whenLoaded('objective', function () {
+                $description = $this->objective->description ?? null;
+
                 if ($description === 'Others' && $this->othersObjective) {
                     return $description . ': ' . $this->othersObjective->description;
                 }
 
                 return $description;
             }),
+
+            // Success Indicator (same logic as before)
             'success_indicator_description' => $this->whenLoaded('successIndicator', function () {
                 $description = $this->successIndicator->description ?? null;
 
-                // If the description is "Others" and otherSuccessIndicator exists, append or replace it
                 if ($description === 'Others' && $this->otherSuccessIndicator) {
                     return $description . ': ' . $this->otherSuccessIndicator->description;
                 }
 
                 return $description;
             }),
-=======
-            'function_type' => $this->functionObjective->typeOfFunction->type ?? null,
-            'objective_description' => $this->functionObjective->objective,
-            'success_indicator_description' => $this->successIndicator->description ?? null,
->>>>>>> 9202c67c6f8317e9af0cfd626b2ac71eec2096fb
+
             'activities' => ActivityResource::collection($this->whenLoaded('activities')),
         ];
     }
