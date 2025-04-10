@@ -19,7 +19,7 @@ return [
 
     'allowed_methods' => ['PUT,DELETE,POST,GET,OPTIONS'],
 
-    'allowed_origins' =>  ["http://192.168.227.137:5173"],
+    'allowed_origins' => ["http://192.168.227.137:5173", '*'],
 
     'allowed_origins_patterns' => [],
 
@@ -29,6 +29,6 @@ return [
 
     'max_age' => 122000,
 
-    'supports_credentials' => false,
+    'supports_credentials' => true,
 
 ];

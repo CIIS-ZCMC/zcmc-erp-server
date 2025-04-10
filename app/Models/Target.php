@@ -11,9 +11,6 @@ use Illuminate\Support\Str;
 
 class Target extends Model
 {
-    use HasFactory, SoftDeletes;
-
-
     use HasFactory;
 
     protected $fillable = [
