@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SuccessIndicator extends Model
 {
@@ -17,10 +18,9 @@ class SuccessIndicator extends Model
 
     protected $casts = ['deleted_at' => 'datetime'];
 
-    // Uncomment once the Objective Success Indicators Models exist
-    public function objectiveSuccessIndicators()
+    public function applicationObjectives():HasMany
     {
-        return $this->hasMany(ObjectiveSuccessIndicator::class);
+        return $this->hasMany(ApplicationObjective::class);
     }
 
     public function logs()

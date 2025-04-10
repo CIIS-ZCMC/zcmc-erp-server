@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\ShowAopApplicationResource;
+use App\Http\Resources\ManageAopRequestResource;
 use App\Http\Resources\AopRequestResource;
 use App\Models\AopApplication;
 use App\Models\FunctionObjective;

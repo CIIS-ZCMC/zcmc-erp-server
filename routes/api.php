@@ -149,8 +149,10 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('item-classifications/import', "itemClassificationController@import");
     Route::get('item-classifications/template', "itemClassificationController@downloadTemplate");
     Route::get('item-classifications', "itemClassificationController@index");
+    Route::get('item-classifications/trashbin', "itemClassificationController@trash");
     Route::post('item-classifications', "itemClassificationController@store");
     Route::put('item-classifications', "itemClassificationController@update");
+    Route::put('item-classifications/{id}/restore', "itemClassificationController@restore");
     Route::delete('item-classifications', "itemClassificationController@destroy");
 
     Route::get('success-indicators', "SuccessIndicatorController@index");
@@ -165,12 +167,12 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::put('type-of-functions/{id}/restore', "TypeOfFunctionController@restore");
     Route::delete('type-of-functions', "TypeOfFunctionController@destroy");
 
-        Route::get('purchase-types', "PurchaseTypeController@index");
-        Route::get('purchase-types/trashbin', "PurchaseTypeController@trash");
-        Route::post('purchase-types', "PurchaseTypeController@store");
-        Route::put('purchase-types', "PurchaseTypeController@update");
-        Route::put('purchase-types/{id}/restore', "PurchaseTypeController@restore");
-        Route::delete('purchase-types', "PurchaseTypeController@destroy");
+    Route::get('purchase-types', "PurchaseTypeController@index");
+    Route::get('purchase-types/trashbin', "PurchaseTypeController@trash");
+    Route::post('purchase-types', "PurchaseTypeController@store");
+    Route::put('purchase-types', "PurchaseTypeController@update");
+    Route::put('purchase-types/{id}/restore', "PurchaseTypeController@restore");
+    Route::delete('purchase-types', "PurchaseTypeController@destroy");
 
     Route::get('objectives', "ObjectiveController@index");
     Route::post('objectives', "ObjectiveController@store");
@@ -222,6 +224,7 @@ Route::namespace('App\Http\Controllers')->group(function () {
 
     // Approver  Module
     Route::get('aop-requests', 'AopApplicationController@listOfAopRequests');
+    Route::get('manage-aop-requset/{id}', 'AopApplicationController@manageAopRequest');
     Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
 >>>>>>> 9202c67c6f8317e9af0cfd626b2ac71eec2096fb
 });
