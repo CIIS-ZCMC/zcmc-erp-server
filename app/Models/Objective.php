@@ -17,9 +17,9 @@ class Objective extends Model
 
     protected $casts = ['deleted_at' => 'datetime'];
 
-    public function functionObjectives()
+    public function applicationObjectives()
     {
-        return $this->hasMany(FunctionObjective::class);
+        return $this->hasMany(ApplicationObjective::class);
     }
 
     public function logs()
