@@ -14,10 +14,8 @@ class ApplicationObjective extends Model
 
     protected $fillable = [
         'aop_application_id',
-        'function_objective_id',
-        'objective_code',
+        'objective_id',
         'success_indicator_id'
-
     ];
 
     public function aopApplication(): BelongsTo
@@ -25,9 +23,9 @@ class ApplicationObjective extends Model
         return $this->belongsTo(AopApplication::class);
     }
 
-    public function functionObjective(): BelongsTo
+    public function objective(): BelongsTo
     {
-        return $this->belongsTo(FunctionObjective::class);
+        return $this->belongsTo(Objective::class);
     }
 
     public function activities(): HasMany
@@ -42,6 +40,6 @@ class ApplicationObjective extends Model
 
     public function successIndicator()
     {
-        return $this->belongsTo(SuccessIndicator::class, 'success_indicator_id');
+        return $this->belongsTo(SuccessIndicator::class);
     }
 }

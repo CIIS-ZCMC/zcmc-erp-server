@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\ShowAopApplicationResource;
+use App\Http\Resources\ManageAopRequestResource;
 use App\Http\Resources\AopRequestResource;
 use App\Models\AopApplication;
 use App\Models\FunctionObjective;
@@ -391,7 +392,7 @@ class AopApplicationController extends Controller
     {
         $page = $request->query('page') > 0 ? $request->query('page') : 1;
         $per_page = $request->query('per_page') ?? 15;
-        
+
         $query = AopApplication::with([
             'user',
             'applicationTimeline',
@@ -407,9 +408,9 @@ class AopApplicationController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('mission', 'like', "%{$search}%")
-                  ->orWhere('remarks', 'like', "%{$search}%");
+                    ->orWhere('remarks', 'like', "%{$search}%");
             });
         }
 
@@ -425,5 +426,20 @@ class AopApplicationController extends Controller
             ],
             'metadata' => $this->getMetadata('get')
         ], Response::HTTP_OK);
+    }
+
+    /*
+    * Show a specific AOP request and will render at page visit the objectives with its activities
+    */
+    public function manageAopRequest($id)
+    {
+        $aopRequest = AopApplication::with([
+            'applicationObjectives',
+            'applicationObjectives.activities',
+            'applicationObjectives.objective',
+            'applicationObjectives.successIndicator',
+        ])->findOrFail($id);
+
+        return new ManageAopRequestResource($aopRequest);
     }
 }

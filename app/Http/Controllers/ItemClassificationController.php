@@ -2,25 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\MetadataComposerHelper;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemClassificationRequest;
 use App\Http\Resources\ItemClassificationDuplicateResource;
 use App\Http\Resources\ItemClassificationResource;
+use App\Http\Resources\ItemClassificationTrashResource;
 use App\Imports\ItemClassificationsImport;
 use App\Models\ItemCategory;
 use App\Models\ItemClassification;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Resources\Json\JsonResource;
 use Maatwebsite\Excel\Excel;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
-    schema: "ActivityComment",
+    schema: "Item Classifications",
     properties: [
         new OA\Property(property: "id", type: "integer"),
-        new OA\Property(property: "activity_id", type: "integer"),
-        new OA\Property(property: "user_id", type: "integer", nullable: true),
-        new OA\Property(property: "content", type: "string"),
+        new OA\Property(property: "name", type: "string"),
+        new OA\Property(property: "code", type: "string", nullable: true),
+        new OA\Property(property: "description", type: "string"),
         new OA\Property(
             property: "created_at",
             type: "string",
@@ -38,13 +43,15 @@ class ItemClassificationController extends Controller
     private $is_development;
 
     private $module = 'item-classifications';
+    
+    private $methods = '[GET, POST, PUT, DELETE]';
 
     public function __construct()
     {
         $this->is_development = env("APP_DEBUG", true);
     }
 
-    private function cleanItemClassificationData(array $data): array
+    private function cleanData(array $data): array
     {
         $cleanData = [];
         
@@ -64,51 +71,228 @@ class ItemClassificationController extends Controller
         return $cleanData;
     }
     
-    protected function getMetadata($method): array
+    protected function search(Request $request, $start): AnonymousResourceCollection
+    {   
+        $validated = $request->validate([
+            'search' => 'required|string|min:2|max:100',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
+        
+        $searchTerm = '%'.trim($validated['search']).'%';
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
+
+        $results = ItemClassification::where('name', 'like', "%{$searchTerm}%")
+            ->orWhere('code', 'like', "%{$searchTerm}%")
+            ->orWhere('description', 'like', "%{$searchTerm}%")
+            ->paginate(
+                perPage: $perPage,
+                page: $page
+            );
+
+        return ItemClassificationResource::collection($results)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'search' => [
+                        'term' => $validated['search'],
+                        'time_ms' => round((microtime(true) - $start) * 1000), // in milliseconds
+                    ],
+                    'pagination' => [
+                        'total' => $results->total(),
+                        'per_page' => $results->perPage(),
+                        'current_page' => $results->currentPage(),
+                        'last_page' => $results->lastPage(),
+                    ]
+                ],
+                'message' => 'Search completed successfully'
+            ]);
+    }
+    
+    protected function all($start)
     {
-        if($method === 'get'){
-            $metadata = ["methods" => ["GET, POST, PUT, DELETE"]];
-            $metadata['modes'] = ['selection', 'pagination'];
+        $item_classification = ItemClassification::all();
 
-            if($this->is_development){
-                $metadata['urls'] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?item_classification_id=[primary-key]",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                ];
-            }
+        return ItemClassificationResource::collection($item_classification)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }
+    
+    protected function pagination(Request $request, $start)
+    {   
+        $validated = $request->validate([
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
 
-            return $metadata;
-        }
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
         
-        if($method === 'put'){
-            $metadata = ["methods" => "[PUT]"];
-        
-            if ($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
-                ];
-                $metadata['fields'] = ["title", "code", "description"];
-            }
+        $item_classification = ItemClassification::paginate($perPage, ['*'], 'page', $page);
+
+        return ItemClassificationResource::collection($item_classification)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    'pagination' => [
+                        'total' => $item_classification->total(),
+                        'per_page' => $item_classification->perPage(),
+                        'current_page' => $item_classification->currentPage(),
+                        'last_page' => $item_classification->lastPage(),
+                    ]
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }     
+    protected function singleRecord($item_unit_id, $start):JsonResponse
+    {
+        $itemUnit = ItemClassification::find($item_unit_id);
             
-            return $metadata;
+        if (!$itemUnit) {
+            return response()->json(["message" => "Item classification not found."], Response::HTTP_NOT_FOUND);
+        }
+    
+        return (new ItemClassificationResource($itemUnit))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000)
+                ],
+                "message" => "Successfully retrieved record."
+            ])->response();
+    }
+
+    protected function bulkStore(Request $request, $start):ItemClassificationResource|AnonymousResourceCollection|JsonResponse  
+    {
+        $existing_items = ItemClassification::whereIn('name', collect($request->item_classifications)->pluck('name'))
+        ->orWhereIn('code', collect($request->item_classifications)->pluck('code'))
+        ->orWhereIn('description', collect($request->item_classifications)->pluck('description'))
+        ->get(['name', 'code'])->toArray();
+
+        // Convert existing items into a searchable format
+        $existing_names = array_column($existing_items, 'name');
+        $existing_codes = array_column($existing_items, 'code');
+        $existing_description = array_column($existing_items, 'description');
+
+        foreach ($request->item_classifications as $item) {
+            if (!in_array($item['name'], $existing_names) && !in_array($item['code'], $existing_codes) && !in_array($item['description'], $existing_description)) {
+                $cleanData[] = [
+                    "name" => strip_tags($item['name']),
+                    "code" => strip_tags($item['code']),
+                    "description" => isset($item['description']) ? strip_tags($item['description']) : null,
+                    "created_at" => now(),
+                    "updated_at" => now()
+                ];
+            }
+        }
+
+        if (empty($cleanData) && count($existing_items) > 0) {
+            return response()->json([
+                'data' => $existing_items,
+                'message' => "Failed to bulk insert all item classifications already exist.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        ItemClassification::insert($cleanData);
+
+        $latest_item_classifications = ItemClassification::orderBy('id', 'desc')
+            ->limit(count($cleanData))->get()
+            ->sortBy('id')->values();
+
+        return ItemClassificationResource::collection($latest_item_classifications)
+            ->additional([
+                'meta' => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    "existings" => $existing_items,
+                ],
+                "message" => "Successfully store data."
+            ]);
+    }
+    
+    protected function bulkUpdate(Request $request, $start):AnonymousResourceCollection|JsonResponse
+    {
+        $item_classification_ids = $request->query('id') ?? null;
+
+        if (count($item_classification_ids) !== count($request->input('item_classifications'))) {
+            return response()->json([
+                "message" => "Number of IDs does not match number of item classifications provided.",
+                "meta" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+    
+        $updated_item_classifications = [];
+        $errors = [];
+    
+        foreach ($item_classification_ids as $index => $id) {
+            $item_unit = ItemClassification::find($id);
+            
+            if (!$item_unit) {
+                $errors[] = "Log description with ID {$id} not found.";
+                continue;
+            }
+    
+            $cleanData = $this->cleanData($request->input('item_classifications')[$index]);
+            $item_unit->update($cleanData);
+            $updated_item_classifications[] = $item_unit;
+        }
+    
+        if (!empty($errors)) {
+            return ItemClassificationResource::collection($updated_item_classifications)
+                ->additional([
+                    "meta" => [
+                        'methods' => $this->methods,
+                        'time_ms' => round((microtime(true) - $start) * 1000),
+                        'issue' => $errors,
+                        "url_formats" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
+                    ],
+                    "message" => "Partial update completed with errors.",
+                ])
+                ->response()
+                ->setStatusCode(Response::HTTP_MULTI_STATUS);
         }
         
-        $metadata = ['methods' => ["GET, PUT, DELETE"]];
+        return ItemClassificationResource::collection($updated_item_classifications)
+            ->additional([
+                "meta" => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    "url_formats" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
+                ],
+                "message" => "Partial update completed with errors.",
+            ]);
+    }
 
-        if($this->is_development) {
-            $metadata["urls"] = [
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-            ];
-
-            $metadata["fields"] =  ["code"];
+    protected function singleRecordUpdate(Request $request, $start): JsonResource|ItemClassificationResource|JsonResponse
+    {
+        $item_classification_ids = $request->query('id') ?? null;
+        
+        $item_unit = ItemClassification::find($item_classification_ids[0]);
+        
+        if (!$item_unit) {
+            return response()->json([
+                "message" => "Item classification not found."
+            ], Response::HTTP_NOT_FOUND);
         }
+    
+        $cleanData = $this->cleanData($request->all());
+        $item_unit->update($cleanData);
 
-        return $metadata;
+        return (new ItemClassificationResource($item_unit))
+            ->additional([
+                "meta" => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                'message' => 'Successfully update item classification record.'
+            ])->response();
     }
     
     #[OA\Get(
@@ -174,9 +358,9 @@ class ItemClassificationController extends Controller
     
     #[OA\Post(
         path: '/api/import',
-        summary: 'Import item units from Excel/CSV file',
+        summary: 'Import item classifications from Excel/CSV file',
         requestBody: new OA\RequestBody(
-            description: 'Excel/CSV file containing item units',
+            description: 'Excel/CSV file containing item classifications',
             required: true,
             content: new OA\MediaType(
                 mediaType: 'multipart/form-data',
@@ -307,202 +491,24 @@ class ItemClassificationController extends Controller
     )]
     public function index(Request $request)
     {
-        $page = $request->query('page') > 0? $request->query('page'): 1;
-        $per_page = $request->query('per_page');
-        $mode = $request->query('mode') ?? 'pagination';
-        $search = $request->query('search');
-        $last_id = $request->query('last_id') ?? 0;
-        $last_initial_id = $request->query('last_initial_id') ?? 0;
-        $page_item = $request->query('page_item') ?? 0;
-        $item_classification_id = $request->query('item_classification_id') ?? null;
+        $start = microtime(true);
+        $item_unit_id = $request->query('id');
+        $search = $request->search;
+        $mode = $request->mode;
 
-        if($item_classification_id){
-            $item_classification = ItemClassification::find($item_classification_id);
-
-            if(!$item_classification){
-                return response()->json([
-                    'message' => "No record found.",
-                    "metadata" => [
-                        "methods" => "[GET, POST, PUT, DELETE]",
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_classification_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
-                ]);
-            }
-
-            return response()->json([
-                'data' => $item_classification,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT, DELETE]",
-                    "urls" => [
-                        env("SERVER_DOMAIN")."/api/".$this->module."?item_classification_id=[primary-key]",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                        env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                    ]
-                ]
-            ], Response::HTTP_OK);
+        if($item_unit_id){
+            return $this->singleRecord($item_unit_id, $start);
         }
 
-        if($page < 0 || $per_page < 0){
-            $response = ["message" => "Invalid request."];
-            
-            if($this->is_development){
-                $response = [
-                    "message" => "Invalid value of parameters",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_classification_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
-                ];
-            }
-
-            return response()->json([$response], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        if(!$page && !$per_page){
-            $response = ["message" => "Invalid request."];
-
-            if($this->is_development){
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => [
-                        "methods" => "[GET]",
-                        "modes" => ["pagination", "selection"],
-                        "urls" => [
-                            env("SERVER_DOMAIN")."/api/".$this->module."?item_classification_id=[primary-key]",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                            env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                        ]
-                    ]
-                ];
-            }
-
-            return response()->json($response,Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        // Handle return for selection record
-        if($mode === 'selection'){
-            if($search !== null){
-                $item_classifications = ItemClassification::select('id','code','description')
-                    ->where('code', 'like', "%".$search."%")
-                    ->where("deleted_at", NULL)->get();
-    
-                $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-    
-                if($this->is_development){
-                    $metadata['content'] = "This type of response is for selection component.";
-                    $metadata['mode'] = "selection";
-                }
-                
-                return response()->json([
-                    "data" => $item_classifications,
-                    "metadata" => $metadata,
-                ], Response::HTTP_OK);
-            }
-
-            $item_classifications = ItemClassification::select('id','code','description')->where("deleted_at", NULL)->get();
-
-            $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-
-            if($this->is_development){
-                $metadata['content'] = "This type of response is for selection component.";
-                $metadata['mode'] = "selection";
-            }
-            
-            return response()->json([
-                "data" => $item_classifications,
-                "metadata" => $metadata,
-            ], Response::HTTP_OK);
+        if($mode && $mode === 'selection'){
+            return $this->all($start);
         }
         
-
-        if($search !== null){
-            if($last_id === 0 || $page_item != null){
-                $item_classifications = ItemClassification::where('code', 'like', '%'.$search.'%')
-                    ->where('id','>', $last_id)
-                    ->orderBy('id')
-                    ->limit($per_page)
-                    ->get();
-
-                if(count($item_classifications)  === 0){
-                    return response()->json([
-                        'data' => [],
-                        'metadata' => [
-                            'methods' => '[GET,POST,PUT,DELETE]',
-                            'pagination' => [],
-                            'page' => 0,
-                            'total_page' => 0
-                        ],
-                    ], Response::HTTP_OK);
-                }
-
-                $allIds = ItemClassification::where('code', 'like', '%'.$search.'%')
-                    ->orderBy('id')
-                    ->pluck('id');
-
-                $chunks = $allIds->chunk($per_page);
-                
-                $pagination_helper = new PaginationHelper('item_classifications', $page, $per_page, 0);
-                $pagination = $pagination_helper->createSearchPagination( $page_item, $chunks, $search, $per_page, $last_initial_id);
-                $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
-                
-                /**
-                 * Save the metadata in database unique per module and user to ensure reuse of metadata
-                 */
-
-                return response()->json([
-                    'data' => $item_classifications,
-                    'metadata' => [
-                        'methods' => '[GET,POST,PUT,DELETE]',
-                        'pagination' => $pagination,
-                        'page' => $page,
-                        'total_page' => count($chunks)
-                    ],
-                ], Response::HTTP_OK);
-            }
-
-            /**
-             * Reuse existing pagination and update the existing pagination next and previous data
-             */
-
-            $item_classifications = ItemClassification::where('code', 'like', '%'.$search.'%')
-                ->where('id','>', $last_id)
-                ->orderBy('id')->limit($per_page)->get();
-
-            // Return the response
-            return response()->json([
-                'data' => $item_classifications,
-                'metadata' => []
-            ], Response::HTTP_OK);
+        if($search){
+            return $this->search($request, $start);
         }
-        
-        $total_page = ItemClassification::all()->pluck('id')->chunk($per_page);
-        $item_classifications = ItemClassification::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
-        $total_page = ceil(count($total_page));
-        
-        $pagination_helper = new PaginationHelper(  $this->module,$page, $per_page, $total_page > 10 ? 10: $total_page);
 
-        return response()->json([
-            "data" => $item_classifications,
-            "metadata" => [
-                "methods" => "[GET, POST, PUT, DELETE]",
-                "pagination" => $pagination_helper->create(),
-                "page" => $page,
-                "total_page" => $total_page
-            ]
-        ], Response::HTTP_OK);
+        return $this->pagination($request, $start);
     }
 
     #[OA\Post(
@@ -535,74 +541,30 @@ class ItemClassificationController extends Controller
     )]
     public function store(ItemClassificationRequest $request)
     {
-        $base_message = "Successfully created item_classifications";
+        $start = microtime(true);
 
         // Bulk Insert
         if ($request->item_classifications !== null || $request->item_classifications > 1) {
-            $existing_item_classifications = [];
-            $existing_items = ItemClassification::whereIn('name', collect($request->item_classifications)->pluck('name'))
-                ->whereIn('code', collect($request->item_classifications)->pluck('code'))->get(['code'])->toArray();
-
-            // Convert existing items into a searchable format
-            $existing_names = array_column($existing_items, 'name');
-            $existing_codes = array_column($existing_items, 'code');
-
-            if(!empty($existing_items)){
-                $existing_item_classifications = ItemClassificationDuplicateResource::collection(ItemClassification::whereIn("code", $existing_codes)->get());
-            }
-
-            foreach ($request->item_classifications as $item) {
-                if (!in_array($item['name'], $existing_names) &&  !in_array($item['code'], $existing_codes)) {
-                    $cleanData[] = [
-                        "name" => strip_tags($item['name']),
-                        "code" => strip_tags($item['code']),
-                        "description" => isset($item['description']) ? strip_tags($item['description']) : null,
-                        "created_at" => now(),
-                        "updated_at" => now()
-                    ];
-                }
-            }
-
-            if (empty($cleanData) && count($existing_items) > 0) {
-                return response()->json([
-                    'data' => $existing_item_classifications,
-                    'message' => "Failed to bulk insert all item_classifications already exist.",
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-    
-            ItemClassification::insert($cleanData);
-
-            $latest_item_classifications = ItemClassification::orderBy('id', 'desc')
-                ->limit(count($cleanData))->get()
-                ->sortBy('id')->values();
-
-            $message = count($latest_item_classifications) > 1? $base_message."s record": $base_message." record.";
-
-            return response()->json([
-                "data" => $latest_item_classifications,
-                "message" => $message,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT ,DELETE]",
-                    "duplicate_items" => $existing_item_classifications
-                ]
-            ], Response::HTTP_CREATED);
+            return $this->bulkStore($request, $start);
         }
 
+        // Single insert
         $cleanData = [
             "name" => strip_tags($request->input('name')),
             "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description'))
+            "description" => strip_tags($request->input('description')),
         ];
-        
-        $new_item = ItemClassification::create($cleanData);
 
-        return response()->json([
-            "data" => $new_item,
-            "message" => $base_message." record.",
-            "metadata" => [
-                "methods" => ['GET, POST, PUT, DELET'],
-            ]
-        ], Response::HTTP_CREATED);
+        $new_item = ItemClassification::create($cleanData);
+        
+        return (new ItemClassificationResource($new_item))
+            ->additional([
+                'meta' => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                "message" => "Successfully store data."
+            ])->response();
     }
 
     #[OA\Put(
@@ -643,95 +605,111 @@ class ItemClassificationController extends Controller
             )
         ]
     )]
-    public function update(Request $request):Response    
+    public function update(Request $request): AnonymousResourceCollection|ItemClassificationResource|JsonResource|JsonResponse    
     {
+        $start = microtime(true);
         $item_classification_ids = $request->query('id') ?? null;
-        
-        // Validate request has IDs
+    
+        // Validate ID parameter exists
         if (!$item_classification_ids) {
             $response = ["message" => "ID parameter is required."];
             
             if ($this->is_development) {
-                $response['metadata'] = $this->getMetadata('put');
+                $response['meta'] = MetadataComposerHelper::compose('put', $this->methods, $this->is_development);
             }
             
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        // Convert single ID to array for consistent processing
-        $item_classification_ids = is_array($item_classification_ids) ? $item_classification_ids : [$item_classification_ids];
-        
-        // For bulk update - validate items array matches IDs count
-        if ($request->has('item_classificationss')) {
-            if (count($item_classification_ids) !== count($request->input('items'))) {
-                return response()->json([
-                    "message" => "Number of IDs does not match number of item classifications provided.",
-                    "metadata" => $this->getMetadata('put')
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-            
-            $updated_items = [];
-            $errors = [];
-            
-            foreach ($item_classification_ids as $index => $id) {
-                $item = ItemClassification::find($id);
-                
-                if (!$item) {
-                    $errors[] = "Item classification with ID {$id} not found.";
-                    continue;
-                }
-                
-                $itemData = $request->input('item_classifications')[$index];
-                $cleanData = $this->cleanItemClassificationData($itemData);
-                
-                $item->update($cleanData);
-                $updated_items[] = $item;
-            }
-            
-            if (!empty($errors)) {
-                return response()->json([
-                    "data" => ItemClassificationResource::collection($updated_items),
-                    "message" => "Partial update completed with errors.",
-                    "metadata" => [                    
-                        "method" => "[PUT]",
-                        "errors" => $errors,
-                    ]
-                ], Response::HTTP_MULTI_STATUS);
-            }
-            
-            return response()->json([
-                "data" => ItemClassificationResource::collection($updated_items),
-                "message" => "Successfully updated ".count($updated_items)." item classifications.",
-                "metadata" => $this->getMetadata('put')
-            ], Response::HTTP_OK);
+        // Bulk Insert
+        if ($request->item_classifications !== null || $request->item_classifications > 1) {
+            return $this->bulkUpdate($request, $start);
         }
+    
+        return $this->singleRecordUpdate($request, $start);
+    }
 
-        
-        // Single item update
-        if (count($item_classification_ids) > 1) {
-            return response()->json([
-                "message" => "Multiple IDs provided but no items array for bulk update.",
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+
+    #[OA\Put(
+        path: "/api/item-classifications/{id}/restore",
+        summary: "Restore delete record",
+        tags: ["Type of Functions"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_NO_CONTENT,
+                description: "Comment deleted"
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]
+    public function trash(Request $request)
+    {
+        $search = $request->query('search');
+
+        $query = ItemClassification::onlyTrashed();
+
+        if ($search) {
+            $query->where('name', 'like', '%' . $search . '%')
+                ->orWhere('code', 'like', '%' . $search . '%')
+                ->orWhere('description', 'like', '%' . $search . '%');
         }
         
-        $item = ItemClassification::find($item_classification_ids[0]);
-        
-        if (!$item) {
-            return response()->json([
-                "message" => "Item not found."
-            ], Response::HTTP_NOT_FOUND);
-        }
-        
-        $cleanData = $this->cleanItemClassificationData($request->all());
-        $item->update($cleanData);
-        
-        $response = [
-            "data" => new ItemClassificationResource($item),
-            "message" => "Item classification updated successfully.",
-            "metadata" => $this->getMetadata('put')
-        ];
-        
-        return response()->json($response, Response::HTTP_OK);
+        return ItemClassificationResource::collection(ItemClassification::onlyTrashed()->get())
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods
+                ],
+                "message" => "Successfully retrieved deleted records."
+            ]);
+    }
+
+    #[OA\Put(
+        path: "/api/item-classifications/{id}/restore",
+        summary: "Restore delete record",
+        tags: ["Type of Functions"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_NO_CONTENT,
+                description: "Comment deleted"
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]
+    public function restore($id, Request $request)
+    {
+        ItemClassification::withTrashed()->where('id', $id)->restore();
+
+        return (new ItemClassificationTrashResource(ItemClassification::find($id)))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods
+                ],
+                "message" => "Succcessfully restore record."
+            ]);
     }
 
     #[OA\Delete(
@@ -769,7 +747,7 @@ class ItemClassificationController extends Controller
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => $this->getMetadata('delete')
+                    "meta" => MetadataComposerHelper::compose('delete', $this->module, $this->is_development)
                 ];
             }
     
@@ -807,7 +785,7 @@ class ItemClassificationController extends Controller
             $found_ids = $item_classifications->pluck('id')->toArray();
             
             // Perform soft delete
-            ItemClassification::whereIn('id', $found_ids)->update(['deleted_at' => now()]);
+            ItemClassification::whereIn('id', $found_ids)->delete();
     
             return response()->json([
                 "message" => "Successfully deleted " . count($found_ids) . " classification(s).",
@@ -836,7 +814,7 @@ class ItemClassificationController extends Controller
             );
         }
 
-        $item_classification->update(['deleted_at' => now()]);
+        $item_classification->delete();
 
         return response()->json([
             "message" => "Successfully deleted classification.",
