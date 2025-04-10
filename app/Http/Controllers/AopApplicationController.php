@@ -5,10 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\ShowAopApplicationResource;
-use App\Http\Resources\ManageAopRequestResource;
 use App\Http\Resources\AopRequestResource;
 use App\Models\AopApplication;
-use App\Models\ApplicationObjective;
 use App\Models\FunctionObjective;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -429,26 +427,5 @@ class AopApplicationController extends Controller
         ], Response::HTTP_OK);
     }
 
-    /*
-    * Show a specific AOP request and will render at page visit the objectives with its activities
-    */
-    public function manageAopRequest($id)
-    {
-        $applicationObjectives = ApplicationObjective::with([
-            'activities',
-            'activities.comments',
-            'objective',
-            'objective.typeOfFunction', // Added typeOfFunction relationship
-            'successIndicator',
-        ])
-            ->where('aop_application_id', $id)
-            ->whereNull('deleted_at')
-            ->get();
-
-
-        return response()->json([
-            'message' => 'AOP request retrieved successfully',
-            'data' => ManageAopRequestResource::collection($applicationObjectives),
-        ], Response::HTTP_OK);
-    }
+    
 }
