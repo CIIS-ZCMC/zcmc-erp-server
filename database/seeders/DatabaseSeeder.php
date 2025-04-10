@@ -24,7 +24,8 @@ class DatabaseSeeder extends Seeder
             ObjectiveSeeder::class,
             SuccessIndicatorSeeder::class,
             // ObjectiveSuccessIndicatorSeeder::class,
-            ItemSpecificationSeeder::class
+            ItemSpecificationSeeder::class,
+            ItemSeeder::class
         ]);
     }
 }

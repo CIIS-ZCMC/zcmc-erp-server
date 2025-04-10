@@ -154,18 +154,18 @@ class ItemController extends Controller
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
         
-        $objective_success_indicator = Item::paginate($perPage, ['*'], 'page', $page);
+        $items = Item::paginate($perPage, ['*'], 'page', $page);
 
-        return ItemResource::collection($objective_success_indicator)
+        return ItemResource::collection($items)
             ->additional([
                 'meta' => [
                     'methods' => $this->methods,
                     'time_ms' => round((microtime(true) - $start) * 1000),
                     'pagination' => [
-                        'total' => $objective_success_indicator->total(),
-                        'per_page' => $objective_success_indicator->perPage(),
-                        'current_page' => $objective_success_indicator->currentPage(),
-                        'last_page' => $objective_success_indicator->lastPage(),
+                        'total' => $items->total(),
+                        'per_page' => $items->perPage(),
+                        'current_page' => $items->currentPage(),
+                        'last_page' => $items->lastPage(),
                     ]
                 ],
                 'message' => 'Successfully retrieve all records.'
