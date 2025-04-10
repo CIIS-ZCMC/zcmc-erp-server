@@ -130,6 +130,6 @@ Route::
 
             // Approver  Module
             Route::get('aop-requests', 'AopApplicationController@listOfAopRequests');
-            Route::get('manage-aop-requset/{id}', 'AopApplicationController@manageAopRequest');
+            Route::get('manage-aop-request/{id}', 'AopApplicationController@manageAopRequest');
             Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
         });
