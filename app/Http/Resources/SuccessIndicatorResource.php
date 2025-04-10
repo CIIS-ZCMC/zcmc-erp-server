@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 class SuccessIndicatorResource extends JsonResource
 {
@@ -16,6 +17,7 @@ class SuccessIndicatorResource extends JsonResource
     {
         return [
             "id" => $this->id,
+            'label' => Str::ucfirst($this->code),
             'name' => $this->code,
             "code" => $this->code,
             "description" => $this->description,

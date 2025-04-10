@@ -124,11 +124,14 @@ Route::
             Route::apiResource('activities', 'ActivityController');
             Route::apiResource('ppmp-applications', 'PpmpApplicationController');
             Route::apiResource('ppmp-items', 'PpmpItemController');
+            Route::apiResource('activity-ppmp-items', 'ActivityPpmpItemController');
 
             Route::post('update-osi/{id}', 'ObjectiveSuccessIndicatorController@updateForApproverModule');
 
             // Approver  Module
             Route::get('aop-requests', 'AopApplicationController@listOfAopRequests');
-            Route::get('manage-aop-requset/{id}', 'AopApplicationController@manageAopRequest');
+            Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
+            Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
             Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
+            Route::apiResource('activity-comments', 'ActivityCommentController');
         });

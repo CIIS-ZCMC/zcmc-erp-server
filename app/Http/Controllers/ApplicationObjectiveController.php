@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ApplicationObjective;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
+use App\Models\Activity;
+use App\Models\ApplicationObjective;
+use App\Http\Resources\ManageAopRequestResource;
+use App\Http\Resources\ShowObjectiveResource;
 
 #[OA\Schema(
     schema: "ActivityComment",
@@ -198,5 +201,65 @@ class ApplicationObjectiveController extends Controller
     public function destroy(ApplicationObjective $applicationObjective)
     {
         //
+    }
+
+    /**
+     * Show a specific AOP request with objectives and activities
+     *
+     * Retrieves application objectives with their related activities, comments,
+     * parent objective, and success indicators for a given AOP application ID.
+     *
+     * @param int $id The AOP application ID
+     * @return \Illuminate\Http\JsonResponse Collection of application objectives with related data
+     */
+    public function manageAopRequest($id)
+    {
+        $applicationObjectives = ApplicationObjective::with([
+            'activities',
+            'activities.comments',
+            'objective',
+            'objective.typeOfFunction', // Added typeOfFunction relationship
+            'successIndicator',
+        ])
+            ->where('aop_application_id', $id)
+            ->whereNull('deleted_at')
+            ->get();
+
+        if (!$applicationObjectives) {
+            return response()->json([
+                'message' => 'AOP request not found',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+
+        return response()->json([
+            'message' => 'AOP request retrieved successfully',
+            'data' => ManageAopRequestResource::collection($applicationObjectives),
+        ], Response::HTTP_OK);
+    }
+
+
+    public function showObjectiveActivity($id)
+    {
+        $activity = Activity::with([
+            'comments',
+            'target',
+            'resources',
+            'responsiblePeople',
+        ])
+            ->where('id', $id)
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (!$activity) {
+            return response()->json([
+                'message' => 'Objective details not found',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json([
+            'message' => 'Activity details retrieved successfully',
+            'data' => new ShowObjectiveResource($activity),
+        ], Response::HTTP_OK);
     }
 }

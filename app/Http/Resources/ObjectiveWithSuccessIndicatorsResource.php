@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 class ObjectiveWithSuccessIndicatorsResource extends JsonResource
 {
@@ -16,6 +17,7 @@ class ObjectiveWithSuccessIndicatorsResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'label' =>  Str::ucfirst($this->code),
             'name' =>  $this->code,
             'code' => $this->code,
             'success_indicators' => SuccessIndicatorResource::collection($this->successIndicators),

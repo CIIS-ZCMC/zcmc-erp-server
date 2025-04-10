@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->string('activity_code');
             $table->string('name');
             $table->boolean('is_gad_related');
+            $table->boolean('is_reviewed')->default(false);
             $table->float('cost')->default(0);
             $table->date('start_month');
             $table->date('end_month');

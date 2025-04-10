@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 class TypeOfFunctionsWithObjectiveAndSuccessIndicatorsResource extends JsonResource
 {
@@ -16,6 +17,7 @@ class TypeOfFunctionsWithObjectiveAndSuccessIndicatorsResource extends JsonResou
     {
         return [
             'id' => $this->id,
+            'label' => Str::ucfirst($this->type),
             'name' => $this->type,
             'code' => $this->code,
             'type' => $this->type,
