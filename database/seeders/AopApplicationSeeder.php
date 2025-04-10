@@ -336,19 +336,10 @@ class AopApplicationSeeder extends Seeder
                         ['code' => 'OBJ-' . strtoupper(substr(str_replace(' ', '', $objectiveName), 0, 5)) . '-' . rand(100, 999)]
                     );
 
-                    // Create function objective with the updated schema
-                    $functionObjective = DB::table('function_objectives')->insertGetId([
-                        'type_of_function_id' => $typeOfFunction->id,
-                        'objective_id' => $objective->id,
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]);
-
                     // Create application objective
                     $applicationObjective = ApplicationObjective::create([
                         'aop_application_id' => $aopApplication->id,
-                        'function_objective_id' => $functionObjective, // Use the ID directly from insertGetId
-                        'objective_code' => strtoupper(substr($typeOfFunction->type, 0, 1)) . '-' . ($appIndex + 1) . '-' . ($index + 1),
+                        'objective_id' => $objective->id,
                         'success_indicator_id' => $createdSuccessIndicators[array_rand($createdSuccessIndicators)]->id
                     ]);
 
