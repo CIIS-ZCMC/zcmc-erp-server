@@ -436,7 +436,7 @@ class AopApplicationController extends Controller
         $aopRequest = AopApplication::with([
             'applicationObjectives',
             'applicationObjectives.activities',
-            'applicationObjectives.functionObjective.objective',
+            'applicationObjectives.objective',
             'applicationObjectives.successIndicator',
         ])->findOrFail($id);
 
