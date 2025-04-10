@@ -46,6 +46,11 @@ class PpmpItem extends Model
         return $this->belongsTo(ItemRequest::class, 'item_request_id');
     }
 
+    public function activity()
+    {
+        return $this->belongsToMany(Activity::class);
+    }
+
     public function logs()
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
