@@ -18,8 +18,8 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ItemCategorySeeder::class,
             TypeOfFunctionSeeder::class,
-            AopApplicationSeeder::class,
-            ApplicationTimelineSeeder::class,     
+            // AopApplicationSeeder::class,
+            // ApplicationTimelineSeeder::class,     
             ItemUnitSeeder::class,
             ObjectiveSeeder::class,
             SuccessIndicatorSeeder::class,

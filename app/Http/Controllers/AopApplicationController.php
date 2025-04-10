@@ -391,7 +391,7 @@ class AopApplicationController extends Controller
     {
         $page = $request->query('page') > 0 ? $request->query('page') : 1;
         $per_page = $request->query('per_page') ?? 15;
-        
+
         $query = AopApplication::with([
             'user',
             'applicationTimeline',
@@ -407,9 +407,9 @@ class AopApplicationController extends Controller
 
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('mission', 'like', "%{$search}%")
-                  ->orWhere('remarks', 'like', "%{$search}%");
+                    ->orWhere('remarks', 'like', "%{$search}%");
             });
         }
 
@@ -426,4 +426,6 @@ class AopApplicationController extends Controller
             'metadata' => $this->getMetadata('get')
         ], Response::HTTP_OK);
     }
+
+    
 }

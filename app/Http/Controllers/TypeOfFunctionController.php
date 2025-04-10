@@ -7,6 +7,7 @@ use App\Helpers\PaginationHelper;
 use App\Http\Requests\TypeOfFunctionRequest;
 use App\Http\Resources\TypeOfFunctionDuplicateResource;
 use App\Http\Resources\TypeOfFunctionResource;
+use App\Http\Resources\TypeOfFunctionsWithObjectiveAndSuccessIndicatorsResource;
 use App\Models\TypeOfFunction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -105,6 +106,19 @@ class TypeOfFunctionController extends Controller
             ->response();
     }
 
+    protected function indexWithObjectivesAndSuccessIndicators(Request $request)
+    {
+        $type_of_functions = TypeOfFunction::all();
+
+        return TypeOfFunctionsWithObjectiveAndSuccessIndicatorsResource::collection($type_of_functions)
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods
+                ],
+                "message" => "Success fetch type of functions."
+            ])->response();
+    }
+
     #[OA\Get(
         path: "/api/type-of-functions?per_page=15&page=1",
         summary: "List all type of functions",
@@ -136,8 +150,15 @@ class TypeOfFunctionController extends Controller
             )
         ]
     )]
-    public function index(Request $request): JsonResponse
+    public function index(Request $request)
     {
+        $with_sub_data = $request->query('with_sub_data');
+
+
+        if($with_sub_data){
+            return $this->indexWithObjectivesAndSuccessIndicators($request);
+        }
+
         $type_of_functions = TypeOfFunction::all();
 
         return TypeOfFunctionResource::collection($type_of_functions)
