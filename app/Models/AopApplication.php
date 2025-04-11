@@ -71,4 +71,9 @@ class AopApplication extends Model
     {
         return $this->hasOne(ApplicationTimeline::class);
     }
+
+    public function ppmpApplication()
+    {
+        return $this->hasOne(PpmpApplication::class);
+    }
 }

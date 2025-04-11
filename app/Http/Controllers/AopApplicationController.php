@@ -9,6 +9,8 @@ use App\Http\Resources\ManageAopRequestResource;
 use App\Http\Resources\AopRequestResource;
 use App\Models\AopApplication;
 use App\Models\FunctionObjective;
+use App\Models\PpmpItem;
+use App\Models\PurchaseType;
 use App\Models\SuccessIndicator;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -117,6 +119,51 @@ class AopApplicationController extends Controller
 
 
                     $activity->responsiblePeople()->createMany($activityData['responsible_people']);
+                }
+            }
+
+            $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
+
+            $ppmpTotal = 0;
+
+            foreach ($aopApplication->applicationObjectives as $objective) {
+                foreach ($objective->activities as $activity) {
+                    foreach ($activity->resources as $resource) {
+                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                            $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
+                        }
+                    }
+                }
+            }
+
+            $ppmpApplication = $aopApplication->ppmpApplication()->create([
+                'user_id' => 1,
+                'division_chief_id' => 1,
+                'budget_officer_id' => 1,
+                'ppmp_application_uuid' => Str::uuid(),
+                'ppmp_total' => $ppmpTotal,
+                'status' => 'pending',
+                'remarks' => $request->remarks ?? null,
+            ]);
+
+
+            foreach ($aopApplication->applicationObjectives as $objective) {
+                foreach ($objective->activities as $activity) {
+                    foreach ($activity->resources as $resource) {
+                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                            $estimatedBudget = $resource->item->estimated_budget;
+                            $totalAmount = $resource->quantity * $estimatedBudget;
+
+                            PpmpItem::create([
+                                'ppmp_application_id' => $ppmpApplication->id,
+                                'item_id'             => $resource->item_id,
+                                'total_quantity'      => $resource->quantity,
+                                'estimated_budget'    => $estimatedBudget,
+                                'total_amount'        => $totalAmount,
+                                'remarks'             => null,
+                            ]);
+                        }
+                    }
                 }
             }
 
