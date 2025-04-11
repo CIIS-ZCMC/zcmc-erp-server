@@ -179,4 +179,53 @@ class UMISService
             return null;
         }
     }
+
+    public function getDesignations()
+    {
+        try {
+            // Log the attempt to connect to UMIS
+            Log::info('Attempting to connect to UMIS API', [
+                'url' => $this->baseUrl . '/erp-data-designations',
+                'has_api_key' => !empty($this->apiKey),
+                'api_key' => $this->apiKey ? substr($this->apiKey, 0, 5) . '...' : null,
+            ]);
+
+            // Create a headers array for better debugging
+            $headers = [
+                'Accept' => 'application/json',
+                'UMIS-Api-Key' => $this->apiKey,
+                'X-ERP-System' => 'ZCMC-ERP',
+            ];
+
+            Log::info('Request headers', ['headers' => $headers]);
+
+            $response = Http::withoutVerifying() // Skip SSL verification for development
+                ->timeout(30) // Increase timeout to 30 seconds
+                ->withHeaders($headers);
+
+            // Make the request
+            $response = $response->get($this->baseUrl . '/erp-data-designations');
+
+            if ($response->successful()) {
+                Log::info('UMIS API - Successfully fetched designations');
+                return $response->json();
+            }
+
+            Log::error('UMIS API - Failed to get designations', [
+                'url' => $this->baseUrl . '/erp-data-designations',
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+
+            return null;
+        } catch (Exception $e) {
+            Log::error('UMIS API - Exception while getting designations', [
+                'url' => $this->baseUrl . '/erp-data-designations',
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return null;
+        }
+    }
 }
