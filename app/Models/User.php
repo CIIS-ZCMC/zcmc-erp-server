@@ -18,9 +18,15 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
+        'umis_employee_profile_id',
+        'designation_id',
+        'division_id',
+        'department_id',
+        'section_id',
+        'unit_id',
         'name',
         'email',
-        'password',
+        'is_active',
     ];
 
     /**
@@ -29,22 +35,8 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $hidden = [
-        'password',
         'remember_token',
     ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
-    }
 
     public function logs()
     {
@@ -61,8 +53,9 @@ class User extends Authenticatable
         return $this->hasMany(ActivityComment::class);
     }
 
+    //Temporary solution
     public function budgetOfficer()
     {
-        return Section::where('name', 'Budget Section')->first(); //Temporary solution
+        return Section::where('name', 'Budget Section')->first();
     }
 }

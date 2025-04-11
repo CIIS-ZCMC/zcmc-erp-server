@@ -15,13 +15,12 @@ class PpmpItem extends Model
     protected $fillable = [
         'ppmp_application_id',
         'item_id',
-        'procurement_modes_id',
+        'procurement_mode_id',
         'item_request_id',
         'total_quantity',
         'estimated_budget',
         'total_amount',
         'remarks',
-        'comment'
     ];
 
     public $timestamps = true;
@@ -49,6 +48,11 @@ class PpmpItem extends Model
     public function activities()
     {
         return $this->belongsToMany(Activity::class);
+    }
+
+    public function comments()
+    {
+        return $this->hasMany(PpmpItemComment::class, 'ppmp_item_id');
     }
 
     public function logs()
