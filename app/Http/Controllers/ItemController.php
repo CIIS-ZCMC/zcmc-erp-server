@@ -9,18 +9,18 @@ use App\Http\Requests\ItemRequest;
 use App\Http\Resources\ItemDuplicateResource;
 use App\Http\Resources\ItemResource;
 use App\Models\FileRecord;
+use App\Models\ItemCategory;
 use App\Models\Item;
 use App\Models\ItemClassification;
 use App\Models\ItemUnit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Http\Resources\Json\JsonResource;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
-    schema: "Item",
+    schema: "ActivityComment",
     properties: [
         new OA\Property(property: "id", type: "integer"),
         new OA\Property(property: "activity_id", type: "integer"),
@@ -51,7 +51,7 @@ class ItemController extends Controller
         $this->is_development = env("APP_DEBUG", true);
     }
 
-    private function cleanData(array $data): array
+    private function cleanItemData(array $data): array
     {
         $cleanData = [];
 
@@ -85,9 +85,7 @@ class ItemController extends Controller
         }
 
         if (isset($data['item_classification_id'])) {
-            $item_classification = ItemClassification::find($data['item_classification_id']);
-            
-            $cleanData['item_classification_id'] = $item_classification? (int) $data['item_classification_id']: null;
+            $cleanData['item_classification_id'] = (int) $data['item_classification_id'];
         }
 
         return $cleanData;
@@ -106,7 +104,7 @@ class ItemController extends Controller
         $page = $validated['page'] ?? 1;
 
         $results = Item::where('name', 'like', "%{$searchTerm}%")
-            ->orWhere('code', 'like', "%{$searchTerm}%")
+        ->orWhere('code', 'like', "%{$searchTerm}%")
             ->orWhere('variant', 'like', "%{$searchTerm}%")
             ->paginate(
                 perPage: $perPage,
@@ -132,11 +130,11 @@ class ItemController extends Controller
             ]);
     }
     
-    protected function all($start): AnonymousResourceCollection
+    protected function all($start)
     {
-        $objective_success_indicator = Item::all();
+        $items = Item::all();
 
-        return ItemResource::collection($objective_success_indicator)
+        return ItemResource::collection($items)
             ->additional([
                 'meta' => [
                     'methods' => $this->methods,
@@ -173,13 +171,12 @@ class ItemController extends Controller
                 'message' => 'Successfully retrieve all records.'
             ]);
     }     
-
-    protected function singleRecord($item_category_id, $start):JsonResponse
+    protected function singleRecord($item_unit_id, $start):JsonResponse
     {
-        $itemUnit = Item::find($item_category_id);
+        $itemUnit = Item::find($item_unit_id);
             
         if (!$itemUnit) {
-            return response()->json(["message" => "Item category not found."], Response::HTTP_NOT_FOUND);
+            return response()->json(["message" => "Item unit not found."], Response::HTTP_NOT_FOUND);
         }
     
         return (new ItemResource($itemUnit))
@@ -189,167 +186,6 @@ class ItemController extends Controller
                     'time_ms' => round((microtime(true) - $start) * 1000)
                 ],
                 "message" => "Successfully retrieved record."
-            ])->response();
-    }
-
-    protected function bulkStore(Request $request, $start):ItemResource|AnonymousResourceCollection|JsonResponse  
-    {
-        
-        $existing_items = [];
-        $existing_items = Item::whereIn('name', collect($request->items)->pluck('name'))
-            ->whereIn('estimated_budget', collect($request->items)->pluck('estimated_budget'))
-            ->whereIn('item_unit_id', collect($request->items)->pluck('item_unit_id'))
-            ->whereIn('item_category_id', collect($request->items)->pluck('item_category_id'))
-            ->get(['name'])->toArray();
-
-        // Convert existing items into a searchable format
-        $existing_names = array_column($existing_items, 'name');
-        $existing_estimated_budget = array_column($existing_items, 'estimated_budget');
-        $existing_item_unit_id = array_column($existing_items, 'item_unit_id');
-        $existing_item_category_id = array_column($existing_items, 'item_category_id');
-
-        if (!empty($existing_items)) {
-            $existing_item_collection = Item::whereIn("name", $existing_names)
-                ->whereIn('estimated_budget', collect($existing_estimated_budget)->pluck('estimated_budget'))
-                ->whereIn('item_unit_id', collect($existing_item_unit_id)->pluck('item_unit_id'))
-                ->whereIn('item_category_id', collect($existing_item_category_id)->pluck('item_category_id'))->get();
-
-            $existing_items = ItemDuplicateResource::collection($existing_item_collection);
-        }
-
-        foreach ($request->items as $item) {
-            $is_valid_unit_id = ItemUnit::find($item['item_unit_id']);
-            $is_valid_category_id = Item::find($item['item_category_id']);
-            $is_valid_classification_id = ItemClassification::find($item['item_classification_id']);
-
-            if ($is_valid_unit_id && $is_valid_category_id) {
-                if (
-                    !in_array($item['name'], $existing_names) && !in_array($item['estimated_budget'], $existing_estimated_budget)
-                    && !in_array($item['item_unit_id'], $existing_item_unit_id) && !in_array($item['item_category_id'], $existing_item_category_id)
-                ) {
-                    $cleanData[] = [
-                        "name" => strip_tags($item['name']),
-                        "code" => strip_tags($item['code']),
-                        "variant" => strip_tags($item['variant']),
-                        "estimated_budget" => strip_tags($item['estimated_budget']),
-                        "item_unit_id" => strip_tags($item['item_unit_id']),
-                        "item_category_id" => strip_tags($item['item_category_id']),
-                        "item_classification_id" => $is_valid_classification_id ? strip_tags($item['item_classification_id']) : null,
-                        "created_at" => now(),
-                        "updated_at" => now()
-                    ];
-                }
-                continue;
-            }
-
-            return response()->json([
-                "message" => "Invalid data given.",
-                "meta" => [
-                    "methods" => "[GET, PUT, DELETE]",
-                ]
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        if (empty($cleanData) && count($existing_items) > 0) {
-            return response()->json([
-                'data' => $existing_items,
-                'message' => "Failed to bulk insert all items already exist.",
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        Item::insert($cleanData);
-
-        $latest_item_units = Item::orderBy('id', 'desc')
-            ->limit(count($cleanData))->get()
-            ->sortBy('id')->values();
-
-        return ItemResource::collection($latest_item_units)
-            ->additional([
-                'meta' => [
-                    "methods" => $this->methods,
-                    'time_ms' => round((microtime(true) - $start) * 1000),
-                    "existings" => $existing_items
-                ],
-                "message" => "Successfully store data."
-            ]);
-    }
-    
-    protected function bulkUpdate(Request $request, $start):AnonymousResourceCollection|JsonResponse
-    {
-        $item_ids = $request->query('id') ?? null;
-
-        if (count($item_ids) !== count($request->input('items'))) {
-            return response()->json([
-                "message" => "Number of IDs does not match number of items provided.",
-                "meta" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-    
-        $updated_item_units = [];
-        $errors = [];
-    
-        foreach ($item_ids as $index => $id) {
-            $item_unit = Item::find($id);
-            
-            if (!$item_unit) {
-                $errors[] = "Item with ID {$id} not found.";
-                continue;
-            }
-    
-            $cleanData = $this->cleanData($request->input('items')[$index]);
-            $item_unit->update($cleanData);
-            $updated_item_units[] = $item_unit;
-        }
-    
-        if (!empty($errors)) {
-            return ItemResource::collection($updated_item_units)
-                ->additional([
-                    "meta" => [
-                        'methods' => $this->methods,
-                        'time_ms' => round((microtime(true) - $start) * 1000),
-                        'issue' => $errors,
-                        "url_formats" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
-                    ],
-                    "message" => "Partial update completed with errors.",
-                ])
-                ->response()
-                ->setStatusCode(Response::HTTP_MULTI_STATUS);
-        }
-        
-        return ItemResource::collection($updated_item_units)
-            ->additional([
-                "meta" => [
-                    'methods' => $this->methods,
-                    'time_ms' => round((microtime(true) - $start) * 1000),
-                    "url_formats" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
-                ],
-                "message" => "Partial update completed with errors.",
-            ]);
-    }
-
-    protected function singleRecordUpdate(Request $request, $start): JsonResource|ItemResource|JsonResponse
-    {
-        $item_ids = $request->query('id') ?? null;
-    
-        // Handle single update
-        $item = Item::find($item_ids[0]);
-        
-        if (!$item) {
-            return response()->json([
-                "message" => "Item not found."
-            ], Response::HTTP_NOT_FOUND);
-        }
-    
-        $cleanData = $this->cleanData($request->all());
-        $item->update($cleanData);
-
-        return (new ItemResource($item))
-            ->additional([
-                "meta" => [
-                    'methods' => $this->methods,
-                    'time_ms' => round((microtime(true) - $start) * 1000),
-                ],
-                'message' => 'Successfully update item category record.'
             ])->response();
     }
     
@@ -429,9 +265,9 @@ class ItemController extends Controller
     }
 
     #[OA\Get(
-        path: "/api/Items",
+        path: "/api/activity-comments",
         summary: "List all activity comments",
-        tags: ["Items"],
+        tags: ["Activity Comments"],
         parameters: [
             new OA\Parameter(
                 name: "per_page",
@@ -459,7 +295,7 @@ class ItemController extends Controller
             )
         ]
     )]
-    public function index(Request $request): AnonymousResourceCollection|JsonResponse
+    public function index(Request $request)
     {
         $start = microtime(true);
         $item_unit_id = $request->query('id');
@@ -478,13 +314,13 @@ class ItemController extends Controller
             return $this->search($request, $start);
         }
 
-        return $this->pagination($request, $start); 
+        return $this->pagination($request, $start);
     }
 
     #[OA\Post(
-        path: "/api/Items",
+        path: "/api/activity-comments",
         summary: "Create a new activity comment",
-        tags: ["Items"],
+        tags: ["Activity Comments"],
         requestBody: new OA\RequestBody(
             description: "Comment data",
             required: true,
@@ -509,20 +345,101 @@ class ItemController extends Controller
             )
         ]
     )]
-    public function store(ItemRequest $request): AnonymousResourceCollection|ItemResource|JsonResponse
+    public function store(ItemRequest $request):Response
     {
-        $start = microtime(true);
+        $base_message = "Successfully created items";
 
         // Bulk Insert
         if ($request->items !== null || $request->items > 1) {
-            return $this->bulkStore($request, $start);
+            $existing_items = [];
+            $existing_items = Item::whereIn('name', collect($request->items)->pluck('name'))
+                ->whereIn('estimated_budget', collect($request->items)->pluck('estimated_budget'))
+                ->whereIn('item_unit_id', collect($request->items)->pluck('item_unit_id'))
+                ->whereIn('item_category_id', collect($request->items)->pluck('item_category_id'))
+                ->whereIn('item_classification_id', collect($request->items)->pluck('item_classification_id'))
+                ->get(['name'])->toArray();
+
+            // Convert existing items into a searchable format
+            $existing_names = array_column($existing_items, 'name');
+            $existing_estimated_budget = array_column($existing_items, 'estimated_budget');
+            $existing_item_unit_id = array_column($existing_items, 'item_unit_id');
+            $existing_item_category_id = array_column($existing_items, 'item_category_id');
+            $existing_item_classification_id = array_column($existing_items, 'item_classification_id');
+
+            if (!empty($existing_items)) {
+                $existing_item_collection = Item::whereIn("name", $existing_names)
+                    ->whereIn('estimated_budget', collect($existing_estimated_budget)->pluck('estimated_budget'))
+                    ->whereIn('item_unit_id', collect($existing_item_unit_id)->pluck('item_unit_id'))
+                    ->whereIn('item_category_id', collect($existing_item_category_id)->pluck('item_category_id'))
+                    ->whereIn('item_classification_id', collect($existing_item_classification_id)->pluck('item_classification_id'))->get();
+
+                $existing_items = ItemDuplicateResource::collection($existing_item_collection);
+            }
+
+            foreach ($request->items as $item) {
+                $is_valid_unit_id = ItemUnit::find($item['item_unit_id']);
+                $is_valid_category_id = ItemCategory::find($item['item_category_id']);
+                $is_valid_classification_id = ItemClassification::find($item['item_classification_id']);
+
+                if ($is_valid_unit_id && $is_valid_category_id && $is_valid_classification_id) {
+                    if (
+                        !in_array($item['name'], $existing_names) && !in_array($item['estimated_budget'], $existing_estimated_budget)
+                        && !in_array($item['item_unit_id'], $existing_item_unit_id) && !in_array($item['item_category_id'], $existing_item_category_id)
+                        && !in_array($item['item_classification_id'], $existing_item_classification_id)
+                    ) {
+                        $cleanData[] = [
+                            "name" => strip_tags($item['name']),
+                            "code" => strip_tags($item['code']),
+                            "variant" => strip_tags($item['variant']),
+                            "estimated_budget" => strip_tags($item['estimated_budget']),
+                            "item_unit_id" => strip_tags($item['item_unit_id']),
+                            "item_category_id" => strip_tags($item['item_category_id']),
+                            "item_classification_id" => strip_tags($item['item_classification_id']),
+                            "created_at" => now(),
+                            "updated_at" => now()
+                        ];
+                    }
+                    continue;
+                }
+
+                return response()->json([
+                    "message" => "Invalid data given.",
+                    "metadata" => [
+                        "methods" => "[GET, PUT, DELETE]",
+                    ]
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            if (empty($cleanData) && count($existing_items) > 0) {
+                return response()->json([
+                    'data' => $existing_items,
+                    'message' => "Failed to bulk insert all items already exist.",
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            Item::insert($cleanData);
+
+            $latest_items = Item::orderBy('id', 'desc')
+                ->limit(count($cleanData))->get()
+                ->sortBy('id')->values();
+
+            $message = count($latest_items) > 1 ? $base_message . "s record" : $base_message . " record.";
+
+            return response()->json([
+                "data" => ItemResource::collection($latest_items),
+                "message" => $message,
+                "metadata" => [
+                    "methods" => "[GET, POST, PUT ,DELETE]",
+                    "duplicate_items" => $existing_items
+                ]
+            ], Response::HTTP_CREATED);
         }
 
         $is_valid_unit_id = ItemUnit::find($request->item_unit_id);
-        $is_valid_category_id = Item::find($request->item_category_id);
+        $is_valid_category_id = ItemCategory::find($request->item_category_id);
         $is_valid_classification_id = ItemClassification::find($request->item_classification_id);
 
-        if (!($is_valid_unit_id && $is_valid_category_id)) {
+        if (!($is_valid_unit_id && $is_valid_category_id && $is_valid_classification_id)) {
             return response()->json([
                 "message" => "Invalid data given.",
                 "metadata" => [
@@ -538,10 +455,12 @@ class ItemController extends Controller
             "estimated_budget" => strip_tags($request->input('estimated_budget')),
             "item_unit_id" => strip_tags($request->input('item_unit_id')),
             "item_category_id" => strip_tags($request->input('item_category_id')),
-            "item_classification_id" => !$is_valid_classification_id? null: strip_tags($request->input('item_classification_id')),
+            "item_classification_id" => strip_tags($request->input('item_classification_id')),
         ];
 
         $new_item = Item::create($cleanData);
+
+        $metadata = ["methods" => ['GET, POST, PUT, DELETE']];
 
         if($request->hasFile('file'))
         {
@@ -578,20 +497,19 @@ class ItemController extends Controller
             }
         }
 
-        return (new ItemResource($new_item))
-            ->additional([
-                'meta' => [
-                    "methods" => $this->methods,
-                    'time_ms' => round((microtime(true) - $start) * 1000),
-                ],
-                "message" => "Successfully store data."
-            ]);
+        return response()->json([
+            "data" => new ItemResource($new_item),
+            "message" => $base_message . " record.",
+            "metadata" => [
+                "methods" => ['GET, POST, PUT, DELETE'],
+            ]
+        ], Response::HTTP_CREATED);
     }
 
     #[OA\Put(
-        path: "/api/Items/{id}",
+        path: "/api/activity-comments/{id}",
         summary: "Update an activity comment",
-        tags: ["Items"],
+        tags: ["Activity Comments"],
         parameters: [
             new OA\Parameter(
                 name: "id",
@@ -626,92 +544,100 @@ class ItemController extends Controller
             )
         ]
     )]
-    public function update(Request $request): AnonymousResourceCollection|ItemResource|JsonResource|JsonResponse
+    public function update(Request $request): Response
     {
-        $start = microtime(true);
         $item_ids = $request->query('id') ?? null;
-    
-        // Validate ID parameter exists
+
+        // Validate request has IDs
         if (!$item_ids) {
             $response = ["message" => "ID parameter is required."];
-            
+
             if ($this->is_development) {
-                $response['meta'] = MetadataComposerHelper::compose('put', $this->methods, $this->is_development);
+                $response['metadata'] = $this->getMetadata('put');
             }
-            
+
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        // Bulk Insert
-        if ($request->items !== null && $request->items > 1) {
-            return $this->bulkUpdate($request, $start);
+        // Convert single ID to array for consistent processing
+        $item_ids = is_array($item_ids) ? $item_ids : [$item_ids];
+
+        // For bulk update - validate items array matches IDs count
+        if ($request->has('items')) {
+            if (count($item_ids) !== count($request->input('items'))) {
+                return response()->json([
+                    "message" => "Number of IDs does not match number of items provided.",
+                    "metadata" => $this->getMetadata('put')
+                ], Response::HTTP_UNPROCESSABLE_ENTITY);
+            }
+
+            $updated_items = [];
+            $errors = [];
+
+            foreach ($item_ids as $index => $id) {
+                $item = Item::find($id);
+
+                if (!$item) {
+                    $errors[] = "Item with ID {$id} not found.";
+                    continue;
+                }
+
+                $itemData = $request->input('items')[$index];
+                $cleanData = $this->cleanItemData($itemData);
+
+                $item->update($cleanData);
+                $updated_items[] = $item;
+            }
+
+            if (!empty($errors)) {
+                return response()->json([
+                    "data" => ItemResource::collection($updated_items),
+                    "message" => "Partial update completed with errors.",
+                    "metadata" => [
+                        "method" => "[PUT]",
+                        "errors" => $errors,
+                    ]
+                ], Response::HTTP_MULTI_STATUS);
+            }
+
+            return response()->json([
+                "data" => ItemResource::collection($updated_items),
+                "message" => "Successfully updated " . count($updated_items) . " items.",
+                "metadata" => $this->getMetadata('put')
+            ], Response::HTTP_OK);
         }
-    
-        return $this->singleRecordUpdate($request, $start);
-    }
 
-    public function trash(Request $request)
-    {
-        $search = $request->query('search');
-
-        $query = Item::onlyTrashed();
-
-        if ($search) {
-            $query->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhere('variant', 'like', "%{$search}%");
+        // Single item update
+        if (count($item_ids) > 1) {
+            return response()->json([
+                "message" => "Multiple IDs provided but no items array for bulk update.",
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-        
-        return ItemResource::collection(Item::onlyTrashed()->get())
-            ->additional([
-                "meta" => [
-                    "methods" => $this->methods
-                ],
-                "message" => "Successfully retrieved deleted records."
-            ]);
-    }
 
-    #[OA\Put(
-        path: "/api/Items/{id}/restore",
-        summary: "Delete an item",
-        tags: ["Items"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_NO_CONTENT,
-                description: "Comment deleted"
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            )
-        ]
-    )]
-    public function restore($id, Request $request)
-    {
-        Item::withTrashed()->where('id', $id)->restore();
+        $item = Item::find($item_ids[0]);
 
-        return (new ItemResource(Item::find($id)))
-            ->additional([
-                "meta" => [
-                    "methods" => $this->methods
-                ],
-                "message" => "Succcessfully restore record."
-            ]);
+        if (!$item) {
+            return response()->json([
+                "message" => "Item not found."
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $cleanData = $this->cleanItemData($request->all());
+        $item->update($cleanData);
+
+        $response = [
+            "data" => new ItemResource($item),
+            "message" => "Item updated successfully.",
+            "metadata" => $this->getMetadata('put')
+        ];
+
+        return response()->json($response, Response::HTTP_OK);
     }
 
     #[OA\Delete(
-        path: "/api/Items/{id}",
+        path: "/api/activity-comments/{id}",
         summary: "Delete an activity comment",
-        tags: ["Items"],
+        tags: ["Activity Comments"],
         parameters: [
             new OA\Parameter(
                 name: "id",
@@ -743,7 +669,7 @@ class ItemController extends Controller
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "meta" => MetadataComposerHelper::compose('delete', $this->module, $this->is_development)
+                    "metadata" => $this->getMetadata('delete')
                 ];
             }
 
@@ -773,7 +699,7 @@ class ItemController extends Controller
 
             // Only soft-delete records that were actually found
             $found_ids = $items->pluck('id')->toArray();
-            Item::whereIn('id', $found_ids)->delete();
+            Item::whereIn('id', $found_ids)->update(['deleted_at' => now()]);
 
             return response()->json([
                 "message" => "Successfully deleted " . count($found_ids) . " record(s).",
@@ -796,7 +722,7 @@ class ItemController extends Controller
             return response()->json(["message" => "No active record found matching query."], Response::HTTP_NOT_FOUND);
         }
 
-        $item->delete();
+        $item->update(['deleted_at' => now()]);
 
         return response()->json([
             "message" => "Successfully deleted record.",
