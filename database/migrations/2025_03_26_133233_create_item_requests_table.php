@@ -13,24 +13,24 @@ return new class extends Migration
     {
         Schema::create('item_requests', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('item_unit_id');
-            $table->foreign('item_unit_id')->references('id')->on('item_units');
-            $table->unsignedBigInteger('item_category_id');
-            $table->foreign('item_category_id')->references('id')->on('item_categories');
-            $table->unsignedBigInteger('item_classification_id');
-            $table->foreign('item_classification_id')->references('id')->on('item_classifications');
             $table->string('name');
             $table->string('code')->nullable();
             $table->text('image')->nullable();
             $table->string('variant')->nullable();
             $table->float('estimated_budget')->default(0);
             $table->string('status')->default("pending");
-            $table->dateTime('deleted_at')->nullable();
+            $table->unsignedBigInteger('item_unit_id')->nullable();
+            $table->foreign('item_unit_id')->references('id')->on('item_units');
+            $table->unsignedBigInteger('item_category_id')->nullable();
+            $table->foreign('item_category_id')->references('id')->on('item_categories');
+            $table->unsignedBigInteger('item_classification_id')->nullable();
+            $table->foreign('item_classification_id')->references('id')->on('item_classifications');
             $table->text('reason')->nullable();
-            $table->unsignedBigInteger('request_by');
-            $table->foreign('request_by')->references('id')->on('users');
-            $table->unsignedBigInteger('action_by');
+            $table->unsignedBigInteger('requested_by')->nullable();
+            $table->foreign('requested_by')->references('id')->on('users');
+            $table->unsignedBigInteger('action_by')->nullable();
             $table->foreign('action_by')->references('id')->on('users');
+            $table->softDeletes();
             $table->timestamps();
         });
     }
@@ -40,6 +40,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('item_requests', function(Blueprint $table){
+            $table->dropSoftDeletes();
+        });
+
         Schema::dropIfExists('item_requests');
     }
 };
