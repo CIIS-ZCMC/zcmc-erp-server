@@ -31,10 +31,11 @@ Route::
             Route::put('items/{id}/restore', "ItemController@restore");
             Route::delete('items', "ItemController@destroy");
 
-            Route::post('item-requests/{id}/update-status', "ItemRequestController@approve");
             Route::get('item-requests', "ItemRequestController@index");
+            Route::get('item-requests/trashbin', "ItemRequestController@trash");
             Route::post('item-requests', "ItemRequestController@store");
-            Route::put('item-requests/{id}', "ItemRequestController@update");
+            Route::put('item-requests', "ItemRequestController@update");
+            Route::put('item-requests/{id}/restore', "ItemRequestController@restore");
             Route::delete('item-requests', "ItemRequestController@destroy");
 
             Route::post('item-units/import', "ItemUnitController@import");
