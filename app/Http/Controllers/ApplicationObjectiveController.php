@@ -9,8 +9,7 @@ use App\Models\Activity;
 use App\Models\ApplicationObjective;
 use App\Http\Resources\ManageAopRequestResource;
 use App\Http\Resources\ShowObjectiveResource;
-use App\Models\AopApplication;
-use Illuminate\Support\Facades\Validator;
+
 
 #[OA\Schema(
     schema: "ActivityComment",
@@ -265,66 +264,5 @@ class ApplicationObjectiveController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function processAopRequest(Request $request)
-    {
-        $validated = Validator::make($request->all(), [
-            'aop_application_id' => 'required|integer|exists:aop_applications,id',
-            'status' => 'required|string|',
-            'remarks' => 'nullable|string|max:500',
-            'auth_pin' => 'required|integer|digits:6',
-        ]);
-
-        // NOTE:
-        // Get the user who processed the application
-
-        if ($validated->fails()) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $validated->errors(),
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        $aopApplication = AopApplication::with([ 
-            'applicationObjectives',
-            'applicationTimeline',
-            'user'
-        ])
-            ->where('id', $request->aop_application_id)
-            ->whereNull('deleted_at')
-            ->first();
-
-        $dateApproved = null;
-        $dateReturned = null;
-        
-        /*
-        * Later, add in the logic of determining what's the next office base on the status.
-        */
-        $status = match ($request->status) {
-            'approved' => $dateApproved = now(),
-            'returned' => $dateReturned = now(),
-            default => null,
-        };
-
-        $aopApplicationTimeline = $aopApplication->applicationTimeline()->create([
-            'aop_application_id' => $request->aop_application_id,
-            'user_id' => $request->user_id,
-            'current_area_id' => 1,
-            'next_area_id' => 2,
-            'status' => $status,
-            'remarks' => $request->remarks,
-            'date_created' => now(),
-            'date_approved' => $dateApproved,
-            'date_returned' => $dateReturned,
-        ]);
-
-        if (!$aopApplicationTimeline) {
-            return response()->json([
-                'message' => 'AOP application timeline not created',
-            ], Response::HTTP_BAD_REQUEST);
-        }
-
-        return response()->json([
-            'message' => 'AOP application processed successfully',
-        ], Response::HTTP_OK);
-    }
+   
 }
