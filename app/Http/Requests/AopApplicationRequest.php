@@ -11,7 +11,7 @@ class AopApplicationRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -32,12 +32,13 @@ class AopApplicationRequest extends FormRequest
             'remarks' => 'nullable|string',
 
             'application_objectives' => 'required|array',
-            'application_objectives.*.function_objective_id' => 'required|exists:function_objectives,id',
-            'application_objectives.*.objective_code' => 'required|string',
+            'application_objectives.*.objective_id' => 'required|exists:objectives,id',
+            'application_objectives.*.success_indicator_id' => 'required|exists:success_indicators,id',
             'application_objectives.*.others_objective' => 'nullable|string',
+            'application_objectives.*.other_success_indicator' => 'nullable|string',
 
             'application_objectives.*.activities' => 'required|array',
-            'application_objectives.*.activities.*.activity_uuid' => 'required|uuid',
+
             'application_objectives.*.activities.*.activity_code' => 'required|string',
             'application_objectives.*.activities.*.name' => 'required|string',
             'application_objectives.*.activities.*.is_gad_related' => 'required|boolean',
@@ -59,11 +60,11 @@ class AopApplicationRequest extends FormRequest
             'application_objectives.*.activities.*.resources.*.expense_class' => 'required|string',
 
             'application_objectives.*.activities.*.responsible_people' => 'required|array',
-            'application_objectives.*.activities.*.responsible_people.*.user_id' => 'required|exists:users,id',
-            'application_objectives.*.activities.*.responsible_people.*.division_id' => 'required|exists:divisions,id',
-            'application_objectives.*.activities.*.responsible_people.*.department_id' => 'required|exists:departments,id',
-            'application_objectives.*.activities.*.responsible_people.*.section_id' => 'required|exists:sections,id',
-            'application_objectives.*.activities.*.responsible_people.*.unit_id' => 'required|exists:units,id',
+            'application_objectives.*.activities.*.responsible_people.*.user_id' => 'nullable|exists:users,id',
+            'application_objectives.*.activities.*.responsible_people.*.division_id' => 'nullable|exists:divisions,id',
+            'application_objectives.*.activities.*.responsible_people.*.department_id' => 'nullable|exists:departments,id',
+            'application_objectives.*.activities.*.responsible_people.*.section_id' => 'nullable|exists:sections,id',
+            'application_objectives.*.activities.*.responsible_people.*.unit_id' => 'nullable|exists:units,id',
             'application_objectives.*.activities.*.responsible_people.*.designation_id' => 'required|exists:designations,id',
         ];
     }

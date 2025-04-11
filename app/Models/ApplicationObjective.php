@@ -15,7 +15,6 @@ class ApplicationObjective extends Model
     protected $fillable = [
         'aop_application_id',
         'objective_id',
-        'objective_id',
         'success_indicator_id'
     ];
 

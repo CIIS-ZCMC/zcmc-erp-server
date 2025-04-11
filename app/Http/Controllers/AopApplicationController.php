@@ -21,10 +21,11 @@ class AopApplicationController extends Controller
 
     public function index()
     {
-        $aopApplications = AopApplication::query()
+
+        return $aopApplications = AopApplication::query()
             ->with([
                 'applicationObjectives.objective',
-                'applicationObjectives.othersObjective',
+                'applicationObjectives.otherObjective',
                 'applicationObjectives.successIndicator',
                 'applicationObjectives.otherSuccessIndicator',
                 'applicationObjectives.activities.target',
@@ -99,7 +100,7 @@ class AopApplicationController extends Controller
 
                 foreach ($objectiveData['activities'] as $activityData) {
                     $activity = $applicationObjective->activities()->create([
-                        'activity_uuid' => $activityData['activity_uuid'],
+
                         'activity_code' => $activityData['activity_code'],
                         'name' => $activityData['name'],
                         'is_gad_related' => $activityData['is_gad_related'],
@@ -115,7 +116,7 @@ class AopApplicationController extends Controller
                     $activity->resources()->createMany($activityData['resources']);
 
 
-                    $activity->responsiblePeople()->createMany($activityData['responsible_person']);
+                    $activity->responsiblePeople()->createMany($activityData['responsible_people']);
                 }
             }
 
