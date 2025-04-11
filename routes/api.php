@@ -140,4 +140,5 @@ Route::
             Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
             Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
             Route::apiResource('activity-comments', 'ActivityCommentController');
+            Route::post('process-aop-request', 'ApplicationObjectiveController@processAopRequest');
         });
