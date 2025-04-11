@@ -206,6 +206,129 @@ class AopApplicationController extends Controller
         ]);
     }
 
+    public function update(AopApplicationRequest $request, $id)
+    {
+        DB::transaction(function () use ($request, $id) {
+            $aopApplication = AopApplication::with([
+                'applicationObjectives.activities.resources.item',
+                'ppmpApplication',
+            ])->findOrFail($id);
+
+            // 1. Update AOP application
+            $aopApplication->update($request->only([
+                'user_id',
+                'division_chief_id',
+                'mcc_chief_id',
+                'planning_officer_id',
+                'mission',
+                'status',
+                'has_discussed',
+                'remarks',
+            ]));
+
+            // 2. Delete old nested relationships
+            foreach ($aopApplication->applicationObjectives as $objective) {
+                foreach ($objective->activities as $activity) {
+                    $activity->target()->delete();
+                    $activity->resources()->delete();
+                    $activity->responsiblePeople()->delete();
+                }
+                $objective->activities()->delete();
+                $objective->othersObjective()->delete();
+                $objective->otherSuccessIndicator()->delete();
+            }
+            $aopApplication->applicationObjectives()->delete();
+
+            // 3. Recreate all nested objectives and relations
+            foreach ($request->application_objectives as $objectiveData) {
+                $applicationObjective = $aopApplication->applicationObjectives()->create([
+                    'objective_id' => $objectiveData['objective_id'],
+                    'success_indicator_id' => $objectiveData['success_indicator_id'],
+                    'objective_code' => $objectiveData['objective_code'] ?? null,
+                ]);
+
+                if (($applicationObjective->objective->description ?? null) === 'Others' && isset($objectiveData['others_objective'])) {
+                    $applicationObjective->othersObjective()->create([
+                        'description' => $objectiveData['others_objective'],
+                    ]);
+                }
+
+                if (($applicationObjective->successIndicator->description ?? null) === 'Others' && isset($objectiveData['other_success_indicator'])) {
+                    $applicationObjective->otherSuccessIndicator()->create([
+                        'description' => $objectiveData['other_success_indicator'],
+                    ]);
+                }
+
+                foreach ($objectiveData['activities'] as $activityData) {
+                    $activity = $applicationObjective->activities()->create([
+                        'activity_code' => $activityData['activity_code'],
+                        'name' => $activityData['name'],
+                        'is_gad_related' => $activityData['is_gad_related'],
+                        'cost' => $activityData['cost'],
+                        'start_month' => $activityData['start_month'],
+                        'end_month' => $activityData['end_month'],
+                    ]);
+
+                    // Target
+                    $activity->target()->create($activityData['target']);
+
+                    // Resources
+                    foreach ($activityData['resources'] as $resourceData) {
+                        $activity->resources()->create($resourceData);
+                    }
+
+                    // Responsible People
+                    foreach ($activityData['responsible_people'] as $personData) {
+                        $activity->responsiblePeople()->create($personData);
+                    }
+                }
+            }
+
+            // 4. Recalculate PPMP total
+            $procurablePurchaseTypeId = PurchaseType::where('name', 'Procurable')->value('id');
+            $ppmpTotal = 0;
+
+            foreach ($aopApplication->applicationObjectives as $objective) {
+                foreach ($objective->activities as $activity) {
+                    foreach ($activity->resources as $resource) {
+                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                            $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
+                        }
+                    }
+                }
+            }
+
+            $aopApplication->ppmpApplication()->update([
+                'ppmp_total' => $ppmpTotal,
+                'remarks' => $request->remarks ?? null,
+            ]);
+
+            // 5. Delete and rebuild PPMP items
+            $aopApplication->ppmpApplication->ppmpItems()->delete();
+
+            foreach ($aopApplication->applicationObjectives as $objective) {
+                foreach ($objective->activities as $activity) {
+                    foreach ($activity->resources as $resource) {
+                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                            $estimatedBudget = $resource->item->estimated_budget;
+                            $totalAmount = $resource->quantity * $estimatedBudget;
+
+                            $aopApplication->ppmpApplication->ppmpItems()->create([
+                                'item_id' => $resource->item_id,
+                                'total_quantity' => $resource->quantity,
+                                'estimated_budget' => $estimatedBudget,
+                                'total_amount' => $totalAmount,
+                                'remarks' => null,
+                            ]);
+                        }
+                    }
+                }
+            }
+        });
+
+        return response()->json(['message' => 'AOP Application updated successfully.']);
+    }
+
 
     public function show(AopApplication $aopApplication)
     {
