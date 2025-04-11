@@ -13,8 +13,10 @@ return new class extends Migration
     {
         Schema::create('designations', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('umis_designation_id');
             $table->string('name');
             $table->string('code');
+            $table->unsignedInteger('probation');
             $table->timestamps();
         });
     }
