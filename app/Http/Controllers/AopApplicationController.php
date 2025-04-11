@@ -216,14 +216,8 @@ class AopApplicationController extends Controller
 
             // 1. Update AOP application
             $aopApplication->update($request->only([
-                'user_id',
-                'division_chief_id',
-                'mcc_chief_id',
-                'planning_officer_id',
                 'mission',
                 'status',
-                'has_discussed',
-                'remarks',
             ]));
 
             // 2. Delete old nested relationships
