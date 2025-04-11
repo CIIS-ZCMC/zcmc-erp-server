@@ -85,7 +85,9 @@ class ItemController extends Controller
         }
 
         if (isset($data['item_classification_id'])) {
-            $cleanData['item_classification_id'] = (int) $data['item_classification_id'];
+            $item_classification = ItemClassification::find($data['item_classification_id']);
+            
+            $cleanData['item_classification_id'] = $item_classification? (int) $data['item_classification_id']: null;
         }
 
         return $cleanData;
@@ -192,69 +194,70 @@ class ItemController extends Controller
 
     protected function bulkStore(Request $request, $start):ItemResource|AnonymousResourceCollection|JsonResponse  
     {
-        $existing_items = Item::whereIn('name', collect($request->item_categories)->pluck('name'))
-            ->orWhereIn('code', collect($request->item_categories)->pluck('code'))
-            ->orWhereIn('description', collect($request->item_categories)->pluck('description'))
-            ->get(['name', 'code', 'description'])->toArray();
+        
+        $existing_items = [];
+        $existing_items = Item::whereIn('name', collect($request->items)->pluck('name'))
+            ->whereIn('estimated_budget', collect($request->items)->pluck('estimated_budget'))
+            ->whereIn('item_unit_id', collect($request->items)->pluck('item_unit_id'))
+            ->whereIn('item_category_id', collect($request->items)->pluck('item_category_id'))
+            ->get(['name'])->toArray();
 
         // Convert existing items into a searchable format
         $existing_names = array_column($existing_items, 'name');
-        $existing_codes = array_column($existing_items, 'code');
-        $existing_description = array_column($existing_items, 'description');
+        $existing_estimated_budget = array_column($existing_items, 'estimated_budget');
+        $existing_item_unit_id = array_column($existing_items, 'item_unit_id');
+        $existing_item_category_id = array_column($existing_items, 'item_category_id');
 
-        $failed_store = [];
-        $toUpdate = [];
+        if (!empty($existing_items)) {
+            $existing_item_collection = Item::whereIn("name", $existing_names)
+                ->whereIn('estimated_budget', collect($existing_estimated_budget)->pluck('estimated_budget'))
+                ->whereIn('item_unit_id', collect($existing_item_unit_id)->pluck('item_unit_id'))
+                ->whereIn('item_category_id', collect($existing_item_category_id)->pluck('item_category_id'))->get();
 
-        foreach ($request->item_categories as $item_category) {
-            if (!in_array($item_category['name'], $existing_names) && !in_array($item_category['code'], $existing_codes) && !in_array($item_category['description'], $existing_description)) {
-                $clean = [
-                    "name" => strip_tags($item_category['name']),
-                    "code" => strip_tags($item_category['code']),
-                    "description" => isset($item_category['description']) ? strip_tags($item_category['description']) : null,
-                    "created_at" => now(),
-                    "updated_at" => now()
-                ];
+            $existing_items = ItemDuplicateResource::collection($existing_item_collection);
+        }
 
-                $hasItemId = is_array($item_category) 
-                    ? array_key_exists('item_category_id', $item_category)
-                    : (is_object($item_category) && property_exists($item_category, 'item_category_id'));
+        foreach ($request->items as $item) {
+            $is_valid_unit_id = ItemUnit::find($item['item_unit_id']);
+            $is_valid_category_id = Item::find($item['item_category_id']);
+            $is_valid_classification_id = ItemClassification::find($item['item_classification_id']);
 
-                if ($hasItemId) {
-                    $item_category_exist = Item::find($item_category['item_category_id']);
-                    
-                    if(!$item_category_exist){
-                        $failed_store[] = [
-                            "issue" => "Item category not found.",
-                            "data" => $item_category
-                        ];
-                        continue;
-                    }
-
-                    $toUpdate[] = [
-                        'name' => $item_category['name'],
-                        'item_category_id' => $item_category['item_category_id']
+            if ($is_valid_unit_id && $is_valid_category_id) {
+                if (
+                    !in_array($item['name'], $existing_names) && !in_array($item['estimated_budget'], $existing_estimated_budget)
+                    && !in_array($item['item_unit_id'], $existing_item_unit_id) && !in_array($item['item_category_id'], $existing_item_category_id)
+                ) {
+                    $cleanData[] = [
+                        "name" => strip_tags($item['name']),
+                        "code" => strip_tags($item['code']),
+                        "variant" => strip_tags($item['variant']),
+                        "estimated_budget" => strip_tags($item['estimated_budget']),
+                        "item_unit_id" => strip_tags($item['item_unit_id']),
+                        "item_category_id" => strip_tags($item['item_category_id']),
+                        "item_classification_id" => $is_valid_classification_id ? strip_tags($item['item_classification_id']) : null,
+                        "created_at" => now(),
+                        "updated_at" => now()
                     ];
                 }
-
-                $cleanData[] = $clean;
+                continue;
             }
+
+            return response()->json([
+                "message" => "Invalid data given.",
+                "meta" => [
+                    "methods" => "[GET, PUT, DELETE]",
+                ]
+            ], Response::HTTP_BAD_REQUEST);
         }
 
         if (empty($cleanData) && count($existing_items) > 0) {
             return response()->json([
                 'data' => $existing_items,
-                'message' => "Failed to bulk insert all item categories already exist.",
+                'message' => "Failed to bulk insert all items already exist.",
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         Item::insert($cleanData);
-
-        if(!empty($toUpdate)){
-            foreach ($toUpdate as $to_update) {
-                Item::where('name', $to_update['name'])
-                    ->update(['item_category_id' => $to_update['item_category_id']]);
-            }
-        }
 
         $latest_item_units = Item::orderBy('id', 'desc')
             ->limit(count($cleanData))->get()
@@ -265,8 +268,7 @@ class ItemController extends Controller
                 'meta' => [
                     "methods" => $this->methods,
                     'time_ms' => round((microtime(true) - $start) * 1000),
-                    "existings" => $existing_items,
-                    "failed_store" => $failed_store
+                    "existings" => $existing_items
                 ],
                 "message" => "Successfully store data."
             ]);
@@ -274,11 +276,11 @@ class ItemController extends Controller
     
     protected function bulkUpdate(Request $request, $start):AnonymousResourceCollection|JsonResponse
     {
-        $item_category_ids = $request->query('id') ?? null;
+        $item_ids = $request->query('id') ?? null;
 
-        if (count($item_category_ids) !== count($request->input('item_categories'))) {
+        if (count($item_ids) !== count($request->input('items'))) {
             return response()->json([
-                "message" => "Number of IDs does not match number of item categories provided.",
+                "message" => "Number of IDs does not match number of items provided.",
                 "meta" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -286,15 +288,15 @@ class ItemController extends Controller
         $updated_item_units = [];
         $errors = [];
     
-        foreach ($item_category_ids as $index => $id) {
+        foreach ($item_ids as $index => $id) {
             $item_unit = Item::find($id);
             
             if (!$item_unit) {
-                $errors[] = "Log description with ID {$id} not found.";
+                $errors[] = "Item with ID {$id} not found.";
                 continue;
             }
     
-            $cleanData = $this->cleanData($request->input('item_categories')[$index]);
+            $cleanData = $this->cleanData($request->input('items')[$index]);
             $item_unit->update($cleanData);
             $updated_item_units[] = $item_unit;
         }
@@ -327,21 +329,21 @@ class ItemController extends Controller
 
     protected function singleRecordUpdate(Request $request, $start): JsonResource|ItemResource|JsonResponse
     {
-        $item_category_ids = $request->query('id') ?? null;
+        $item_ids = $request->query('id') ?? null;
     
         // Handle single update
-        $item_category = Item::find($item_category_ids[0]);
+        $item = Item::find($item_ids[0]);
         
-        if (!$item_category) {
+        if (!$item) {
             return response()->json([
-                "message" => "Item category not found."
+                "message" => "Item not found."
             ], Response::HTTP_NOT_FOUND);
         }
     
         $cleanData = $this->cleanData($request->all());
-        $item_category->update($cleanData);
+        $item->update($cleanData);
 
-        return (new ItemResource($item_category))
+        return (new ItemResource($item))
             ->additional([
                 "meta" => [
                     'methods' => $this->methods,
@@ -507,101 +509,20 @@ class ItemController extends Controller
             )
         ]
     )]
-    public function store(ItemRequest $request):Response
+    public function store(ItemRequest $request): AnonymousResourceCollection|ItemResource|JsonResponse
     {
-        $base_message = "Successfully created items";
+        $start = microtime(true);
 
         // Bulk Insert
         if ($request->items !== null || $request->items > 1) {
-            $existing_items = [];
-            $existing_items = Item::whereIn('name', collect($request->items)->pluck('name'))
-                ->whereIn('estimated_budget', collect($request->items)->pluck('estimated_budget'))
-                ->whereIn('item_unit_id', collect($request->items)->pluck('item_unit_id'))
-                ->whereIn('item_category_id', collect($request->items)->pluck('item_category_id'))
-                ->whereIn('item_classification_id', collect($request->items)->pluck('item_classification_id'))
-                ->get(['name'])->toArray();
-
-            // Convert existing items into a searchable format
-            $existing_names = array_column($existing_items, 'name');
-            $existing_estimated_budget = array_column($existing_items, 'estimated_budget');
-            $existing_item_unit_id = array_column($existing_items, 'item_unit_id');
-            $existing_item_category_id = array_column($existing_items, 'item_category_id');
-            $existing_item_classification_id = array_column($existing_items, 'item_classification_id');
-
-            if (!empty($existing_items)) {
-                $existing_item_collection = Item::whereIn("name", $existing_names)
-                    ->whereIn('estimated_budget', collect($existing_estimated_budget)->pluck('estimated_budget'))
-                    ->whereIn('item_unit_id', collect($existing_item_unit_id)->pluck('item_unit_id'))
-                    ->whereIn('item_category_id', collect($existing_item_category_id)->pluck('item_category_id'))
-                    ->whereIn('item_classification_id', collect($existing_item_classification_id)->pluck('item_classification_id'))->get();
-
-                $existing_items = ItemDuplicateResource::collection($existing_item_collection);
-            }
-
-            foreach ($request->items as $item) {
-                $is_valid_unit_id = ItemUnit::find($item['item_unit_id']);
-                $is_valid_category_id = Item::find($item['item_category_id']);
-                $is_valid_classification_id = ItemClassification::find($item['item_classification_id']);
-
-                if ($is_valid_unit_id && $is_valid_category_id && $is_valid_classification_id) {
-                    if (
-                        !in_array($item['name'], $existing_names) && !in_array($item['estimated_budget'], $existing_estimated_budget)
-                        && !in_array($item['item_unit_id'], $existing_item_unit_id) && !in_array($item['item_category_id'], $existing_item_category_id)
-                        && !in_array($item['item_classification_id'], $existing_item_classification_id)
-                    ) {
-                        $cleanData[] = [
-                            "name" => strip_tags($item['name']),
-                            "code" => strip_tags($item['code']),
-                            "variant" => strip_tags($item['variant']),
-                            "estimated_budget" => strip_tags($item['estimated_budget']),
-                            "item_unit_id" => strip_tags($item['item_unit_id']),
-                            "item_category_id" => strip_tags($item['item_category_id']),
-                            "item_classification_id" => strip_tags($item['item_classification_id']),
-                            "created_at" => now(),
-                            "updated_at" => now()
-                        ];
-                    }
-                    continue;
-                }
-
-                return response()->json([
-                    "message" => "Invalid data given.",
-                    "meta" => [
-                        "methods" => "[GET, PUT, DELETE]",
-                    ]
-                ], Response::HTTP_BAD_REQUEST);
-            }
-
-            if (empty($cleanData) && count($existing_items) > 0) {
-                return response()->json([
-                    'data' => $existing_items,
-                    'message' => "Failed to bulk insert all items already exist.",
-                ], Response::HTTP_UNPROCESSABLE_ENTITY);
-            }
-
-            Item::insert($cleanData);
-
-            $latest_items = Item::orderBy('id', 'desc')
-                ->limit(count($cleanData))->get()
-                ->sortBy('id')->values();
-
-            $message = count($latest_items) > 1 ? $base_message . "s record" : $base_message . " record.";
-
-            return response()->json([
-                "data" => ItemResource::collection($latest_items),
-                "message" => $message,
-                "metadata" => [
-                    "methods" => "[GET, POST, PUT ,DELETE]",
-                    "duplicate_items" => $existing_items
-                ]
-            ], Response::HTTP_CREATED);
+            return $this->bulkStore($request, $start);
         }
 
         $is_valid_unit_id = ItemUnit::find($request->item_unit_id);
         $is_valid_category_id = Item::find($request->item_category_id);
         $is_valid_classification_id = ItemClassification::find($request->item_classification_id);
 
-        if (!($is_valid_unit_id && $is_valid_category_id && $is_valid_classification_id)) {
+        if (!($is_valid_unit_id && $is_valid_category_id)) {
             return response()->json([
                 "message" => "Invalid data given.",
                 "metadata" => [
@@ -617,7 +538,7 @@ class ItemController extends Controller
             "estimated_budget" => strip_tags($request->input('estimated_budget')),
             "item_unit_id" => strip_tags($request->input('item_unit_id')),
             "item_category_id" => strip_tags($request->input('item_category_id')),
-            "item_classification_id" => strip_tags($request->input('item_classification_id')),
+            "item_classification_id" => !$is_valid_classification_id? null: strip_tags($request->input('item_classification_id')),
         ];
 
         $new_item = Item::create($cleanData);
@@ -657,13 +578,14 @@ class ItemController extends Controller
             }
         }
 
-        return response()->json([
-            "data" => new ItemResource($new_item),
-            "message" => $base_message . " record.",
-            "metadata" => [
-                "methods" => ['GET, POST, PUT, DELETE'],
-            ]
-        ], Response::HTTP_CREATED);
+        return (new ItemResource($new_item))
+            ->additional([
+                'meta' => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                "message" => "Successfully store data."
+            ]);
     }
 
     #[OA\Put(
@@ -707,10 +629,10 @@ class ItemController extends Controller
     public function update(Request $request): AnonymousResourceCollection|ItemResource|JsonResource|JsonResponse
     {
         $start = microtime(true);
-        $item_unit_ids = $request->query('id') ?? null;
+        $item_ids = $request->query('id') ?? null;
     
         // Validate ID parameter exists
-        if (!$item_unit_ids) {
+        if (!$item_ids) {
             $response = ["message" => "ID parameter is required."];
             
             if ($this->is_development) {
@@ -721,7 +643,7 @@ class ItemController extends Controller
         }
 
         // Bulk Insert
-        if ($request->item_categories !== null && $request->item_categories > 1) {
+        if ($request->items !== null && $request->items > 1) {
             return $this->bulkUpdate($request, $start);
         }
     
