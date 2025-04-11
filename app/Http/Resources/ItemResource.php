@@ -21,12 +21,13 @@ class ItemResource extends JsonResource
             "variant" => $this->variant,
             "image" => $this->image !== null? env("SERVER_DOMAIN").$this->image: null,
             "estimated_budget" => $this->estimated_budget,
-            "unit" => $this->itemUnit->code,
-            "category" => $this->itemCategory->code,
-            "classification" => $this->itemClassification->code,
-            "item_unit" => $this->itemUnit,
-            "item_category" => $this->itemCategory,
+            "unit" => $this->item_unit_id == null? null: $this->itemUnit->code,
+            "category" => $this->item_category_id == null? null: $this->itemCategory->code,
+            "classification" => $this->item_classification_id !== null? $this->itemClassification->code : null,
+            "item_unit" => new ItemUnitResource($this->itemUnit),
+            "item_category" => new ItemCategoryResource($this->itemCategory),
             "item_classification" => $this->itemClassification,
+            "item_specifications" => ItemSpecificationChildResource::collection($this->itemSpecification),
             "created_at" => $this->created_at,
             "updated_at" => $this->updated_at
         ];

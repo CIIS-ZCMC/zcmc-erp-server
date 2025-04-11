@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('items', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('item_classification_id');
+            $table->unsignedBigInteger('item_classification_id')->nullable();
             $table->foreign('item_classification_id')->references('id')->on('item_classifications');
             $table->unsignedBigInteger('item_category_id');
             $table->foreign('item_category_id')->references('id')->on('item_categories');
@@ -23,7 +23,7 @@ return new class extends Migration {
             $table->text('image')->nullable();
             $table->string('variant')->nullable();
             $table->float('estimated_budget')->default(0);
-            $table->dateTime('deleted_at')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
@@ -33,6 +33,10 @@ return new class extends Migration {
      */
     public function down(): void
     {
+        Schema::table('items', function(Blueprint $table){
+            $table->dropSoftDeletes();
+        });
+
         Schema::dropIfExists('items');
     }
 };

@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Models\AssignedArea;
+use App\Models\PpmpApplication;
+use App\Models\PpmpItem;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -314,6 +316,7 @@ class AopApplicationSeeder extends Seeder
         ];
 
         $aopApplications = [];
+        $ppmpApplications = [];
 
         for ($i = 0; $i < 5; $i++) {
             $aopApplication = AopApplication::create([
@@ -327,7 +330,19 @@ class AopApplicationSeeder extends Seeder
                 'remarks' => $remarkOptions[$i]
             ]);
 
+            $ppmp_application = PpmpApplication::create([
+                'aop_application_id' => $aopApplication->id,
+                'user_id' => $user->id,
+                'division_chief_id' => $divisionChief->id,
+                'budget_officer_id' => $budgetOfficer->id,
+                'ppmp_application_uuid' => Str::uuid(),
+                'ppmp_total' => 0,
+                'status' => $statusOptions[$i],
+                'remarks' => $remarkOptions[$i]
+            ]);
+
             $aopApplications[] = $aopApplication;
+            $ppmpApplications[] = $ppmp_application;
         }
 
         // Get or create Type of Functions (strategic, core, support)
@@ -363,15 +378,15 @@ class AopApplicationSeeder extends Seeder
             'core' => $coreObjectives,
             'support' => $supportObjectives
         ];
-        
+
         // Create objectives for each type of function
         $createdObjectives = [];
         foreach ($typeOfFunctions as $typeOfFunction) {
             $objectives = $objectivesByType[$typeOfFunction->type] ?? [];
-            
+
             foreach ($objectives as $objectiveDescription) {
                 $objectiveCode = 'OBJ-' . strtoupper(substr(str_replace(' ', '', $objectiveDescription), 0, 5)) . '-' . rand(100, 999);
-                
+
                 $objective = Objective::firstOrCreate(
                     ['code' => $objectiveCode],
                     [
@@ -379,11 +394,11 @@ class AopApplicationSeeder extends Seeder
                         'description' => $objectiveDescription
                     ]
                 );
-                
+
                 $createdObjectives[$typeOfFunction->type][] = $objective;
             }
         }
-        
+
         // Create sample success indicators linked to objectives
         $successIndicators = [
             'SI-01' => 'Increased patient satisfaction rate by 20%',
@@ -396,16 +411,16 @@ class AopApplicationSeeder extends Seeder
         // Create success indicators for each objective
         $allObjectives = Objective::all();
         $createdSuccessIndicators = [];
-        
+
         foreach ($allObjectives as $objective) {
             // Create at least one success indicator per objective
             $randomCode = array_rand($successIndicators);
-            
+
             $successIndicator = SuccessIndicator::firstOrCreate(
                 ['code' => $randomCode, 'objective_id' => $objective->id],
                 ['description' => $successIndicators[$randomCode]]
             );
-            
+
             $createdSuccessIndicators[] = $successIndicator;
         }
 
@@ -415,23 +430,23 @@ class AopApplicationSeeder extends Seeder
             foreach ($typeOfFunctions as $typeOfFunction) {
                 // Get available objectives for this function type
                 $availableObjectives = $createdObjectives[$typeOfFunction->type] ?? [];
-                
+
                 // Skip if no objectives available for this type
                 if (empty($availableObjectives)) {
                     continue;
                 }
-                
+
                 // Select 1-2 objectives for this application based on app index for variety
                 $objectiveCount = min(count($availableObjectives), 2);
                 $startIndex = $appIndex % count($availableObjectives);
-                
+
                 for ($i = 0; $i < $objectiveCount; $i++) {
                     $index = ($startIndex + $i) % count($availableObjectives);
                     $objective = $availableObjectives[$index];
-                    
+
                     // Find success indicators for this objective
                     $successIndicators = SuccessIndicator::where('objective_id', $objective->id)->get();
-                    
+
                     // If no success indicators exist for this objective, create one
                     if ($successIndicators->isEmpty()) {
                         $randomCode = 'SI-' . rand(10, 99);
@@ -443,7 +458,7 @@ class AopApplicationSeeder extends Seeder
                     } else {
                         $successIndicator = $successIndicators->first();
                     }
-                    
+
                     // Create application objective
                     $applicationObjective = ApplicationObjective::create([
                         'aop_application_id' => $aopApplication->id,

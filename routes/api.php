@@ -25,8 +25,10 @@ Route::
             Route::get('objective-success-indicators', "ObjectiveSuccessIndicatorController@index");
 
             Route::get('items', "ItemController@index");
+            Route::get('items/trashbin', "ItemController@trash");
             Route::post('items', "ItemController@store");
             Route::put('items', "ItemController@update");
+            Route::put('items/{id}/restore', "ItemController@restore");
             Route::delete('items', "ItemController@destroy");
 
             Route::post('item-requests/{id}/update-status', "ItemRequestController@approve");
