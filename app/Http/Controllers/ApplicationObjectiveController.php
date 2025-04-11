@@ -10,6 +10,7 @@ use App\Models\ApplicationObjective;
 use App\Http\Resources\ManageAopRequestResource;
 use App\Http\Resources\ShowObjectiveResource;
 
+
 #[OA\Schema(
     schema: "ActivityComment",
     properties: [
@@ -262,4 +263,6 @@ class ApplicationObjectiveController extends Controller
             'data' => new ShowObjectiveResource($activity),
         ], Response::HTTP_OK);
     }
+
+   
 }

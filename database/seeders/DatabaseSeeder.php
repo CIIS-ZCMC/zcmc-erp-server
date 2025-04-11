@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             ProcurementModeSeeder::class,
             AopApplicationSeeder::class,
                 // ApplicationTimelineSeeder::class,     
+            AopApplicationSeeder::class,
+            ApplicationTimelineSeeder::class,
             ItemUnitSeeder::class,
             ObjectiveSeeder::class,
             SuccessIndicatorSeeder::class,
