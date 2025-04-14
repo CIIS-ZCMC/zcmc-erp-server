@@ -136,5 +136,6 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::get('aop-applications', 'AopApplicationController@index');
     Route::post('aop-applications-store', 'AopApplicationController@store');
     Route::post('aop-applications-update/{id}', 'AopApplicationController@update');
+    Route::get('aop-applications-show/{id}', 'AopApplicationController@show');
     Route::get('aop-applications-summary/{id}', 'AopApplicationController@getAopApplicationSummary');
 });

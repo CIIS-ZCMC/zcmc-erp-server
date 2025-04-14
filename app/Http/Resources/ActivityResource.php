@@ -26,6 +26,7 @@ class ActivityResource extends JsonResource
             'target' => new TargetResource($this->whenLoaded('target')),
             'resources' => ResourceResource::collection($this->whenLoaded('resources')),
             'responsible_people' => ResponsiblePersonResource::collection($this->whenLoaded('responsiblePeople')),
+            'comments' => ActivityCommentResource::collection($this->whenLoaded('comments')),
         ];
     }
 }

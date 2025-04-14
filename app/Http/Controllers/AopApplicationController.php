@@ -274,7 +274,7 @@ class AopApplicationController extends Controller
                     foreach ($activityData['responsible_people'] as $personData) {
                         $activity->responsiblePeople()->create($personData);
                     }
-                }   
+                }
             }
 
             // 4. Recalculate PPMP total
@@ -323,18 +323,19 @@ class AopApplicationController extends Controller
     }
 
 
-    public function show(AopApplication $aopApplication)
+    public function show($id)
     {
-        $aopApplication->load([
-            'user',
-            'divisionChief',
-            'mccChief',
-            'planningOfficer',
-            'applicationObjectives',
-            'applicationObjectives.functionObjective',
-            'applicationObjectives.activities'
-        ]);
+        $aopApplication = AopApplication::with([
+            'applicationObjectives.objective',
+            'applicationObjectives.otherObjective',
+            'applicationObjectives.successIndicator',
+            'applicationObjectives.otherSuccessIndicator',
+            'applicationObjectives.activities.target',
+            'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.responsiblePeople.user',
+            'applicationObjectives.activities.comments',
+        ])->findOrFail($id);
 
-        return new ShowAopApplicationResource($aopApplication);
+        return new AopApplicationResource($aopApplication);
     }
 }
