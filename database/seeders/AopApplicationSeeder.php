@@ -36,149 +36,35 @@ class AopApplicationSeeder extends Seeder
     {
         // Get existing organizational structure data from the database
         // These have been imported from UMIS
-        // Truncate existing data if any
-        DB::statement('SET FOREIGN_KEY_CHECKS=0');
-        Designation::truncate();
-        Division::truncate();
-        Department::truncate();
-        Section::truncate();
-        Unit::truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1');
-        
-        // Seed designations
-        $designations = [
-            ['id' => 1, 'umis_designation_id' => 1, 'name' => 'ACCOUNTANT I', 'code' => 'ACC I', 'salary_grade' => 6],
-            ['id' => 2, 'umis_designation_id' => 2, 'name' => 'ACCOUNTANT II', 'code' => 'ACC II', 'salary_grade' => 6],
-            ['id' => 3, 'umis_designation_id' => 3, 'name' => 'ACCOUNTANT III', 'code' => 'ACC III', 'salary_grade' => 6],
-            ['id' => 4, 'umis_designation_id' => 4, 'name' => 'ADMINISTRATIVE AIDE I', 'code' => 'ADA I', 'salary_grade' => 6],
-            ['id' => 5, 'umis_designation_id' => 5, 'name' => 'ADMINISTRATIVE AIDE III', 'code' => 'ADA III', 'salary_grade' => 6],
-            ['id' => 6, 'umis_designation_id' => 6, 'name' => 'ADMINISTRATIVE AIDE IV', 'code' => 'ADA IV', 'salary_grade' => 6],
-            ['id' => 7, 'umis_designation_id' => 7, 'name' => 'ADMINISTRATIVE AIDE V', 'code' => 'ADA V', 'salary_grade' => 6],
-            ['id' => 8, 'umis_designation_id' => 8, 'name' => 'ADMINISTRATIVE AIDE VI', 'code' => 'ADA VI', 'salary_grade' => 6],
-            ['id' => 9, 'umis_designation_id' => 9, 'name' => 'ADMINISTRATIVE ASSISTANT I', 'code' => 'ADAS I', 'salary_grade' => 6],
-            ['id' => 10, 'umis_designation_id' => 10, 'name' => 'ADMINISTRATIVE ASSISTANT II', 'code' => 'ADAS II', 'salary_grade' => 6],
-        ];
-        
-        foreach ($designations as $designation) {
-            Designation::create([
-                'id' => $designation['id'],
-                'umis_designation_id' => $designation['umis_designation_id'],
-                'name' => $designation['name'],
-                'code' => $designation['code'],
-                'salary_grade' => $designation['salary_grade'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-        
-        // Seed divisions
-        $divisions = [
-            ['id' => 1, 'umis_division_id' => 2375, 'parent_id' => null, 'code' => 1, 'name' => 'Office of Medical Center Chief'],
-            ['id' => 2, 'umis_division_id' => 35, 'parent_id' => null, 'code' => 2, 'name' => 'Medical Service'],
-            ['id' => 3, 'umis_division_id' => 36, 'parent_id' => null, 'code' => 3, 'name' => 'Hospital Operations & Patient Support Service'],
-            ['id' => 4, 'umis_division_id' => 2510, 'parent_id' => null, 'code' => 4, 'name' => 'Nursing Service'],
-            ['id' => 5, 'umis_division_id' => 122, 'parent_id' => null, 'code' => 5, 'name' => 'Finance Service'],
-            ['id' => 6, 'umis_division_id' => 2386, 'parent_id' => null, 'code' => 7, 'name' => 'Allied Professional Health Service'],
-        ];
-        
-        foreach ($divisions as $division) {
-            Division::create([
-                'id' => $division['id'],
-                'umis_division_id' => $division['umis_division_id'],
-                'parent_id' => $division['parent_id'],
-                'code' => $division['code'],
-                'name' => $division['name'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-        
-        // Seed departments
-        $departments = [
-            ['id' => 1, 'umis_department_id' => 107, 'division_id' => 2, 'code' => 1, 'name' => 'MS: Family Medicine'],
-            ['id' => 2, 'umis_department_id' => 34, 'division_id' => 2, 'code' => 2, 'name' => 'MS: Pediatrics'],
-            ['id' => 3, 'umis_department_id' => 179, 'division_id' => 2, 'code' => 3, 'name' => 'MS: Obstetrics and Gynecology'],
-            ['id' => 4, 'umis_department_id' => 3, 'division_id' => 2, 'code' => 4, 'name' => 'MS: Orthopedic'],
-            ['id' => 5, 'umis_department_id' => 34, 'division_id' => 4, 'code' => 5, 'name' => 'NS: OB-Gyne Complex'],
-            ['id' => 6, 'umis_department_id' => 34, 'division_id' => 4, 'code' => 6, 'name' => 'NS: Pediatric Complex'],
-            ['id' => 7, 'umis_department_id' => 33, 'division_id' => 4, 'code' => 7, 'name' => 'NS: OR Complex'],
-            ['id' => 8, 'umis_department_id' => 34, 'division_id' => 4, 'code' => 8, 'name' => 'NS: Surgery Complex'],
-            ['id' => 9, 'umis_department_id' => 33, 'division_id' => 4, 'code' => 9, 'name' => 'NS: Emergency Room Complex'],
-            ['id' => 10, 'umis_department_id' => 34, 'division_id' => 4, 'code' => 10, 'name' => 'NS: ER, OR, Surgery Complex'],
-        ];
-        
-        foreach ($departments as $department) {
-            Department::create([
-                'id' => $department['id'],
-                'umis_department_id' => $department['umis_department_id'],
-                'division_id' => $department['division_id'],
-                'code' => $department['code'],
-                'name' => $department['name'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-        
-        // Seed sections
-        $sections = [
-            ['id' => 1, 'umis_section_id' => 132, 'department_id' => 3, 'division_id' => null, 'code' => 1, 'name' => 'HOPSS: Human Resource Management Office'],
-            ['id' => 2, 'umis_section_id' => 122, 'department_id' => null, 'division_id' => 5, 'code' => 2, 'name' => 'Finance Service Staff'],
-            ['id' => 3, 'umis_section_id' => 56, 'department_id' => null, 'division_id' => 5, 'code' => 3, 'name' => 'FS: Budget Section'],
-            ['id' => 4, 'umis_section_id' => 41, 'department_id' => null, 'division_id' => 5, 'code' => 4, 'name' => 'FS: Accounting Section'],
-            ['id' => 5, 'umis_section_id' => 59, 'department_id' => null, 'division_id' => 5, 'code' => 5, 'name' => 'FS: Cash Operations'],
-            ['id' => 6, 'umis_section_id' => 187, 'department_id' => null, 'division_id' => 4, 'code' => 6, 'name' => 'NS - OB Complex'],
-            ['id' => 7, 'umis_section_id' => 436, 'department_id' => null, 'division_id' => 4, 'code' => 7, 'name' => 'NS - Pediatric Complex'],
-            ['id' => 8, 'umis_section_id' => 269, 'department_id' => null, 'division_id' => 4, 'code' => 8, 'name' => 'NS - Operating Room Complex'],
-            ['id' => 9, 'umis_section_id' => 269, 'department_id' => null, 'division_id' => 2, 'code' => 9, 'name' => 'MS: Surgery Complex'],
-            ['id' => 10, 'umis_section_id' => 269, 'department_id' => null, 'division_id' => 2, 'code' => 10, 'name' => 'MS: Orthopedics'],
-        ];
-        
-        foreach ($sections as $section) {
-            Section::create([
-                'id' => $section['id'],
-                'umis_section_id' => $section['umis_section_id'],
-                'department_id' => $section['department_id'],
-                'division_id' => $section['division_id'],
-                'code' => $section['code'],
-                'name' => $section['name'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-        
-        // Seed units
-        $units = [
-            ['id' => 1, 'umis_unit_id' => 2, 'section_id' => 6, 'department_id' => null, 'code' => 2, 'name' => 'NS - Ward 1A'],
-            ['id' => 2, 'umis_unit_id' => 261, 'section_id' => 6, 'department_id' => null, 'code' => 3, 'name' => 'NS - Ward 1B'],
-            ['id' => 3, 'umis_unit_id' => 448, 'section_id' => 6, 'department_id' => null, 'code' => 5, 'name' => 'NS - Newboard Screening, FPC, Gyne-Onco'],
-            ['id' => 4, 'umis_unit_id' => 436, 'section_id' => 7, 'department_id' => null, 'code' => 7, 'name' => 'NS - Pediatric Ward'],
-            ['id' => 5, 'umis_unit_id' => 2550, 'section_id' => 7, 'department_id' => null, 'code' => 9, 'name' => 'NS - NICU'],
-            ['id' => 6, 'umis_unit_id' => 367, 'section_id' => 8, 'department_id' => null, 'code' => 10, 'name' => 'NS - PACU'],
-            ['id' => 7, 'umis_unit_id' => null, 'section_id' => 8, 'department_id' => null, 'code' => 11, 'name' => 'NS - Operating Room Nurses'],
-            ['id' => 8, 'umis_unit_id' => 2391, 'section_id' => 1, 'department_id' => null, 'code' => 15, 'name' => 'Systems Development Unit'],
-            ['id' => 9, 'umis_unit_id' => 2435, 'section_id' => 9, 'department_id' => null, 'code' => 16, 'name' => 'MS - Emergency Room A'],
-            ['id' => 10, 'umis_unit_id' => null, 'section_id' => 9, 'department_id' => null, 'code' => 17, 'name' => 'MS - Emergency Room B'],
-        ];
-        
-        foreach ($units as $unit) {
-            Unit::create([
-                'id' => $unit['id'],
-                'umis_unit_id' => $unit['umis_unit_id'],
-                'section_id' => $unit['section_id'],
-                'department_id' => $unit['department_id'],
-                'code' => $unit['code'],
-                'name' => $unit['name'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
-        
-        // Get the newly created data
-        $designations = Designation::all();
         $divisions = Division::all();
+        if ($divisions->isEmpty()) {
+            $this->command->error('No divisions found. Please run the UMIS import command first.');
+            return;
+        }
+        
         $departments = Department::all();
+        if ($departments->isEmpty()) {
+            $this->command->error('No departments found. Please run the UMIS import command first.');
+            return;
+        }
+        
         $sections = Section::all();
+        if ($sections->isEmpty()) {
+            $this->command->error('No sections found. Please run the UMIS import command first.');
+            return;
+        }
+        
         $units = Unit::all();
+        if ($units->isEmpty()) {
+            $this->command->error('No units found. Please run the UMIS import command first.');
+            return;
+        }
+        
+        $designations = Designation::all();
+        if ($designations->isEmpty()) {
+            $this->command->error('No designations found. Please run the UMIS import command first.');
+            return;
+        }
         
         // Helper function to get random items from collections
         $getRandomItem = function($collection) {
