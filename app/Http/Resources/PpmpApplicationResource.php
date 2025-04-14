@@ -26,6 +26,7 @@ class PpmpApplicationResource extends JsonResource
             'division_chief' => $this->division_chief ? new UserResource($this->division_chief) : null,
             'budget_officer' => $this->budget_officer ? new UserResource($this->budget_officer) : null,
             'aop_application' => AopApplicationResource::collection($this->aop_application) ?? [],
+            'ppmp_items' => PpmpItemResource::collection($this->ppmpItem) ?? [],
         ];
     }
 }

@@ -39,7 +39,7 @@ class ItemSpecificationSeeder extends Seeder
                 'item_request_id' => null,
                 'item_specification_id' => null
             ],
-            
+
             // ICT Equipment specifications
             [
                 'description' => 'Minimum 8GB RAM',
@@ -53,7 +53,7 @@ class ItemSpecificationSeeder extends Seeder
                 'item_request_id' => null,
                 'item_specification_id' => null
             ],
-            
+
             // Medical Equipment specifications
             [
                 'description' => 'FDA approved',
@@ -67,7 +67,7 @@ class ItemSpecificationSeeder extends Seeder
                 'item_request_id' => null,
                 'item_specification_id' => null
             ],
-            
+
             // Software specifications
             [
                 'description' => 'Multi-user license',
@@ -81,7 +81,7 @@ class ItemSpecificationSeeder extends Seeder
                 'item_request_id' => null,
                 'item_specification_id' => null
             ],
-            
+
             // Furniture specifications
             [
                 'description' => 'Ergonomic design',
