@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\FileUploadCheckForMalwareAttack;
+use App\Helpers\MetadataComposerHelper;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemRequest;
 use App\Http\Resources\ItemDuplicateResource;
@@ -12,7 +13,9 @@ use App\Models\ItemCategory;
 use App\Models\Item;
 use App\Models\ItemClassification;
 use App\Models\ItemUnit;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 
@@ -40,6 +43,8 @@ class ItemController extends Controller
     private $is_development;
 
     private $module = 'items';
+    
+    private $methods = '[GET, POST, PUT, DELETE]';
 
     public function __construct()
     {
@@ -85,52 +90,103 @@ class ItemController extends Controller
 
         return $cleanData;
     }
+    
+    protected function search(Request $request, $start): AnonymousResourceCollection
+    {   
+        $validated = $request->validate([
+            'search' => 'required|string|min:2|max:100',
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
+        
+        $searchTerm = '%'.trim($validated['search']).'%';
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
 
-    protected function getMetadata($method): array
+        $results = Item::where('name', 'like', "%{$searchTerm}%")
+        ->orWhere('code', 'like', "%{$searchTerm}%")
+            ->orWhere('variant', 'like', "%{$searchTerm}%")
+            ->paginate(
+                perPage: $perPage,
+                page: $page
+            );
+
+        return ItemResource::collection($results)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'search' => [
+                        'term' => $validated['search'],
+                        'time_ms' => round((microtime(true) - $start) * 1000), // in milliseconds
+                    ],
+                    'pagination' => [
+                        'total' => $results->total(),
+                        'per_page' => $results->perPage(),
+                        'current_page' => $results->currentPage(),
+                        'last_page' => $results->lastPage(),
+                    ]
+                ],
+                'message' => 'Search completed successfully'
+            ]);
+    }
+    
+    protected function all($start)
     {
-        if ($method === 'get') {
-            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
-            $metadata['modes'] = ['selection', 'pagination'];
+        $items = Item::all();
 
-            if ($this->is_development) {
-                $metadata['urls'] = [
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?item_id=[primary-key]",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                ];
-            }
+        return ItemResource::collection($items)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }
+    
+    protected function pagination(Request $request, $start)
+    {   
+        $validated = $request->validate([
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
 
-            return $metadata;
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
+        
+        $items = Item::paginate($perPage, ['*'], 'page', $page);
+
+        return ItemResource::collection($items)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    'pagination' => [
+                        'total' => $items->total(),
+                        'per_page' => $items->perPage(),
+                        'current_page' => $items->currentPage(),
+                        'last_page' => $items->lastPage(),
+                    ]
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }     
+    protected function singleRecord($item_unit_id, $start):JsonResponse
+    {
+        $itemUnit = Item::find($item_unit_id);
+            
+        if (!$itemUnit) {
+            return response()->json(["message" => "Item unit not found."], Response::HTTP_NOT_FOUND);
         }
-
-        if ($method === 'put') {
-            $metadata = ["methods" => "[PUT]"];
-
-            if ($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2"
-                ];
-                $metadata['fields'] = ["type"];
-            }
-
-            return $metadata;
-        }
-
-        $metadata = ['methods' => ["GET, PUT, DELETE"]];
-
-        if ($this->is_development) {
-            $metadata["urls"] = [
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-            ];
-
-            $metadata["fields"] = ["type"];
-        }
-
-        return $metadata;
+    
+        return (new ItemResource($itemUnit))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000)
+                ],
+                "message" => "Successfully retrieved record."
+            ])->response();
     }
     
     #[OA\Post(
@@ -241,167 +297,24 @@ class ItemController extends Controller
     )]
     public function index(Request $request)
     {
-        $page = $request->query('page') > 0 ? $request->query('page') : 1;
-        $per_page = $request->query('per_page');
-        $mode = $request->query('mode') ?? 'pagination';
-        $search = $request->query('search');
-        $last_id = $request->query('last_id') ?? 0;
-        $last_initial_id = $request->query('last_initial_id') ?? 0;
-        $page_item = $request->query('page_item') ?? 0;
-        $item_id = $request->query('item_id') ?? null;
+        $start = microtime(true);
+        $item_unit_id = $request->query('id');
+        $search = $request->search;
+        $mode = $request->mode;
 
-        if ($item_id) {
-            $item = Item::find($item_id);
-
-            if (!$item) {
-                return response()->json([
-                    'message' => "No record found.",
-                    "metadata" => $this->getMetadata('get')
-                ]);
-            }
-
-            return response()->json([
-                'data' => new ItemResource($item),
-                "metadata" => $this->getMetadata('get')
-            ], Response::HTTP_OK);
+        if($item_unit_id){
+            return $this->singleRecord($item_unit_id, $start);
         }
 
-        if ($page < 0 || $per_page < 0) {
-            $response = ["message" => "Invalid request."];
-
-            if ($this->is_development) {
-                $response = [
-                    "message" => "Invalid value of parameters",
-                    "metadata" => $this->getMetadata('get')
-                ];
-            }
-
-            return response()->json([$response], Response::HTTP_UNPROCESSABLE_ENTITY);
+        if($mode && $mode === 'selection'){
+            return $this->all($start);
+        }
+        
+        if($search){
+            return $this->search($request, $start);
         }
 
-        if (!$page && !$per_page) {
-            $response = ["message" => "Invalid request."];
-
-            if ($this->is_development) {
-                $response = [
-                    "message" => "No parameters found.",
-                    "metadata" => $this->getMetadata('get')
-                ];
-            }
-
-            return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        // Handle return for selection record
-        if ($mode === 'selection') {
-            if ($search !== null) {
-                $items = Item::select('id', 'name', 'estimated_budget')
-                    ->where('name', 'like', "%" . $search . "%")
-                    ->where("deleted_at", NULL)->get();
-
-                $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-
-                if ($this->is_development) {
-                    $metadata['content'] = "This type of response is for selection component.";
-                    $metadata['mode'] = "selection";
-                }
-
-                return response()->json([
-                    "data" => ItemResource::collection($items),
-                    "metadata" => $metadata,
-                ], Response::HTTP_OK);
-            }
-
-            $items = Item::where("deleted_at", NULL)->get();
-
-            $metadata = ["methods" => '[GET, POST, PUT, DELETE]'];
-
-            if ($this->is_development) {
-                $metadata['content'] = "This type of response is for selection component.";
-                $metadata['mode'] = "selection";
-            }
-
-            return response()->json([
-                "data" => ItemResource::collection($items),
-                "metadata" => $metadata,
-            ], Response::HTTP_OK);
-        }
-
-
-        if ($search !== null) {
-            if ($last_id === 0 || $page_item != null) {
-                $items = Item::where('name', 'like', '%' . $search . '%')
-                    ->where('id', '>', $last_id)
-                    ->orderBy('id')
-                    ->limit($per_page)
-                    ->get();
-
-                if (count($items) === 0) {
-                    return response()->json([
-                        'data' => [],
-                        'metadata' => [
-                            'methods' => '[GET,POST,PUT,DELETE]',
-                            'pagination' => [],
-                            'page' => 0,
-                            'total_page' => 0
-                        ],
-                    ], Response::HTTP_OK);
-                }
-
-                $allIds = Item::where('name', 'like', '%' . $search . '%')
-                    ->orderBy('id')
-                    ->pluck('id');
-
-                $chunks = $allIds->chunk($per_page);
-
-                $pagination_helper = new PaginationHelper('items', $page, $per_page, 0);
-                $pagination = $pagination_helper->createSearchPagination($page_item, $chunks, $search, $per_page, $last_initial_id);
-                $pagination = $pagination_helper->prevAppendSearchPagination($pagination, $search, $per_page, $last_initial_id, $last_id);
-
-                /**
-                 * Save the metadata in database unique per module and user to ensure reuse of metadata
-                 */
-
-                return response()->json([
-                    'data' => ItemResource::collection($items),
-                    'metadata' => [
-                        'methods' => '[GET,POST,PUT,DELETE]',
-                        'pagination' => $pagination,
-                        'page' => $page,
-                        'total_page' => count($chunks)
-                    ],
-                ], Response::HTTP_OK);
-            }
-
-            /**
-             * Reuse existing pagination and update the existing pagination next and previous data
-             */
-            $items = Item::where('name', 'like', '%' . $search . '%')
-                ->where('id', '>', $last_id)
-                ->orderBy('id')->limit($per_page)->get();
-
-            // Return the response
-            return response()->json([
-                'data' => ItemResource::collection($items),
-                'metadata' => []
-            ], Response::HTTP_OK);
-        }
-
-        $total_page = Item::all()->pluck('id')->chunk($per_page);
-        $items = Item::where('deleted_at', NULL)->limit($per_page)->offset(($page - 1) * $per_page)->get();
-        $total_page = ceil(count($total_page));
-
-        $pagination_helper = new PaginationHelper($this->module, $page, $per_page, $total_page > 10 ? 10 : $total_page);
-
-        return response()->json([
-            "data" => ItemResource::collection($items),
-            "metadata" => [
-                "methods" => "[GET, POST, PUT, DELETE]",
-                "pagination" => $pagination_helper->create(),
-                "page" => $page,
-                "total_page" => $total_page
-            ]
-        ], Response::HTTP_OK);
+        return $this->pagination($request, $start);
     }
 
     #[OA\Post(

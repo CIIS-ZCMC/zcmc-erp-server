@@ -3,28 +3,32 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemRequest extends Model
 {
+    use SoftDeletes;
+    
     protected $table = 'item_requests';
 
     public $fillable = [
-        "item_unit_id",
-        "item_category_id",
-        "item_classification_id",
         "name",
         "code",
         "image",
         "variant",
         "estimated_budget",
+        "item_unit_id",
+        "item_category_id",
+        "item_classification_id",
         "status",
         "reason",
-        "deleted_at",
         "requested_by",
         "action_by"
     ];
 
     public $timestamps = true;
+
+    protected $casts = ['deleted_at' => 'datetime'];
 
     public function itemUnit()
     {
@@ -41,7 +45,7 @@ class ItemRequest extends Model
         return $this->belongsTo(ItemClassification::class);
     }
 
-    public function itemSpecification()
+    public function itemSpecifications()
     {
         return $this->hasMany(ItemSpecification::class);
     }
