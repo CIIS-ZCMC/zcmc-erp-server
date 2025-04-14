@@ -41,40 +41,40 @@ class AopApplicationSeeder extends Seeder
             $this->command->error('No divisions found. Please run the UMIS import command first.');
             return;
         }
-        
+
         $departments = Department::all();
         if ($departments->isEmpty()) {
             $this->command->error('No departments found. Please run the UMIS import command first.');
             return;
         }
-        
+
         $sections = Section::all();
         if ($sections->isEmpty()) {
             $this->command->error('No sections found. Please run the UMIS import command first.');
             return;
         }
-        
+
         $units = Unit::all();
         if ($units->isEmpty()) {
             $this->command->error('No units found. Please run the UMIS import command first.');
             return;
         }
-        
+
         $designations = Designation::all();
         if ($designations->isEmpty()) {
             $this->command->error('No designations found. Please run the UMIS import command first.');
             return;
         }
-        
+
         // Helper function to get random items from collections
-        $getRandomItem = function($collection) {
+        $getRandomItem = function ($collection) {
             return $collection->random(1)->first();
         };
-        
+
         // Create sample users for organizational structure references with random assignments
         $divisionHead = $getRandomItem($designations);
         $randomDivision = $getRandomItem($divisions);
-        
+
         $sampleUser1 = User::factory()->create([
             'name' => 'Division Head',
             'email' => 'division.head@example.com',
@@ -85,13 +85,13 @@ class AopApplicationSeeder extends Seeder
             'section_id' => null,
             'unit_id' => null,
         ]);
-        
+
         // Get random department from the selected division
         $departmentsInDivision = $departments->where('division_id', $randomDivision->id);
-        $randomDepartment = $departmentsInDivision->isNotEmpty() 
-            ? $getRandomItem($departmentsInDivision) 
+        $randomDepartment = $departmentsInDivision->isNotEmpty()
+            ? $getRandomItem($departmentsInDivision)
             : $getRandomItem($departments);
-        
+
         $sampleUser2 = User::factory()->create([
             'name' => 'Department Head',
             'email' => 'department.head@example.com',
@@ -105,16 +105,16 @@ class AopApplicationSeeder extends Seeder
 
         // Find users for various roles or create a new one with random assignments
         $randomDivision = $getRandomItem($divisions);
-        $randomDepartment = $departments->where('division_id', $randomDivision->id)->isNotEmpty() 
-            ? $getRandomItem($departments->where('division_id', $randomDivision->id)) 
+        $randomDepartment = $departments->where('division_id', $randomDivision->id)->isNotEmpty()
+            ? $getRandomItem($departments->where('division_id', $randomDivision->id))
             : $getRandomItem($departments);
-        $randomSection = $sections->where('department_id', $randomDepartment->id)->isNotEmpty() 
-            ? $getRandomItem($sections->where('department_id', $randomDepartment->id)) 
+        $randomSection = $sections->where('department_id', $randomDepartment->id)->isNotEmpty()
+            ? $getRandomItem($sections->where('department_id', $randomDepartment->id))
             : $getRandomItem($sections);
-        $randomUnit = $units->where('section_id', $randomSection->id)->isNotEmpty() 
-            ? $getRandomItem($units->where('section_id', $randomSection->id)) 
+        $randomUnit = $units->where('section_id', $randomSection->id)->isNotEmpty()
+            ? $getRandomItem($units->where('section_id', $randomSection->id))
             : $getRandomItem($units);
-            
+
         $user = User::first() ?? User::factory()->create([
             'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
             'name' => 'Sample User',
@@ -259,13 +259,13 @@ class AopApplicationSeeder extends Seeder
 
         if (!$budgetOfficer) {
             $randomDivision = $getRandomItem($divisions);
-            $randomDepartment = $departments->where('division_id', $randomDivision->id)->isNotEmpty() 
-                ? $getRandomItem($departments->where('division_id', $randomDivision->id)) 
+            $randomDepartment = $departments->where('division_id', $randomDivision->id)->isNotEmpty()
+                ? $getRandomItem($departments->where('division_id', $randomDivision->id))
                 : $getRandomItem($departments);
-            $randomSection = $sections->where('department_id', $randomDepartment->id)->isNotEmpty() 
-                ? $getRandomItem($sections->where('department_id', $randomDepartment->id)) 
+            $randomSection = $sections->where('department_id', $randomDepartment->id)->isNotEmpty()
+                ? $getRandomItem($sections->where('department_id', $randomDepartment->id))
                 : $getRandomItem($sections);
-                
+
             $budgetOfficer = User::factory()->create([
                 'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
                 'name' => 'Budget Officer',
@@ -492,12 +492,12 @@ class AopApplicationSeeder extends Seeder
         $sections = Section::all();
         $units = Unit::all();
         $designations = Designation::all();
-        
+
         // Helper function to get random items from collections
-        $getRandomItem = function($collection) {
+        $getRandomItem = function ($collection) {
             return $collection->random(1)->first();
         };
-        
+
         $activityNames = [
             'Training and development program',
             'Equipment procurement',
@@ -609,14 +609,14 @@ class AopApplicationSeeder extends Seeder
 
             // Get random organizational structure IDs
             $randomDivision = $getRandomItem($divisions);
-            $randomDepartment = $departments->where('division_id', $randomDivision->id)->isNotEmpty() 
-                ? $getRandomItem($departments->where('division_id', $randomDivision->id)) 
+            $randomDepartment = $departments->where('division_id', $randomDivision->id)->isNotEmpty()
+                ? $getRandomItem($departments->where('division_id', $randomDivision->id))
                 : $getRandomItem($departments);
-            $randomSection = $sections->where('department_id', $randomDepartment->id)->isNotEmpty() 
-                ? $getRandomItem($sections->where('department_id', $randomDepartment->id)) 
+            $randomSection = $sections->where('department_id', $randomDepartment->id)->isNotEmpty()
+                ? $getRandomItem($sections->where('department_id', $randomDepartment->id))
                 : $getRandomItem($sections);
-            $randomUnit = $units->where('section_id', $randomSection->id)->isNotEmpty() 
-                ? $getRandomItem($units->where('section_id', $randomSection->id)) 
+            $randomUnit = $units->where('section_id', $randomSection->id)->isNotEmpty()
+                ? $getRandomItem($units->where('section_id', $randomSection->id))
                 : $getRandomItem($units);
             $randomDesignation = $getRandomItem($designations);
 

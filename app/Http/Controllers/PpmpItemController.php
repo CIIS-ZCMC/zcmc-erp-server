@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PpmpItemRequest;
 use App\Http\Resources\PpmpItemResource;
+use App\Models\Activity;
 use App\Models\AopApplication;
 use App\Models\PpmpItem;
+use App\Models\Resource;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 
@@ -120,6 +123,7 @@ class PpmpItemController extends Controller
     )]
     public function index()
     {
+        dd("adad");
         //paginate display 10 data per page
         $ppmp_item = PpmpItem::whereNull('deleted_at')->paginate(10);
 
@@ -169,31 +173,65 @@ class PpmpItemController extends Controller
             )
         ]
     )]
+
     public function store(PpmpItemRequest $request)
     {
-        $createdItems = [];
+        try {
+            DB::beginTransaction();
 
-        foreach ($request['ppmp_item'] as $item) {
-            $total_amount = $item['total_quantity'] * $item['estimated_budget'];
+            $validatedData = $request->validated();
 
-            $ppmpItem = new PpmpItem();
-            $ppmpItem->ppmp_application_id = $item['ppmp_application_id'];
-            $ppmpItem->item_id = $item['item_id'];
-            $ppmpItem->procurement_mode_id = $item['procurement_mode_id'];
-            $ppmpItem->item_request_id = $item['item_request_id'];
-            $ppmpItem->remarks = $item['remarks'] ?? null;
-            $ppmpItem->estimated_budget = $item['estimated_budget'] ?? null;
-            $ppmpItem->total_quantity = $item['total_quantity'] ?? null;
-            $ppmpItem->total_amount = $total_amount;
-            $ppmpItem->save();
+            $createdItems = [];
 
-            $createdItems[] = $ppmpItem;
+            $activity = Activity::findOrFail($validatedData['activity_id']);
+
+            foreach ($validatedData['ppmp_item'] as $item) {
+                // Calculate total amount
+                $totalAmount = ($item['total_quantity'] ?? 0) * ($item['estimated_budget'] ?? 0);
+
+                // Create PPMP item
+                $ppmpItem = PpmpItem::create([
+                    'ppmp_application_id' => $item['ppmp_application_id'],
+                    'item_id' => $item['item_id'],
+                    'procurement_mode_id' => $item['procurement_mode_id'],
+                    'item_request_id' => $item['item_request_id'],
+                    'remarks' => $item['remarks'] ?? null,
+                    'estimated_budget' => $item['estimated_budget'] ?? 0,
+                    'total_quantity' => $item['total_quantity'] ?? 0,
+                    'total_amount' => $totalAmount,
+                ]);
+
+                // Associate PPMP item with the activity (pivot)
+                $activity->ppmpItems()->attach($ppmpItem->id, [
+                    'remarks' => $item['remarks'] ?? null,
+                ]);
+
+                // Create resource record
+                $resource = new Resource();
+                $resource->activity_id = $activity->id;
+                $resource->item_id = $item['item_id'];
+                $resource->purchase_type_id = $item['procurement_mode_id'];
+                $resource->object_category = $validatedData['object_category'] ?? null;
+                $resource->quantity = $item['total_quantity'] ?? null;
+                $resource->expense_class = $validatedData['expense_class'] ?? null;
+                $resource->save();
+
+                $createdItems[] = $ppmpItem;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                //'data' => PpmpItemResource::collection($createdItems),
+                'message' => 'PPMP Items created successfully.',
+            ], Response::HTTP_CREATED);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Error creating PPMP Items: ' . $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        return response()->json([
-            'data' => PpmpItemResource::collection($createdItems),
-            'message' => "PPMP Item created successfully."
-        ], Response::HTTP_CREATED);
     }
 
     #[OA\Get(
@@ -221,6 +259,7 @@ class PpmpItemController extends Controller
             )
         ]
     )]
+
     public function show(PpmpItem $ppmpItem)
     {
         return response()->json([
@@ -276,7 +315,6 @@ class PpmpItemController extends Controller
             'data' => new PpmpItemResource($ppmpItem),
             'message' => "PPMP Item updated successfully."
         ], Response::HTTP_OK);
-
     }
 
     #[OA\Delete(
