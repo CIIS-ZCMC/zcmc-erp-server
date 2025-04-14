@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
 
 class ItemUnit extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, Searchable;
 
     protected $table = 'item_units';
 
@@ -21,6 +22,15 @@ class ItemUnit extends Model
     public $timestamps = true;
 
     protected $casts = ['deleted_at' => 'datetime'];
+    
+    public function toSearchableArray()
+    {
+        return [
+            'name' => $this->name,
+            'code' => $this->code,
+            'description' => $this->description,
+        ];
+    }
 
     public function items()
     {

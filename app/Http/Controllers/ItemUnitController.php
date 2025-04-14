@@ -78,16 +78,11 @@ class ItemUnitController extends Controller
             'page' => 'sometimes|integer|min:1|max:100'
         ]);
         
-        $searchTerm = '%'.trim($validated['search']).'%';
+        $searchTerm = trim($validated['search']);
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
 
-        $results = ItemUnit::where('code', 'like', "%{$searchTerm}%")
-            ->orWhere('description', 'like', "%{$searchTerm}%")
-            ->paginate(
-                perPage: $perPage,
-                page: $page
-            );
+        $results = ItemUnit::search($validated['search'])->paginate(perPage: $perPage, page: $page);
 
         return ItemUnitResource::collection($results)
             ->additional([
