@@ -181,29 +181,28 @@ class AopApplicationController extends Controller
         $aopApplication = AopApplication::with([
             'applicationObjectives.activities.resources',
             'applicationObjectives.activities.responsiblePeople',
+            'applicationObjectives.activities.comments', // Include comments
         ])->findOrFail($aopApplicationId);
 
         $totalObjectives = $aopApplication->applicationObjectives->count();
 
         $totalActivities = $aopApplication->applicationObjectives->flatMap(function ($objective) {
             return $objective->activities;
-        })->count();
+        });
 
-        $totalResources = $aopApplication->applicationObjectives->flatMap(function ($objective) {
-            return $objective->activities->flatMap->resources;
-        })->count();
-
-        $totalResponsiblePeople = $aopApplication->applicationObjectives->flatMap(function ($objective) {
-            return $objective->activities->flatMap->responsiblePeople;
-        })->count();
+        $totalResources = $totalActivities->flatMap->resources->count();
+        $totalResponsiblePeople = $totalActivities->flatMap->responsiblePeople->count();
+        $totalComments = $totalActivities->flatMap->comments->count();
 
         return response()->json([
             'total_objectives'         => $totalObjectives,
-            'total_activities'         => $totalActivities,
+            'total_activities'         => $totalActivities->count(),
             'total_resources'          => $totalResources,
             'total_responsible_people' => $totalResponsiblePeople,
+            'total_comments'           => $totalComments,
         ]);
     }
+
 
     public function update(AopApplicationRequest $request, $id)
     {
@@ -213,13 +212,13 @@ class AopApplicationController extends Controller
                 'ppmpApplication',
             ])->findOrFail($id);
 
-            // 1. Update AOP application
+
             $aopApplication->update($request->only([
                 'mission',
                 'status',
             ]));
 
-            // 2. Delete old nested relationships
+            //Delete old nested relationships
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     $activity->target()->delete();
@@ -232,7 +231,7 @@ class AopApplicationController extends Controller
             }
             $aopApplication->applicationObjectives()->delete();
 
-            // 3. Recreate all nested objectives and relations
+            //Recreate all nested objectives and relations
             foreach ($request->application_objectives as $objectiveData) {
                 $applicationObjective = $aopApplication->applicationObjectives()->create([
                     'objective_id' => $objectiveData['objective_id'],
@@ -262,22 +261,20 @@ class AopApplicationController extends Controller
                         'end_month' => $activityData['end_month'],
                     ]);
 
-                    // Target
+
                     $activity->target()->create($activityData['target']);
 
-                    // Resources
                     foreach ($activityData['resources'] as $resourceData) {
                         $activity->resources()->create($resourceData);
                     }
 
-                    // Responsible People
+
                     foreach ($activityData['responsible_people'] as $personData) {
                         $activity->responsiblePeople()->create($personData);
                     }
                 }
             }
 
-            // 4. Recalculate PPMP total
             $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
             $ppmpTotal = 0;
 
@@ -296,7 +293,7 @@ class AopApplicationController extends Controller
                 'remarks' => $request->remarks ?? null,
             ]);
 
-            // 5. Delete and rebuild PPMP items
+
             $aopApplication->ppmpApplication->ppmpItems()->delete();
 
             foreach ($aopApplication->applicationObjectives as $objective) {
