@@ -416,6 +416,7 @@ class AopApplicationController extends Controller
 
         $aopApplications = $query->paginate($per_page, ['*'], 'page', $page);
 
+
         return response()->json([
             'data' => AopRequestResource::collection($aopApplications),
             'pagination' => [
