@@ -167,7 +167,6 @@ class AopApplicationController extends Controller
                 }
             }
 
-
             DB::commit();
 
             return response()->json(['message' => 'AOP Application created successfully'], 201);
@@ -228,7 +227,7 @@ class AopApplicationController extends Controller
                     $activity->responsiblePeople()->delete();
                 }
                 $objective->activities()->delete();
-                $objective->othersObjective()->delete();
+                $objective->otherObjective()->delete();
                 $objective->otherSuccessIndicator()->delete();
             }
             $aopApplication->applicationObjectives()->delete();
@@ -275,11 +274,11 @@ class AopApplicationController extends Controller
                     foreach ($activityData['responsible_people'] as $personData) {
                         $activity->responsiblePeople()->create($personData);
                     }
-                }
+                }   
             }
 
             // 4. Recalculate PPMP total
-            $procurablePurchaseTypeId = PurchaseType::where('name', 'Procurable')->value('id');
+            $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
             $ppmpTotal = 0;
 
             foreach ($aopApplication->applicationObjectives as $objective) {
