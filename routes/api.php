@@ -138,4 +138,5 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('aop-applications-update/{id}', 'AopApplicationController@update');
     Route::get('aop-applications-show/{id}', 'AopApplicationController@show');
     Route::get('aop-applications-summary/{id}', 'AopApplicationController@getAopApplicationSummary');
+    Route::get('aop-application-timeline/{id}', 'AopApplicationController@showTimeline');
 });

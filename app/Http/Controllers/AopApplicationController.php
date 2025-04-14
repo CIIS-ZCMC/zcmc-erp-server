@@ -7,6 +7,7 @@ use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\ShowAopApplicationResource;
 use App\Http\Resources\ManageAopRequestResource;
 use App\Http\Resources\AopRequestResource;
+use App\Http\Resources\ApplicationTimelineResource;
 use App\Models\AopApplication;
 use App\Models\FunctionObjective;
 use App\Models\PpmpItem;
@@ -334,5 +335,15 @@ class AopApplicationController extends Controller
         ])->findOrFail($id);
 
         return new AopApplicationResource($aopApplication);
+    }
+
+    public function showTimeline($aopApplicationId)
+    {
+        $aopApplication = AopApplication::with('applicationTimeline')
+            ->findOrFail($aopApplicationId);
+
+        return ApplicationTimelineResource::make(
+            $aopApplication->applicationTimeline
+        );
     }
 }
