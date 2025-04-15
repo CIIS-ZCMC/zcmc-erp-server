@@ -62,27 +62,58 @@ class AopApplicationController extends Controller
     public function getAopApplicationSummary($aopApplicationId)
     {
         $aopApplication = AopApplication::with([
+            'applicationObjectives.successIndicator',
             'applicationObjectives.activities.resources',
             'applicationObjectives.activities.responsiblePeople',
-            'applicationObjectives.activities.comments', // Include comments
+            'applicationObjectives.activities.comments',
         ])->findOrFail($aopApplicationId);
 
-        $totalObjectives = $aopApplication->applicationObjectives->count();
+        $objectives = $aopApplication->applicationObjectives;
+        $activities = $objectives->flatMap->activities;
 
-        $totalActivities = $aopApplication->applicationObjectives->flatMap(function ($objective) {
-            return $objective->activities;
-        });
+        $totalObjectives = $objectives->count();
+        $totalActivities = $activities->count();
+        $totalResources = $activities->flatMap->resources->count();
+        $totalResponsiblePeople = $activities->flatMap->responsiblePeople;
 
-        $totalResources = $totalActivities->flatMap->resources->count();
-        $totalResponsiblePeople = $totalActivities->flatMap->responsiblePeople->count();
-        $totalComments = $totalActivities->flatMap->comments->count();
+        $totalComments = $activities->flatMap->comments->count();
+        $totalSuccessIndicators = $objectives->pluck('successIndicator')->filter()->unique('id')->count();
+
+        $gadRelatedActivities = $activities->filter(fn($act) => $act->is_gad_related);
+        $notGadRelatedActivities = $activities->filter(fn($act) => !$act->is_gad_related);
+
+        $totalGadRelated = $gadRelatedActivities->count();
+        $totalNotGadRelated = $notGadRelatedActivities->count();
+
+        $totalActivityCost = $activities->sum('cost');
+
+        // Count distinct area combinations
+        $totalAreas = $totalResponsiblePeople->map(fn($p) => [
+            'unit_id' => $p->unit_id,
+            'department_id' => $p->department_id,
+            'division_id' => $p->division_id,
+            'section_id' => $p->section_id,
+        ])->unique()->count();
+
+        // Count unique designation IDs
+        $totalJobPositions = $totalResponsiblePeople->pluck('designation_id')->filter()->unique()->count();
+
+        // Count unique user IDs
+        $totalUsers = $totalResponsiblePeople->pluck('user_id')->filter()->unique()->count();
 
         return response()->json([
-            'total_objectives'         => $totalObjectives,
-            'total_activities'         => $totalActivities->count(),
-            'total_resources'          => $totalResources,
-            'total_responsible_people' => $totalResponsiblePeople,
-            'total_comments'           => $totalComments,
+            'total_objectives'          => $totalObjectives,
+            'total_success_indicators'  => $totalSuccessIndicators,
+            'total_activities'          => $totalActivities,
+            'total_gad_related'         => $totalGadRelated,
+            'total_not_gad_related'     => $totalNotGadRelated,
+            'total_cost'                => $totalActivityCost,
+            'total_resources'           => $totalResources,
+            'total_comments'            => $totalComments,
+            'total_responsible_people'  => $totalResponsiblePeople->count(),
+            'total_areas'               => $totalAreas,
+            'total_job_positions'       => $totalJobPositions,
+            'total_users'               => $totalUsers,
         ]);
     }
 
@@ -321,7 +352,7 @@ class AopApplicationController extends Controller
                 'budget_officer_id' => 1,
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => $ppmpTotal,
-                'status' => 'pending',
+                'status' => 'Pending',
                 'remarks' => $request->remarks ?? null,
             ]);
 
@@ -346,6 +377,14 @@ class AopApplicationController extends Controller
                 }
             }
 
+            $aopApplicationTimeline = $aopApplication->applicationTimelines()->create([
+                'aop_application_id' => $aopApplication->id,
+                'user_id' => 1,
+                'current_area_id' => 1,
+                'next_area_id' => 2,
+                'status' => 'Pending',
+                'date_created' => now(),
+            ]);
             DB::commit();
 
             return response()->json(['message' => 'AOP Application created successfully'], 201);
