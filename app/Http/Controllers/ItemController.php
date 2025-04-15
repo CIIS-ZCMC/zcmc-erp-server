@@ -103,13 +103,35 @@ class ItemController extends Controller
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
 
-        $results = Item::where('name', 'like', "%{$searchTerm}%")
-        ->orWhere('code', 'like', "%{$searchTerm}%")
-            ->orWhere('variant', 'like', "%{$searchTerm}%")
-            ->paginate(
-                perPage: $perPage,
-                page: $page
-            );
+        $results = Item::with(['itemUnit', 'itemCategory', 'itemClassification'])
+        ->where(function($query) use ($searchTerm) {
+            // Search item fields
+            $query->where('items.name', 'like', "%{$searchTerm}%")
+                  ->orWhere('items.code', 'like', "%{$searchTerm}%")
+                  ->orWhere('items.variant', 'like', "%{$searchTerm}%");
+            
+            // Search through itemUnit relationship
+            $query->orWhereHas('itemUnit', function($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('code', 'like', "%{$searchTerm}%")
+                  ->orWhere('description', 'like', "%{$searchTerm}%");
+            });
+            
+            // Search through itemCategory relationship
+            $query->orWhereHas('itemCategory', function($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('code', 'like', "%{$searchTerm}%")
+                  ->orWhere('description', 'like', "%{$searchTerm}%");
+            });
+            
+            // Search through itemClassification relationship
+            $query->orWhereHas('itemClassification', function($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('code', 'like', "%{$searchTerm}%")
+                  ->orWhere('description', 'like', "%{$searchTerm}%");
+            });
+        })
+        ->paginate($perPage, ['*'], 'page', $page);
 
         return ItemResource::collection($results)
             ->additional([

@@ -25,6 +25,8 @@ return new class extends Migration {
             $table->float('estimated_budget')->default(0);
             $table->softDeletes();
             $table->timestamps();
+    
+            $table->fullText(['name', 'code', 'variant']);
         });
     }
 

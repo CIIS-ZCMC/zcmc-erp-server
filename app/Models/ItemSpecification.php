@@ -4,10 +4,11 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Laravel\Scout\Searchable;
 
 class ItemSpecification extends Model
 {
-    use SoftDeletes;
+    use SoftDeletes, Searchable;
     protected $table = 'item_specifications';
 
     public $fillable = [
@@ -20,6 +21,13 @@ class ItemSpecification extends Model
     public $timestamps = true;
 
     protected $casts = ['deleted_at' => 'datetime'];
+    
+    public function toSearchableArray()
+    {
+        return [
+            'description' => $this->description,
+        ];
+    }
 
     public function item()
     {
