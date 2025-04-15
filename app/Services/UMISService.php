@@ -228,4 +228,102 @@ class UMISService
             return null;
         }
     }
+
+    public function getUsers()
+    {
+        try {
+            // Log the attempt to connect to UMIS
+            Log::info('Attempting to connect to UMIS API', [
+                'url' => $this->baseUrl . '/erp-data-users',
+                'has_api_key' => !empty($this->apiKey),
+                'api_key' => $this->apiKey ? substr($this->apiKey, 0, 5) . '...' : null,
+            ]);
+
+            // Create a headers array for better debugging
+            $headers = [
+                'Accept' => 'application/json',
+                'UMIS-Api-Key' => $this->apiKey,
+                'X-ERP-System' => 'ZCMC-ERP',
+            ];
+
+            Log::info('Request headers', ['headers' => $headers]);
+
+            $response = Http::withoutVerifying() // Skip SSL verification for development
+                ->timeout(30) // Increase timeout to 30 seconds
+                ->withHeaders($headers);
+
+            // Make the request
+            $response = $response->get($this->baseUrl . '/erp-data-users');
+
+            if ($response->successful()) {
+                Log::info('UMIS API - Successfully fetched users');
+                return $response->json();
+            }
+
+            Log::error('UMIS API - Failed to get users', [
+                'url' => $this->baseUrl . '/erp-data-users',
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+
+            return null;
+        } catch (Exception $e) {
+            Log::error('UMIS API - Exception while getting users', [
+                'url' => $this->baseUrl . '/erp-data-users',
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return null;
+        }
+    }
+
+    public function getAssignedAreas()
+    {
+        try {
+            // Log the attempt to connect to UMIS
+            Log::info('Attempting to connect to UMIS API', [
+                'url' => $this->baseUrl . '/erp-data-assigned-areas',
+                'has_api_key' => !empty($this->apiKey),
+                'api_key' => $this->apiKey ? substr($this->apiKey, 0, 5) . '...' : null,
+            ]);
+
+            // Create a headers array for better debugging
+            $headers = [
+                'Accept' => 'application/json',
+                'UMIS-Api-Key' => $this->apiKey,
+                'X-ERP-System' => 'ZCMC-ERP',
+            ];
+
+            Log::info('Request headers', ['headers' => $headers]);
+
+            $response = Http::withoutVerifying() // Skip SSL verification for development
+                ->timeout(30) // Increase timeout to 30 seconds
+                ->withHeaders($headers);
+
+            // Make the request
+            $response = $response->get($this->baseUrl . '/erp-data-assigned-areas');
+
+            if ($response->successful()) {
+                Log::info('UMIS API - Successfully fetched assigned areas');
+                return $response->json();
+            }
+
+            Log::error('UMIS API - Failed to get assigned areas', [
+                'url' => $this->baseUrl . '/erp-data-assigned-areas',
+                'status' => $response->status(),
+                'response' => $response->body()
+            ]);
+
+            return null;
+        } catch (Exception $e) {
+            Log::error('UMIS API - Exception while getting assigned areas', [
+                'url' => $this->baseUrl . '/erp-data-assigned-areas',
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return null;
+        }
+    }
 }
