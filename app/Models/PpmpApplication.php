@@ -25,6 +25,12 @@ class PpmpApplication extends Model
 
     public $timestamps = true;
 
+
+    public function aopApplication()
+    {
+        return $this->belongsTo(AopApplication::class);
+    }
+
     public function aop_application_id()
     {
         return $this->belongsTo(AopApplication::class, 'aop_application_id');
@@ -45,7 +51,7 @@ class PpmpApplication extends Model
         return $this->belongsTo(User::class, 'budget_officer_id');
     }
 
-    public function ppmpItem()
+    public function ppmpItems()
     {
         return $this->hasMany(PpmpItem::class);
     }
@@ -63,6 +69,5 @@ class PpmpApplication extends Model
 
             return $itemTotalAmount;
         });
-
     }
 }

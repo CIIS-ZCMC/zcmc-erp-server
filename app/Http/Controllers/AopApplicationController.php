@@ -6,8 +6,12 @@ use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\ShowAopApplicationResource;
 use App\Http\Resources\AopRequestResource;
+use App\Http\Resources\ApplicationTimelineResource;
 use App\Models\AopApplication;
 use App\Models\FunctionObjective;
+use App\Models\PpmpItem;
+use App\Models\PurchaseType;
+use App\Models\SuccessIndicator;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
@@ -36,134 +40,26 @@ use Illuminate\Support\Facades\Validator;
 )]
 class AopApplicationController extends Controller
 {
-    private $is_development;
-    private $module = 'aop-applications';
 
-    public function __construct()
-    {
-        $this->is_development = env("APP_DEBUG", true);
-    }
-
-    protected function getMetadata($method): array
-    {
-        if ($method === 'get') {
-            $metadata = ["methods" => ["GET, POST, PUT, DELETE"]];
-            $metadata['modes'] = ['selection', 'pagination'];
-
-            if ($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?item_category_id=[primary-key]",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&search=value"
-                ];
-            }
-
-            return $metadata;
-        }
-
-        if ($method === 'put') {
-            $metadata = ["methods" => ["PUT"]];
-
-            if ($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2"
-                ];
-                $metadata['fields'] = ["name", "code"];
-            }
-
-            return $metadata;
-        }
-
-        $metadata = ["methods" => ["GET, PUT, DELETE"]];
-
-        if ($this->is_development) {
-            $metadata["urls"] = [
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-            ];
-            $metadata['fields'] = ["code"];
-        }
-
-        return $metadata;
-    }
-
-    #[OA\Get(
-        path: "/api/aop-applications",
-        summary: "List all activity comments",
-        tags: ["Activity Comments"],
-        parameters: [
-            new OA\Parameter(
-                name: "per_page",
-                in: "query",
-                description: "Items per page",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 15)
-            ),
-            new OA\Parameter(
-                name: "page",
-                in: "query",
-                description: "Page number",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 1)
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: "Successful operation",
-                content: new OA\JsonContent(
-                    type: "array",
-                    items: new OA\Items(ref: "#/components/schemas/ActivityComment")
-                )
-            )
-        ]
-    )]
     public function index()
     {
-        $aopApplications = AopApplication::query()
+
+        return $aopApplications = AopApplication::query()
             ->with([
-                'applicationObjectives.functionObjective.function',
-                'applicationObjectives.functionObjective.objective',
+                'applicationObjectives.objective',
                 'applicationObjectives.otherObjective',
+                'applicationObjectives.successIndicator',
+                'applicationObjectives.otherSuccessIndicator',
                 'applicationObjectives.activities.target',
                 'applicationObjectives.activities.resources',
-                'applicationObjectives.activities.responsiblePeople.user'
+                'applicationObjectives.activities.responsiblePeople.user',
             ])
             ->get();
+
         return AopApplicationResource::collection($aopApplications);
     }
 
-    #[OA\Post(
-        path: "/api/aop-applications",
-        summary: "Create a new activity comment",
-        tags: ["Activity Comments"],
-        requestBody: new OA\RequestBody(
-            description: "Comment data",
-            required: true,
-            content: new OA\JsonContent(
-                required: ["activity_id", "content"],
-                properties: [
-                    new OA\Property(property: "activity_id", type: "integer"),
-                    new OA\Property(property: "content", type: "string"),
-                    new OA\Property(property: "user_id", type: "integer", nullable: true)
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_CREATED,
-                description: "Comment created",
-                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNPROCESSABLE_ENTITY,
-                description: "Validation error"
-            )
-        ]
-    )]
+
     public function store(AopApplicationRequest $request)
     {
 
@@ -190,38 +86,49 @@ class AopApplicationController extends Controller
             foreach ($validatedData['application_objectives'] as $objectiveData) {
 
 
-                $functionObjective = FunctionObjective::where('objective_id', $objectiveData['objective_id'])
-                    ->where('function_id', $objectiveData['function'])
-                    ->first();
+                // $functionObjective = FunctionObjective::where('objective_id', $objectiveData['objective_id'])
+                //     ->where('function_id', $objectiveData['function'])
+                //     ->first();
 
-                if (!$functionObjective) {
+                // if (!$functionObjective) {
 
-                    return response()->json(['error' => 'FunctionObjective not found'], 404);
-                }
+                //     return response()->json(['error' => 'FunctionObjective not found'], 404);
+                // }
 
 
                 $applicationObjective = $aopApplication->applicationObjectives()->create([
-                    'function_objective_id' => $functionObjective->id,
-                    'objective_code' => $objectiveData['objective_code'],
+                    'objective_id'         => $objectiveData['objective_id'],
                     'success_indicator_id' => $objectiveData['success_indicator_id'],
                 ]);
 
 
-                if ($applicationObjective->functionObjective->objective->description === 'Others' && isset($objectiveData['others_objective'])) {
-                    $applicationObjective->otherObjective()->create([
+                if ($applicationObjective->objective->description === 'Others' && isset($objectiveData['others_objective'])) {
+                    $applicationObjective->othersObjective()->create([
                         'description' => $objectiveData['others_objective'],
+                    ]);
+                }
+
+                $successIndicator = SuccessIndicator::find($objectiveData['success_indicator_id']);
+
+                if (
+                    $successIndicator &&
+                    $successIndicator->description === 'Others' &&
+                    isset($objectiveData['other_success_indicator'])
+                ) {
+                    $applicationObjective->otherSuccessIndicator()->create([
+                        'description' => $objectiveData['other_success_indicator'],
                     ]);
                 }
 
                 foreach ($objectiveData['activities'] as $activityData) {
                     $activity = $applicationObjective->activities()->create([
-                        'activity_uuid' => $activityData['activity_uuid'],
+
                         'activity_code' => $activityData['activity_code'],
                         'name' => $activityData['name'],
                         'is_gad_related' => $activityData['is_gad_related'],
                         'cost' => $activityData['cost'],
                         'start_month' => $activityData['start_month'],
-                        ' ' => $activityData['end_month'],
+                        'end_month' => $activityData['end_month'],
                     ]);
 
 
@@ -231,10 +138,54 @@ class AopApplicationController extends Controller
                     $activity->resources()->createMany($activityData['resources']);
 
 
-                    $activity->responsiblePeople()->createMany($activityData['responsible_person']);
+                    $activity->responsiblePeople()->createMany($activityData['responsible_people']);
                 }
             }
 
+            $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
+
+            $ppmpTotal = 0;
+
+            foreach ($aopApplication->applicationObjectives as $objective) {
+                foreach ($objective->activities as $activity) {
+                    foreach ($activity->resources as $resource) {
+                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                            $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
+                        }
+                    }
+                }
+            }
+
+            $ppmpApplication = $aopApplication->ppmpApplication()->create([
+                'user_id' => 1,
+                'division_chief_id' => 1,
+                'budget_officer_id' => 1,
+                'ppmp_application_uuid' => Str::uuid(),
+                'ppmp_total' => $ppmpTotal,
+                'status' => 'pending',
+                'remarks' => $request->remarks ?? null,
+            ]);
+
+
+            foreach ($aopApplication->applicationObjectives as $objective) {
+                foreach ($objective->activities as $activity) {
+                    foreach ($activity->resources as $resource) {
+                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                            $estimatedBudget = $resource->item->estimated_budget;
+                            $totalAmount = $resource->quantity * $estimatedBudget;
+
+                            PpmpItem::create([
+                                'ppmp_application_id' => $ppmpApplication->id,
+                                'item_id'             => $resource->item_id,
+                                'total_quantity'      => $resource->quantity,
+                                'estimated_budget'    => $estimatedBudget,
+                                'total_amount'        => $totalAmount,
+                                'remarks'             => null,
+                            ]);
+                        }
+                    }
+                }
+            }
 
             DB::commit();
 

@@ -25,6 +25,7 @@ class SuccessIndicator extends Model
         return $this->hasMany(ApplicationObjective::class);
     }
 
+
     public function objective()
     {
         return $this->belongsTo(Objective::class);
