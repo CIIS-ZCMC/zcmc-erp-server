@@ -70,9 +70,4 @@ class Activity extends Model
     {
         return $this->hasMany(ActivityComment::class);
     }
-
-    public function ppmpItems()
-    {
-        return $this->BelongsToMany(PpmpItem::class);
-    }
 }

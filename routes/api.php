@@ -20,9 +20,6 @@ Route::middleware('auth.api:auth_user_provider')->group(function () {
 Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('login', 'AuthController@login');
     Route::get('signup', 'AuthController@signup');
-Route::namespace('App\Http\Controllers')->group(function () {
-    Route::post('login', 'AuthController@login');
-    Route::get('signup', 'AuthController@signup');
 
     Route::get('objective-success-indicators', "ObjectiveSuccessIndicatorController@index");
     Route::get('objective-success-indicators', "ObjectiveSuccessIndicatorController@index");
@@ -202,9 +199,9 @@ Route::namespace('App\Http\Controllers')->group(function () {
 
     // Aop Application Module
     Route::get('aop-applications', 'AopApplicationController@index');
-    Route::post('aop-applications-store', 'AopApplicationController@store');
-    Route::post('aop-applications-update/{id}', 'AopApplicationController@update');
-    Route::get('aop-applications-show/{id}', 'AopApplicationController@show');
-    Route::get('aop-applications-summary/{id}', 'AopApplicationController@getAopApplicationSummary');
+    Route::post('aop-application-store', 'AopApplicationController@store');
+    Route::post('aop-application-update/{id}', 'AopApplicationController@update');
+    Route::get('aop-application-show/{id}', 'AopApplicationController@show');
+    Route::get('aop-application-summary/{id}', 'AopApplicationController@getAopApplicationSummary');
     Route::get('aop-application-timeline/{id}', 'AopApplicationController@showTimeline');
 });
