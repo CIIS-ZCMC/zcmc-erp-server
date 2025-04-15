@@ -263,8 +263,8 @@ class ActivityCommentController extends Controller
         $comment = $activity->comments()->latest()->first();
         
         return response()->json([
-            'data' => $comment,
-            'message' => 'Comment added successfully'
+            "data" => new ActivityCommentResource($comment),
+            "message" => 'Comment added successfully'
         ], 201);
     }
 
