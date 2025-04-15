@@ -51,7 +51,7 @@ class Item extends Model
         return $this->belongsTo(ItemClassification::class);
     }
 
-    public function itemSpecification()
+    public function itemSpecifications()
     {
         return $this->hasMany(ItemSpecification::class);
     }

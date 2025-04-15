@@ -83,13 +83,10 @@ class ItemClassificationController extends Controller
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
 
-        $results = ItemClassification::where('name', 'like', "%{$searchTerm}%")
-            ->orWhere('code', 'like', "%{$searchTerm}%")
-            ->orWhere('description', 'like', "%{$searchTerm}%")
-            ->paginate(
-                perPage: $perPage,
-                page: $page
-            );
+        $results = ItemClassification::search($searchTerm)->paginate(
+            perPage: $perPage,
+            page: $page
+        );
 
         return ItemClassificationResource::collection($results)
             ->additional([

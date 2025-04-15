@@ -24,10 +24,10 @@ class ItemResource extends JsonResource
             "unit" => $this->item_unit_id == null? null: $this->itemUnit->code,
             "category" => $this->item_category_id == null? null: $this->itemCategory->code,
             "classification" => $this->item_classification_id !== null? $this->itemClassification->code : null,
-            "item_unit" => new ItemUnitResource($this->itemUnit),
-            "item_category" => new ItemCategoryResource($this->itemCategory),
-            "item_classification" => $this->itemClassification,
-            "item_specifications" => ItemSpecificationChildResource::collection($this->itemSpecification),
+            "item_unit" => $this->item_unit_id == null? null:  new ItemUnitResource($this->itemUnit),
+            "item_category" => $this->item_category_id == null? null: new ItemCategoryResource($this->itemCategory),
+            "item_classification" => $this->item_classification_id !== null? null:$this->itemClassification,
+            "item_specifications" => ItemSpecificationChildResource::collection($this->itemSpecifications),
             "created_at" => $this->created_at,
             "updated_at" => $this->updated_at
         ];
