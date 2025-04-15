@@ -20,7 +20,7 @@ return new class extends Migration
             $table->unsignedBigInteger('section_id')->nullable();
             $table->unsignedBigInteger('unit_id')->nullable();
             $table->string('name');
-            $table->string('email')->nullable();
+            $table->string('email')->unique();
             $table->string('profile_url')->nullable();
             $table->boolean('is_active')->default(true);
             $table->rememberToken();

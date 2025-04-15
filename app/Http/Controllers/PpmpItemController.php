@@ -123,6 +123,7 @@ class PpmpItemController extends Controller
     )]
     public function index()
     {
+        dd("adad");
         //paginate display 10 data per page
         $ppmp_item = PpmpItem::whereNull('deleted_at')->paginate(10);
 
