@@ -186,7 +186,7 @@ class ActivityCommentController extends Controller
        }
 
        return response()->json([
-           'data' => ActivityCommentResource::collection($activity_comments),
+           "comments" => ActivityCommentResource::collection($activity_comments),
            "metadata" => [
                "methods" => "[GET, POST, PUT, DELETE]",
                "urls" => [
