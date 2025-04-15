@@ -40,6 +40,7 @@ class AssignedArea extends Pivot
      */
     protected $fillable = [
         'user_id',
+        'designation_id',
         'division_id',
         'department_id',
         'section_id',
