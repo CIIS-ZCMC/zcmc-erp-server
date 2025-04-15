@@ -9,8 +9,10 @@ class Objective extends Model
     protected $table = 'objectives';
 
     protected $fillable = [
+        'type_of_function_id',
         'code',
-        'description'
+        'description',
+        'type_of_function_id'
     ];
 
     public $timestamps = true;
@@ -20,6 +22,16 @@ class Objective extends Model
     public function applicationObjectives()
     {
         return $this->hasMany(ApplicationObjective::class);
+    }
+
+    public function successIndicators()
+    {
+        return $this->hasMany(SuccessIndicator::class);
+    }
+
+    public function typeOfFunction()
+    {
+        return $this->belongsTo(TypeOfFunction::class);
     }
 
     public function logs()

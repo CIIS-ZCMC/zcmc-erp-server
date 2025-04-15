@@ -14,6 +14,29 @@ class ItemSpecificationResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        return parent::toArray($request);
+        $label = $this->description;
+        $subspecification = [];
+        $parentSpecification = null;
+
+        if(count($this->itemSpecifications) > 0){
+            $subspecification = ItemSpecificationChildResource::collection($this->itemSpecifications);
+        }
+
+        if($this->itemSpecification){
+            $parentSpecification = new ItemSpecificationParentResource($this->itemSpecification);
+            $label = $label.":".$this->itemSpecification->description;
+        }
+
+        return [
+            'id' => $this->id,
+            'label' => $label,
+            'description' => $this->description,
+            'parent_specification' => $parentSpecification,
+            'sub_specifications' => $subspecification,
+            'meta' => [
+                "created_at" => $this->created_at,
+                "updated_at" => $this->updated_at
+            ]
+        ];
     }
 }

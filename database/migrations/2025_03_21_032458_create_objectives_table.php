@@ -13,8 +13,10 @@ return new class extends Migration
     {
         Schema::create('objectives', function (Blueprint $table) {
             $table->id();
-            $table->text('description')->nullable();
+            $table->unsignedBigInteger('type_of_function_id');
+            $table->foreign('type_of_function_id')->references('id')->on('type_of_functions');
             $table->string('code');
+            $table->text('description')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

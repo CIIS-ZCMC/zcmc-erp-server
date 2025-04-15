@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\ActivityResource;
 use App\Models\Activity;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -60,9 +61,26 @@ class ActivityController extends Controller
             )
         ]
     )]
-    public function index()
+    public function index(Request $request)
     {
-        //
+        $request->validate([
+            'application_objective_id' => 'required|integer',
+        ]);
+
+        // Fetch activities based on the application objective ID
+        $data = Activity::where('application_objective_id', $request->application_objective_id)
+            ->whereNull(columns: 'deleted_at')
+            ->paginate(10);
+
+        return response()->json([
+            'data' => ActivityResource::collection($data),
+            'meta' => [
+                'current_page' => $data->currentPage(),
+                'last_page' => $data->lastPage(),
+                'per_page' => $data->perPage(),
+                'total' => $data->total()
+            ],
+        ], Response::HTTP_OK);
     }
 
     #[OA\Post(
@@ -125,7 +143,19 @@ class ActivityController extends Controller
     )]
     public function show(Activity $activity)
     {
-        //
+        $activity->with([
+            'target',
+            'resources',
+            'responsiblePeople',
+            'ppmpItems' => function ($query) {
+                $query->whereNull('ppmp_items.deleted_at');
+            }
+        ])->first();
+
+        return response()->json([
+            'data' => new ActivityResource($activity),
+            'message' => 'Activity retrieved successfully'
+        ], Response::HTTP_OK);
     }
 
     #[OA\Put(

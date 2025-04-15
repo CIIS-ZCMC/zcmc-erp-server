@@ -13,8 +13,10 @@ return new class extends Migration
     {
         Schema::create('success_indicators', function (Blueprint $table) {
             $table->id();
-            $table->text('description');
+            $table->unsignedBigInteger('objective_id');
+            $table->foreign('objective_id')->references('id')->on('objectives');
             $table->string('code');
+            $table->text('description');
             $table->softDeletes();
             $table->timestamps();
         });
@@ -25,7 +27,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('success_indicators', function(Blueprint $table){
+        Schema::table('success_indicators', function (Blueprint $table) {
             $table->dropSoftDeletes();
         });
 

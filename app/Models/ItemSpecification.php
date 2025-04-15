@@ -3,21 +3,23 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemSpecification extends Model
 {
+    use SoftDeletes;
     protected $table = 'item_specifications';
 
     public $fillable = [
+        'description',
         'item_id',
         'item_request_id',
-        'month',
-        'year',
-        'quantity',
         'item_specification_id'
     ];
 
     public $timestamps = true;
+
+    protected $casts = ['deleted_at' => 'datetime'];
 
     public function item()
     {

@@ -119,7 +119,16 @@ class PpmpApplicationController extends Controller
     public function index()
     {
         //paginate display 10 data per page
-        $ppmp_application = PpmpApplication::whereNull('deleted_at')->paginate(10);
+        $ppmp_application = PpmpApplication::with([
+            'aop_application_id',
+            'user',
+            'divisionChief',
+            'budgetOfficer',
+            'ppmpItem' => function ($query) {
+                $query->whereNull('ppmp_items.deleted_at');
+            }
+        ])->whereNull('deleted_at')
+            ->paginate(10);
 
         if (!$ppmp_application) {
             return response()->json([
@@ -135,7 +144,7 @@ class PpmpApplicationController extends Controller
                 'per_page' => $ppmp_application->perPage(),
                 'total' => $ppmp_application->total(),
             ],
-            // 'message' => $this->getMetadata('get'),
+            'message' => 'PPMP Application retrieved successfully.',
         ], Response::HTTP_OK);
     }
 

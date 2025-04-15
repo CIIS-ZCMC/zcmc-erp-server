@@ -27,6 +27,7 @@ class ActivityResource extends JsonResource
             'resources' => ResourceResource::collection($this->whenLoaded('resources')),
             'responsible_people' => ResponsiblePersonResource::collection($this->whenLoaded('responsiblePeople')),
             'comments' => ActivityCommentResource::collection($this->whenLoaded('comments')),
+            'ppmp_items' => PpmpItemResource::collection($this->ppmpItems) ?? []
         ];
     }
 }

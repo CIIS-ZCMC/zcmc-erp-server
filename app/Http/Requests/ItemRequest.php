@@ -27,20 +27,28 @@ class ItemRequest extends FormRequest
                 'array', // Ensure it's an array when bulk inserting
             ],
             'items.*.name' => 'required_with:items|string|max:255',
-            'items.*.estimated_budget' => 'nullable|numeric',
-            'items.*.item_unit_id' => 'nullable|int',
-            'items.*.item_category_id' => 'nullable|int',
+            'items.*.code' => 'required_with:items|string|max:255',
+            'items.*.estimated_budget' => 'required|numeric',
+            'items.*.item_unit_id' => 'required|int',
+            'items.*.item_category_id' => 'required|int',
             'items.*.item_classification_id' => 'nullable|int',
-            'items.*.specifications' => ['array'],
-            'items.*.specifications.description' => 'required_with:items|string',
+            'items.*.specifications' => [
+                'nullable',
+                'array'
+            ],
+            'items.*.specifications.description' => 'nullable|string',
     
             'name' => 'required_without:items|string|max:255',
-            'estimated_budget' => 'nullable|numeric',
+            'code' => 'required_without:items|string|max:255',
+            'estimated_budget' => 'required|numeric',
             'item_unit_id' => 'required|int',     
             'item_category_id' => 'required|int',     
-            'item_classification_id' => 'required|int',
-            'specifications' => ['array'],
-            'specifications.description' => 'required|string'     
+            'item_classification_id' => 'nullable|int',
+            'specifications' => [
+                'nullable',
+                'array'
+            ],
+            'specifications.description' => 'nullable|string'     
         ];
     }
 }

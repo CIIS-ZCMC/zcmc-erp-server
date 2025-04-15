@@ -36,17 +36,17 @@ class PpmpApplication extends Model
         return $this->belongsTo(AopApplication::class, 'aop_application_id');
     }
 
-    public function user_id()
+    public function user()
     {
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function division_chief_id()
+    public function divisionChief()
     {
         return $this->belongsTo(User::class, 'division_chief_id');
     }
 
-    public function budget_officer_id()
+    public function budgetOfficer()
     {
         return $this->belongsTo(User::class, 'budget_officer_id');
     }

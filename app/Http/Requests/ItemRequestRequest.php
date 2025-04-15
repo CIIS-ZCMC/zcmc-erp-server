@@ -22,14 +22,35 @@ class ItemRequestRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'code' => 'nullable|string|max:255',
-            'variant' => 'nullable|string|max:255',
-            'estimated_budget' => 'nullable|numeric',
+            'items' => [
+                'nullable',
+                'array', // Ensure it's an array when bulk inserting
+            ],
+            'items.*.name' => 'required_with:items|string|max:255',
+            'items.*.code' => 'required_with:items|string|max:255',
+            'items.*.estimated_budget' => 'required|numeric',
+            'items.*.reason' => 'required_with:items|string|max:255',
+            'items.*.item_unit_id' => 'required|int',
+            'items.*.item_category_id' => 'required|int',
+            'items.*.item_classification_id' => 'nullable|int',
+            'items.*.specifications' => [
+                'nullable',
+                'array'
+            ],
+            'items.*.specifications.description' => 'nullable|string',
+    
+            'name' => 'required_without:items|string|max:255',
+            'code' => 'required_without:items|string|max:255',
+            'estimated_budget' => 'required|numeric',
+            'reason' => 'required_without:items|string|max:255',
             'item_unit_id' => 'required|int',     
             'item_category_id' => 'required|int',     
-            'item_classification_id' => 'required|int',    
-            'reason' => 'nullable|string', 
+            'item_classification_id' => 'nullable|int',
+            'specifications' => [
+                'nullable',
+                'array'
+            ],
+            'specifications.description' => 'nullable|string'     
         ];
     }
 }

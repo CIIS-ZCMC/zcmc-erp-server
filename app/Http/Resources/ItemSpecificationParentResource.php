@@ -4,9 +4,8 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Str;
 
-class SuccessIndicatorResource extends JsonResource
+class ItemSpecificationParentResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,12 +15,9 @@ class SuccessIndicatorResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            "id" => $this->id,
-            'label' => Str::ucfirst($this->code),
-            'name' => $this->code,
-            "code" => $this->code,
-            "description" => $this->description,
-            "meta" => [
+            'id' => $this->id,
+            'description' => $this->description,
+            'meta' => [
                 "created_at" => $this->created_at,
                 "updated_at" => $this->updated_at
             ]

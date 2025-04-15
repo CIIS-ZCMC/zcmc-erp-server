@@ -18,8 +18,11 @@ class AopRequestResource extends JsonResource
         return [
             'id' => $this->id,
             'user' => new UserResource($this->whenLoaded('user')),
-            'created_on' => $this->applicationTimeline->date_created ?? null, 
-            'date_approved'=> $this->applicationTimeline->date_approved ?? null,
+            'date_created' => $this->created_at,
+            'date_approved' => $this->whenLoaded('applicationTimeline', function () {
+                $latestTimeline = $this->applicationTimeline->sortByDesc('created_at')->first();
+                return $latestTimeline ? $latestTimeline->date_approved : null;
+            }),
             'aop_application_uuid' => $this->aop_application_uuid,
             'status' => $this->status,
         ];

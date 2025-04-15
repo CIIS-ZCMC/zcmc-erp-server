@@ -9,10 +9,10 @@ class AccessToken extends Model
     protected $table = 'access_tokens';
 
     public $fillable = [
+        'user_id',
         'session_id',
         'permissions',
-        'authorizarition_pin',
-        'user_id',
+        'authorization_pin',
         'expire_at'
     ];
 

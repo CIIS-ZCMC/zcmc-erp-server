@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\ShowAopApplicationResource;
-use App\Http\Resources\ManageAopRequestResource;
 use App\Http\Resources\AopRequestResource;
 use App\Http\Resources\ApplicationTimelineResource;
 use App\Models\AopApplication;
@@ -18,7 +17,27 @@ use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Validator;
 
+#[OA\Schema(
+    schema: "AopApplication",
+    properties: [
+        new OA\Property(property: "id", type: "integer"),
+        new OA\Property(property: "activity_id", type: "integer"),
+        new OA\Property(property: "user_id", type: "integer", nullable: true),
+        new OA\Property(property: "content", type: "string"),
+        new OA\Property(
+            property: "created_at",
+            type: "string",
+            format: "date-time"
+        ),
+        new OA\Property(
+            property: "updated_at",
+            type: "string",
+            format: "date-time"
+        )
+    ]
+)]
 class AopApplicationController extends Controller
 {
 
@@ -177,173 +196,251 @@ class AopApplicationController extends Controller
         }
     }
 
-    public function getAopApplicationSummary($aopApplicationId)
+    #[OA\Get(
+        path: "/api/aop-applications/{id}",
+        summary: "Show specific activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Successful operation",
+                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]
+    public function show(AopApplication $aopApplication)
     {
-        $aopApplication = AopApplication::with([
-            'applicationObjectives.activities.resources',
-            'applicationObjectives.activities.responsiblePeople',
-            'applicationObjectives.activities.comments', // Include comments
-        ])->findOrFail($aopApplicationId);
+        $aopApplication->load([
+            'user',
+            'divisionChief',
+            'mccChief',
+            'planningOfficer',
+            'applicationObjectives',
+            'applicationObjectives.functionObjective',
+            'applicationObjectives.activities'
+        ]);
 
-        $totalObjectives = $aopApplication->applicationObjectives->count();
+        return new ShowAopApplicationResource($aopApplication);
+    }
 
-        $totalActivities = $aopApplication->applicationObjectives->flatMap(function ($objective) {
-            return $objective->activities;
-        });
+    #[OA\Put(
+        path: "/api/aop-applications/{id}",
+        summary: "Update an activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        requestBody: new OA\RequestBody(
+            description: "Comment data",
+            required: true,
+            content: new OA\JsonContent(
+                properties: [
+                    new OA\Property(property: "content", type: "string")
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Comment updated",
+                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            ),
+            new OA\Response(
+                response: Response::HTTP_UNPROCESSABLE_ENTITY,
+                description: "Validation error"
+            )
+        ]
+    )]
+    public function update(Request $request, AopApplication $aopApplication)
+    {
+        //
+    }
 
-        $totalResources = $totalActivities->flatMap->resources->count();
-        $totalResponsiblePeople = $totalActivities->flatMap->responsiblePeople->count();
-        $totalComments = $totalActivities->flatMap->comments->count();
+    #[OA\Delete(
+        path: "/api/aop-applications/{id}",
+        summary: "Delete an activity comment",
+        tags: ["Activity Comments"],
+        parameters: [
+            new OA\Parameter(
+                name: "id",
+                in: "path",
+                required: true,
+                description: "Comment ID",
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_NO_CONTENT,
+                description: "Comment deleted"
+            ),
+            new OA\Response(
+                response: Response::HTTP_NOT_FOUND,
+                description: "Comment not found"
+            )
+        ]
+    )]
+    public function destroy(AopApplication $aopApplication)
+    {
+        //
+    }
+
+    #[OA\Get(
+        path: "/api/aop-requests",
+        summary: "List all AOP requests",
+        tags: ["AOP Requests"],
+        parameters: [
+            new OA\Parameter(
+                name: "status",
+                in: "query",
+                description: "Filter by status",
+                required: false,
+                schema: new OA\Schema(type: "string")
+            ),
+            new OA\Parameter(
+                name: "year",
+                in: "query",
+                description: "Filter by year",
+                required: false,
+                schema: new OA\Schema(type: "integer")
+            )
+        ],
+        responses: [
+            new OA\Response(
+                response: Response::HTTP_OK,
+                description: "Successful operation",
+                content: new OA\JsonContent(
+                    type: "array",
+                    items: new OA\Items(ref: "#/components/schemas/AopRequest")
+                )
+            )
+        ]
+    )]
+    public function listOfAopRequests(Request $request)
+    {
+        $page = $request->query('page') > 0 ? $request->query('page') : 1;
+        $per_page = $request->query('per_page') ?? 15;
+
+        $query = AopApplication::with([
+            'user',
+            'applicationTimeline',
+        ]);
+
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('year')) {
+            $query->whereYear('created_at', $request->year);
+        }
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('mission', 'like', "%{$search}%")
+                    ->orWhere('remarks', 'like', "%{$search}%");
+            });
+        }
+
+        $aopApplications = $query->paginate($per_page, ['*'], 'page', $page);
+
 
         return response()->json([
-            'total_objectives'         => $totalObjectives,
-            'total_activities'         => $totalActivities->count(),
-            'total_resources'          => $totalResources,
-            'total_responsible_people' => $totalResponsiblePeople,
-            'total_comments'           => $totalComments,
+            'data' => AopRequestResource::collection($aopApplications),
+            'pagination' => [
+                'total' => $aopApplications->total(),
+                'per_page' => $aopApplications->perPage(),
+                'current_page' => $aopApplications->currentPage(),
+                'last_page' => $aopApplications->lastPage(),
+            ],
+            'metadata' => $this->getMetadata('get')
+        ], Response::HTTP_OK);
+    }
+
+
+    public function processAopRequest(Request $request)
+    {
+        $validated = Validator::make($request->all(), [
+            'aop_application_id' => 'required|integer|exists:aop_applications,id',
+            'status' => 'required|string|',
+            'remarks' => 'nullable|string|max:500',
+            'auth_pin' => 'required|integer|digits:6',
         ]);
-    }
 
+        // NOTE:
+        // Get the user who processed the application
 
-    public function update(AopApplicationRequest $request, $id)
-    {
-        DB::transaction(function () use ($request, $id) {
-            $aopApplication = AopApplication::with([
-                'applicationObjectives.activities.resources.item',
-                'ppmpApplication',
-            ])->findOrFail($id);
+        if ($validated->fails()) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $validated->errors(),
+            ], Response::HTTP_BAD_REQUEST);
+        }
 
-
-            $aopApplication->update($request->only([
-                'mission',
-                'status',
-            ]));
-
-            //Delete old nested relationships
-            foreach ($aopApplication->applicationObjectives as $objective) {
-                foreach ($objective->activities as $activity) {
-                    $activity->target()->delete();
-                    $activity->resources()->delete();
-                    $activity->responsiblePeople()->delete();
-                }
-                $objective->activities()->delete();
-                $objective->otherObjective()->delete();
-                $objective->otherSuccessIndicator()->delete();
-            }
-            $aopApplication->applicationObjectives()->delete();
-
-            //Recreate all nested objectives and relations
-            foreach ($request->application_objectives as $objectiveData) {
-                $applicationObjective = $aopApplication->applicationObjectives()->create([
-                    'objective_id' => $objectiveData['objective_id'],
-                    'success_indicator_id' => $objectiveData['success_indicator_id'],
-                    'objective_code' => $objectiveData['objective_code'] ?? null,
-                ]);
-
-                if (($applicationObjective->objective->description ?? null) === 'Others' && isset($objectiveData['others_objective'])) {
-                    $applicationObjective->othersObjective()->create([
-                        'description' => $objectiveData['others_objective'],
-                    ]);
-                }
-
-                if (($applicationObjective->successIndicator->description ?? null) === 'Others' && isset($objectiveData['other_success_indicator'])) {
-                    $applicationObjective->otherSuccessIndicator()->create([
-                        'description' => $objectiveData['other_success_indicator'],
-                    ]);
-                }
-
-                foreach ($objectiveData['activities'] as $activityData) {
-                    $activity = $applicationObjective->activities()->create([
-                        'activity_code' => $activityData['activity_code'],
-                        'name' => $activityData['name'],
-                        'is_gad_related' => $activityData['is_gad_related'],
-                        'cost' => $activityData['cost'],
-                        'start_month' => $activityData['start_month'],
-                        'end_month' => $activityData['end_month'],
-                    ]);
-
-
-                    $activity->target()->create($activityData['target']);
-
-                    foreach ($activityData['resources'] as $resourceData) {
-                        $activity->resources()->create($resourceData);
-                    }
-
-
-                    foreach ($activityData['responsible_people'] as $personData) {
-                        $activity->responsiblePeople()->create($personData);
-                    }
-                }
-            }
-
-            $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
-            $ppmpTotal = 0;
-
-            foreach ($aopApplication->applicationObjectives as $objective) {
-                foreach ($objective->activities as $activity) {
-                    foreach ($activity->resources as $resource) {
-                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
-                            $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
-                        }
-                    }
-                }
-            }
-
-            $aopApplication->ppmpApplication()->update([
-                'ppmp_total' => $ppmpTotal,
-                'remarks' => $request->remarks ?? null,
-            ]);
-
-
-            $aopApplication->ppmpApplication->ppmpItems()->delete();
-
-            foreach ($aopApplication->applicationObjectives as $objective) {
-                foreach ($objective->activities as $activity) {
-                    foreach ($activity->resources as $resource) {
-                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
-                            $estimatedBudget = $resource->item->estimated_budget;
-                            $totalAmount = $resource->quantity * $estimatedBudget;
-
-                            $aopApplication->ppmpApplication->ppmpItems()->create([
-                                'item_id' => $resource->item_id,
-                                'total_quantity' => $resource->quantity,
-                                'estimated_budget' => $estimatedBudget,
-                                'total_amount' => $totalAmount,
-                                'remarks' => null,
-                            ]);
-                        }
-                    }
-                }
-            }
-        });
-
-        return response()->json(['message' => 'AOP Application updated successfully.']);
-    }
-
-
-    public function show($id)
-    {
         $aopApplication = AopApplication::with([
-            'applicationObjectives.objective',
-            'applicationObjectives.otherObjective',
-            'applicationObjectives.successIndicator',
-            'applicationObjectives.otherSuccessIndicator',
-            'applicationObjectives.activities.target',
-            'applicationObjectives.activities.resources',
-            'applicationObjectives.activities.responsiblePeople.user',
-            'applicationObjectives.activities.comments',
-        ])->findOrFail($id);
+            'applicationObjectives',
+            'applicationTimeline',
+            'user'
+        ])
+            ->where('id', $request->aop_application_id)
+            ->whereNull('deleted_at')
+            ->first();
 
-        return new AopApplicationResource($aopApplication);
-    }
+        $dateApproved = null;
+        $dateReturned = null;
 
-    public function showTimeline($aopApplicationId)
-    {
-        $aopApplication = AopApplication::with('applicationTimeline')
-            ->findOrFail($aopApplicationId);
+        /*
+        * Later, add in the logic of determining what's the next office base on the status.
+        */
+        $status = match ($request->status) {
+            'approved' => $dateApproved = now(),
+            'returned' => $dateReturned = now(),
+            default => null,
+        };
 
-        return ApplicationTimelineResource::make(
-            $aopApplication->applicationTimeline
-        );
+        $aopApplicationTimeline = $aopApplication->applicationTimeline()->create([
+            'aop_application_id' => $request->aop_application_id,
+            'user_id' => $request->user_id,
+            'current_area_id' => 1,
+            'next_area_id' => 2,
+            'status' => $status,
+            'remarks' => $request->remarks,
+            'date_created' => now(),
+            'date_approved' => $dateApproved,
+            'date_returned' => $dateReturned,
+        ]);
+
+        if (!$aopApplicationTimeline) {
+            return response()->json([
+                'message' => 'AOP application timeline not created',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        return response()->json([
+            'message' => 'AOP application processed successfully',
+        ], Response::HTTP_OK);
     }
 }
