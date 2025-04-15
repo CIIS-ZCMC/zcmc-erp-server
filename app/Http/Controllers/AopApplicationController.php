@@ -88,11 +88,11 @@ class AopApplicationController extends Controller
 
     public function showTimeline($aopApplicationId)
     {
-        $aopApplication = AopApplication::with('applicationTimeline')
+        $aopApplication = AopApplication::with('applicationTimelines')
             ->findOrFail($aopApplicationId);
 
-        return ApplicationTimelineResource::make(
-            $aopApplication->applicationTimeline
+        return ApplicationTimelineResource::collection(
+            $aopApplication->applicationTimelines
         );
     }
 
