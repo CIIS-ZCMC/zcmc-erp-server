@@ -67,7 +67,7 @@ class AopApplication extends Model
         return $this->hasMany(ApplicationObjective::class);
     }
 
-    public function applicationTimeline(): HasMany
+    public function applicationTimelines(): HasMany
     {
         return $this->hasMany(ApplicationTimeline::class);
     }
