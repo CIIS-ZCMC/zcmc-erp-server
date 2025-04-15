@@ -38,6 +38,7 @@ use Illuminate\Support\Facades\Validator;
         )
     ]
 )]
+
 class AopApplicationController extends Controller
 {
 
@@ -135,7 +136,7 @@ class AopApplicationController extends Controller
                 'ppmpApplication',
             ])->findOrFail($id);
 
-            // 1. Update AOP application
+
             $aopApplication->update($request->only([
                 'user_id',
                 'division_chief_id',
@@ -147,7 +148,7 @@ class AopApplicationController extends Controller
                 'remarks',
             ]));
 
-            // 2. Delete old nested relationships
+
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     $activity->target()->delete();
@@ -160,7 +161,7 @@ class AopApplicationController extends Controller
             }
             $aopApplication->applicationObjectives()->delete();
 
-            // 3. Recreate all nested objectives and relations
+
             foreach ($request->application_objectives as $objectiveData) {
                 $applicationObjective = $aopApplication->applicationObjectives()->create([
                     'objective_id' => $objectiveData['objective_id'],
@@ -190,22 +191,22 @@ class AopApplicationController extends Controller
                         'end_month' => $activityData['end_month'],
                     ]);
 
-                    // Target
+
                     $activity->target()->create($activityData['target']);
 
-                    // Resources
+
                     foreach ($activityData['resources'] as $resourceData) {
                         $activity->resources()->create($resourceData);
                     }
 
-                    // Responsible People
+
                     foreach ($activityData['responsible_people'] as $personData) {
                         $activity->responsiblePeople()->create($personData);
                     }
                 }
             }
 
-            // 4. Recalculate PPMP total
+
             $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
             $ppmpTotal = 0;
 
@@ -224,7 +225,7 @@ class AopApplicationController extends Controller
                 'remarks' => $request->remarks ?? null,
             ]);
 
-            // 5. Delete and rebuild PPMP items
+          
             $aopApplication->ppmpApplication->ppmpItems()->delete();
 
             foreach ($aopApplication->applicationObjectives as $objective) {
@@ -352,7 +353,7 @@ class AopApplicationController extends Controller
                 'budget_officer_id' => 1,
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => $ppmpTotal,
-                'status' => 'Pending',
+                'status' => $validatedData['status'],
                 'remarks' => $request->remarks ?? null,
             ]);
 
@@ -382,7 +383,7 @@ class AopApplicationController extends Controller
                 'user_id' => 1,
                 'current_area_id' => 1,
                 'next_area_id' => 2,
-                'status' => 'Pending',
+                'status' => $validatedData['status'],
                 'date_created' => now(),
             ]);
             DB::commit();
