@@ -4,8 +4,6 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\ActivityResource;
-use App\Http\Resources\UserResource;
 
 class ActivityCommentResource extends JsonResource
 {
@@ -18,8 +16,10 @@ class ActivityCommentResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'activity' => new ActivityResource($this->activity),
-            'user' => new UserResource($this->user),
+            'user_id' => $this->user_id,
+            'activity_id' => $this->activity_id,
+            'name' => $this->user->name,
+            'area' => $this->user->assignedArea->findDetails()['details']['name'],
             'comment' => $this->comment,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at
