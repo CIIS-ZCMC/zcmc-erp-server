@@ -75,227 +75,6 @@ class AopApplicationSeeder extends Seeder
         $divisionHead = $getRandomItem($designations);
         $randomDivision = $getRandomItem($divisions);
 
-        $sampleUser1 = User::factory()->create([
-            'name' => 'Division Head',
-            'email' => 'division.head@example.com',
-            'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
-            'designation_id' => $divisionHead->id,
-            'division_id' => $randomDivision->id,
-            'department_id' => null,
-            'section_id' => null,
-            'unit_id' => null,
-        ]);
-
-        // Get random department from the selected division
-        $departmentsInDivision = $departments->where('division_id', $randomDivision->id);
-        $randomDepartment = $departmentsInDivision->isNotEmpty()
-            ? $getRandomItem($departmentsInDivision)
-            : $getRandomItem($departments);
-
-        $sampleUser2 = User::factory()->create([
-            'name' => 'Department Head',
-            'email' => 'department.head@example.com',
-            'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
-            'designation_id' => $getRandomItem($designations)->id,
-            'division_id' => $randomDivision->id,
-            'department_id' => $randomDepartment->id,
-            'section_id' => null,
-            'unit_id' => null,
-        ]);
-
-        // Find users for various roles or create a new one with random assignments
-        $randomDivision = $getRandomItem($divisions);
-        $randomDepartment = $departments->where('division_id', $randomDivision->id)->isNotEmpty()
-            ? $getRandomItem($departments->where('division_id', $randomDivision->id))
-            : $getRandomItem($departments);
-        $randomSection = $sections->where('department_id', $randomDepartment->id)->isNotEmpty()
-            ? $getRandomItem($sections->where('department_id', $randomDepartment->id))
-            : $getRandomItem($sections);
-        $randomUnit = $units->where('section_id', $randomSection->id)->isNotEmpty()
-            ? $getRandomItem($units->where('section_id', $randomSection->id))
-            : $getRandomItem($units);
-
-        $user = User::first() ?? User::factory()->create([
-            'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
-            'name' => 'Sample User',
-            'email' => 'user@example.com',
-            'profile_url' => 'https://randomuser.me/api/portraits/men/' . rand(1, 99) . '.jpg',
-            'is_active' => true,
-            'designation_id' => $getRandomItem($designations)->id,
-            'division_id' => $randomDivision->id,
-            'department_id' => $randomDepartment->id,
-            'section_id' => $randomSection->id,
-            'unit_id' => $randomUnit->id
-        ]);
-
-        // AssignedArea is still used to maintain relationships
-        AssignedArea::create([
-            'user_id' => $user->id,
-            'designation_id' => $user->designation_id,
-            'division_id' => $user->division_id,
-            'department_id' => $user->department_id,
-            'section_id' => $user->section_id,
-            'unit_id' => $user->unit_id,
-        ]);
-
-        // Find Division Chief Designation or use a random existing designation
-        $divisionChiefDesignation = Designation::where('name', 'LIKE', '%Chief%')->orWhere('name', 'LIKE', '%Director%')->first();
-        if (!$divisionChiefDesignation) {
-            $divisionChiefDesignation = $getRandomItem($designations); // Fallback to a random designation
-        }
-
-
-
-        $divisionChief = User::where('id', '!=', $user->id)->first();
-
-        if (!$divisionChief) {
-            $randomDivision = $getRandomItem($divisions);
-            $divisionChief = User::factory()->create([
-                'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
-                'name' => 'Division Chief',
-                'email' => 'division.chief@example.com',
-                'profile_url' => 'https://randomuser.me/api/portraits/men/' . rand(1, 99) . '.jpg',
-                'is_active' => true,
-                'designation_id' => $divisionChiefDesignation->id,
-                'division_id' => $randomDivision->id,
-                'department_id' => null,
-                'section_id' => null,
-                'unit_id' => null
-            ]);
-
-            AssignedArea::create([
-                'user_id' => $divisionChief->id,
-                'designation_id' => $divisionChief->designation_id,
-                'division_id' => $divisionChief->division_id,
-                'department_id' => null,
-                'section_id' => null,
-                'unit_id' => null,
-            ]);
-        }
-
-        // Find MCC Chief Designation or use a random existing designation
-        $mccChiefDesignation = Designation::where('name', 'LIKE', '%MCC%')->orWhere('name', 'LIKE', '%Committee%')->first();
-        if (!$mccChiefDesignation) {
-            $mccChiefDesignation = $getRandomItem($designations); // Fallback to a random designation
-        }
-
-        $mccChief = User::where('id', '!=', $user->id)
-            ->where('id', '!=', $divisionChief->id)
-            ->first();
-
-        if (!$mccChief) {
-            $randomDivision = $getRandomItem($divisions);
-            $mccChief = User::factory()->create([
-                'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
-                'name' => 'MCC Chief',
-                'email' => 'mcc.chief@example.com',
-                'profile_url' => 'https://randomuser.me/api/portraits/women/' . rand(1, 99) . '.jpg',
-                'is_active' => true,
-                'designation_id' => $mccChiefDesignation->id,
-                'division_id' => $randomDivision->id,
-                'department_id' => null,
-                'section_id' => null,
-                'unit_id' => null
-            ]);
-
-            AssignedArea::create([
-                'user_id' => $mccChief->id,
-                'designation_id' => $mccChief->designation_id,
-                'division_id' => $mccChief->division_id,
-                'department_id' => null,
-                'section_id' => null,
-                'unit_id' => null,
-            ]);
-        }
-
-        // Find Planning Officer Designation or use a random existing designation
-        $planningOfficerDesignation = Designation::where('name', 'LIKE', '%Planning%')->orWhere('name', 'LIKE', '%Officer%')->first();
-        if (!$planningOfficerDesignation) {
-            $planningOfficerDesignation = $getRandomItem($designations); // Fallback to a random designation
-        }
-
-        $planningOfficer = User::where('id', '!=', $user->id)
-            ->where('id', '!=', $divisionChief->id)
-            ->where('id', '!=', $mccChief->id)
-            ->first();
-
-
-        if (!$planningOfficer) {
-            $randomDivision = $getRandomItem($divisions);
-            $planningOfficer = User::factory()->create([
-                'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
-                'name' => 'Planning Officer',
-                'email' => 'planning.officer@example.com',
-                'profile_url' => 'https://randomuser.me/api/portraits/women/' . rand(1, 99) . '.jpg',
-                'is_active' => true,
-                'designation_id' => $planningOfficerDesignation->id,
-                'division_id' => $randomDivision->id,
-                'department_id' => null,
-                'section_id' => null,
-                'unit_id' => null
-            ]);
-
-            AssignedArea::create([
-                'user_id' => $planningOfficer->id,
-                'designation_id' => $planningOfficer->designation_id,
-                'division_id' => $planningOfficer->division_id,
-                'department_id' => null,
-                'section_id' => null,
-                'unit_id' => null,
-            ]);
-        }
-
-        // Find Budget Officer Designation or use a random existing designation
-        $budgetOfficerDesignation = Designation::where('name', 'LIKE', '%Budget%')->orWhere('name', 'LIKE', '%Finance%')->first();
-        if (!$budgetOfficerDesignation) {
-            $budgetOfficerDesignation = $getRandomItem($designations); // Fallback to a random designation
-        }
-
-        $budgetOfficer = User::where('id', '!=', $user->id)
-            ->where('id', '!=', optional($divisionChief)->id)
-            ->where('id', '!=', optional($mccChief)->id)
-            ->where('id', '!=', optional($planningOfficer)->id)
-            ->first();
-
-        if (!$budgetOfficer) {
-            $randomDivision = $getRandomItem($divisions);
-            $randomDepartment = $departments->where('division_id', $randomDivision->id)->isNotEmpty()
-                ? $getRandomItem($departments->where('division_id', $randomDivision->id))
-                : $getRandomItem($departments);
-            $randomSection = $sections->where('department_id', $randomDepartment->id)->isNotEmpty()
-                ? $getRandomItem($sections->where('department_id', $randomDepartment->id))
-                : $getRandomItem($sections);
-
-            $budgetOfficer = User::factory()->create([
-                'umis_employee_profile_id' => 'EMP' . rand(10000, 99999),
-                'name' => 'Budget Officer',
-                'email' => 'budget.officer@example.com',
-                'profile_url' => 'https://randomuser.me/api/portraits/men/' . rand(1, 99) . '.jpg',
-                'is_active' => true,
-                'designation_id' => $budgetOfficerDesignation->id,
-                'division_id' => $randomDivision->id,
-                'department_id' => $randomDepartment->id,
-                'section_id' => $randomSection->id,
-                'unit_id' => null
-            ]);
-
-            AssignedArea::create([
-                'user_id' => $budgetOfficer->id,
-                'designation_id' => $budgetOfficer->designation_id,
-                'division_id' => $budgetOfficer->division_id,
-                'department_id' => $budgetOfficer->department_id,
-                'section_id' => $budgetOfficer->section_id,
-                'unit_id' => null,
-            ]);
-
-            // Find a budget-related section or use the randomly assigned section
-            $budgetSection = Section::where('name', 'LIKE', '%Budget%')->orWhere('name', 'LIKE', '%Finance%')->first();
-            if (!$budgetSection) {
-                // Use the randomly assigned section
-                $budgetSection = $randomSection;
-            }
-        }
-
 
         // Create 5 AOP Applications with different data
         $missionStatements = [
@@ -318,31 +97,55 @@ class AopApplicationSeeder extends Seeder
         $aopApplications = [];
         $ppmpApplications = [];
 
+        // Get first user as default owner and find users with specific designations
+        // Find users with various designations or create dummy users if none exist
+        $user = User::first() ?? User::factory()->create();
+        $divisionChief = User::where('designation_id', $divisionHead->id)->first();
+        if (!$divisionChief) {
+            $divisionChief = User::factory()->create(['designation_id' => $divisionHead->id]);
+        }
+        $mccChief = User::whereNotNull('designation_id')->inRandomOrder()->first() 
+            ?? User::factory()->create(['designation_id' => $getRandomItem($designations)->id]);
+        $planningOfficer = User::whereNotNull('designation_id')->inRandomOrder()->first() 
+            ?? User::factory()->create(['designation_id' => $getRandomItem($designations)->id]);
+        $budgetOfficer = User::whereNotNull('designation_id')->inRandomOrder()->first() 
+            ?? User::factory()->create(['designation_id' => $getRandomItem($designations)->id]);
+
+        // Create 5 sample AOP Applications with corresponding PPMP Applications
         for ($i = 0; $i < 5; $i++) {
+            // Get random user for each application
+            $randomUser = User::inRandomOrder()->first() ?? $user;
+            // Get a random division chief using direct designation_id query instead of a relation
+            $randomDivisionChief = User::whereIn('designation_id', 
+                Designation::where('name', 'like', '%chief%')
+                    ->orWhere('name', 'like', '%director%')
+                    ->pluck('id')
+            )->inRandomOrder()->first() ?? $divisionChief;
+            
             $aopApplication = AopApplication::create([
-                'user_id' => $user->id,
-                'division_chief_id' => $divisionChief->id,
-                'mcc_chief_id' => $mccChief->id,
-                'planning_officer_id' => $planningOfficer->id,
-                'mission' => $missionStatements[$i],
-                'status' => $statusOptions[$i],
-                'has_discussed' => ($i % 2 == 0), // Alternate between true and false
-                'remarks' => $remarkOptions[$i]
+                'user_id' => $randomUser->umis_employee_profile_id,
+                'division_chief_id' => $randomDivisionChief->umis_employee_profile_id ?? $randomDivisionChief->id,
+                'mcc_chief_id' => $mccChief->umis_employee_profile_id ?? $mccChief->id,
+                'planning_officer_id' => $planningOfficer->umis_employee_profile_id ?? $planningOfficer->id,
+                'mission' => $missionStatements[$i] ?? 'Default mission statement',
+                'status' => $statusOptions[array_rand($statusOptions)],
+                'has_discussed' => (bool)rand(0, 1),
+                'remarks' => $remarkOptions[array_rand($remarkOptions)]
             ]);
 
-            $ppmp_application = PpmpApplication::create([
+            $ppmpApplication = PpmpApplication::create([
                 'aop_application_id' => $aopApplication->id,
-                'user_id' => $user->id,
-                'division_chief_id' => $divisionChief->id,
-                'budget_officer_id' => $budgetOfficer->id,
+                'user_id' => $randomUser->umis_employee_profile_id ?? $randomUser->id,
+                'division_chief_id' => $randomDivisionChief->umis_employee_profile_id ?? $randomDivisionChief->id,
+                'budget_officer_id' => $budgetOfficer->umis_employee_profile_id ?? $budgetOfficer->id,
                 'ppmp_application_uuid' => Str::uuid(),
-                'ppmp_total' => 0,
-                'status' => $statusOptions[$i],
-                'remarks' => $remarkOptions[$i]
+                'ppmp_total' => rand(10000, 1000000) / 100,
+                'status' => $statusOptions[array_rand($statusOptions)],
+                'remarks' => $remarkOptions[array_rand($remarkOptions)]
             ]);
 
             $aopApplications[] = $aopApplication;
-            $ppmpApplications[] = $ppmp_application;
+            $ppmpApplications[] = $ppmpApplication;
         }
 
         // Get or create Type of Functions (strategic, core, support)
