@@ -200,6 +200,7 @@ Route::namespace('App\Http\Controllers')->group(function () {
         Route::get('aop-requests', 'AopApplicationController@listOfAopRequests');
         Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
         Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
+        Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
 
 
         // Aop Application Module
