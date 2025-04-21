@@ -3,12 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Relations\Pivot;
-use App\Models\TransactionLog;  
+use App\Models\TransactionLog;
 use App\Models\User;
 use App\Models\Division;
 use App\Models\Department;
 use App\Models\Section;
 use App\Models\Unit;
+use App\Http\Resources\AssignAreaDivisionResource;
+use App\Http\Resources\AssignAreaDepartmentResource;
+use App\Http\Resources\AssignAreaSectionResource;
+use App\Http\Resources\AssignAreaUnitResource;
 
 /**
  * AssignedArea Model
@@ -40,7 +44,6 @@ class AssignedArea extends Pivot
      */
     protected $fillable = [
         'user_id',
-        'designation_id',
         'division_id',
         'department_id',
         'section_id',
@@ -85,6 +88,35 @@ class AssignedArea extends Pivot
     public function unit()
     {
         return $this->belongsTo(Unit::class);
+    }
+
+    public function findDetails()
+    {
+        if ($this->division_id !== null) {
+            return [
+                'details' => new AssignAreaDivisionResource($this->division),
+                'sector' => 'Division'
+            ];
+        }
+
+        if ($this->department_id !== null) {
+            return [
+                'details' => new AssignAreaDepartmentResource($this->department),
+                'sector' => 'Department'
+            ];
+        }
+
+        if ($this->section_id !== null) {
+            return [
+                'details' => new AssignAreaSectionResource($this->section),
+                'sector' => 'Section'
+            ];
+        }
+
+        return [
+            'details' => new AssignAreaUnitResource($this->unit),
+            'sector' => 'Unit'
+        ];
     }
 
     /**

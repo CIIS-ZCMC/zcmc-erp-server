@@ -48,6 +48,26 @@ use Illuminate\Support\Facades\Validator;
 
 class AopApplicationController extends Controller
 {
+    /**
+     * Get metadata for API responses
+     * 
+     * @param string $method The method requesting metadata
+     * @return array The metadata for the response
+     */
+    protected function getMetadata(string $method): array
+    {
+        $metadata = [
+            'timestamp' => now(),
+            'method' => $method
+        ];
+        
+        if ($method === 'getAopApplications') {
+            $metadata['statuses'] = ['pending', 'approved', 'returned'];
+            $metadata['current_year'] = date('Y');
+        }
+        
+        return $metadata;
+    }
 
     public function index()
     {
@@ -630,7 +650,7 @@ class AopApplicationController extends Controller
                 'current_page' => $aopApplications->currentPage(),
                 'last_page' => $aopApplications->lastPage(),
             ],
-            'metadata' => $this->getMetadata('get')
+            'metadata' => $this->getMetadata('getAopApplications')
         ], Response::HTTP_OK);
     }
 

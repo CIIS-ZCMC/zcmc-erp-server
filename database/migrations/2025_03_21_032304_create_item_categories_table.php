@@ -20,6 +20,9 @@ return new class extends Migration
             $table->foreign('item_category_id')->references('id')->on('item_categories')->onDelete('set null');
             $table->softDeletes();
             $table->timestamps();
+
+            
+            $table->fullText(['name', 'code', 'description']);
         });
     }
 

@@ -85,13 +85,7 @@ class ItemCategoryController extends Controller
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
 
-        $results = ItemCategory::where('name', 'like', "%{$searchTerm}%")
-            ->orWhere('code', 'like', "%{$searchTerm}%")
-            ->orWhere('description', 'like', "%{$searchTerm}%")
-            ->paginate(
-                perPage: $perPage,
-                page: $page
-            );
+        $results = ItemCategory::search($searchTerm)->paginate(perPage: $perPage, page: $page);
 
         return ItemCategoryResource::collection($results)
             ->additional([
