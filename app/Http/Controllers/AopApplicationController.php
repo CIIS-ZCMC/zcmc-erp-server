@@ -7,11 +7,18 @@ use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\ShowAopApplicationResource;
 use App\Http\Resources\AopRequestResource;
 use App\Http\Resources\ApplicationTimelineResource;
+use App\Http\Resources\DesignationResource;
 use App\Models\AopApplication;
+use App\Models\Department;
+use App\Models\Designation;
+use App\Models\Division;
 use App\Models\FunctionObjective;
 use App\Models\PpmpItem;
 use App\Models\PurchaseType;
+use App\Models\Section;
 use App\Models\SuccessIndicator;
+use App\Models\Unit;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
@@ -225,7 +232,7 @@ class AopApplicationController extends Controller
                 'remarks' => $request->remarks ?? null,
             ]);
 
-          
+
             $aopApplication->ppmpApplication->ppmpItems()->delete();
 
             foreach ($aopApplication->applicationObjectives as $objective) {
@@ -450,6 +457,38 @@ class AopApplicationController extends Controller
         ])->findOrFail($id);
 
         return new AopApplicationResource($aopApplication);
+    }
+
+    public function getUsersWithDesignation()
+    {
+        $users = User::with('designation')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id'          => $user->id,
+                    'name'        => $user->name,
+                    'designation' => $user->designation?->name
+                ];
+            });
+
+        return response()->json($users);
+    }
+
+    public function getAllDesignations()
+    {
+        $designations = Designation::all();
+
+        return DesignationResource::collection($designations);
+    }
+
+    public function getAllArea()
+    {
+        return response()->json([
+            'divisions'   => Division::select('id', 'name')->get(),
+            'departments' => Department::select('id', 'name')->get(),
+            'sections'    => Section::select('id', 'name')->get(),
+            'units'       => Unit::select('id', 'name')->get(),
+        ]);
     }
 
 
