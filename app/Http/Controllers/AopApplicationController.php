@@ -9,6 +9,7 @@ use App\Http\Resources\AopRequestResource;
 use App\Http\Resources\ApplicationTimelineResource;
 use App\Http\Resources\DesignationResource;
 use App\Models\AopApplication;
+use App\Models\AssignedArea;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Division;
@@ -50,7 +51,7 @@ class AopApplicationController extends Controller
 {
     /**
      * Get metadata for API responses
-     * 
+     *
      * @param string $method The method requesting metadata
      * @return array The metadata for the response
      */
@@ -60,12 +61,12 @@ class AopApplicationController extends Controller
             'timestamp' => now(),
             'method' => $method
         ];
-        
+
         if ($method === 'getAopApplications') {
             $metadata['statuses'] = ['pending', 'approved', 'returned'];
             $metadata['current_year'] = date('Y');
         }
-        
+
         return $metadata;
     }
 
@@ -287,12 +288,26 @@ class AopApplicationController extends Controller
         DB::beginTransaction();
 
         try {
+
+            $assignedArea = AssignedArea::with('division')->where('user_id', $validatedData['user_id'])->first();
+            $divisionChiefId = optional($assignedArea->division)->head_id;
+
+            $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
+            $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
+
+            $planningOfficer = Section::where('name', 'OMCC: Planning Unit')->first();
+            $planningOfficerId = optional($planningOfficer)->head_id;
+
+
+
+
+
             // Create AOP Application
             $aopApplication = AopApplication::create([
-                // 'user_id' => $validatedData['user_id'],
-                // 'division_chief_id' => $validatedData['division_chief_id'],
-                // 'mcc_chief_id' => $validatedData['mcc_chief_id'],
-                // 'planning_officer_id' => $validatedData['planning_officer_id'],
+                'user_id' => $validatedData['user_id'],
+                'division_chief_id' => $divisionChiefId,
+                'mcc_chief_id' => $mccChiefId,
+                'planning_officer_id' => $planningOfficerId,
                 'aop_application_uuid' => Str::uuid(),
                 'mission' => $validatedData['mission'],
                 'status' => $validatedData['status'],
@@ -367,7 +382,10 @@ class AopApplicationController extends Controller
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     foreach ($activity->resources as $resource) {
-                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                        if (
+                            $resource->purchase_type_id === $procurablePurchaseTypeId &&
+                            $resource->item
+                        ) {
                             $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
                         }
                     }
@@ -381,14 +399,17 @@ class AopApplicationController extends Controller
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => $ppmpTotal,
                 'status' => $validatedData['status'],
-                'remarks' => $request->remarks ?? null,
+
             ]);
 
 
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     foreach ($activity->resources as $resource) {
-                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                        if (
+                            $resource->purchase_type_id === $procurablePurchaseTypeId &&
+                            $resource->item // Check if item exists
+                        ) {
                             $estimatedBudget = $resource->item->estimated_budget;
                             $totalAmount = $resource->quantity * $estimatedBudget;
 
@@ -404,6 +425,7 @@ class AopApplicationController extends Controller
                     }
                 }
             }
+
 
             $aopApplicationTimeline = $aopApplication->applicationTimelines()->create([
                 'aop_application_id' => $aopApplication->id,
@@ -503,12 +525,33 @@ class AopApplicationController extends Controller
 
     public function getAllArea()
     {
-        return response()->json([
-            'divisions'   => Division::select('id', 'name')->get(),
-            'departments' => Department::select('id', 'name')->get(),
-            'sections'    => Section::select('id', 'name')->get(),
-            'units'       => Unit::select('id', 'name')->get(),
-        ]);
+        $divisions = Division::select('id', 'name')->get()->map(function ($item) {
+            $item->type = 'division';
+            return $item;
+        });
+
+        $departments = Department::select('id', 'name')->get()->map(function ($item) {
+            $item->type = 'department';
+            return $item;
+        });
+
+        $sections = Section::select('id', 'name')->get()->map(function ($item) {
+            $item->type = 'section';
+            return $item;
+        });
+
+        $units = Unit::select('id', 'name')->get()->map(function ($item) {
+            $item->type = 'unit';
+            return $item;
+        });
+
+        $all = $divisions
+            ->concat($departments)
+            ->concat($sections)
+            ->concat($units)
+            ->values(); // Reindex after concat
+
+        return response()->json($all);
     }
 
 
