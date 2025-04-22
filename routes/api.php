@@ -201,13 +201,7 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
     Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
     Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
-
-        // Approver  Module
-        Route::get('aop-requests', 'AopApplicationController@listOfAopRequests');
-        Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
-        Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
-        Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
-        Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
+    Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
 
     // Aop Application Module
     Route::get('aop-applications', 'AopApplicationController@index');
