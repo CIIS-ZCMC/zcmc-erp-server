@@ -26,6 +26,7 @@ use OpenApi\Attributes as OA;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use App\Models\ApplicationTimeline;
 
 #[OA\Schema(
     schema: "AopApplication",
@@ -701,14 +702,34 @@ class AopApplicationController extends Controller
     public function processAopRequest(Request $request)
     {
         $validated = Validator::make($request->all(), [
-            'aop_application_id' => 'required|integer|exists:aop_applications,id',
+            'aop_application_id' => 'required|integer',
             'status' => 'required|string|',
             'remarks' => 'nullable|string|max:500',
             'auth_pin' => 'required|integer|digits:6',
         ]);
 
-        // NOTE:
-        // Get the user who processed the application
+        $user_id = 2398;
+
+        // Route for the timeline
+        $applicationTimelineRoute = [
+            'Planning Unit', // Head of Planning Unit
+            'Division Chief', // Heads of Division offices
+            'Medical Center Chief', // Chief of OMCC
+            'Budget Officer', // Head of Budget
+        ];
+
+        switch($request->status) {
+            case 'approved':
+                $nextArea = $applicationTimelineRoute[1];
+                break;
+            case 'returned':
+                $nextArea = $applicationTimelineRoute[0];
+                break;
+            default:
+                $nextArea = $applicationTimelineRoute[0];
+        }
+
+        return $nextArea;
 
         if ($validated->fails()) {
             return response()->json([
@@ -740,7 +761,7 @@ class AopApplicationController extends Controller
 
         $aopApplicationTimeline = $aopApplication->applicationTimeline()->create([
             'aop_application_id' => $request->aop_application_id,
-            'user_id' => $request->user_id,
+            'user_id' => $user_id,
             'current_area_id' => 1,
             'next_area_id' => 2,
             'status' => $status,
