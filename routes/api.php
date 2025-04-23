@@ -194,7 +194,7 @@ Route::
 
             Route::apiResource('ppmp-applications', 'PpmpApplicationController');
             Route::apiResource('ppmp-items', 'PpmpItemController');
-            Route::apiResource('activitys', 'ActivityController');
+            Route::apiResource('activities', 'ActivityController');
 
             Route::apiResource('activity-comments', 'ActivityCommentController');
             Route::post('update-osi/{id}', 'ObjectiveSuccessIndicatorController@updateForApproverModule');
