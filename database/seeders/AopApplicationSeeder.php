@@ -100,44 +100,39 @@ class AopApplicationSeeder extends Seeder
         // Get first user as default owner and find users with specific designations
         // Find users with various designations or create dummy users if none exist
         $user = User::first() ?? User::factory()->create();
-        $divisionChief = User::where('designation_id', $divisionHead->id)->first();
-        if (!$divisionChief) {
-            $divisionChief = User::factory()->create(['designation_id' => $divisionHead->id]);
-        }
-        $mccChief = User::whereNotNull('designation_id')->inRandomOrder()->first() 
-            ?? User::factory()->create(['designation_id' => $getRandomItem($designations)->id]);
-        $planningOfficer = User::whereNotNull('designation_id')->inRandomOrder()->first() 
-            ?? User::factory()->create(['designation_id' => $getRandomItem($designations)->id]);
-        $budgetOfficer = User::whereNotNull('designation_id')->inRandomOrder()->first() 
-            ?? User::factory()->create(['designation_id' => $getRandomItem($designations)->id]);
+
+        // $divisionChief = Division::where('name', 'Hospital Operations & Patient Support Service')->first();
+        // $mccChief = Division::where('name', 'Office of Medical Center Chief')->first();
+        // $planningOfficer = Section::where('name', 'IISU')->first();
+        // $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
+
+        // Randomly select users for division chief, MCC chief, planning officer, and budget officer
+        $divisionChief = Division::inRandomOrder()->first();
+        $mccChief = Division::inRandomOrder()->first();
+        $planningOfficer = Section::inRandomOrder()->first();
+        $budgetOfficer = Section::inRandomOrder()->first();
 
         // Create 5 sample AOP Applications with corresponding PPMP Applications
         for ($i = 0; $i < 5; $i++) {
             // Get random user for each application
             $randomUser = User::inRandomOrder()->first() ?? $user;
-            // Get a random division chief using direct designation_id query instead of a relation
-            $randomDivisionChief = User::whereIn('designation_id', 
-                Designation::where('name', 'like', '%chief%')
-                    ->orWhere('name', 'like', '%director%')
-                    ->pluck('id')
-            )->inRandomOrder()->first() ?? $divisionChief;
-            
+
             $aopApplication = AopApplication::create([
-                'user_id' => $randomUser->umis_employee_profile_id,
-                'division_chief_id' => $randomDivisionChief->umis_employee_profile_id ?? $randomDivisionChief->id,
-                'mcc_chief_id' => $mccChief->umis_employee_profile_id ?? $mccChief->id,
-                'planning_officer_id' => $planningOfficer->umis_employee_profile_id ?? $planningOfficer->id,
+                'user_id' => $randomUser->id,
+                'division_chief_id' => $divisionChief->head_id,
+                'mcc_chief_id' => $mccChief->head_id,
+                'planning_officer_id' => $planningOfficer->head_id,
                 'mission' => $missionStatements[$i] ?? 'Default mission statement',
                 'status' => $statusOptions[array_rand($statusOptions)],
-                'has_discussed' => (bool)rand(0, 1),
+                'has_discussed' => (bool) rand(0, 1),
                 'remarks' => $remarkOptions[array_rand($remarkOptions)]
             ]);
 
             $ppmpApplication = PpmpApplication::create([
                 'aop_application_id' => $aopApplication->id,
-                'user_id' => $randomUser->umis_employee_profile_id ?? $randomUser->id,
-                'division_chief_id' => $randomDivisionChief->umis_employee_profile_id ?? $randomDivisionChief->id,
-                'budget_officer_id' => $budgetOfficer->umis_employee_profile_id ?? $budgetOfficer->id,
+                'user_id' => $randomUser->id,
+                'division_chief_id' => $divisionChief->head_id,
+                'budget_officer_id' => $budgetOfficer->head_id,
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => rand(10000, 1000000) / 100,
                 'status' => $statusOptions[array_rand($statusOptions)],
