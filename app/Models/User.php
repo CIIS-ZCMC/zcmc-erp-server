@@ -19,11 +19,6 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'umis_employee_profile_id',
-        'designation_id',
-        'division_id',
-        'department_id',
-        'section_id',
-        'unit_id',
         'name',
         'email',
         'is_active',

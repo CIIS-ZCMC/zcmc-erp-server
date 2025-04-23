@@ -3,6 +3,12 @@
 namespace App\Console\Commands;
 
 use App\Models\AssignedArea;
+use App\Models\Department;
+use App\Models\Designation;
+use App\Models\Division;
+use App\Models\Section;
+use App\Models\Unit;
+use App\Models\User;
 use App\Services\UMISService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -80,12 +86,20 @@ class ImportAssignedAreasFromUMIS extends Command
             // Populate assigned areas from UMIS
             foreach ($assignedAreasData as $assignedArea) {
                 try {
+                    $user = $assignedArea['employee_profile_id'] !== null ? User::where("umis_employee_profile_id", $assignedArea['employee_profile_id'])->first():null;
+                    $division = $assignedArea['division_id'] !== null? Division::where('umis_division_id', $assignedArea['division_id'])->first():null;
+                    $designation = $assignedArea['designation_id'] !== null? Designation::where('umis_designation_id', $assignedArea['designation_id'])->first():null;
+                    $department = $assignedArea['department_id'] !== null? Department::where('umis_department_id', $assignedArea['department_id'])->first():null;
+                    $section = $assignedArea['section_id'] !== null? Section::where('umis_section_id', $assignedArea['section_id'])->first():null;
+                    $unit = $assignedArea['unit_id'] !== null? Unit::where('umis_unit_id', $assignedArea['unit_id'])->first():null;
+
                     AssignedArea::create([
-                        'user_id' => $assignedArea['employee_profile_id'],
-                        'division_id' => $assignedArea['division_id'] ?? null,
-                        'department_id' => $assignedArea['department_id'] ?? null,
-                        'section_id' => $assignedArea['section_id'] ?? null,
-                        'unit_id' => $assignedArea['unit_id'] ?? null,
+                        'user_id' => $user->id,
+                        'designation_id' => $designation !== null? $designation->id: null,
+                        'division_id' => $division !== null? $division->id: null,
+                        'department_id' => $department !== null? $department->id: null,
+                        'section_id' => $section !== null? $section->id : null,
+                        'unit_id' => $unit !== null? $unit->id : null,
                     ]);
                     $successCount++;
                 } catch (\Exception $exception) {
