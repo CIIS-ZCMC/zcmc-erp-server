@@ -21,7 +21,7 @@ class ResponsiblePersonResource extends JsonResource
             'department' => new DepartmentResource($this->whenLoaded('department')),
             'section' => new SectionResource($this->whenLoaded('section')),
             'unit' => new UnitResource($this->whenLoaded('unit')),
-            // 'designation' => new DesignationResource($this->whenLoaded('designation')),
+            'designation' => new DesignationResource($this->whenLoaded('designation')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

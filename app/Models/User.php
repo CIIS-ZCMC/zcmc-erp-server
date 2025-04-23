@@ -58,4 +58,9 @@ class User extends Authenticatable
     {
         return Section::where('name', 'Budget Section')->first();
     }
+
+    public function designation()
+    {
+        return $this->belongsTo(Designation::class);
+    }
 }

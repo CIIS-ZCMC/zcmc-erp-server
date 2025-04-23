@@ -23,9 +23,6 @@ class AopApplicationRequest extends FormRequest
     {
         return [
             'user_id' => 'required|exists:users,id',
-            'division_chief_id' => 'required|exists:users,id',
-            'mcc_chief_id' => 'required|exists:users,id',
-            'planning_officer_id' => 'required|exists:users,id',
             'mission' => 'required|string',
             'status' => 'required|string',
             'has_discussed' => 'required|boolean',

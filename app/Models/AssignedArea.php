@@ -13,12 +13,13 @@ use App\Http\Resources\AssignAreaDivisionResource;
 use App\Http\Resources\AssignAreaDepartmentResource;
 use App\Http\Resources\AssignAreaSectionResource;
 use App\Http\Resources\AssignAreaUnitResource;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * AssignedArea Model
- * 
+ *
  * Represents an assignment of users to organizational areas (division, department, section, unit).
- * 
+ *
  * @property int $id
  * @property int $division_id Foreign key to divisions table
  * @property int $department_id Foreign key to departments table
@@ -28,7 +29,7 @@ use App\Http\Resources\AssignAreaUnitResource;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  */
-class AssignedArea extends Pivot
+class AssignedArea extends Model
 {
     /**
      * The table associated with the model.

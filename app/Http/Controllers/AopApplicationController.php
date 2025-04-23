@@ -7,11 +7,19 @@ use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\ShowAopApplicationResource;
 use App\Http\Resources\AopRequestResource;
 use App\Http\Resources\ApplicationTimelineResource;
+use App\Http\Resources\DesignationResource;
 use App\Models\AopApplication;
+use App\Models\AssignedArea;
+use App\Models\Department;
+use App\Models\Designation;
+use App\Models\Division;
 use App\Models\FunctionObjective;
 use App\Models\PpmpItem;
 use App\Models\PurchaseType;
+use App\Models\Section;
 use App\Models\SuccessIndicator;
+use App\Models\Unit;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
@@ -39,11 +47,12 @@ use App\Models\ApplicationTimeline;
         )
     ]
 )]
+
 class AopApplicationController extends Controller
 {
     /**
      * Get metadata for API responses
-     * 
+     *
      * @param string $method The method requesting metadata
      * @return array The metadata for the response
      */
@@ -53,12 +62,12 @@ class AopApplicationController extends Controller
             'timestamp' => now(),
             'method' => $method
         ];
-        
+
         if ($method === 'getAopApplications') {
             $metadata['statuses'] = ['pending', 'approved', 'returned'];
             $metadata['current_year'] = date('Y');
         }
-        
+
         return $metadata;
     }
 
@@ -80,6 +89,196 @@ class AopApplicationController extends Controller
         return AopApplicationResource::collection($aopApplications);
     }
 
+    public function getAopApplicationSummary($aopApplicationId)
+    {
+        $aopApplication = AopApplication::with([
+            'applicationObjectives.successIndicator',
+            'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.responsiblePeople',
+            'applicationObjectives.activities.comments',
+        ])->findOrFail($aopApplicationId);
+
+        $objectives = $aopApplication->applicationObjectives;
+        $activities = $objectives->flatMap->activities;
+
+        $totalObjectives = $objectives->count();
+        $totalActivities = $activities->count();
+        $totalResources = $activities->flatMap->resources->count();
+        $totalResponsiblePeople = $activities->flatMap->responsiblePeople;
+
+        $totalComments = $activities->flatMap->comments->count();
+        $totalSuccessIndicators = $objectives->pluck('successIndicator')->filter()->unique('id')->count();
+
+        $gadRelatedActivities = $activities->filter(fn($act) => $act->is_gad_related);
+        $notGadRelatedActivities = $activities->filter(fn($act) => !$act->is_gad_related);
+
+        $totalGadRelated = $gadRelatedActivities->count();
+        $totalNotGadRelated = $notGadRelatedActivities->count();
+
+        $totalActivityCost = $activities->sum('cost');
+
+        // Count distinct area combinations
+        $totalAreas = $totalResponsiblePeople->map(fn($p) => [
+            'unit_id' => $p->unit_id,
+            'department_id' => $p->department_id,
+            'division_id' => $p->division_id,
+            'section_id' => $p->section_id,
+        ])->unique()->count();
+
+        // Count unique designation IDs
+        $totalJobPositions = $totalResponsiblePeople->pluck('designation_id')->filter()->unique()->count();
+
+        // Count unique user IDs
+        $totalUsers = $totalResponsiblePeople->pluck('user_id')->filter()->unique()->count();
+
+        return response()->json([
+            'total_objectives'          => $totalObjectives,
+            'total_success_indicators'  => $totalSuccessIndicators,
+            'total_activities'          => $totalActivities,
+            'total_gad_related'         => $totalGadRelated,
+            'total_not_gad_related'     => $totalNotGadRelated,
+            'total_cost'                => $totalActivityCost,
+            'total_resources'           => $totalResources,
+            'total_comments'            => $totalComments,
+            'total_responsible_people'  => $totalResponsiblePeople->count(),
+            'total_areas'               => $totalAreas,
+            'total_job_positions'       => $totalJobPositions,
+            'total_users'               => $totalUsers,
+        ]);
+    }
+
+    public function showTimeline($aopApplicationId)
+    {
+        $aopApplication = AopApplication::with('applicationTimelines')
+            ->findOrFail($aopApplicationId);
+
+        return ApplicationTimelineResource::collection(
+            $aopApplication->applicationTimelines
+        );
+    }
+
+    public function update(AopApplicationRequest $request, $id)
+    {
+        DB::transaction(function () use ($request, $id) {
+            $aopApplication = AopApplication::with([
+                'applicationObjectives.activities.resources.item',
+                'ppmpApplication',
+            ])->findOrFail($id);
+
+
+            $aopApplication->update($request->only([
+                'user_id',
+                'division_chief_id',
+                'mcc_chief_id',
+                'planning_officer_id',
+                'mission',
+                'status',
+                'has_discussed',
+                'remarks',
+            ]));
+
+
+            foreach ($aopApplication->applicationObjectives as $objective) {
+                foreach ($objective->activities as $activity) {
+                    $activity->target()->delete();
+                    $activity->resources()->delete();
+                    $activity->responsiblePeople()->delete();
+                }
+                $objective->activities()->delete();
+                $objective->otherObjective()->delete();
+                $objective->otherSuccessIndicator()->delete();
+            }
+            $aopApplication->applicationObjectives()->delete();
+
+
+            foreach ($request->application_objectives as $objectiveData) {
+                $applicationObjective = $aopApplication->applicationObjectives()->create([
+                    'objective_id' => $objectiveData['objective_id'],
+                    'success_indicator_id' => $objectiveData['success_indicator_id'],
+                    'objective_code' => $objectiveData['objective_code'] ?? null,
+                ]);
+
+                if (($applicationObjective->objective->description ?? null) === 'Others' && isset($objectiveData['others_objective'])) {
+                    $applicationObjective->othersObjective()->create([
+                        'description' => $objectiveData['others_objective'],
+                    ]);
+                }
+
+                if (($applicationObjective->successIndicator->description ?? null) === 'Others' && isset($objectiveData['other_success_indicator'])) {
+                    $applicationObjective->otherSuccessIndicator()->create([
+                        'description' => $objectiveData['other_success_indicator'],
+                    ]);
+                }
+
+                foreach ($objectiveData['activities'] as $activityData) {
+                    $activity = $applicationObjective->activities()->create([
+                        'activity_code' => $activityData['activity_code'],
+                        'name' => $activityData['name'],
+                        'is_gad_related' => $activityData['is_gad_related'],
+                        'cost' => $activityData['cost'],
+                        'start_month' => $activityData['start_month'],
+                        'end_month' => $activityData['end_month'],
+                    ]);
+
+
+                    $activity->target()->create($activityData['target']);
+
+
+                    foreach ($activityData['resources'] as $resourceData) {
+                        $activity->resources()->create($resourceData);
+                    }
+
+
+                    foreach ($activityData['responsible_people'] as $personData) {
+                        $activity->responsiblePeople()->create($personData);
+                    }
+                }
+            }
+
+
+            $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
+            $ppmpTotal = 0;
+
+            foreach ($aopApplication->applicationObjectives as $objective) {
+                foreach ($objective->activities as $activity) {
+                    foreach ($activity->resources as $resource) {
+                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                            $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
+                        }
+                    }
+                }
+            }
+
+            $aopApplication->ppmpApplication()->update([
+                'ppmp_total' => $ppmpTotal,
+                'remarks' => $request->remarks ?? null,
+            ]);
+
+
+            $aopApplication->ppmpApplication->ppmpItems()->delete();
+
+            foreach ($aopApplication->applicationObjectives as $objective) {
+                foreach ($objective->activities as $activity) {
+                    foreach ($activity->resources as $resource) {
+                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                            $estimatedBudget = $resource->item->estimated_budget;
+                            $totalAmount = $resource->quantity * $estimatedBudget;
+
+                            $aopApplication->ppmpApplication->ppmpItems()->create([
+                                'item_id' => $resource->item_id,
+                                'total_quantity' => $resource->quantity,
+                                'estimated_budget' => $estimatedBudget,
+                                'total_amount' => $totalAmount,
+                                'remarks' => null,
+                            ]);
+                        }
+                    }
+                }
+            }
+        });
+
+        return response()->json(['message' => 'AOP Application updated successfully.']);
+    }
 
     public function store(AopApplicationRequest $request)
     {
@@ -90,12 +289,26 @@ class AopApplicationController extends Controller
         DB::beginTransaction();
 
         try {
+
+            $assignedArea = AssignedArea::with('division')->where('user_id', $validatedData['user_id'])->first();
+            $divisionChiefId = optional($assignedArea->division)->head_id;
+
+            $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
+            $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
+
+            $planningOfficer = Section::where('name', 'OMCC: Planning Unit')->first();
+            $planningOfficerId = optional($planningOfficer)->head_id;
+
+
+
+
+
             // Create AOP Application
             $aopApplication = AopApplication::create([
-                // 'user_id' => $validatedData['user_id'],
-                // 'division_chief_id' => $validatedData['division_chief_id'],
-                // 'mcc_chief_id' => $validatedData['mcc_chief_id'],
-                // 'planning_officer_id' => $validatedData['planning_officer_id'],
+                'user_id' => $validatedData['user_id'],
+                'division_chief_id' => $divisionChiefId,
+                'mcc_chief_id' => $mccChiefId,
+                'planning_officer_id' => $planningOfficerId,
                 'aop_application_uuid' => Str::uuid(),
                 'mission' => $validatedData['mission'],
                 'status' => $validatedData['status'],
@@ -170,7 +383,10 @@ class AopApplicationController extends Controller
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     foreach ($activity->resources as $resource) {
-                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                        if (
+                            $resource->purchase_type_id === $procurablePurchaseTypeId &&
+                            $resource->item
+                        ) {
                             $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
                         }
                     }
@@ -183,15 +399,18 @@ class AopApplicationController extends Controller
                 'budget_officer_id' => 1,
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => $ppmpTotal,
-                'status' => 'pending',
-                'remarks' => $request->remarks ?? null,
+                'status' => $validatedData['status'],
+
             ]);
 
 
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     foreach ($activity->resources as $resource) {
-                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                        if (
+                            $resource->purchase_type_id === $procurablePurchaseTypeId &&
+                            $resource->item // Check if item exists
+                        ) {
                             $estimatedBudget = $resource->item->estimated_budget;
                             $totalAmount = $resource->quantity * $estimatedBudget;
 
@@ -208,6 +427,15 @@ class AopApplicationController extends Controller
                 }
             }
 
+
+            $aopApplicationTimeline = $aopApplication->applicationTimelines()->create([
+                'aop_application_id' => $aopApplication->id,
+                'user_id' => 1,
+                'current_area_id' => 1,
+                'next_area_id' => 2,
+                'status' => $validatedData['status'],
+                'date_created' => now(),
+            ]);
             DB::commit();
 
             return response()->json(['message' => 'AOP Application created successfully'], 201);
@@ -242,7 +470,92 @@ class AopApplicationController extends Controller
             )
         ]
     )]
-   
+    public function show($id)
+    {
+        $aopApplication = AopApplication::with([
+            'applicationObjectives.objective',
+            'applicationObjectives.otherObjective',
+            'applicationObjectives.successIndicator',
+            'applicationObjectives.otherSuccessIndicator',
+            'applicationObjectives.activities.target',
+            'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.responsiblePeople.user',
+            'applicationObjectives.activities.comments',
+        ])->findOrFail($id);
+
+        return new AopApplicationResource($aopApplication);
+    }
+
+    public function showWithComments($id)
+    {
+        $aopApplication = AopApplication::with([
+            'applicationObjectives.objective',
+            'applicationObjectives.otherObjective',
+            'applicationObjectives.successIndicator',
+            'applicationObjectives.otherSuccessIndicator',
+            'applicationObjectives.activities.target',
+            'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.responsiblePeople.user',
+            'applicationObjectives.activities.comments', // Include activity comments
+        ])->findOrFail($id);
+
+        return new AopApplicationResource($aopApplication);
+    }
+
+    public function getUsersWithDesignation()
+    {
+        $users = User::with('designation')
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id'          => $user->id,
+                    'name'        => $user->name,
+                    'designation' => $user->designation?->name
+                ];
+            });
+
+        return response()->json($users);
+    }
+
+    public function getAllDesignations()
+    {
+        $designations = Designation::all();
+
+        return DesignationResource::collection($designations);
+    }
+
+    public function getAllArea()
+    {
+        $divisions = Division::select('id', 'name')->get()->map(function ($item) {
+            $item->type = 'division';
+            return $item;
+        });
+
+        $departments = Department::select('id', 'name')->get()->map(function ($item) {
+            $item->type = 'department';
+            return $item;
+        });
+
+        $sections = Section::select('id', 'name')->get()->map(function ($item) {
+            $item->type = 'section';
+            return $item;
+        });
+
+        $units = Unit::select('id', 'name')->get()->map(function ($item) {
+            $item->type = 'unit';
+            return $item;
+        });
+
+        $all = $divisions
+            ->concat($departments)
+            ->concat($sections)
+            ->concat($units)
+            ->values(); // Reindex after concat
+
+        return response()->json($all);
+    }
+
+
 
     #[OA\Put(
         path: "/api/aop-applications/{id}",
@@ -282,10 +595,7 @@ class AopApplicationController extends Controller
             )
         ]
     )]
-    public function update(Request $request, AopApplication $aopApplication)
-    {
-        //
-    }
+
 
     #[OA\Delete(
         path: "/api/aop-applications/{id}",
@@ -391,7 +701,6 @@ class AopApplicationController extends Controller
 
     public function processAopRequest(Request $request)
     {
-        
         $validated = Validator::make($request->all(), [
             'aop_application_id' => 'required|integer',
             'status' => 'required|string|',
@@ -444,15 +753,11 @@ class AopApplicationController extends Controller
         /*
         * Later, add in the logic of determining what's the next office base on the status.
         */
-        // Set dates based on status
-        if ($request->status === 'approved') {
-            $dateApproved = now();
-        } elseif ($request->status === 'returned') {
-            $dateReturned = now();
-        }
-        
-        // Properly store the status string
-        $status = $request->status;
+        $status = match ($request->status) {
+            'approved' => $dateApproved = now(),
+            'returned' => $dateReturned = now(),
+            default => null,
+        };
 
         $aopApplicationTimeline = $aopApplication->applicationTimeline()->create([
             'aop_application_id' => $request->aop_application_id,
