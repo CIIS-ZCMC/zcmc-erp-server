@@ -36,6 +36,7 @@ class PpmpItemRequest extends FormRequest
             'ppmp_item.*.total_amount' => 'nullable|numeric',
             'ppmp_item.*.remarks' => 'nullable|string',
             'ppmp_item.*.comment' => 'nullable|string',
+            'is_draft' => 'required|boolean',
         ];
     }
 }

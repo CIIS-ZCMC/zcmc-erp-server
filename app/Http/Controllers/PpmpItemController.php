@@ -205,6 +205,7 @@ class PpmpItemController extends Controller
                 // Associate PPMP item with the activity (pivot)
                 $activity->ppmpItems()->attach($ppmpItem->id, [
                     'remarks' => $item['remarks'] ?? null,
+                    'is_draft' => $request->is_draft ?? 0,
                 ]);
 
                 // Create resource recordp
