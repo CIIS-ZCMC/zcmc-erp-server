@@ -70,4 +70,11 @@ class Activity extends Model
     {
         return $this->hasMany(ActivityComment::class);
     }
+
+    public function ppmpItems()
+    {
+        return $this->belongsToMany(PpmpItem::class, 'activity_ppmp_item')
+            ->withPivot('remarks', 'is_draft')
+            ->withTimestamps();
+    }
 }

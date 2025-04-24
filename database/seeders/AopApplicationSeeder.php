@@ -391,24 +391,6 @@ class AopApplicationSeeder extends Seeder
             $expenseClass = $expenseClasses[array_rand($expenseClasses)];
             $objectCategories = ['Equipment', 'Supplies', 'Services', 'Infrastructure'];
 
-
-            $procurement = ProcurementModes::inRandomOrder()->first();
-            $item_quantity = random_int(5, 20);
-
-            foreach ($ppmpApplications as $item) {
-                // Create resource with correct fields
-                $ppmp_item = PpmpItem::create([
-                    'ppmp_application_id' => $item->id,
-                    'item_id' => $itemId,
-                    'procurement_mode_id' => $procurement->id,
-                    'item_request_id' => null,
-                    'total_quantity' => $item_quantity,
-                    'estimated_budget' => rand(10000, 100000),
-                    'total_amount' => 10 * $item_quantity,
-                    'remarks' => null
-                ]);
-            }
-
             // Create resource with correct fields
             Resource::create([
                 'activity_id' => $activity->id,
