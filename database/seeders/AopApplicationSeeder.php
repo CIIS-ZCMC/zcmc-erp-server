@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\AssignedArea;
 use App\Models\PpmpApplication;
 use App\Models\PpmpItem;
+use App\Models\ProcurementModes;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -101,16 +102,11 @@ class AopApplicationSeeder extends Seeder
         // Find users with various designations or create dummy users if none exist
         $user = User::first() ?? User::factory()->create();
 
-        // $divisionChief = Division::where('name', 'Hospital Operations & Patient Support Service')->first();
-        // $mccChief = Division::where('name', 'Office of Medical Center Chief')->first();
-        // $planningOfficer = Section::where('name', 'IISU')->first();
-        // $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
+        $divisionChief = Division::where('name', 'Hospital Operations & Patient Support Service')->first();
+        $mccChief = Division::where('name', 'Office of Medical Center Chief')->first();
+        $planningOfficer = Section::where('name', 'IISU')->first();
+        $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
 
-        // Randomly select users for division chief, MCC chief, planning officer, and budget officer
-        $divisionChief = Division::inRandomOrder()->first();
-        $mccChief = Division::inRandomOrder()->first();
-        $planningOfficer = Section::inRandomOrder()->first();
-        $budgetOfficer = Section::inRandomOrder()->first();
 
         // Create 5 sample AOP Applications with corresponding PPMP Applications
         for ($i = 0; $i < 5; $i++) {
@@ -121,7 +117,7 @@ class AopApplicationSeeder extends Seeder
                 'user_id' => $randomUser->id,
                 'division_chief_id' => $divisionChief->head_id,
                 'mcc_chief_id' => $mccChief->head_id,
-                'planning_officer_id' => $planningOfficer->head_id,
+                'planning_officer_id' => $planningOfficer->head_id ?? 494,
                 'mission' => $missionStatements[$i] ?? 'Default mission statement',
                 'status' => $statusOptions[array_rand($statusOptions)],
                 'has_discussed' => (bool) rand(0, 1),
@@ -273,7 +269,7 @@ class AopApplicationSeeder extends Seeder
                     }
 
                     // Create activities for this objective
-                    $this->createActivities($applicationObjective, $user);
+                    $this->createActivities($applicationObjective, $user, $ppmpApplications);
                 }
             }
         }
@@ -282,7 +278,7 @@ class AopApplicationSeeder extends Seeder
     /**
      * Create activities for an application objective
      */
-    private function createActivities($applicationObjective, $user)
+    private function createActivities($applicationObjective, $user, $ppmpApplications)
     {
         // Get all collections for random assignments
         $divisions = Division::all();
@@ -394,6 +390,24 @@ class AopApplicationSeeder extends Seeder
             // Set expense class and object category
             $expenseClass = $expenseClasses[array_rand($expenseClasses)];
             $objectCategories = ['Equipment', 'Supplies', 'Services', 'Infrastructure'];
+
+
+            $procurement = ProcurementModes::inRandomOrder()->first();
+            $item_quantity = random_int(5, 20);
+
+            foreach ($ppmpApplications as $item) {
+                // Create resource with correct fields
+                $ppmp_item = PpmpItem::create([
+                    'ppmp_application_id' => $item->id,
+                    'item_id' => $itemId,
+                    'procurement_mode_id' => $procurement->id,
+                    'item_request_id' => null,
+                    'total_quantity' => $item_quantity,
+                    'estimated_budget' => rand(10000, 100000),
+                    'total_amount' => 10 * $item_quantity,
+                    'remarks' => null
+                ]);
+            }
 
             // Create resource with correct fields
             Resource::create([

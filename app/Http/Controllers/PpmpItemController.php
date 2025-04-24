@@ -205,7 +205,7 @@ class PpmpItemController extends Controller
                     'remarks' => $item['remarks'] ?? null,
                 ]);
 
-                // Create resource record
+                // Create resource recordp
                 $resource = new Resource();
                 $resource->activity_id = $activity->id;
                 $resource->item_id = $item['item_id'];

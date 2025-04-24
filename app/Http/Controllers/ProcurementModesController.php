@@ -70,7 +70,7 @@ class ProcurementModesController extends Controller
     )]
     public function index(Request $request)
     {
-        $procurementModes = ProcurementModes::where('deleted_at', NULL)->all();
+        $procurementModes = ProcurementModes::where('deleted_at', NULL)->get();
 
         return response()->json([
             "data" => ProcurementModeResource::collection($procurementModes),
@@ -110,7 +110,7 @@ class ProcurementModesController extends Controller
     {
         $name = $request->input("name");
 
-        if(!$name){
+        if (!$name) {
             return response()->json([
                 "message" => "Field name is required."
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
@@ -120,7 +120,7 @@ class ProcurementModesController extends Controller
 
         $has_record = ProcurementModes::where('name', $name)->get();
 
-        if(count($has_record) > 0){
+        if (count($has_record) > 0) {
             return response()->json(['message' => "Procurement mode already exist."], Response::HTTP_BAD_REQUEST);
         }
 
