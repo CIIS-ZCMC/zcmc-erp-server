@@ -37,7 +37,7 @@ class PpmpItem extends Model
 
     public function procurementMode()
     {
-        return $this->belongsTo(ProcurementModes::class, 'procurement_modes_id');
+        return $this->belongsTo(ProcurementModes::class, 'procurement_mode_id');
     }
 
     public function itemRequest()

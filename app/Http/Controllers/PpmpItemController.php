@@ -124,7 +124,9 @@ class PpmpItemController extends Controller
     public function index()
     {
         //paginate display 10 data per page
-        $ppmp_item = PpmpItem::whereNull('deleted_at')->paginate(10);
+        $ppmp_item = PpmpItem::with(['ppmpApplication', 'item', 'procurementMode'])
+            ->whereNull('deleted_at')
+            ->paginate(10);
 
         if ($ppmp_item->isEmpty()) {
             return response()->json([

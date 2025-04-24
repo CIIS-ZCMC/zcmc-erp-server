@@ -16,9 +16,9 @@ class PpmpItemResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'ppmp_application' => $this->ppmp_application,
-            'item' => $this->item,
-            'procurement_modes' => $this->procurement_modes,
+            'ppmp_application_id' => $this->ppmp_application_id,
+            'item' => new ItemResource($this->item),
+            'procurement_mode' => new ProcurementModeResource($this->procurementMode),
             'item_request' => $this->item_request,
             'total_quantity' => $this->total_quantity,
             'estimated_budget' => $this->estimated_budget,
