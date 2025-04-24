@@ -18,6 +18,7 @@ class DesignationResource extends JsonResource
             'id' => $this->id,
             'umis_designation_id' => $this->umis_designation_id,
             'name' => $this->name,
+            'label' => $this->name,
             'code' => $this->code,
             'probation' => $this->probation,
         ];

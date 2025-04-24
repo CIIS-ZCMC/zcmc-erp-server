@@ -510,6 +510,7 @@ class AopApplicationController extends Controller
                 return [
                     'id'          => $user->id,
                     'name'        => $user->name,
+                    'label'       =>  $user->name,
                     'designation' => $user->designation?->name
                 ];
             });
@@ -528,21 +529,25 @@ class AopApplicationController extends Controller
     {
         $divisions = Division::select('id', 'name')->get()->map(function ($item) {
             $item->type = 'division';
+            $item->label = $item->name;
             return $item;
         });
 
         $departments = Department::select('id', 'name')->get()->map(function ($item) {
             $item->type = 'department';
+            $item->label = $item->name;
             return $item;
         });
 
         $sections = Section::select('id', 'name')->get()->map(function ($item) {
             $item->type = 'section';
+            $item->label = $item->name;
             return $item;
         });
 
         $units = Unit::select('id', 'name')->get()->map(function ($item) {
             $item->type = 'unit';
+            $item->label = $item->name;
             return $item;
         });
 
@@ -550,7 +555,7 @@ class AopApplicationController extends Controller
             ->concat($departments)
             ->concat($sections)
             ->concat($units)
-            ->values(); // Reindex after concat
+            ->values();
 
         return response()->json($all);
     }
@@ -718,7 +723,7 @@ class AopApplicationController extends Controller
             'Budget Officer', // Head of Budget
         ];
 
-        switch($request->status) {
+        switch ($request->status) {
             case 'approved':
                 $nextArea = $applicationTimelineRoute[1];
                 break;
