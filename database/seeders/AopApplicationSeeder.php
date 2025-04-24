@@ -269,7 +269,7 @@ class AopApplicationSeeder extends Seeder
                     }
 
                     // Create activities for this objective
-                    $this->createActivities($applicationObjective, $user, $ppmpApplications);
+                    $this->createActivities($applicationObjective, $user);
                 }
             }
         }
@@ -278,7 +278,7 @@ class AopApplicationSeeder extends Seeder
     /**
      * Create activities for an application objective
      */
-    private function createActivities($applicationObjective, $user, $ppmpApplications)
+    private function createActivities($applicationObjective, $user)
     {
         // Get all collections for random assignments
         $divisions = Division::all();

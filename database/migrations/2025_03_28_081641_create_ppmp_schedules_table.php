@@ -12,8 +12,8 @@ return new class extends Migration {
     {
         Schema::create('ppmp_schedules', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('item_request_id');
-            $table->foreign('item_request_id')->references('id')->on('item_requests');
+            $table->unsignedBigInteger('ppmp_item_id');
+            $table->foreign('ppmp_item_id')->references('id')->on('ppmp_items');
             $table->string('month');
             $table->string('year');
             $table->float('quantity')->default(0);

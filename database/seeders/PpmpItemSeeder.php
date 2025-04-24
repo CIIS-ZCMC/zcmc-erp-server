@@ -6,6 +6,7 @@ use App\Models\Activity;
 use App\Models\Item;
 use App\Models\PpmpApplication;
 use App\Models\PpmpItem;
+use App\Models\PpmpSchedule;
 use App\Models\ProcurementModes;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -42,6 +43,16 @@ class PpmpItemSeeder extends Seeder
                 'remarks' => null, // You were trying to use $item['remarks'], but $item doesn't exist
                 'is_draft' => rand(0, 1),
             ]);
+
+            // Generate 5 schedules per item
+            for ($i = 0; $i < 5; $i++) {
+                PpmpSchedule::create([
+                    'ppmp_item_id' => $ppmpItem->id,
+                    'month' => rand(1, 12),
+                    'year' => rand(2025, 2026),
+                    'quantity' => rand(1, $item_quantity),
+                ]);
+            }
         }
     }
 }

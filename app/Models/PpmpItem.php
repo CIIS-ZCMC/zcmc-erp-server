@@ -55,6 +55,11 @@ class PpmpItem extends Model
         return $this->hasMany(PpmpItemComment::class, 'ppmp_item_id');
     }
 
+    public function ppmpSchedule()
+    {
+        return $this->hasMany(PpmpSchedule::class);
+    }
+
     public function logs()
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
