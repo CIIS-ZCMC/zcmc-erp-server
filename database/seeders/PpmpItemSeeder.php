@@ -3,13 +3,18 @@
 namespace Database\Seeders;
 
 use App\Models\Activity;
+use App\Models\AopApplication;
+use App\Models\Division;
 use App\Models\Item;
 use App\Models\PpmpApplication;
 use App\Models\PpmpItem;
 use App\Models\PpmpSchedule;
 use App\Models\ProcurementModes;
+use App\Models\Section;
+use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Str;
 
 class PpmpItemSeeder extends Seeder
 {
@@ -18,17 +23,31 @@ class PpmpItemSeeder extends Seeder
      */
     public function run(): void
     {
-        $ppmp_applications = PpmpApplication::all();
-        $activities = Activity::inRandomOrder()->first(); // Get one activity
+        $AopApplication = AopApplication::inRandomOrder()->first();
+        $randomUser = User::inRandomOrder()->first();
+        $DivisionChief = Division::where('name', 'Hospital Operations & Patient Support Service')->first();
+        $BudgetOfficer = Section::where('name', 'FS: Budget Section')->first();
 
-        foreach ($ppmp_applications as $application) {
-            $randomItem = Item::inRandomOrder()->first(); // ✅ Move inside loop for randomness
+        $ppmp_application = PpmpApplication::create([
+            'aop_application_id' => $AopApplication->id,
+            'user_id' => $randomUser->id,
+            'division_chief_id' => $DivisionChief->head_id,
+            'budget_officer_id' => $BudgetOfficer->head_id,
+            'ppmp_application_uuid' => Str::uuid(),
+            'ppmp_total' => rand(10000, 1000000) / 100,
+            'status' => 'submitted',
+            'remarks' => 'Approved by all stakeholders'
+        ]);
+
+        $activity = Activity::inRandomOrder()->first();
+
+        for ($i = 0; $i < 5; $i++) {
+            $randomItem = Item::inRandomOrder()->first();
             $procurement = ProcurementModes::inRandomOrder()->first();
-            $item_quantity = random_int(5, 20);
+            $item_quantity = rand(5, 20);
 
-            // Create new PPMP item
             $ppmpItem = PpmpItem::create([
-                'ppmp_application_id' => $application->id,
+                'ppmp_application_id' => $ppmp_application->id,
                 'item_id' => $randomItem->id,
                 'procurement_mode_id' => $procurement->id,
                 'item_request_id' => null,
@@ -38,14 +57,12 @@ class PpmpItemSeeder extends Seeder
                 'remarks' => null
             ]);
 
-            // Attach item to activity via pivot table
-            $activities->ppmpItems()->attach($ppmpItem->id, [
-                'remarks' => null, // You were trying to use $item['remarks'], but $item doesn't exist
+            $activity->ppmpItems()->attach($ppmpItem->id, [
+                'remarks' => null,
                 'is_draft' => rand(0, 1),
             ]);
 
-            // Generate 5 schedules per item
-            for ($i = 0; $i < 5; $i++) {
+            for ($j = 0; $j < 12; $j++) {
                 PpmpSchedule::create([
                     'ppmp_item_id' => $ppmpItem->id,
                     'month' => rand(1, 12),
