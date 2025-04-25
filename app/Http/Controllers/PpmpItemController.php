@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PpmpItemRequest;
+use App\Http\Resources\PpmpApplicationResource;
 use App\Http\Resources\PpmpItemResource;
 use App\Models\Activity;
 use App\Models\AopApplication;
+use App\Models\PpmpApplication;
 use App\Models\PpmpItem;
 use App\Models\Resource;
 use Illuminate\Http\Request;
@@ -79,47 +81,53 @@ class PpmpItemController extends Controller
         $perPage = $request->input('per_page', 10);
         $page = $request->input('page', 1);
 
-        //paginate display 10 data per page
-        $ppmp_item = PpmpItem::with([
-            'ppmpApplication',
-            'item',
-            'procurementMode',
-            'activities',
-            'comments',
-            'ppmpSchedule'
+        $ppmp_application = PpmpApplication::with([
+            'user',
+            'divisionChief',
+            'budgetOfficer',
+            'aopApplication',
+            'ppmpItems' => function ($query) {
+                $query->with([
+                    'ppmpApplication',
+                    'item',
+                    'procurementMode',
+                    'activities',
+                    'comments',
+                    'ppmpSchedule'
+                ]);
+            }
         ])->whereNull('deleted_at')
             ->paginate($perPage, ['*'], 'page', $page);
 
-
-        if ($ppmp_item->isEmpty()) {
+        if ($ppmp_application->isEmpty()) {
             return response()->json([
                 'message' => "No record found.",
                 'meta' => [
-                    'current_page' => $ppmp_item->currentPage(),
-                    'last_page' => $ppmp_item->lastPage(),
-                    'per_page' => $ppmp_item->perPage(),
-                    'total' => $ppmp_item->total(),
-                    'from' => $ppmp_item->firstItem(),
-                    'to' => $ppmp_item->lastItem()
+                    'current_page' => $ppmp_application->currentPage(),
+                    'last_page' => $ppmp_application->lastPage(),
+                    'per_page' => $ppmp_application->perPage(),
+                    'total' => $ppmp_application->total(),
+                    'from' => $ppmp_application->firstItem(),
+                    'to' => $ppmp_application->lastItem()
                 ],
             ], Response::HTTP_NOT_FOUND);
         }
 
         return response()->json([
-            'data' => PpmpItemResource::collection($ppmp_item),
+            'data' => PpmpApplicationResource::collection($ppmp_application),
             'meta' => [
-                'current_page' => $ppmp_item->currentPage(),
-                'last_page' => $ppmp_item->lastPage(),
-                'per_page' => $ppmp_item->perPage(),
-                'total' => $ppmp_item->total(),
-                'from' => $ppmp_item->firstItem(),
-                'to' => $ppmp_item->lastItem()
+                'current_page' => $ppmp_application->currentPage(),
+                'last_page' => $ppmp_application->lastPage(),
+                'per_page' => $ppmp_application->perPage(),
+                'total' => $ppmp_application->total(),
+                'from' => $ppmp_application->firstItem(),
+                'to' => $ppmp_application->lastItem()
             ],
             'links' => [
-                'first' => $ppmp_item->url(1),
-                'last' => $ppmp_item->url($ppmp_item->lastPage()),
-                'prev' => $ppmp_item->previousPageUrl(),
-                'next' => $ppmp_item->nextPageUrl()
+                'first' => $ppmp_application->url(1),
+                'last' => $ppmp_application->url($ppmp_application->lastPage()),
+                'prev' => $ppmp_application->previousPageUrl(),
+                'next' => $ppmp_application->nextPageUrl()
             ],
             'message' => "PPMP Items retrieved successfully.",
         ], Response::HTTP_OK);
