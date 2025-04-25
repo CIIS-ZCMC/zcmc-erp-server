@@ -96,7 +96,7 @@ class AopApplicationSeeder extends Seeder
         ];
 
         $aopApplications = [];
-        $ppmpApplications = [];
+        // $ppmpApplications = [];
 
         // Get first user as default owner and find users with specific designations
         // Find users with various designations or create dummy users if none exist
@@ -124,19 +124,19 @@ class AopApplicationSeeder extends Seeder
                 'remarks' => $remarkOptions[array_rand($remarkOptions)]
             ]);
 
-            $ppmpApplication = PpmpApplication::create([
-                'aop_application_id' => $aopApplication->id,
-                'user_id' => $randomUser->id,
-                'division_chief_id' => $divisionChief->head_id,
-                'budget_officer_id' => $budgetOfficer->head_id,
-                'ppmp_application_uuid' => Str::uuid(),
-                'ppmp_total' => rand(10000, 1000000) / 100,
-                'status' => $statusOptions[array_rand($statusOptions)],
-                'remarks' => $remarkOptions[array_rand($remarkOptions)]
-            ]);
+            // $ppmpApplication = PpmpApplication::create([
+            //     'aop_application_id' => $aopApplication->id,
+            //     'user_id' => $randomUser->id,
+            //     'division_chief_id' => $divisionChief->head_id,
+            //     'budget_officer_id' => $budgetOfficer->head_id,
+            //     'ppmp_application_uuid' => Str::uuid(),
+            //     'ppmp_total' => rand(10000, 1000000) / 100,
+            //     'status' => $statusOptions[array_rand($statusOptions)],
+            //     'remarks' => $remarkOptions[array_rand($remarkOptions)]
+            // ]);
 
             $aopApplications[] = $aopApplication;
-            $ppmpApplications[] = $ppmpApplication;
+            // $ppmpApplications[] = $ppmpApplication;
         }
 
         // Get or create Type of Functions (strategic, core, support)
