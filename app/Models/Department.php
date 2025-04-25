@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\TransactionLog;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use App\Models\Division;
 
 /**
  * Department Model
@@ -38,7 +42,7 @@ class Department extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function head()
+    public function head(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
@@ -48,14 +52,19 @@ class Department extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function divsion()
+    public function division(): BelongsTo
     {
         return $this->belongsTo(Division::class);
     }
 
-    public function sections()
+    public function sections(): HasMany
     {
         return $this->hasMany(Section::class);
+    }
+
+    public function units(): HasMany
+    {
+        return $this->hasMany(Unit::class);
     }
 
     /**
@@ -63,19 +72,9 @@ class Department extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function oic()
+    public function oic(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    /**
-     * Get the division this department belongs to.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
-     */
-    public function division()
-    {
-        return $this->belongsTo(Division::class);
     }
 
     /**
@@ -83,7 +82,7 @@ class Department extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\MorphMany
      */
-    public function logs()
+    public function logs(): MorphMany
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
     }

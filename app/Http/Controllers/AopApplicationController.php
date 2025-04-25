@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use App\Models\ApplicationTimeline;
+use App\Services\ApprovalWorkflowService;
 
 #[OA\Schema(
     schema: "AopApplication",
@@ -445,31 +446,6 @@ class AopApplicationController extends Controller
         }
     }
 
-    #[OA\Get(
-        path: "/api/aop-applications/{id}",
-        summary: "Show specific activity comment",
-        tags: ["Activity Comments"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: "Successful operation",
-                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            )
-        ]
-    )]
     public function show($id)
     {
         $aopApplication = AopApplication::with([
@@ -662,14 +638,14 @@ class AopApplicationController extends Controller
             )
         ]
     )]
-    public function listOfAopRequests(Request $request)
+    public function aopRequests(Request $request)
     {
         $page = $request->query('page') > 0 ? $request->query('page') : 1;
         $per_page = $request->query('per_page') ?? 15;
 
         $query = AopApplication::with([
             'user',
-            'applicationTimeline',
+            'applicationTimelines',
         ]);
 
         if ($request->has('status')) {
@@ -713,28 +689,7 @@ class AopApplicationController extends Controller
             'auth_pin' => 'required|integer|digits:6',
         ]);
 
-        $user_id = 2398;
-
-        // Route for the timeline
-        $applicationTimelineRoute = [
-            'Planning Unit', // Head of Planning Unit
-            'Division Chief', // Heads of Division offices
-            'Medical Center Chief', // Chief of OMCC
-            'Budget Officer', // Head of Budget
-        ];
-
-        switch ($request->status) {
-            case 'approved':
-                $nextArea = $applicationTimelineRoute[1];
-                break;
-            case 'returned':
-                $nextArea = $applicationTimelineRoute[0];
-                break;
-            default:
-                $nextArea = $applicationTimelineRoute[0];
-        }
-
-        return $nextArea;
+        $user_id = 2398; // This should be the authenticated user's ID
 
         if ($validated->fails()) {
             return response()->json([
@@ -751,39 +706,55 @@ class AopApplicationController extends Controller
             ->where('id', $request->aop_application_id)
             ->whereNull('deleted_at')
             ->first();
-
-        $dateApproved = null;
-        $dateReturned = null;
-
-        /*
-        * Later, add in the logic of determining what's the next office base on the status.
-        */
-        $status = match ($request->status) {
-            'approved' => $dateApproved = now(),
-            'returned' => $dateReturned = now(),
-            default => null,
-        };
-
-        $aopApplicationTimeline = $aopApplication->applicationTimeline()->create([
-            'aop_application_id' => $request->aop_application_id,
-            'user_id' => $user_id,
-            'current_area_id' => 1,
-            'next_area_id' => 2,
-            'status' => $status,
-            'remarks' => $request->remarks,
-            'date_created' => now(),
-            'date_approved' => $dateApproved,
-            'date_returned' => $dateReturned,
-        ]);
+            
+        if (!$aopApplication) {
+            return response()->json([
+                'message' => 'AOP Application not found',
+            ], Response::HTTP_NOT_FOUND);
+        }
+        
+        // Get the current user's assigned area
+        $currentUserArea = AssignedArea::where('user_id', $user_id)->first();
+        
+        if (!$currentUserArea) {
+            return response()->json([
+                'message' => 'User does not have an assigned area',
+            ], Response::HTTP_BAD_REQUEST);
+        }
+        
+        // Use ApprovalWorkflowService to process the request
+        $workflowService = new ApprovalWorkflowService();
+        
+        // Create a timeline entry using the service
+        $aopApplicationTimeline = $workflowService->createApplicationTimeline(
+            $aopApplication->id,
+            $user_id,
+            $currentUserArea->id,
+            $request->status,
+            $request->remarks
+        );
 
         if (!$aopApplicationTimeline) {
             return response()->json([
                 'message' => 'AOP application timeline not created',
             ], Response::HTTP_BAD_REQUEST);
         }
+        
+        // Update the AOP application status based on the workflow stage
+        $statusMap = [
+            'approved' => 'approved',
+            'returned' => 'returned',
+            // Add other status mappings as needed
+        ];
+        
+        if (isset($statusMap[$request->status])) {
+            $aopApplication->status = $statusMap[$request->status];
+            $aopApplication->save();
+        }
 
         return response()->json([
             'message' => 'AOP application processed successfully',
+            'timeline' => $aopApplicationTimeline,
         ], Response::HTTP_OK);
     }
 }

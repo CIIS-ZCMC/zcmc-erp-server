@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\TransactionLog;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use App\Models\Division;
+use App\Models\Department;
 
 /**
  * Section Model
@@ -44,12 +48,12 @@ class Section extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function division()
+    public function division(): BelongsTo
     {
         return $this->belongsTo(Division::class);
     }
 
-    public function department()
+    public function department(): ?BelongsTo
     {
         return $this->belongsTo(Department::class);
     }

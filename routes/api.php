@@ -200,7 +200,7 @@ Route::
             Route::post('update-osi/{id}', 'ObjectiveSuccessIndicatorController@updateForApproverModule');
 
             // Approver  Module
-            Route::get('aop-requests', 'AopApplicationController@listOfAopRequests');
+            Route::get('aop-requests', 'AopApplicationController@aopRequests');
             Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
             Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
             Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
