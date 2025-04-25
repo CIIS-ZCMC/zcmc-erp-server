@@ -43,53 +43,6 @@ class PpmpItemController extends Controller
         $this->is_development = env("APP_DEBUG", true);
     }
 
-    protected function getMetadata($method): array
-    {
-        if ($method === 'get') {
-            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
-            $metadata['modes'] = ['selection', 'pagination'];
-
-            if ($this->is_development) {
-                $metadata['urls'] = [
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?ppmp_item_id=[primary-key]",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                ];
-            }
-
-            return $metadata;
-        }
-
-        if ($method === 'put') {
-            $metadata = ["methods" => "[PUT]"];
-
-            if ($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2"
-                ];
-                $metadata['fields'] = ["type"];
-            }
-
-            return $metadata;
-        }
-
-        $metadata = ['methods' => ["GET, PUT, DELETE"]];
-
-        if ($this->is_development) {
-            $metadata["urls"] = [
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-            ];
-
-            $metadata["fields"] = ["type"];
-        }
-
-        return $metadata;
-    }
-
     #[OA\Get(
         path: "/api/activity-comments",
         summary: "List all activity comments",
@@ -121,8 +74,11 @@ class PpmpItemController extends Controller
             )
         ]
     )]
-    public function index()
+    public function index(Request $request)
     {
+        $perPage = $request->input('per_page', 10);
+        $page = $request->input('page', 1);
+
         //paginate display 10 data per page
         $ppmp_item = PpmpItem::with([
             'ppmpApplication',
@@ -131,12 +87,21 @@ class PpmpItemController extends Controller
             'activities',
             'comments',
             'ppmpSchedule'
-        ])->whereNull('deleted_at')->paginate(10);
+        ])->whereNull('deleted_at')
+            ->paginate($perPage, ['*'], 'page', $page);
+
 
         if ($ppmp_item->isEmpty()) {
             return response()->json([
                 'message' => "No record found.",
-                "metadata" => $this->getMetadata('get')
+                'meta' => [
+                    'current_page' => $ppmp_item->currentPage(),
+                    'last_page' => $ppmp_item->lastPage(),
+                    'per_page' => $ppmp_item->perPage(),
+                    'total' => $ppmp_item->total(),
+                    'from' => $ppmp_item->firstItem(),
+                    'to' => $ppmp_item->lastItem()
+                ],
             ], Response::HTTP_NOT_FOUND);
         }
 
@@ -146,8 +111,17 @@ class PpmpItemController extends Controller
                 'current_page' => $ppmp_item->currentPage(),
                 'last_page' => $ppmp_item->lastPage(),
                 'per_page' => $ppmp_item->perPage(),
-                'total' => $ppmp_item->total()
+                'total' => $ppmp_item->total(),
+                'from' => $ppmp_item->firstItem(),
+                'to' => $ppmp_item->lastItem()
             ],
+            'links' => [
+                'first' => $ppmp_item->url(1),
+                'last' => $ppmp_item->url($ppmp_item->lastPage()),
+                'prev' => $ppmp_item->previousPageUrl(),
+                'next' => $ppmp_item->nextPageUrl()
+            ],
+            'message' => "PPMP Items retrieved successfully.",
         ], Response::HTTP_OK);
     }
 
