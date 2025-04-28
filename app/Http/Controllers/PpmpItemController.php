@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\PpmpItemRequest;
 use App\Http\Resources\PpmpApplicationResource;
 use App\Http\Resources\PpmpItemResource;
+use App\Http\Resources\sampleresource;
 use App\Models\Activity;
 use App\Models\AopApplication;
 use App\Models\PpmpApplication;
@@ -86,50 +87,40 @@ class PpmpItemController extends Controller
             'divisionChief',
             'budgetOfficer',
             'aopApplication',
-            'ppmpItems' => function ($query) {
-                $query->with([
-                    'ppmpApplication',
-                    'item',
-                    'procurementMode',
-                    'activities',
-                    'comments',
-                    'ppmpSchedule'
-                ]);
-            }
-        ])->whereNull('deleted_at')
-            ->paginate($perPage, ['*'], 'page', $page);
+        ])
+            ->whereNull('deleted_at')
+            ->first();
 
-        if ($ppmp_application->isEmpty()) {
+        if (!$ppmp_application) {
             return response()->json([
                 'message' => "No record found.",
-                'meta' => [
-                    'current_page' => $ppmp_application->currentPage(),
-                    'last_page' => $ppmp_application->lastPage(),
-                    'per_page' => $ppmp_application->perPage(),
-                    'total' => $ppmp_application->total(),
-                    'from' => $ppmp_application->firstItem(),
-                    'to' => $ppmp_application->lastItem()
-                ],
             ], Response::HTTP_NOT_FOUND);
         }
 
+        // Paginate ppmp_items inside the application
+        $ppmp_application->ppmp_items_paginated = $ppmp_application->ppmpItems()
+            ->whereNull('ppmp_items.deleted_at')
+            ->with([
+                'item' => function ($query) {
+                    $query->with([
+                        'itemUnit',
+                        'itemCategory',
+                        'itemClassification',
+                        'itemSpecifications',
+                    ]);
+                },
+                'procurementMode',
+                'itemRequest',
+                'activities',
+                'comments',
+                'ppmpSchedule',
+            ])
+            ->paginate($perPage, ['*'], 'page', $page);
+
+
         return response()->json([
-            'data' => PpmpApplicationResource::collection($ppmp_application),
-            'meta' => [
-                'current_page' => $ppmp_application->currentPage(),
-                'last_page' => $ppmp_application->lastPage(),
-                'per_page' => $ppmp_application->perPage(),
-                'total' => $ppmp_application->total(),
-                'from' => $ppmp_application->firstItem(),
-                'to' => $ppmp_application->lastItem()
-            ],
-            'links' => [
-                'first' => $ppmp_application->url(1),
-                'last' => $ppmp_application->url($ppmp_application->lastPage()),
-                'prev' => $ppmp_application->previousPageUrl(),
-                'next' => $ppmp_application->nextPageUrl()
-            ],
-            'message' => "PPMP Items retrieved successfully.",
+            'data' => new PpmpApplicationResource($ppmp_application),
+            'message' => 'PPMP Application retrieved successfully.',
         ], Response::HTTP_OK);
     }
 

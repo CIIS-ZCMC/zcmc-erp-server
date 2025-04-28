@@ -83,11 +83,25 @@ class PpmpApplicationController extends Controller
             'user',
             'divisionChief',
             'budgetOfficer',
-            'ppmpItem' => function ($query) {
-                $query->whereNull('ppmp_items.deleted_at');
+            'ppmpItem' => function ($query, $perPage, $page) {
+                $query->whereNull('ppmp_items.deleted_at')
+                    ->with([
+                        'item' => function ($query) {
+                            $query->with([
+                                'itemCategory',
+                                'itemClassification',
+                                'itemSpecifications',
+                            ]);
+                        },
+                        'procurementMode',
+                        'itemRequest',
+                        'activities',
+                        'comments',
+                        'ppmpSchedule'
+                    ])->paginate($perPage, ['*'], 'page', $page);
+                ;
             }
-        ])->whereNull('deleted_at')
-            ->paginate($perPage, ['*'], 'page', $page);
+        ])->whereNull('deleted_at');
 
         if (!$ppmp_application) {
             return response()->json([
