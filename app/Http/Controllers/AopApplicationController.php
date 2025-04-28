@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
-use App\Http\Resources\ShowAopApplicationResource;
 use App\Http\Resources\AopRequestResource;
 use App\Http\Resources\ApplicationTimelineResource;
 use App\Http\Resources\DesignationResource;
@@ -13,7 +12,6 @@ use App\Models\AssignedArea;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Division;
-use App\Models\FunctionObjective;
 use App\Models\PpmpItem;
 use App\Models\PurchaseType;
 use App\Models\Section;
@@ -26,8 +24,9 @@ use OpenApi\Attributes as OA;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
-use App\Models\ApplicationTimeline;
 use App\Services\ApprovalWorkflowService;
+use App\Http\Resources\AssignedAreaResource;
+use App\Models\ApplicationTimeline;
 
 #[OA\Schema(
     schema: "AopApplication",
@@ -680,7 +679,7 @@ class AopApplicationController extends Controller
     }
 
 
-    public function processAopRequest(Request $request)
+    public function processAopRequest(Request $request): mixed
     {
         $validated = Validator::make($request->all(), [
             'aop_application_id' => 'required|integer',
@@ -689,7 +688,7 @@ class AopApplicationController extends Controller
             'auth_pin' => 'required|integer|digits:6',
         ]);
 
-        $user_id = 2398; // This should be the authenticated user's ID
+        $user_id = 967; // This should be the authenticated user's ID
 
         if ($validated->fails()) {
             return response()->json([
@@ -698,63 +697,109 @@ class AopApplicationController extends Controller
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        $aopApplication = AopApplication::with([
+        $aop_application = AopApplication::with([
             'applicationObjectives',
-            'applicationTimeline',
+            'applicationTimelines',
             'user'
         ])
             ->where('id', $request->aop_application_id)
             ->whereNull('deleted_at')
             ->first();
-            
-        if (!$aopApplication) {
+
+        if (!$aop_application) {
             return response()->json([
                 'message' => 'AOP Application not found',
             ], Response::HTTP_NOT_FOUND);
         }
-        
+
         // Get the current user's assigned area
-        $currentUserArea = AssignedArea::where('user_id', $user_id)->first();
-        
-        if (!$currentUserArea) {
+        $current_user_area = AssignedArea::with([
+            'department',
+            'section',
+            'unit',
+            'division',
+            'user'
+        ])->where('user_id', $user_id)->first();
+
+        if (!$current_user_area) {
             return response()->json([
                 'message' => 'User does not have an assigned area',
-            ], Response::HTTP_BAD_REQUEST);
+            ], Response::HTTP_NOT_FOUND);
         }
-        
+
         // Use ApprovalWorkflowService to process the request
-        $workflowService = new ApprovalWorkflowService();
-        
+        $workflow_service = new ApprovalWorkflowService();
+
         // Create a timeline entry using the service
-        $aopApplicationTimeline = $workflowService->createApplicationTimeline(
-            $aopApplication->id,
+        $aop_application_timeline = $workflow_service->createApplicationTimeline(
+            $aop_application->id,
             $user_id,
-            $currentUserArea->id,
+            $current_user_area->id,
             $request->status,
             $request->remarks
         );
 
-        if (!$aopApplicationTimeline) {
+        if (!$aop_application_timeline) {
             return response()->json([
                 'message' => 'AOP application timeline not created',
             ], Response::HTTP_BAD_REQUEST);
         }
-        
+
         // Update the AOP application status based on the workflow stage
         $statusMap = [
             'approved' => 'approved',
             'returned' => 'returned',
             // Add other status mappings as needed
         ];
-        
+
         if (isset($statusMap[$request->status])) {
-            $aopApplication->status = $statusMap[$request->status];
-            $aopApplication->save();
+            $aop_application->status = $statusMap[$request->status];
+            $aop_application->save();
+        }
+
+        // Get the current user information
+        $user_info = $current_user_area->user;
+
+        // Get the next office information based on the updated application's current area
+        // This is set in the workflow service during timeline creation
+        $next_area_info = null;
+
+        $application_timeline = ApplicationTimeline::where('aop_application_id', $aop_application->id)->latest()->first();
+
+
+        if ($application_timeline) {
+            $next_area = AssignedArea::with(['department', 'section', 'unit', 'division'])
+                ->find($application_timeline->next_area_id);
+            if ($next_area) {
+                $next_area_info = new AssignedAreaResource($next_area);
+            }
+        }
+
+        // Build detailed success response
+        $current_area_info = new AssignedAreaResource($current_user_area);
+
+        $status_text = ucfirst($request->status);
+
+        $response_message = "AOP application {$status_text}";
+        if ($request->status === 'approved') {
+            $response_message .= " and forwarded to next step";
+        } elseif ($request->status === 'returned') {
+            $response_message .= " and sent back for revision";
         }
 
         return response()->json([
-            'message' => 'AOP application processed successfully',
-            'timeline' => $aopApplicationTimeline,
+            'success' => true,
+            'message' => $response_message,
+            'data' => [
+                'timeline' => $aop_application_timeline,
+                'status_details' => [
+                    'status' => $aop_application->status,
+                    'current_area_info' => $current_area_info,
+                    'next_area_info' => $next_area_info,
+                    'date_updated' => now()->format('Y-m-d H:i:s'),
+                    'remarks' => $request->remarks
+                ]
+            ]
         ], Response::HTTP_OK);
     }
 }
