@@ -34,9 +34,9 @@ class PpmpItemSeeder extends Seeder
             'division_chief_id' => $DivisionChief->head_id,
             'budget_officer_id' => $BudgetOfficer->head_id,
             'ppmp_application_uuid' => Str::uuid(),
-            'ppmp_total' => rand(10000, 1000000) / 100,
+            'ppmp_total' => 0,
             'status' => 'submitted',
-            'remarks' => 'Approved by all stakeholders'
+            'remarks' => ""
         ]);
 
         $activity = Activity::inRandomOrder()->first();
@@ -51,14 +51,14 @@ class PpmpItemSeeder extends Seeder
                 'item_id' => $randomItem->id,
                 'procurement_mode_id' => $procurement->id,
                 'item_request_id' => null,
-                'total_quantity' => $item_quantity,
+                'total_quantity' => 0,
                 'estimated_budget' => rand(10000, 100000),
-                'total_amount' => 10 * $item_quantity,
-                'remarks' => null
+                'total_amount' => 0,
+                'remarks' => ""
             ]);
 
             $activity->ppmpItems()->attach($ppmpItem->id, [
-                'remarks' => null,
+                'remarks' => "",
                 'is_draft' => rand(0, 1),
             ]);
 
@@ -67,7 +67,7 @@ class PpmpItemSeeder extends Seeder
                     'ppmp_item_id' => $ppmpItem->id,
                     'month' => rand(1, 12),
                     'year' => rand(2025, 2026),
-                    'quantity' => rand(1, $item_quantity),
+                    'quantity' => 0
                 ]);
             }
         }

@@ -17,7 +17,7 @@ class PpmpScheduleResource extends JsonResource
         return [
             'id' => $this->id,
             'ppmp_item' => $this->ppmp_item,
-            'month' => $this->month,
+            'month' => $this->month ? date('F', mktime(0, 0, 0, $this->month, 1)) : null,
             'year' => $this->year,
             'quantity' => $this->quantity,
             'created_at' => $this->created_at,
