@@ -16,9 +16,13 @@ class ApplicationTimeline extends Model
         'next_area_id',
         'status',
         'remarks',
-        'date_created',
         'date_approved',
-        'date_returned'
+        'date_returned',
+    ];
+
+    protected $dates = [
+        'date_approved',
+        'date_returned',
     ];
 
     use SoftDeletes;

@@ -15,6 +15,7 @@ class ApplicationTimelineSeeder extends Seeder
     /**
      * Run the database seeds.
      * Creates application timeline entries for AOP applications
+     * Each AOP application will have only one timeline entry
      */
     public function run(): void
     {
@@ -50,85 +51,27 @@ class ApplicationTimelineSeeder extends Seeder
         }
         
         foreach ($aopApplications as $application) {
-            // Make sure we have at least 2 users and 2 assigned areas
-            if ($users->count() < 2 || $assignedAreas->count() < 2) {
-                $this->command->info('Not enough users or assigned areas for complete timeline creation.');
-                // Still create at least one timeline entry with what we have
-                $this->createApplicationTimeline(
-                    $application->id,
-                    $ppmpId,
-                    $users->first()->id,
-                    $assignedAreas->first()->id,
-                    $assignedAreas->count() > 1 ? $assignedAreas[1]->id : $assignedAreas->first()->id,
-                    'pending',
-                    'Application submitted for initial review',
-                    Carbon::now()->subDays(30),
-                    null,
-                    null
-                );
-                continue;
+            // If we don't have at least one user and one assigned area, we can't create a timeline
+            if ($users->isEmpty() || $assignedAreas->isEmpty()) {
+                $this->command->info('No users or assigned areas available for timeline creation.');
+                return;
             }
             
-            // First timeline entry - Initial submission
+            // Create a single timeline entry for each AOP application
             $this->createApplicationTimeline(
                 $application->id,
                 $ppmpId,
-                $users[0]->id,
-                $assignedAreas[0]->id,
-                $assignedAreas->count() > 1 ? $assignedAreas[1]->id : $assignedAreas[0]->id,
+                $users->first()->id,
+                $assignedAreas->first()->id,
                 'pending',
                 'Application submitted for initial review',
-                Carbon::now()->subDays(30),
+                Carbon::now()->subDays(rand(5, 30)), // Random date within the last 30 days
                 null,
-                null
-            );
-            
-            // Second timeline entry - If we have at least 2 assigned areas
-            if ($assignedAreas->count() > 1 && $users->count() > 1) {
-                $this->createApplicationTimeline(
-                    $application->id,
-                    $ppmpId,
-                    $users[1]->id,
-                    $assignedAreas[1]->id,
-                    $assignedAreas->count() > 2 ? $assignedAreas[2]->id : $assignedAreas[0]->id,
-                    'approved',
-                    'Approved by first reviewer. Forwarded to next in line.',
-                    Carbon::now()->subDays(25),
-                    Carbon::now()->subDays(23),
-                    null
-                );
-            }
-            
-            // Third timeline entry - If we have at least 3 assigned areas
-            if ($assignedAreas->count() > 2 && $users->count() > 2) {
-                $this->createApplicationTimeline(
-                    $application->id,
-                    $ppmpId,
-                    $users[2]->id,
-                    $assignedAreas[2]->id,
-                    $assignedAreas->count() > 3 ? $assignedAreas[3]->id : $assignedAreas[0]->id,
-                    'approved',
-                    'Approved by second reviewer. Forwarded to final reviewer.',
-                    Carbon::now()->subDays(20),
-                    Carbon::now()->subDays(18),
-                    null
-                );
-            }
-            
-            // Final timeline entry - Always create this to complete the flow
-            $this->createApplicationTimeline(
-                $application->id,
-                $ppmpId,
-                $users[0]->id,
-                $assignedAreas->count() > 2 ? $assignedAreas[2]->id : $assignedAreas[0]->id,
-                null,
-                'approved',
-                'Final approval granted. AOP application complete.',
-                Carbon::now()->subDays(15),
-                Carbon::now()->subDays(10),
                 null
             );
         }
+        
+        $this->command->info('Application timeline entries created successfully.');
     }
     
     /**
@@ -139,7 +82,6 @@ class ApplicationTimelineSeeder extends Seeder
         $ppmpApplicationId,
         $userId,
         $currentAreaId,
-        $nextAreaId,
         $status,
         $remarks,
         $dateCreated,
@@ -149,13 +91,12 @@ class ApplicationTimelineSeeder extends Seeder
         try {
             ApplicationTimeline::create([
                 'aop_application_id' => $aopApplicationId,
-                'ppmp_application_id' => $ppmpApplicationId, // Already set with fallback in the run method
+                'ppmp_application_id' => $ppmpApplicationId,
                 'user_id' => $userId,
                 'current_area_id' => $currentAreaId,
-                'next_area_id' => $nextAreaId ?? $currentAreaId, // Default to current if null
                 'status' => $status,
                 'remarks' => $remarks,
-                'date_created' => $dateCreated,
+                'created_at' => $dateCreated,
                 'date_approved' => $dateApproved,
                 'date_returned' => $dateReturned,
             ]);
