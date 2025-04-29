@@ -22,6 +22,7 @@ class CommentsPerActivityResource extends JsonResource
                         'id' => $comment->id,
                         'user_id' => $comment->user_id,
                         'name' => $comment->user ? $comment->user->name : null,
+                        'designation' => $comment->user && $comment->user->assignedArea && $comment->user->assignedArea->designation ? $comment->user->assignedArea->designation->name : null,
                         'area' => $comment->user && $comment->user->assignedArea ? $comment->user->assignedArea->findDetails()['details']['name'] : null,
                         'area_code' => $comment->user && $comment->user->assignedArea ? $comment->user->assignedArea->findDetails()['details']['code'] : null,
                         'comment' => $comment->comment,

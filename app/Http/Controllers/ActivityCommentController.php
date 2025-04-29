@@ -179,19 +179,18 @@ class ActivityCommentController extends Controller
     )]
     public function index()
     {
-        // Get all activities with comments
-        $activities = Activity::with(['comments.user.assignedArea'])
-            ->whereHas('comments')
+        // Get all comments with their related user and assigned area information
+        $comments = ActivityComment::with(['user.assignedArea'])
             ->get();
 
-        if ($activities->isEmpty()) {
+        if ($comments->isEmpty()) {
             return response()->json([
                 'message' => 'No activity comments found'
             ], Response::HTTP_NOT_FOUND);
         }
 
         return response()->json([
-            "data" => CommentsPerActivityResource::collection($activities),
+            "data" => ActivityCommentResource::collection($comments),
             "metadata" => [
                 "methods" => "[GET, POST, PUT, DELETE]",
                 "urls" => [

@@ -15,7 +15,8 @@ class ActivityCommentResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'activity_comment_id' => $this->id,
+            'activity_id' => $this->activity_id,
             'user_id' => $this->user_id,
             'name' => $this->user->name,
             'designation' => $this->user->assignedArea->designation->name,
