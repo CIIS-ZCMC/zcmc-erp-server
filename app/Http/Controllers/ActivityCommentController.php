@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
 use App\Http\Resources\ActivityCommentResource;
+use App\Http\Resources\CommentsPerActivityResource;
 
 #[OA\Info(
     title: "Activity Comments API",
@@ -178,16 +179,19 @@ class ActivityCommentController extends Controller
     )]
     public function index()
     {
-        $activity_comments = ActivityComment::with('user', 'activity')->get();
+        // Get all activities with comments
+        $activities = Activity::with(['comments.user.assignedArea'])
+            ->whereHas('comments')
+            ->get();
 
-        if (!$activity_comments) {
+        if ($activities->isEmpty()) {
             return response()->json([
                 'message' => 'No activity comments found'
             ], Response::HTTP_NOT_FOUND);
         }
 
         return response()->json([
-            "comments" => ActivityCommentResource::collection($activity_comments),
+            "data" => CommentsPerActivityResource::collection($activities),
             "metadata" => [
                 "methods" => "[GET, POST, PUT, DELETE]",
                 "urls" => [
@@ -302,16 +306,18 @@ class ActivityCommentController extends Controller
     )]
     public function show($activity_id)
     {
-        $activityComment = ActivityComment::where('activity_id', $activity_id)->first();
-        if (!$activityComment) {
+        $activity = Activity::with(['comments.user.assignedArea'])
+            ->find($activity_id);
+
+        if (!$activity || !$activity->comments->count()) {
             return response()->json([
-                'message' => 'Comment not found'
+                'message' => 'No activity comments found'
             ], Response::HTTP_NOT_FOUND);
         }
 
         return response()->json([
-            'data' => new ActivityCommentResource($activityComment),
-            'message' => 'Comment retrieved successfully'
+            'data' => new CommentsPerActivityResource($activity),
+            'message' => 'Comments retrieved successfully'
         ], Response::HTTP_OK);
     }
 
