@@ -27,6 +27,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use App\Models\ApplicationTimeline;
+use App\Exports\AopApplicationExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 #[OA\Schema(
     schema: "AopApplication",
@@ -794,5 +797,68 @@ class AopApplicationController extends Controller
         return response()->json([
             'message' => 'AOP application processed successfully',
         ], Response::HTTP_OK);
+    }
+
+
+    public function export($id)
+    {
+        $aopApplication = AopApplication::with([
+            'applicationObjectives.objective',
+            'applicationObjectives.otherObjective',
+            'applicationObjectives.successIndicator',
+            'applicationObjectives.otherSuccessIndicator',
+            'applicationObjectives.activities.target',
+            'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.responsiblePeople.user',
+
+        ])->findOrFail($id);
+
+
+        // Map the objectives and format the data for export
+        $objectives = $aopApplication->applicationObjectives->map(function ($objective) {
+            return [
+                'objective' => $this->getObjectiveDescription($objective),
+                'success indicator' => $this->getSuccessIndicatorDescription($objective),
+                'activities' => $objective->activities->map(function ($activity) {
+                    return [
+                        'name' => $activity->name,
+                        'cost' => $activity->cost,
+                        'is_gad_related' => $activity->is_gad_related,
+                        'start_month' => $activity->start_month,
+                        'end_month' => $activity->end_month,
+                        'target' => $activity->target,
+                        'resources' => $activity->resources->map(function ($resource) {
+                            return $resource->object_category . ' (' . $resource->quantity . ')';
+                        })->implode(', '),  // Concatenate resources
+                        'responsible_people' => $activity->responsiblePeople->map(function ($person) {
+                            return $person->user->name; // Assuming `user` relationship is correctly set up
+                        })->implode(', '),  // Concatenate responsible people
+                    ];
+                })->toArray(), // Convert activities to array
+            ];
+        });
+
+        // Return Excel download
+        return Excel::download(new AopApplicationExport($objectives->toArray()), 'aop_application_' . $id . '.xlsx');
+    }
+
+    // Helper method to get the formatted objective description
+    public function getObjectiveDescription($objective)
+    {
+        $description = $objective->objective->description ?? null;
+        if ($description === 'Others' && $objective->othersObjective) {
+            return $description . ': ' . $objective->othersObjective->description;
+        }
+        return $description;
+    }
+
+    // Helper method to get the formatted success indicator description
+    public function getSuccessIndicatorDescription($objective)
+    {
+        $description = $objective->successIndicator->description ?? null;
+        if ($description === 'Others' && $objective->otherSuccessIndicator) {
+            return $description . ': ' . $objective->otherSuccessIndicator->description;
+        }
+        return $description;
     }
 }
