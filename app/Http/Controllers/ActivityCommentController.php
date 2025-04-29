@@ -55,48 +55,49 @@ class ActivityCommentController extends Controller
     private function cleanActivityCommentData(array $data): array
     {
         $cleanData = [];
-        
+
         if (isset($data['comment'])) {
             $cleanData['comment'] = strip_tags($data['comment']);
         }
-        
+
         return $cleanData;
     }
 
-    protected function getMetadata($method): array {
-        if($method === 'get') {
+    protected function getMetadata($method): array
+    {
+        if ($method === 'get') {
             $metadata = ["methods" => ["GET, POST, PUT, DELETE"]];
             $metadata['modes'] = ['selection', 'pagination'];
 
-            if($this->is_development) {
+            if ($this->is_development) {
                 $metadata['urls'] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?activity_comment_id=[primary-key]",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?activity_comment_id=[primary-key]",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&search=value",
                 ];
             }
 
             return $metadata;
         }
 
-        if($method === 'put') {
+        if ($method === 'put') {
             $metadata = ["methods" => ["PUT"]];
-            
+
             if ($this->is_development) {
                 $metadata["urls"] = [
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id=1",
-                    env("SERVER_DOMAIN")."/api/".$this->module."?id[]=1&id[]=2"
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2"
                 ];
                 $metadata['fields'] = ["comment"];
             }
-            
+
             return $metadata;
         }
 
         $metadata = ['methods' => ["GET, PUT, DELETE"]];
 
-        if($this->is_development) {
+        if ($this->is_development) {
             $metadata["urls"] = [
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
                 env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
@@ -177,26 +178,26 @@ class ActivityCommentController extends Controller
     )]
     public function index()
     {
-       $activity_comments = ActivityComment::with('user', 'activity')->get();
+        $activity_comments = ActivityComment::with('user', 'activity')->get();
 
-       if (!$activity_comments) {
-           return response()->json([
-               'message' => 'No activity comments found'
-           ], Response::HTTP_NOT_FOUND);
-       }
+        if (!$activity_comments) {
+            return response()->json([
+                'message' => 'No activity comments found'
+            ], Response::HTTP_NOT_FOUND);
+        }
 
-       return response()->json([
-           "comments" => ActivityCommentResource::collection($activity_comments),
-           "metadata" => [
-               "methods" => "[GET, POST, PUT, DELETE]",
-               "urls" => [
-                   env("SERVER_DOMAIN")."/api/".$this->module."?activity_id=[primary-key]",
-                   env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}",
-                   env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                   env("SERVER_DOMAIN")."/api/".$this->module."?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-               ]
-           ]
-       ]);
+        return response()->json([
+            "comments" => ActivityCommentResource::collection($activity_comments),
+            "metadata" => [
+                "methods" => "[GET, POST, PUT, DELETE]",
+                "urls" => [
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?activity_id=[primary-key]",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&search=value",
+                ]
+            ]
+        ]);
     }
 
     #[OA\Post(
@@ -261,7 +262,7 @@ class ActivityCommentController extends Controller
         ]);
 
         $comment = $activity->comments()->latest()->first();
-        
+
         return response()->json([
             "data" => new ActivityCommentResource($comment),
             "message" => 'Comment added successfully'
@@ -299,9 +300,19 @@ class ActivityCommentController extends Controller
             )
         ]
     )]
-    public function show(ActivityComment $activityComment)
+    public function show($activity_id)
     {
-        return $activityComment;
+        $activityComment = ActivityComment::where('activity_id', $activity_id)->first();
+        if (!$activityComment) {
+            return response()->json([
+                'message' => 'Comment not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json([
+            'data' => new ActivityCommentResource($activityComment),
+            'message' => 'Comment retrieved successfully'
+        ], Response::HTTP_OK);
     }
 
     #[OA\Put(
