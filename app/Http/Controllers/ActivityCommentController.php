@@ -175,7 +175,7 @@ class ActivityCommentController extends Controller
             )
         ]
     )]
-    public function index(Request $request)
+    public function index()
     {
        $activity_comments = ActivityComment::with('user', 'activity')->get();
 
