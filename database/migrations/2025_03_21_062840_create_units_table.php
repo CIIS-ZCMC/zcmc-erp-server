@@ -22,6 +22,7 @@ return new class extends Migration
             $table->unsignedBigInteger('section_id')->nullable();
             $table->foreign('section_id')->references('id')->on('sections');
             $table->string('name');
+            $table->string('code');
             $table->timestamps();
         });
     }
