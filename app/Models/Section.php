@@ -29,13 +29,12 @@ class Section extends Model
      * @var array
      */
     protected $fillable = [
-        'umis_section_id',
         'head_id',
         'oic_id',
         'division_id',
         'department_id',
-        'umis_section_id',
         'name',
+        'code',
     ];
 
     /**

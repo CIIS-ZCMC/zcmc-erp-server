@@ -21,7 +21,6 @@ return new class extends Migration
             $table->foreign('division_id')->references('id')->on('divisions');
             $table->unsignedBigInteger('section_id')->nullable();
             $table->foreign('section_id')->references('id')->on('sections');
-            $table->unsignedBigInteger('umis_unit_id');
             $table->string('name');
             $table->timestamps();
         });

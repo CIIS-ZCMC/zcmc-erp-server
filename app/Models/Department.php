@@ -29,12 +29,11 @@ class Department extends Model
      * @var array
      */
     protected $fillable = [
-        'umis_department_id',
         'head_id',
         'oid_id',
         'division_id',
-        'umis_department_id',
         'name',
+        'code',
     ];
 
     /**

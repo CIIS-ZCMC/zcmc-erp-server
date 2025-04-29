@@ -25,7 +25,6 @@ class Designation extends Model
      * @var array<string>
      */
     protected $fillable = [
-        'umis_designation_id',
         'name',
         'code',
         'probation'

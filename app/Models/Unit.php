@@ -29,13 +29,12 @@ class Unit extends Model
      * @var array<string>
      */
     protected $fillable = [
-        'umis_unit_id',
         'head_id',
         'oic_id',
         'division_id',
         'section_id',
-        'umis_unit_id',
         'name',
+        'code',
     ];
 
     /**
