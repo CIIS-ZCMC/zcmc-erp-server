@@ -393,10 +393,20 @@ class AopApplicationController extends Controller
                 }
             }
 
+            $assignedArea = AssignedArea::with('division')->where('user_id', $validatedData['user_id'])->first();
+            $divisionChiefId = optional($assignedArea->division)->head_id;
+
+            $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
+            $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
+
+            $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
+            $budgetOfficerId = optional($budgetOfficer)->head_id;
+
+
             $ppmpApplication = $aopApplication->ppmpApplication()->create([
-                'user_id' => 1,
-                'division_chief_id' => 1,
-                'budget_officer_id' => 1,
+                'user_id' => $validatedData['user_id'],
+                'division_chief_id' => $divisionChiefId,
+                'budget_officer_id' => $budgetOfficerId,
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => $ppmpTotal,
                 'status' => $validatedData['status'],
@@ -426,7 +436,6 @@ class AopApplicationController extends Controller
                     }
                 }
             }
-
 
             $aopApplicationTimeline = $aopApplication->applicationTimelines()->create([
                 'aop_application_id' => $aopApplication->id,
