@@ -688,7 +688,7 @@ class AopApplicationController extends Controller
             'auth_pin' => 'required|integer|digits:6',
         ]);
 
-        $user_id = 967; // This should be the authenticated user's ID
+        $user_id = 495; // This should be the authenticated user's ID
 
         if ($validated->fails()) {
             return response()->json([
