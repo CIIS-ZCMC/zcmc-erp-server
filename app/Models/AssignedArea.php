@@ -131,6 +131,11 @@ class AssignedArea extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function designation()
+    {
+        return $this->belongsTo(Designation::class);
+    }
+
     /**
      * Get all transaction logs associated with this assigned area.
      *
