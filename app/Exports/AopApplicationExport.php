@@ -2,66 +2,61 @@
 
 namespace App\Exports;
 
-use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithStyles;
-use Maatwebsite\Excel\Concerns\WithColumnFormatting;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\FromArray;
+use Maatwebsite\Excel\Concerns\WithTitle;
+use Maatwebsite\Excel\Events\BeforeExport;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Support\Facades\Response;
 
-class AopApplicationExport implements FromCollection, WithHeadings
+
+class AopApplicationExport implements FromArray, WithEvents, WithTitle
 {
-    protected $objectives;
+    protected $data;
 
-    public function __construct($objectives)
+    public function __construct(array $data)
     {
-        $this->objectives = $objectives;
+        $this->data = $data;
     }
 
-    public function collection()
+    public function array(): array
     {
-        return collect($this->objectives); // Make sure $this->objectives is an array or collection
+        // Return empty; we'll inject values manually
+        return [];
     }
 
-    public function headings(): array
+    public function title(): string
+    {
+        return 'AOP Application';
+    }
+
+    public function registerEvents(): array
     {
         return [
-            'OBJECTIVE',
-            'SUCCESS INDICATOR',
-            'PROGRAMS/ ACTIVITIES/ PROJECTS',
-            'Timeframe',
-            'TARGET (by Quarter)',
-            'RESOURCE REQUIREMENT',
-            'OBJECT CATEGORY (MOOE or CO)',
-            'RESPONSIBLE PERSON',
-            'GAD(YES/NO)'
+            BeforeExport::class => function (BeforeExport $event) {
+                $templatePath = storage_path('app/template/operational_plan.xlsx');
+                $spreadsheet = IOFactory::load($templatePath);
 
-        ];
-    }
-    public function styles(Worksheet $sheet)
-    {
-        // Apply style to header row A1 to Z1 (adjust range to fit your actual headers)
-        $sheet->getStyle('A1:Z1')->applyFromArray([
-            'font' => [
-                'bold' => true,
-                'name' => 'Times New Roman', // Set font name
-                'size' => 10,
-            ],
-            'alignment' => [
-                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
-                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
-            ],
-        ]);
-    }
+                // Replace the writer's spreadsheet with the loaded template
+                $event->writer->setDelegate($spreadsheet);
 
-    public function columnWidths(): array
-    {
-        return [
-            'A' => 30,
-            'B' => 40,
-            'C' => 50,
+                // Now populate the template
+                $sheet = $spreadsheet->getActiveSheet();
+                $row = 14;
 
+                foreach ($this->data as $item) {
+                    $sheet->setCellValue("B{$row}", $item['objective']);
+                    $sheet->setCellValue("C{$row}", $item['success indicator']);
+
+                    $activityDescriptions = collect($item['activities'])->map(function ($act) {
+                        return $act['name'] . ' | ' . $act['responsible_people'];
+                    })->implode("\n");
+
+                    $sheet->setCellValue("D{$row}", $activityDescriptions);
+                    $row++;
+                }
+            },
         ];
     }
 }

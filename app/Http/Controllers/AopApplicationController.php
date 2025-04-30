@@ -26,9 +26,11 @@ use OpenApi\Attributes as OA;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
-use App\Models\ApplicationTimeline;
-use App\Exports\AopApplicationExport;
-use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Support\Facades\File;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 
 #[OA\Schema(
@@ -486,6 +488,7 @@ class AopApplicationController extends Controller
     {
         $aopApplication = AopApplication::with([
             'applicationObjectives.objective',
+            'applicationObjectives.objective.typeOfFunction',
             'applicationObjectives.otherObjective',
             'applicationObjectives.successIndicator',
             'applicationObjectives.otherSuccessIndicator',
@@ -804,44 +807,74 @@ class AopApplicationController extends Controller
     {
         $aopApplication = AopApplication::with([
             'applicationObjectives.objective',
+            'applicationObjectives.objective.typeOfFunction',
             'applicationObjectives.otherObjective',
             'applicationObjectives.successIndicator',
             'applicationObjectives.otherSuccessIndicator',
             'applicationObjectives.activities.target',
             'applicationObjectives.activities.resources',
             'applicationObjectives.activities.responsiblePeople.user',
-
         ])->findOrFail($id);
 
-
-        // Map the objectives and format the data for export
         $objectives = $aopApplication->applicationObjectives->map(function ($objective) {
-            return [
-                'objective' => $this->getObjectiveDescription($objective),
-                'success indicator' => $this->getSuccessIndicatorDescription($objective),
-                'activities' => $objective->activities->map(function ($activity) {
-                    return [
-                        'name' => $activity->name,
-                        'cost' => $activity->cost,
-                        'is_gad_related' => $activity->is_gad_related,
-                        'start_month' => $activity->start_month,
-                        'end_month' => $activity->end_month,
-                        'target' => $activity->target,
-                        'resources' => $activity->resources->map(function ($resource) {
-                            return $resource->object_category . ' (' . $resource->quantity . ')';
-                        })->implode(', '),  // Concatenate resources
-                        'responsible_people' => $activity->responsiblePeople->map(function ($person) {
-                            return $person->user->name; // Assuming `user` relationship is correctly set up
-                        })->implode(', '),  // Concatenate responsible people
-                    ];
-                })->toArray(), // Convert activities to array
-            ];
+            return $objective->activities->map(function ($activity) use ($objective) {
+                return [
+                    'type_of_function' => $objective->objective->typeOfFunction->type ?? '',
+                    'objective' => $objective->objective->description ?? '',
+                    'success_indicator' => $objective->successIndicator->description ?? '',
+                    'activity_name' => $activity->name,
+                    'start_month' => $activity->start_month ? \Carbon\Carbon::parse($activity->start_month)->format('F') : '',
+                    'end_month' => $activity->end_month ? \Carbon\Carbon::parse($activity->end_month)->format('F') : '',
+                    'target_q1' => $activity->target->first_quarter ?? '',
+                    'target_q2' => $activity->target->second_quarter ?? '',
+                    'target_q3' => $activity->target->third_quarter ?? '',
+                    'target_q4' => $activity->target->fourth_quarter ?? '',
+                ];
+            });
         });
 
-        // Return Excel download
-        return Excel::download(new AopApplicationExport($objectives->toArray()), 'aop_application_' . $id . '.xlsx');
-    }
 
+        // Load template
+        $templatePath = storage_path('app/template/operational_plan.xlsx');
+        $spreadsheet = IOFactory::load($templatePath);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Start populating from row 14
+        $row = 14;
+        foreach ($objectives as $objectiveActivities) {
+            foreach ($objectiveActivities as $item) {
+                // Set the data in the cells
+                $sheet->setCellValue("A{$row}", $item['type_of_function']);
+                $sheet->setCellValue("B{$row}", $item['objective']);
+                $sheet->setCellValue("C{$row}", $item['success_indicator']);
+                $sheet->setCellValue("D{$row}", $item['activity_name']);
+                $sheet->setCellValue("E{$row}", $item['start_month']);
+                $sheet->setCellValue("F{$row}", $item['end_month']);
+                $sheet->setCellValue("G{$row}", $item['target_q1']);
+                $sheet->setCellValue("G{$row}", $item['target_q1']);
+                $sheet->setCellValue("H{$row}", $item['target_q2']);
+                $sheet->setCellValue("I{$row}", $item['target_q3']);
+                $sheet->setCellValue("J{$row}", $item['target_q4']);
+                $row++;
+            }
+        }
+
+        $lastRow = $row - 1;
+        $sheet->getStyle("G14:J{$lastRow}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_NUMBER);
+
+        $tempDirectory = storage_path('app/temp');
+        if (!File::exists($tempDirectory)) {
+            File::makeDirectory($tempDirectory, 0777, true); // Create directory if it doesn't exist
+        }
+
+        // Output the modified file
+        $writer = new Xlsx($spreadsheet);
+        $fileName = 'aop_application_' . $id . '.xlsx';
+        $tempPath = storage_path("app/temp/{$fileName}");
+        $writer->save($tempPath);
+
+        return response()->download($tempPath)->deleteFileAfterSend(true);
+    }
     // Helper method to get the formatted objective description
     public function getObjectiveDescription($objective)
     {
