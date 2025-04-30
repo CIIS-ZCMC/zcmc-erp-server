@@ -827,14 +827,44 @@ class AopApplicationController extends Controller
             'applicationObjectives.activities.responsiblePeople.user',
         ])->findOrFail($id);
 
-        $objectives = $aopApplication->applicationObjectives->map(function ($objective) {
-            return $objective->activities->map(function ($activity) use ($objective) {
+        $getResponsiblePersonName = function ($responsiblePerson) {
+            if ($responsiblePerson->user_id) {
+                return $responsiblePerson->user->name;  // Assuming you have a 'user' relationship in the model
+            }
+
+            if ($responsiblePerson->division_id) {
+                return $responsiblePerson->division->name;
+            }
+            if ($responsiblePerson->department_id) {
+                return $responsiblePerson->department->name;
+            }
+            if ($responsiblePerson->section_id) {
+                return $responsiblePerson->section->name;
+            }
+            if ($responsiblePerson->unit_id) {
+                return $responsiblePerson->unit->name;
+            }
+
+            return 'Unknown';
+        };
+
+        // Prepare the objectives and activities data
+        $objectives = $aopApplication->applicationObjectives->map(function ($objective) use ($getResponsiblePersonName, $aopApplication) {
+            return $objective->activities->map(function ($activity) use ($objective, $getResponsiblePersonName, $aopApplication) {
+                // Process resources
                 $resources = $activity->resources->map(function ($resource) {
                     $quantity = $resource->quantity ?? '';
                     $itemName = $resource->item->name ?? '';
                     return "{$quantity} {$itemName}";
                 })->filter()->implode(', ');
+
+                // Process responsible people
+                $responsiblePeople = $activity->responsiblePeople->map(function ($responsible) use ($getResponsiblePersonName) {
+                    return $getResponsiblePersonName($responsible); // Get the name
+                })->filter()->implode(', ');
+
                 return [
+                    'mission' => $aopApplication->mission,
                     'type_of_function' => $objective->objective->typeOfFunction->type ?? '',
                     'objective' => $objective->objective->description ?? '',
                     'success_indicator' => $objective->successIndicator->description ?? '',
@@ -848,15 +878,20 @@ class AopApplicationController extends Controller
                     'resources' => $resources,
                     'cost' => $activity->cost ?? 0,
                     'expense_class' => $activity->expense_class,
+                    'responsible_people' => $responsiblePeople,
+                    'is_gad_related' => $activity->is_gad_related,
                 ];
             });
         });
+
 
 
         // Load template
         $templatePath = storage_path('app/template/operational_plan.xlsx');
         $spreadsheet = IOFactory::load($templatePath);
         $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('B8', $aopApplication->mission);
 
         // Start populating from row 14
         $row = 14;
@@ -877,6 +912,8 @@ class AopApplicationController extends Controller
                 $sheet->setCellValue("K{$row}", $item['resources']);
                 $sheet->setCellValue("L{$row}", $item['cost']);
                 $sheet->setCellValue("M{$row}", $item['expense_class']);
+                $sheet->setCellValue("N{$row}", $item['responsible_people']);
+                $sheet->setCellValue("O{$row}", $item['is_gad_related']);
                 $row++;
             }
         }
