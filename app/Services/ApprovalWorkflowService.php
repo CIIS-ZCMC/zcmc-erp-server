@@ -22,9 +22,9 @@ class ApprovalWorkflowService
     /**
      * Create a new class instance.
      *
-     * @param NotificationService $notificationService
+     * @param NotificationService|null $notificationService
      */
-    public function __construct(NotificationService $notificationService = null)
+    public function __construct(?NotificationService $notificationService = null)
     {
         $this->notificationService = $notificationService ?: new NotificationService();
     }
