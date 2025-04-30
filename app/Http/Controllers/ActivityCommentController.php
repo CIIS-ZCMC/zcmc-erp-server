@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Activity;
 use App\Models\ActivityComment;
+use App\Models\AopApplication;
 use Illuminate\Http\Request;
 use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
@@ -177,28 +178,48 @@ class ActivityCommentController extends Controller
             )
         ]
     )]
-    public function index()
+    public function index(Request $request)
     {
-        // Get all comments with their related user and assigned area information
-        $comments = ActivityComment::with(['user.assignedArea'])
-            ->get();
+        $aop_application_id = $request->query('aop_application_id');
 
-        if ($comments->isEmpty()) {
+        if (!$aop_application_id) {
             return response()->json([
-                'message' => 'No activity comments found'
+                'message' => 'AOP Application ID is required'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Get the AOP application with nested relationships
+        $aopApplication = AopApplication::with([
+            'applicationObjectives.activities.comments' => function ($query) {
+                $query->with(['user.assignedArea.designation', 'activity.applicationObjective'])
+                    ->orderBy('created_at', 'desc');
+            }
+        ])->find($aop_application_id);
+
+        if (!$aopApplication) {
+            return response()->json([
+                'message' => 'AOP Application not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        // Extract and flatten all comments using flatMap
+        $allComments = $aopApplication->applicationObjectives->flatMap(function ($objective) {
+            return $objective->activities->flatMap(function ($activity) {
+                return $activity->comments;
+            });
+        })->sortByDesc('created_at')->values();
+
+        if ($allComments->isEmpty()) {
+            return response()->json([
+                'message' => 'No comments found for this AOP application'
             ], Response::HTTP_NOT_FOUND);
         }
 
         return response()->json([
-            "data" => ActivityCommentResource::collection($comments),
+            "message" => "AOP Application Comments retrieved successfully",
+            "data" => ActivityCommentResource::collection($allComments),
             "metadata" => [
                 "methods" => "[GET, POST, PUT, DELETE]",
-                "urls" => [
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?activity_id=[primary-key]",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                ]
             ]
         ]);
     }
