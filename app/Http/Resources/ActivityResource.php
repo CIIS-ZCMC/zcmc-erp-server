@@ -21,6 +21,7 @@ class ActivityResource extends JsonResource
             'name' => $this->name,
             'is_gad_related' => $this->is_gad_related,
             'cost' => $this->cost,
+            'expense_class' => $this->expense_class,
             'start_month' => $this->start_month,
             'end_month' => $this->end_month,
             'target' => new TargetResource($this->whenLoaded('target')),

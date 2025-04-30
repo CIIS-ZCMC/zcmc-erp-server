@@ -217,6 +217,7 @@ class AopApplicationController extends Controller
 
                 foreach ($objectiveData['activities'] as $activityData) {
                     $activity = $applicationObjective->activities()->create([
+                        'expense_class' => $activityData['expense_class'],
                         'activity_code' => $activityData['activity_code'],
                         'name' => $activityData['name'],
                         'is_gad_related' => $activityData['is_gad_related'],
@@ -361,7 +362,7 @@ class AopApplicationController extends Controller
 
                 foreach ($objectiveData['activities'] as $activityData) {
                     $activity = $applicationObjective->activities()->create([
-
+                        'expense_class' => $activityData['expense_class'],
                         'activity_code' => $activityData['activity_code'],
                         'name' => $activityData['name'],
                         'is_gad_related' => $activityData['is_gad_related'],
@@ -404,14 +405,14 @@ class AopApplicationController extends Controller
             $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
             $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
 
-            $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
-            $budgetOfficerId = optional($budgetOfficer)->head_id;
+            // $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
+            // $budgetOfficerId = optional($budgetOfficer)->head_id;
 
 
             $ppmpApplication = $aopApplication->ppmpApplication()->create([
                 'user_id' => $validatedData['user_id'],
                 'division_chief_id' => $divisionChiefId,
-                'budget_officer_id' => $budgetOfficerId,
+                'budget_officer_id' => 1,
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => $ppmpTotal,
                 'status' => $validatedData['status'],
@@ -494,9 +495,19 @@ class AopApplicationController extends Controller
             'applicationObjectives.otherSuccessIndicator',
             'applicationObjectives.activities.target',
             'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.resources.item',
             'applicationObjectives.activities.responsiblePeople.user',
             'applicationObjectives.activities.comments',
         ])->findOrFail($id);
+
+        foreach ($aopApplication->applicationObjectives as $objective) {
+            foreach ($objective->activities as $activity) {
+                foreach ($activity->responsiblePeople as $responsiblePerson) {
+                    // Check and resolve the name
+                    $responsiblePerson->resolved_name = $this->getResponsiblePersonName($responsiblePerson);
+                }
+            }
+        }
 
         return new AopApplicationResource($aopApplication);
     }
@@ -818,6 +829,11 @@ class AopApplicationController extends Controller
 
         $objectives = $aopApplication->applicationObjectives->map(function ($objective) {
             return $objective->activities->map(function ($activity) use ($objective) {
+                $resources = $activity->resources->map(function ($resource) {
+                    $quantity = $resource->quantity ?? '';
+                    $itemName = $resource->item->name ?? '';
+                    return "{$quantity} {$itemName}";
+                })->filter()->implode(', ');
                 return [
                     'type_of_function' => $objective->objective->typeOfFunction->type ?? '',
                     'objective' => $objective->objective->description ?? '',
@@ -829,6 +845,9 @@ class AopApplicationController extends Controller
                     'target_q2' => $activity->target->second_quarter ?? '',
                     'target_q3' => $activity->target->third_quarter ?? '',
                     'target_q4' => $activity->target->fourth_quarter ?? '',
+                    'resources' => $resources,
+                    'cost' => $activity->cost ?? 0,
+                    'expense_class' => $activity->expense_class,
                 ];
             });
         });
@@ -855,12 +874,18 @@ class AopApplicationController extends Controller
                 $sheet->setCellValue("H{$row}", $item['target_q2']);
                 $sheet->setCellValue("I{$row}", $item['target_q3']);
                 $sheet->setCellValue("J{$row}", $item['target_q4']);
+                $sheet->setCellValue("K{$row}", $item['resources']);
+                $sheet->setCellValue("L{$row}", $item['cost']);
+                $sheet->setCellValue("M{$row}", $item['expense_class']);
                 $row++;
             }
         }
 
         $lastRow = $row - 1;
         $sheet->getStyle("G14:J{$lastRow}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_NUMBER);
+        $sheet->getStyle("L14:L{$lastRow}")
+            ->getNumberFormat()
+            ->setFormatCode(NumberFormat::FORMAT_NUMBER_00);
 
         $tempDirectory = storage_path('app/temp');
         if (!File::exists($tempDirectory)) {
@@ -893,5 +918,32 @@ class AopApplicationController extends Controller
             return $description . ': ' . $objective->otherSuccessIndicator->description;
         }
         return $description;
+    }
+
+    private function getResponsiblePersonName($responsiblePerson)
+    {
+
+        if ($responsiblePerson->user_id) {
+            return $responsiblePerson->user->name;
+        }
+
+        if ($responsiblePerson->division_id) {
+            return $responsiblePerson->division->name;
+        }
+        if ($responsiblePerson->department_id) {
+            return $responsiblePerson->department->name;
+        }
+        if ($responsiblePerson->section_id) {
+            return $responsiblePerson->section->name;
+        }
+        if ($responsiblePerson->unit_id) {
+            return $responsiblePerson->unit->name;
+        }
+
+        if ($responsiblePerson->designation_id) {
+            return $responsiblePerson->designation->name;
+        }
+
+        return 'Unknown';
     }
 }

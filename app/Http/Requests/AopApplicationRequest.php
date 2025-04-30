@@ -57,12 +57,8 @@ class AopApplicationRequest extends FormRequest
             'application_objectives.*.activities.*.resources.*.expense_class' => 'required|string',
 
             'application_objectives.*.activities.*.responsible_people' => 'required|array',
-            'application_objectives.*.activities.*.responsible_people.*.user_id' => 'nullable|exists:users,id',
-            'application_objectives.*.activities.*.responsible_people.*.division_id' => 'nullable|exists:divisions,id',
-            'application_objectives.*.activities.*.responsible_people.*.department_id' => 'nullable|exists:departments,id',
-            'application_objectives.*.activities.*.responsible_people.*.section_id' => 'nullable|exists:sections,id',
-            'application_objectives.*.activities.*.responsible_people.*.unit_id' => 'nullable|exists:units,id',
-            'application_objectives.*.activities.*.responsible_people.*.designation_id' => 'required|exists:designations,id',
+
+
         ];
     }
 }
