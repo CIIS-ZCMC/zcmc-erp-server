@@ -16,8 +16,8 @@ class AssignAreaDivisionResource extends JsonResource
     {
         return [
             "id"=> $this->id,
-            'name' => $this->name,
-            'code' => $this->code
+            "name" => $this->name,
+            "code" => $this->code
         ];
     }
 }

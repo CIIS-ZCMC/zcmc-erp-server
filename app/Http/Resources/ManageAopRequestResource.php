@@ -22,7 +22,7 @@ class ManageAopRequestResource extends JsonResource
             'activities' => $this->activities->map(function ($activity) {
                 return [
                     'id' => $activity->id,
-                    'description' => $activity->description,
+                    'name' => $activity->name,
                     'with_comments' => $activity->comments->isNotEmpty(),
                     'is_reviewed' => $activity->is_reviewed
                 ];

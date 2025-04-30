@@ -25,7 +25,6 @@ return new class extends Migration
             $table->foreign('next_area_id')->references('id')->on('assigned_areas');
             $table->enum('status', ['pending', 'approved', 'returned'])->default('pending');
             $table->text('remarks')->nullable();
-            $table->timestamp('date_created')->nullable();
             $table->timestamp('date_approved')->nullable();
             $table->timestamp('date_returned')->nullable();
             $table->softDeletes();

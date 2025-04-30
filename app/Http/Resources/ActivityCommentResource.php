@@ -15,11 +15,14 @@ class ActivityCommentResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'user_id' => $this->user_id,
+            'aop_application_id' => $this->activity && $this->activity->applicationObjective ? $this->activity->applicationObjective->aop_application_id : null,
+            'activity_comment_id' => $this->id,
             'activity_id' => $this->activity_id,
-            'name' => $this->user->name,
-            'area' => $this->user->assignedArea->findDetails()['details']['name'],
+            'user_id' => $this->user_id,
+            'name' => $this->user ? $this->user->name : null,
+            'designation' => $this->user && $this->user->assignedArea && $this->user->assignedArea->designation ? $this->user->assignedArea->designation->name : null,
+            'area' => $this->user && $this->user->assignedArea && method_exists($this->user->assignedArea, 'findDetails') && isset($this->user->assignedArea->findDetails()['details']['name']) ? $this->user->assignedArea->findDetails()['details']['name'] : null,
+            'area_code' => $this->user && $this->user->assignedArea && method_exists($this->user->assignedArea, 'findDetails') && isset($this->user->assignedArea->findDetails()['details']['code']) ? $this->user->assignedArea->findDetails()['details']['code'] : null,
             'comment' => $this->comment,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at
