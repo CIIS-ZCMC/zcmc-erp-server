@@ -13,11 +13,20 @@ use App\Http\Resources\AssignedAreaResource;
 class ApprovalWorkflowService
 {
     /**
-     * Create a new class instance.
+     * The notification service instance.
+     *
+     * @var NotificationService
      */
-    public function __construct()
+    protected $notificationService;
+
+    /**
+     * Create a new class instance.
+     *
+     * @param NotificationService $notificationService
+     */
+    public function __construct(NotificationService $notificationService = null)
     {
-        //
+        $this->notificationService = $notificationService ?: new NotificationService();
     }
 
     /**
@@ -35,6 +44,12 @@ class ApprovalWorkflowService
         try {
             // Get the AOP application for reference
             $aopApplication = AopApplication::find($application_id);
+            if (!$aopApplication instanceof AopApplication) {
+                Log::error("Cannot create timeline - AOP application not found or invalid", [
+                    'application_id' => $application_id
+                ]);
+                return null;
+            }
 
             // ALGORITHM
             // 1. When an AOP request is submitted, it is initially stored in the application timeline
@@ -240,6 +255,16 @@ class ApprovalWorkflowService
                 'next_area_id' => $next_area_id,
                 'status' => $status
             ]);
+
+            // Create and send notifications via the notification service
+            $this->notificationService->sendAopStatusChangeNotifications(
+                $aopApplication,
+                $timeline,
+                $userId,
+                $next_area_id,
+                $status,
+                $stage
+            );
 
             return $timeline;
         } catch (\Exception $e) {
