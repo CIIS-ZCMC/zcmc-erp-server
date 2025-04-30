@@ -18,8 +18,8 @@ return new class extends Migration {
             $table->foreign('oic_id')->references('id')->on('users');
             $table->unsignedBigInteger('division_id')->nullable();
             $table->foreign('division_id')->references('id')->on('divisions');
-            $table->unsignedBigInteger('umis_department_id');
             $table->string('name');
+            $table->string('code')->nullable();
             $table->timestamps();
         });
     }

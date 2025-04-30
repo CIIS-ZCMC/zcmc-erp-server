@@ -13,6 +13,8 @@ return new class extends Migration
     {
         Schema::create('assigned_areas', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->foreign('user_id')->references('id')->on('users');
             $table->unsignedBigInteger('designation_id')->nullable();
             $table->foreign('designation_id')->references('id')->on('designations')->onDelete('set null');
             $table->unsignedBigInteger('division_id')->nullable();
@@ -23,8 +25,6 @@ return new class extends Migration
             $table->foreign('section_id')->references('id')->on('sections')->onDelete('set null');
             $table->unsignedBigInteger('unit_id')->nullable();
             $table->foreign('unit_id')->references('id')->on('units')->onDelete('set null');
-            $table->unsignedBigInteger('user_id');
-            $table->foreign('user_id')->references('id')->on('users');
             $table->timestamps();
         });
     }

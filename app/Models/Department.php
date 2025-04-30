@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\TransactionLog;
 use App\Models\User;
+use App\Models\AssignedArea;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
@@ -29,12 +30,11 @@ class Department extends Model
      * @var array
      */
     protected $fillable = [
-        'umis_department_id',
         'head_id',
         'oid_id',
         'division_id',
-        'umis_department_id',
         'name',
+        'code',
     ];
 
     /**
@@ -75,6 +75,24 @@ class Department extends Model
     public function oic(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Get the division chief for this department
+     * 
+     * @return User|null
+     */
+    public function getDivisionChief()
+    {
+        // Get the division this department belongs to - use the method explicitly
+        $division = $this->division()->first();
+        
+        if (!$division) {
+            return null;
+        }
+        
+        // The division chief is the head of the division - use method explicitly
+        return $division->head()->first();
     }
 
     /**

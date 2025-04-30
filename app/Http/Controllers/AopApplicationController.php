@@ -25,6 +25,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use App\Services\ApprovalWorkflowService;
+use App\Services\NotificationService;
 use App\Http\Resources\AssignedAreaResource;
 use App\Models\ApplicationTimeline;
 
@@ -679,6 +680,12 @@ class AopApplicationController extends Controller
     }
 
 
+    /**
+     * Process an AOP application request through the approval workflow
+     * 
+     * @param Request $request The incoming request
+     * @return mixed JSON response
+     */
     public function processAopRequest(Request $request): mixed
     {
         $validated = Validator::make($request->all(), [
@@ -688,7 +695,7 @@ class AopApplicationController extends Controller
             'auth_pin' => 'required|integer|digits:6',
         ]);
 
-        $user_id = 967; // This should be the authenticated user's ID
+        $user_id = 495; // This should be the authenticated user's ID
 
         if ($validated->fails()) {
             return response()->json([

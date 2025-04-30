@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use App\Models\Division;
 use App\Models\Section;
+use App\Models\AssignedArea;
 
 /**
  * Unit Model
@@ -29,13 +30,12 @@ class Unit extends Model
      * @var array<string>
      */
     protected $fillable = [
-        'umis_unit_id',
         'head_id',
         'oic_id',
         'division_id',
         'section_id',
-        'umis_unit_id',
         'name',
+        'code',
     ];
 
     /**
@@ -66,5 +66,23 @@ class Unit extends Model
     public function logs(): MorphMany
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
+    }
+    
+    /**
+     * Get the division chief for this unit
+     * 
+     * @return User|null
+     */
+    public function getDivisionChief()
+    {
+        // Get the division this unit belongs to - use the method explicitly
+        $division = $this->division()->first();
+        
+        if (!$division) {
+            return null;
+        }
+        
+        // The division chief is the head of the division - use method explicitly
+        return $division->head()->first();
     }
 }
