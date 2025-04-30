@@ -254,7 +254,7 @@ class ActivityCommentController extends Controller
     {
         $validated = $request->validate([
             'activity_id' => 'required|integer|exists:activities,id',
-            'comment' => 'required|string|max:500',
+            'comment' => 'required|string',
         ]);
 
         $activity = Activity::findOrFail($validated['activity_id']);
