@@ -49,23 +49,7 @@ class ApprovalWorkflowService
                     'application_id' => $application_id
                 ]);
                 return null;
-            }
-
-            // ALGORITHM
-            // 1. When an AOP request is submitted, it is initially stored in the application timeline
-            //    with the following details:
-            //    - Status: "Pending"
-            //    - Current Area ID
-            //    - Next Area ID
-            // 2. This function is triggered when the process reaches the recorded Next Area ID.
-            // 3. Once triggered, it updates the status of the AOP accordingly.
-            //  id to which area will be approving next.
-            // 4. OMCC: Plannit Unit details (first phase of the timeline for approving aop request)
-            //      - in section table, id = 48
-            // 5. Division Chief -> are the head of Divisions areas
-            //      - in division table,depends who is the division chief of the unit approver
-            // 6. Medical Center Chief -> it's a division but specifically for Office of the Medical Center Chief 
-            //      - in division table, specifically id = 1, or the Office of the Medical Center Chief
+            }   
 
             if (!$aopApplication) {
                 Log::error("Cannot create timeline - AOP application not found", [

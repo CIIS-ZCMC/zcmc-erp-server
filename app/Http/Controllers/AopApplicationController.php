@@ -7,6 +7,7 @@ use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\AopRequestResource;
 use App\Http\Resources\ApplicationTimelineResource;
 use App\Http\Resources\DesignationResource;
+use App\Http\Resources\AssignedAreaResource;
 use App\Models\AopApplication;
 use App\Models\AssignedArea;
 use App\Models\Department;
@@ -18,6 +19,7 @@ use App\Models\Section;
 use App\Models\SuccessIndicator;
 use App\Models\Unit;
 use App\Models\User;
+use App\Models\ApplicationTimeline;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
@@ -26,8 +28,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use App\Services\ApprovalWorkflowService;
 use App\Services\NotificationService;
-use App\Http\Resources\AssignedAreaResource;
-use App\Models\ApplicationTimeline;
+use App\Services\AopVisibilityService;
 
 #[OA\Schema(
     schema: "AopApplication",
@@ -643,29 +644,36 @@ class AopApplicationController extends Controller
         $page = $request->query('page') > 0 ? $request->query('page') : 1;
         $per_page = $request->query('per_page') ?? 15;
 
-        $query = AopApplication::with([
-            'user',
-            'applicationTimelines',
-        ]);
+        // Get current authenticated user
+        $user = $request->user();
+        $assignedArea = $user->assignedArea;
 
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
+        if (!$assignedArea) {
+            return response()->json([
+                'message' => 'User does not have an assigned area',
+                'data' => [],
+                'pagination' => [
+                    'total' => 0,
+                    'per_page' => $per_page,
+                    'current_page' => $page,
+                    'last_page' => 1,
+                ],
+                'metadata' => $this->getMetadata('getAopApplications')
+            ], Response::HTTP_OK);
         }
 
-        if ($request->has('year')) {
-            $query->whereYear('created_at', $request->year);
-        }
-
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('mission', 'like', "%{$search}%")
-                    ->orWhere('remarks', 'like', "%{$search}%");
-            });
-        }
-
+        // Use the AOP visibility service to get applications user can see
+        $aopVisibilityService = new AopVisibilityService();
+        
+        $filters = [
+            'status' => $request->has('status') ? $request->status : null,
+            'year' => $request->has('year') ? $request->year : null,
+            'search' => $request->has('search') ? $request->search : null,
+        ];
+        
+        $query = $aopVisibilityService->getVisibleAopApplications($user, $filters);
+        
         $aopApplications = $query->paginate($per_page, ['*'], 'page', $page);
-
 
         return response()->json([
             'data' => AopRequestResource::collection($aopApplications),
