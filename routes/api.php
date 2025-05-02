@@ -205,6 +205,7 @@ Route::
             Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
             Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
             Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
+            Route::put('edit-objective', 'ApplicationObjectiveController@editObjectiveAndSuccessIndicator');
             Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
 
             // Aop Application Module

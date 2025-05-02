@@ -9,7 +9,8 @@ use App\Models\Activity;
 use App\Models\ApplicationObjective;
 use App\Http\Resources\ManageAopRequestResource;
 use App\Http\Resources\ShowObjectiveResource;
-
+use App\Models\SuccessIndicator;
+use Illuminate\Support\Facades\DB;
 
 #[OA\Schema(
     schema: "ActivityComment",
@@ -264,5 +265,57 @@ class ApplicationObjectiveController extends Controller
         ], Response::HTTP_OK);
     }
 
-   
+    public function editObjectiveAndSuccessIndicator(Request $request)
+    {
+        try {
+            $request->validate([
+                'objective_id' => 'required|exists:application_objectives,id',
+                'success_indicator_id' => 'required|exists:success_indicators,id',
+                'objective' => 'required|string',
+                'success_indicator' => 'required|string',
+            ]);
+
+            // Begin transaction to ensure both updates succeed or both fail
+            DB::beginTransaction();
+            
+            try {
+                $applicationObjective = ApplicationObjective::findOrFail($request->objective_id);
+                $successIndicator = SuccessIndicator::findOrFail($request->success_indicator_id);
+
+                $applicationObjective->objective = $request->objective;
+                $applicationObjective->success_indicator_id = $request->success_indicator_id;
+                $applicationObjective->save();
+
+                $successIndicator->success_indicator = $request->success_indicator;
+                $successIndicator->save();
+
+                // Commit the transaction if all operations succeed
+                DB::commit();
+
+                return response()->json([
+                    'message' => 'Objective and success indicator updated successfully',
+                    'data' => new ShowObjectiveResource($applicationObjective),
+                ], Response::HTTP_OK);
+            } catch (\Exception $e) {
+                // Rollback transaction if any operation fails
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'message' => 'Record not found',
+                'error' => $e->getMessage()
+            ], Response::HTTP_NOT_FOUND);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'An error occurred while updating the objective and success indicator',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }
