@@ -160,8 +160,6 @@ class PpmpItemController extends Controller
         try {
             DB::beginTransaction();
 
-            $validatedData = $request->validated();
-
             $createdItems = [];
 
             $ppmp_application = PpmpApplication::latest()->first();
@@ -187,13 +185,14 @@ class PpmpItemController extends Controller
                 'dec' => 12,
             ];
 
-            foreach ($validatedData['PPMP_Items'] as $item) {
+            $ppmpItems = json_decode($request['PPMP_Items'], true);
 
+            foreach ($ppmpItems as $item) {
                 $procurement_mode = ProcurementModes::where('name', $item['procurement_mode'])->first();
                 $items = Item::where('code', $item['item_code'])->first();
 
-                // Create PPMP item
-                $ppmpItem = PpmpItem::create([
+                $find_ppmp_item = PpmpItem::where('id', $items->id)->first();
+                $ppmp_data = [
                     'ppmp_application_id' => $ppmp_application->id ?? 1,
                     'item_id' => $items->id,
                     'procurement_mode_id' => $procurement_mode->id,
@@ -202,7 +201,17 @@ class PpmpItemController extends Controller
                     'estimated_budget' => $item['estimated_budget'] ?? 0,
                     'total_quantity' => $item['quantity'] ?? 0,
                     'total_amount' => $item['total_amount'] ?? 0,
-                ]);
+                ];
+
+                if (!$find_ppmp_item) {
+                    // Create PPMP item
+                    $ppmpItem = PpmpItem::create($ppmp_data);
+                } else {
+                    // Update PPMP item
+                    $ppmpItem = $find_ppmp_item;
+                    $ppmpItem->update($ppmp_data);
+                }
+
 
                 foreach ($item['activities'] as $activity) {
                     $activities = Activity::find($activity['activity_id'] ?? $activity['id'] ?? null);
@@ -218,7 +227,7 @@ class PpmpItemController extends Controller
                             'item_id' => $items->id,
                             'purchase_type_id' => $item['purchase_type_id'] ?? 1,
                             'object_category' => $item['category'] ?? null,
-                            'quantity' => $item['quantity'] ?? null,
+                            'quantity' => $item['aop_quantity'] ?? 0,
                             'expense_class' => $item['expense_class_id'] ?? null,
                         ];
 
@@ -381,5 +390,16 @@ class PpmpItemController extends Controller
         return response()->json([
             'message' => "PPMP Item deleted successfully."
         ], Response::HTTP_NO_CONTENT);
+    }
+
+    public function import(Request $request)
+    {
+        // Handle the import logic here
+        // You can use a package like Maatwebsite Excel for importing Excel files
+        // or handle CSV files directly using PHP's built-in functions.
+
+        return response()->json([
+            'message' => "Import functionality is not implemented yet."
+        ], Response::HTTP_NOT_IMPLEMENTED);
     }
 }

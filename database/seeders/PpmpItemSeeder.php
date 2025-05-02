@@ -41,7 +41,7 @@ class PpmpItemSeeder extends Seeder
 
         $activity = Activity::inRandomOrder()->first();
 
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 21; $i++) {
             $randomItem = Item::inRandomOrder()->first();
             $procurement = ProcurementModes::inRandomOrder()->first();
             $item_quantity = rand(5, 20);
