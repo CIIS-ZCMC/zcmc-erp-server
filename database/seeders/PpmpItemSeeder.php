@@ -39,12 +39,11 @@ class PpmpItemSeeder extends Seeder
             'remarks' => ""
         ]);
 
-        $activity = Activity::inRandomOrder()->first();
-
         for ($i = 0; $i < 21; $i++) {
             $randomItem = Item::inRandomOrder()->first();
             $procurement = ProcurementModes::inRandomOrder()->first();
             $item_quantity = rand(5, 20);
+            $activity = Activity::inRandomOrder()->first();
 
             $ppmpItem = PpmpItem::create([
                 'ppmp_application_id' => $ppmp_application->id,

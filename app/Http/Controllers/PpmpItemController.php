@@ -81,44 +81,35 @@ class PpmpItemController extends Controller
     )]
     public function index(Request $request)
     {
-        $perPage = $request->input('per_page', 10);
-        $page = $request->input('page', 1);
-
         $ppmp_application = PpmpApplication::with([
             'user',
             'divisionChief',
             'budgetOfficer',
             'aopApplication',
-        ])
-            ->whereNull('deleted_at')
-            ->first();
+            'ppmpItems' => function ($query) {
+                $query->with([
+                    'item' => function ($query) {
+                        $query->with([
+                            'itemUnit',
+                            'itemCategory',
+                            'itemClassification',
+                            'itemSpecifications',
+                        ]);
+                    },
+                    'procurementMode',
+                    'itemRequest',
+                    'activities',
+                    'comments',
+                    'ppmpSchedule',
+                ]);
+            },
+        ])->whereNull('deleted_at')->latest()->first();
 
         if (!$ppmp_application) {
             return response()->json([
                 'message' => "No record found.",
             ], Response::HTTP_NOT_FOUND);
         }
-
-        // Paginate ppmp_items inside the application
-        $ppmp_application->ppmp_items_paginated = $ppmp_application->ppmpItems()
-            ->whereNull('ppmp_items.deleted_at')
-            ->with([
-                'item' => function ($query) {
-                    $query->with([
-                        'itemUnit',
-                        'itemCategory',
-                        'itemClassification',
-                        'itemSpecifications',
-                    ]);
-                },
-                'procurementMode',
-                'itemRequest',
-                'activities',
-                'comments',
-                'ppmpSchedule',
-            ])
-            ->paginate($perPage, ['*'], 'page', $page);
-
 
         return response()->json([
             'data' => new PpmpApplicationResource($ppmp_application),
