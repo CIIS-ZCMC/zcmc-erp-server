@@ -121,7 +121,17 @@ Route::
             Route::post('log-descriptions', "LogDescriptionController@store");
             Route::put('log-descriptions', "LogDescriptionController@update");
             Route::delete('log-descriptions', "LogDescriptionController@destroy");
+            Route::post('log-descriptions/template', "LogDescriptionController@import");
+            Route::post('log-descriptions/import', "LogDescriptionController@downloadTemplate");
+            Route::get('log-descriptions', "LogDescriptionController@index");
+            Route::post('log-descriptions', "LogDescriptionController@store");
+            Route::put('log-descriptions', "LogDescriptionController@update");
+            Route::delete('log-descriptions', "LogDescriptionController@destroy");
 
+            // AssignedArea Routes - UMIS Integration
+            Route::get('assigned-areas', "AssignedAreaController@index");
+            Route::get('assigned-areas/{id}', "AssignedAreaController@show");
+            Route::post('umis/areas/update', "AssignedAreaController@processUMISUpdate");
             // AssignedArea Routes - UMIS Integration
             Route::get('assigned-areas', "AssignedAreaController@index");
             Route::get('assigned-areas/{id}', "AssignedAreaController@show");
@@ -131,10 +141,20 @@ Route::
             Route::apiResource('ppmp-items', 'PpmpItemController');
             Route::apiResource('activities', 'ActivityController');
             Route::apiResource('activity-comments', 'ActivityCommentController');
+            Route::apiResource('ppmp-applications', 'PpmpApplicationController');
+            Route::apiResource('ppmp-items', 'PpmpItemController');
+            Route::apiResource('activities', 'ActivityController');
+            Route::apiResource('activity-comments', 'ActivityCommentController');
             Route::get('comments-per-activity', 'ActivityController@commentsPerActivity');
 
             Route::post('update-osi/{id}', 'ObjectiveSuccessIndicatorController@updateForApproverModule');
 
+            // Approver  Module
+            Route::get('aop-requests', 'AopApplicationController@listOfAopRequests');
+            Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
+            Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
+            Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
+            Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
             // Approver  Module
             Route::get('aop-requests', 'AopApplicationController@aopRequests');
             Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
@@ -152,4 +172,5 @@ Route::
             Route::get('get-areas', 'AopApplicationController@getAllArea');
             Route::get('get-designations', 'AopApplicationController@getAllDesignations');
             Route::get('get-users', 'AopApplicationController@getUsersWithDesignation');
+            Route::post('export-aop/{id}', 'AopApplicationController@export');
         });

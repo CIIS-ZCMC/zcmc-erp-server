@@ -25,6 +25,7 @@ class Activity extends Model
         'cost',
         'start_month',
         'end_month',
+        'expense_class'
     ];
 
     protected $casts = [
