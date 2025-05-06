@@ -12,7 +12,6 @@ class Objective extends Model
         'type_of_function_id',
         'code',
         'description',
-        'type_of_function_id'
     ];
 
     public $timestamps = true;
@@ -38,6 +37,4 @@ class Objective extends Model
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
     }
-
-    
 }

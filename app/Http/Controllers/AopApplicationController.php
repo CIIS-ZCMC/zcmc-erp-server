@@ -26,6 +26,12 @@ use OpenApi\Attributes as OA;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Illuminate\Support\Facades\File;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
+
+use PhpOffice\PhpSpreadsheet\IOFactory;
+
 use App\Services\ApprovalWorkflowService;
 use App\Services\NotificationService;
 use App\Services\AopVisibilityService;
@@ -214,6 +220,7 @@ class AopApplicationController extends Controller
 
                 foreach ($objectiveData['activities'] as $activityData) {
                     $activity = $applicationObjective->activities()->create([
+                        'expense_class' => $activityData['expense_class'],
                         'activity_code' => $activityData['activity_code'],
                         'name' => $activityData['name'],
                         'is_gad_related' => $activityData['is_gad_related'],
@@ -358,7 +365,7 @@ class AopApplicationController extends Controller
 
                 foreach ($objectiveData['activities'] as $activityData) {
                     $activity = $applicationObjective->activities()->create([
-
+                        'expense_class' => $activityData['expense_class'],
                         'activity_code' => $activityData['activity_code'],
                         'name' => $activityData['name'],
                         'is_gad_related' => $activityData['is_gad_related'],
@@ -395,9 +402,19 @@ class AopApplicationController extends Controller
                 }
             }
 
+            $assignedArea = AssignedArea::with('division')->where('user_id', $validatedData['user_id'])->first();
+            $divisionChiefId = optional($assignedArea->division)->head_id;
+
+            $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
+            $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
+
+            // $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
+            // $budgetOfficerId = optional($budgetOfficer)->head_id;
+
+
             $ppmpApplication = $aopApplication->ppmpApplication()->create([
-                'user_id' => 1,
-                'division_chief_id' => 1,
+                'user_id' => $validatedData['user_id'],
+                'division_chief_id' => $divisionChiefId,
                 'budget_officer_id' => 1,
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => $ppmpTotal,
@@ -429,7 +446,6 @@ class AopApplicationController extends Controller
                 }
             }
 
-
             $aopApplicationTimeline = $aopApplication->applicationTimelines()->create([
                 'aop_application_id' => $aopApplication->id,
                 'user_id' => 1,
@@ -451,14 +467,25 @@ class AopApplicationController extends Controller
     {
         $aopApplication = AopApplication::with([
             'applicationObjectives.objective',
+            'applicationObjectives.objective.typeOfFunction',
             'applicationObjectives.otherObjective',
             'applicationObjectives.successIndicator',
             'applicationObjectives.otherSuccessIndicator',
             'applicationObjectives.activities.target',
             'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.resources.item',
             'applicationObjectives.activities.responsiblePeople.user',
             'applicationObjectives.activities.comments',
         ])->findOrFail($id);
+
+        foreach ($aopApplication->applicationObjectives as $objective) {
+            foreach ($objective->activities as $activity) {
+                foreach ($activity->responsiblePeople as $responsiblePerson) {
+                    // Check and resolve the name
+                    $responsiblePerson->resolved_name = $this->getResponsiblePersonName($responsiblePerson);
+                }
+            }
+        }
 
         return new AopApplicationResource($aopApplication);
     }
@@ -667,13 +694,13 @@ class AopApplicationController extends Controller
 
         // Use the AOP visibility service to get applications user can see
         $aopVisibilityService = new AopVisibilityService();
-        
+
         $filters = [
             'status' => $request->has('status') ? $request->status : null,
             'year' => $request->has('year') ? $request->year : null,
             'search' => $request->has('search') ? $request->search : null,
         ];
-        
+
         $query = $aopVisibilityService->getVisibleAopApplications($user, $filters);
         */
 
@@ -715,7 +742,7 @@ class AopApplicationController extends Controller
 
     /**
      * Process an AOP application request through the approval workflow
-     * 
+     *
      * @param Request $request The incoming request
      * @return mixed JSON response
      */
@@ -841,5 +868,176 @@ class AopApplicationController extends Controller
                 ]
             ]
         ], Response::HTTP_OK);
+    }
+
+
+    public function export($id)
+    {
+        $aopApplication = AopApplication::with([
+            'applicationObjectives.objective',
+            'applicationObjectives.objective.typeOfFunction',
+            'applicationObjectives.otherObjective',
+            'applicationObjectives.successIndicator',
+            'applicationObjectives.otherSuccessIndicator',
+            'applicationObjectives.activities.target',
+            'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.responsiblePeople.user',
+        ])->findOrFail($id);
+
+        $getResponsiblePersonName = function ($responsiblePerson) {
+            if ($responsiblePerson->user_id) {
+                return $responsiblePerson->user->name;  // Assuming you have a 'user' relationship in the model
+            }
+
+            if ($responsiblePerson->division_id) {
+                return $responsiblePerson->division->name;
+            }
+            if ($responsiblePerson->department_id) {
+                return $responsiblePerson->department->name;
+            }
+            if ($responsiblePerson->section_id) {
+                return $responsiblePerson->section->name;
+            }
+            if ($responsiblePerson->unit_id) {
+                return $responsiblePerson->unit->name;
+            }
+
+            return 'Unknown';
+        };
+
+        // Prepare the objectives and activities data
+        $objectives = $aopApplication->applicationObjectives->map(function ($objective) use ($getResponsiblePersonName, $aopApplication) {
+            return $objective->activities->map(function ($activity) use ($objective, $getResponsiblePersonName, $aopApplication) {
+                // Process resources
+                $resources = $activity->resources->map(function ($resource) {
+                    $quantity = $resource->quantity ?? '';
+                    $itemName = $resource->item->name ?? '';
+                    return "{$quantity} {$itemName}";
+                })->filter()->implode(', ');
+
+                // Process responsible people
+                $responsiblePeople = $activity->responsiblePeople->map(function ($responsible) use ($getResponsiblePersonName) {
+                    return $getResponsiblePersonName($responsible); // Get the name
+                })->filter()->implode(', ');
+
+                return [
+                    'mission' => $aopApplication->mission,
+                    'type_of_function' => $objective->objective->typeOfFunction->type ?? '',
+                    'objective' => $objective->objective->description ?? '',
+                    'success_indicator' => $objective->successIndicator->description ?? '',
+                    'activity_name' => $activity->name,
+                    'start_month' => $activity->start_month ? \Carbon\Carbon::parse($activity->start_month)->format('F') : '',
+                    'end_month' => $activity->end_month ? \Carbon\Carbon::parse($activity->end_month)->format('F') : '',
+                    'target_q1' => $activity->target->first_quarter ?? '',
+                    'target_q2' => $activity->target->second_quarter ?? '',
+                    'target_q3' => $activity->target->third_quarter ?? '',
+                    'target_q4' => $activity->target->fourth_quarter ?? '',
+                    'resources' => $resources,
+                    'cost' => $activity->cost ?? 0,
+                    'expense_class' => $activity->expense_class,
+                    'responsible_people' => $responsiblePeople,
+                    'is_gad_related' => $activity->is_gad_related,
+                ];
+            });
+        });
+
+
+
+        // Load template
+        $templatePath = storage_path('app/template/operational_plan.xlsx');
+        $spreadsheet = IOFactory::load($templatePath);
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $sheet->setCellValue('B8', $aopApplication->mission);
+
+        // Start populating from row 14
+        $row = 14;
+        foreach ($objectives as $objectiveActivities) {
+            foreach ($objectiveActivities as $item) {
+                // Set the data in the cells
+                $sheet->setCellValue("A{$row}", $item['type_of_function']);
+                $sheet->setCellValue("B{$row}", $item['objective']);
+                $sheet->setCellValue("C{$row}", $item['success_indicator']);
+                $sheet->setCellValue("D{$row}", $item['activity_name']);
+                $sheet->setCellValue("E{$row}", $item['start_month']);
+                $sheet->setCellValue("F{$row}", $item['end_month']);
+                $sheet->setCellValue("G{$row}", $item['target_q1']);
+                $sheet->setCellValue("G{$row}", $item['target_q1']);
+                $sheet->setCellValue("H{$row}", $item['target_q2']);
+                $sheet->setCellValue("I{$row}", $item['target_q3']);
+                $sheet->setCellValue("J{$row}", $item['target_q4']);
+                $sheet->setCellValue("K{$row}", $item['resources']);
+                $sheet->setCellValue("L{$row}", $item['cost']);
+                $sheet->setCellValue("M{$row}", $item['expense_class']);
+                $sheet->setCellValue("N{$row}", $item['responsible_people']);
+                $sheet->setCellValue("O{$row}", $item['is_gad_related']);
+                $row++;
+            }
+        }
+
+        $lastRow = $row - 1;
+        $sheet->getStyle("G14:J{$lastRow}")->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_NUMBER);
+        $sheet->getStyle("L14:L{$lastRow}")
+            ->getNumberFormat()
+            ->setFormatCode(NumberFormat::FORMAT_NUMBER_00);
+
+        $tempDirectory = storage_path('app/temp');
+        if (!File::exists($tempDirectory)) {
+            File::makeDirectory($tempDirectory, 0777, true); // Create directory if it doesn't exist
+        }
+
+        // Output the modified file
+        $writer = new Xlsx($spreadsheet);
+        $fileName = 'aop_application_' . $id . '.xlsx';
+        $tempPath = storage_path("app/temp/{$fileName}");
+        $writer->save($tempPath);
+
+        return response()->download($tempPath)->deleteFileAfterSend(true);
+    }
+    // Helper method to get the formatted objective description
+    public function getObjectiveDescription($objective)
+    {
+        $description = $objective->objective->description ?? null;
+        if ($description === 'Others' && $objective->othersObjective) {
+            return $description . ': ' . $objective->othersObjective->description;
+        }
+        return $description;
+    }
+
+    // Helper method to get the formatted success indicator description
+    public function getSuccessIndicatorDescription($objective)
+    {
+        $description = $objective->successIndicator->description ?? null;
+        if ($description === 'Others' && $objective->otherSuccessIndicator) {
+            return $description . ': ' . $objective->otherSuccessIndicator->description;
+        }
+        return $description;
+    }
+
+    private function getResponsiblePersonName($responsiblePerson)
+    {
+
+        if ($responsiblePerson->user_id) {
+            return $responsiblePerson->user->name;
+        }
+
+        if ($responsiblePerson->division_id) {
+            return $responsiblePerson->division->name;
+        }
+        if ($responsiblePerson->department_id) {
+            return $responsiblePerson->department->name;
+        }
+        if ($responsiblePerson->section_id) {
+            return $responsiblePerson->section->name;
+        }
+        if ($responsiblePerson->unit_id) {
+            return $responsiblePerson->unit->name;
+        }
+
+        if ($responsiblePerson->designation_id) {
+            return $responsiblePerson->designation->name;
+        }
+
+        return 'Unknown';
     }
 }

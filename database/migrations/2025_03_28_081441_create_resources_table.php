@@ -18,7 +18,6 @@ return new class extends Migration {
             $table->foreign('item_id')->references('id')->on('items');
             $table->unsignedBigInteger('purchase_type_id');
             $table->foreign('purchase_type_id')->references('id')->on('purchase_types');
-            $table->string('object_category');
             $table->integer('quantity');
             $table->string('expense_class');
             $table->timestamps();
