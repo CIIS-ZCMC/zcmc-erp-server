@@ -74,34 +74,24 @@ class PpmpApplicationController extends Controller
     )]
     public function index(Request $request)
     {
-        $perPage = $request->input('per_page', 10);
-        $page = $request->input('page', 1);
-
-        //paginate display 10 data per page
         $ppmp_application = PpmpApplication::with([
-            'aop_application_id',
-            'user',
-            'divisionChief',
-            'budgetOfficer',
-            'ppmpItem' => function ($query, $perPage, $page) {
-                $query->whereNull('ppmp_items.deleted_at')
-                    ->with([
-                        'item' => function ($query) {
-                            $query->with([
-                                'itemCategory',
-                                'itemClassification',
-                                'itemSpecifications',
-                            ]);
-                        },
-                        'procurementMode',
-                        'itemRequest',
-                        'activities',
-                        'comments',
-                        'ppmpSchedule'
-                    ])->paginate($perPage, ['*'], 'page', $page);
-                ;
-            }
-        ])->whereNull('deleted_at');
+            'ppmpItems' => function ($query) {
+                $query->with([
+                    'item',
+                    'procurementMode',
+                    'itemRequest',
+                    'activities'
+                ]);
+            },
+        ])->latest()->first();
+
+        $itemCount = $ppmp_application->ppmpItems->count();
+        $activityCount = $ppmp_application->ppmpItems
+            ->flatMap(fn($item): mixed => $item->activities)
+            ->count();
+
+        $totalQuantity = $ppmp_application->ppmpItems->sum('total_quantity');
+        $totalBudget = $ppmp_application->ppmpItems->sum('estimated_budget');
 
         if (!$ppmp_application) {
             return response()->json([
@@ -109,23 +99,17 @@ class PpmpApplicationController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
+        $data = [
+            'ppmp_application' => $ppmp_application,
+            'item_count' => $itemCount,
+            'activity_count' => $activityCount,
+            'total_quantity' => $totalQuantity,
+            'total_budget' => $totalBudget,
+        ];
+
         return response()->json([
-            'data' => PpmpApplicationResource::collection($ppmp_application),
-            'meta' => [
-                'current_page' => $ppmp_application->currentPage(),
-                'last_page' => $ppmp_application->lastPage(),
-                'per_page' => $ppmp_application->perPage(),
-                'total' => $ppmp_application->total(),
-                'from' => $ppmp_application->firstItem(),
-                'to' => $ppmp_application->lastItem()
-            ],
-            'links' => [
-                'first' => $ppmp_application->url(1),
-                'last' => $ppmp_application->url($ppmp_application->lastPage()),
-                'prev' => $ppmp_application->previousPageUrl(),
-                'next' => $ppmp_application->nextPageUrl()
-            ],
-            'message' => 'PPMP Application retrieved successfully.',
+            'data' => $data,
+            'message' => 'PPMP Application retrieved successfully.'
         ], Response::HTTP_OK);
     }
 
