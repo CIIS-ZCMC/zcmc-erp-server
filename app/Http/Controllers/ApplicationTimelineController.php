@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\ApplicationTimeline;
 use App\Http\Resources\ApplicationTimelineResource;
+use App\Models\AopApplication;
 
 class ApplicationTimelineController extends Controller
 {
@@ -13,7 +14,16 @@ class ApplicationTimelineController extends Controller
      */
     public function index()
     {
-        //
+        $applicationTimelines = ApplicationTimeline::with(
+            [
+                'aopApplication'
+            ]
+        )->get();
+
+        return response()->json([
+            'message' => 'Application Timelines retrieved successfully',
+            'data' => ApplicationTimelineResource::collection($applicationTimelines),
+        ]);
     }
 
     /**
@@ -29,15 +39,32 @@ class ApplicationTimelineController extends Controller
      */
     public function show(string $id)
     {
-        $applicationTimeline = ApplicationTimeline::with(
+        $aopApplicationTimeline = AopApplication::with(
             [
-                'aopApplication'
+                'user',
+                'user.designation',
+                'divisionChief',
+                'divisionChief.designation',
+                'planningOfficer',
+                'planningOfficer.designation',
+                'mccChief',
+                'mccChief.designation',
+                'applicationTimelines',
+                'applicationTimelines.user',
+                'applicationTimelines.user.designation',
+                'applicationObjectives.activities.comments'
             ]
         )->where('id', $id)->first();
-
+        
+        if (!$aopApplicationTimeline) {
+            return response()->json([
+                'message' => 'Application not found',
+            ], 404);
+        }
+    
         return response()->json([
             'message' => 'Application Timeline retrieved successfully',
-            'data' => ApplicationTimelineResource::make($applicationTimeline),
+            'data' => ApplicationTimelineResource::make($aopApplicationTimeline),
         ]);
     }
 
