@@ -676,28 +676,28 @@ class AopApplicationController extends Controller
         
         $query = $aopVisibilityService->getVisibleAopApplications($user, $filters);
         */
-        
+
         // Direct query to get all AOP applications
         $query = AopApplication::query();
-        
+
         // Apply filters directly to the query
         if ($request->has('status')) {
             $query->where('status', $request->status);
         }
-        
+
         if ($request->has('year')) {
             $query->whereYear('created_at', $request->year);
         }
-        
+
         if ($request->has('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('id', 'like', "%{$search}%")
-                  ->orWhere('title', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
+                    ->orWhere('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
             });
         }
-        
+
         $aopApplications = $query->paginate($per_page, ['*'], 'page', $page);
 
         return response()->json([
