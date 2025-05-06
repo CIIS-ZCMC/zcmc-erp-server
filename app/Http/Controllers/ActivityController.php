@@ -258,4 +258,23 @@ class ActivityController extends Controller
             "data" => CommentsPerActivityResource::collection($activity_comments)
         ]);
     }
+
+    public function markAsReviewed($activity_id)
+    {
+        $activity = Activity::find($activity_id);
+
+        if (!$activity) {
+            return response()->json([
+                "message" => "Activity not found"
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $activity->is_reviewed = true;
+        $activity->save();
+
+        return response()->json([
+            "data" => new ActivityResource($activity),
+            "message" => "Activity marked as reviewed"
+        ], Response::HTTP_OK);
+    }
 }
