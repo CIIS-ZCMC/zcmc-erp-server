@@ -645,7 +645,7 @@ class AopApplicationController extends Controller
         $per_page = $request->query('per_page') ?? 15;
 
         // Get current authenticated user
-        $user = $request->user();
+        $user = User::find('1');
         $assignedArea = $user->assignedArea;
 
         if (!$assignedArea) {
