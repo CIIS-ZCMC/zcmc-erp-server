@@ -14,7 +14,7 @@ class PpmpApplicationResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $ppmp_items = collect($this->ppmp_items_paginated->items())->map(function ($item) {
+        $ppmp_items = collect($this->ppmpItems)->map(function ($item) {
             $monthMap = [
                 '1' => 'jan',
                 '2' => 'feb',
@@ -91,20 +91,6 @@ class PpmpApplicationResource extends JsonResource
             'budget_officer' => $this->budgetOfficer ? new UserResource($this->budgetOfficer) : null,
             'aop_application' => $this->aopApplication ? new AopApplicationResource($this->aopApplication) : null,
             'ppmp_items' => $ppmp_items,
-            'meta' => [
-                'current_page' => $this->ppmp_items_paginated->currentPage(),
-                'last_page' => $this->ppmp_items_paginated->lastPage(),
-                'per_page' => $this->ppmp_items_paginated->perPage(),
-                'total' => $this->ppmp_items_paginated->total(),
-                'from' => $this->ppmp_items_paginated->firstItem(),
-                'to' => $this->ppmp_items_paginated->lastItem(),
-            ],
-            'links' => [
-                'first_page_url' => $this->ppmp_items_paginated->url(1),
-                'last_page_url' => $this->ppmp_items_paginated->url($this->ppmp_items_paginated->lastPage()),
-                'next_page_url' => $this->ppmp_items_paginated->nextPageUrl(),
-                'prev_page_url' => $this->ppmp_items_paginated->previousPageUrl(),
-            ]
         ];
     }
 }

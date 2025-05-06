@@ -3,7 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use App\Models\TransactionLog;  
+use App\Models\TransactionLog;
+use App\Models\AssignedArea;
 
 /**
  * Designation Model
@@ -24,11 +25,15 @@ class Designation extends Model
      * @var array<string>
      */
     protected $fillable = [
-        'umis_designation_id',
         'name',
         'code',
         'probation'
     ];
+
+    public function assignedAreas()
+    {
+        return $this->hasMany(AssignedArea::class);
+    }
 
     /**
      * Get all transaction logs associated with this designation.

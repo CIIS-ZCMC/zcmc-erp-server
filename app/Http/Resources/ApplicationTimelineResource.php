@@ -16,9 +16,8 @@ class ApplicationTimelineResource extends JsonResource
     {
         return [
             "id" => $this->id,
-            "aop_application_id" => $this->aop_application_id,
-            "aop_application_uuid" => $this->aopApplication->aop_application_uuid,
-            "ppmp_application_id" => $this->ppmp_application_id,
+            "aop_application" => $this->aopApplication,
+            "ppmp_application" => $this->ppmpApplication,
             "approver_id" => $this->user->id,
             "approved_by" => $this->user->name,
             "status" => $this->status,

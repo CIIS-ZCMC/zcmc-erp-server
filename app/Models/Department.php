@@ -5,6 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\TransactionLog;
 use App\Models\User;
+use App\Models\AssignedArea;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use App\Models\Division;
 
 /**
  * Department Model
@@ -25,12 +30,11 @@ class Department extends Model
      * @var array
      */
     protected $fillable = [
-        'umis_department_id',
         'head_id',
         'oid_id',
         'division_id',
-        'umis_department_id',
         'name',
+        'code',
     ];
 
     /**
@@ -38,7 +42,7 @@ class Department extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function head()
+    public function head(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
@@ -48,14 +52,19 @@ class Department extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function divsion()
+    public function division(): BelongsTo
     {
         return $this->belongsTo(Division::class);
     }
 
-    public function sections()
+    public function sections(): HasMany
     {
         return $this->hasMany(Section::class);
+    }
+
+    public function units(): HasMany
+    {
+        return $this->hasMany(Unit::class);
     }
 
     /**
@@ -63,19 +72,27 @@ class Department extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
-    public function oic()
+    public function oic(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
     /**
-     * Get the division this department belongs to.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * Get the division chief for this department
+     * 
+     * @return User|null
      */
-    public function division()
+    public function getDivisionChief()
     {
-        return $this->belongsTo(Division::class);
+        // Get the division this department belongs to - use the method explicitly
+        $division = $this->division()->first();
+        
+        if (!$division) {
+            return null;
+        }
+        
+        // The division chief is the head of the division - use method explicitly
+        return $division->head()->first();
     }
 
     /**
@@ -83,7 +100,7 @@ class Department extends Model
      *
      * @return \Illuminate\Database\Eloquent\Relations\MorphMany
      */
-    public function logs()
+    public function logs(): MorphMany
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
     }

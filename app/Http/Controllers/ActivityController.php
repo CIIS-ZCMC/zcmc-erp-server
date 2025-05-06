@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\ActivityResource;
+use App\Http\Resources\CommentsPerActivityResource;
 use App\Models\Activity;
 use App\Models\AopApplication;
 use Illuminate\Http\Request;
@@ -247,5 +248,14 @@ class ActivityController extends Controller
     public function destroy(Activity $activity)
     {
         //
+    }
+
+    public function commentsPerActivity()
+    {
+        $activity_comments = Activity::with(['comments.user'])->paginate(15);
+
+        return response()->json([
+            "data" => CommentsPerActivityResource::collection($activity_comments)
+        ]);
     }
 }

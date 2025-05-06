@@ -194,6 +194,11 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::apiResource('ppmp-items', 'PpmpItemController');
     Route::apiResource('activities', 'ActivityController');
     Route::apiResource('activity-comments', 'ActivityCommentController');
+            Route::apiResource('ppmp-applications', 'PpmpApplicationController');
+            Route::apiResource('ppmp-items', 'PpmpItemController');
+            Route::apiResource('activities', 'ActivityController');
+            Route::apiResource('activity-comments', 'ActivityCommentController');
+            Route::get('comments-per-activity', 'ActivityController@commentsPerActivity');
 
     Route::post('update-osi/{id}', 'ObjectiveSuccessIndicatorController@updateForApproverModule');
 
@@ -203,6 +208,12 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
     Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
     Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
+            // Approver  Module
+            Route::get('aop-requests', 'AopApplicationController@aopRequests');
+            Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
+            Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
+            Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
+            Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
 
     // Aop Application Module
     Route::get('aop-applications', 'AopApplicationController@index');

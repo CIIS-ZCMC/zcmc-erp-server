@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\PpmpScheduleRequest;
+use App\Http\Resources\PpmpScheduleResource;
 use App\Models\PpmpSchedule;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -93,9 +95,14 @@ class PpmpScheduleController extends Controller
             )
         ]
     )]
-    public function store(Request $request)
+    public function store(PpmpScheduleRequest $request)
     {
-        //
+        $data = new PpmpSchedule;
+        $data->ppmp_item_id = $request->ppmp_item_id;
+        $data->month = $request->month;
+        $data->year = now()->addYear()->year;
+        $data->quantity = $request->quantity;
+        $data->save();
     }
 
     #[OA\Get(

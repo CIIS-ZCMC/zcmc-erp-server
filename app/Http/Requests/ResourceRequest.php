@@ -11,7 +11,7 @@ class ResourceRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -22,7 +22,12 @@ class ResourceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            //
+            'activity_id' => 'required|integer',
+            'item_id' => 'required|integer',
+            "purchase_type_id" => "required|integer",
+            "object_category" => "required|string",
+            "quantity" => "required|integer",
+            "expense_class" => "required|string",
         ];
     }
 }
