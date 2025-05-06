@@ -644,6 +644,9 @@ class AopApplicationController extends Controller
         $page = $request->query('page') > 0 ? $request->query('page') : 1;
         $per_page = $request->query('per_page') ?? 15;
 
+        // TEMPORARILY REMOVED VISIBILITY SERVICE - Show all AOP applications
+        // Original code preserved in comments:
+        /*
         // Get current authenticated user
         $user = User::find('1');
         $assignedArea = $user->assignedArea;
@@ -672,6 +675,28 @@ class AopApplicationController extends Controller
         ];
         
         $query = $aopVisibilityService->getVisibleAopApplications($user, $filters);
+        */
+        
+        // Direct query to get all AOP applications
+        $query = AopApplication::query();
+        
+        // Apply filters directly to the query
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+        
+        if ($request->has('year')) {
+            $query->whereYear('created_at', $request->year);
+        }
+        
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                  ->orWhere('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
         
         $aopApplications = $query->paginate($per_page, ['*'], 'page', $page);
 
