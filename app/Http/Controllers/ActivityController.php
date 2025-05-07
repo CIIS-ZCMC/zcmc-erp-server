@@ -252,7 +252,7 @@ class ActivityController extends Controller
 
     public function commentsPerActivity()
     {
-        $activity_comments = Activity::with(['comments.user'])->paginate(15);
+        $activity_comments = Activity::with(['commenbts.user'])->paginate(15);
 
         return response()->json([
             "data" => CommentsPerActivityResource::collection($activity_comments)
