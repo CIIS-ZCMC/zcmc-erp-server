@@ -135,7 +135,7 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::apiResource('activities', 'ActivityController');
     Route::apiResource('activity-comments', 'ActivityCommentController');
     Route::get('comments-per-activity', 'ActivityController@commentsPerActivity');
-    Route::post('/activities/{id}/mark-reviewed', 'ActivityController@markAsReviewed');
+    Route::post('activities/{id}/mark-reviewed', 'ActivityController@markAsReviewed');
 
     Route::post('update-osi/{id}', 'ObjectiveSuccessIndicatorController@updateForApproverModule');
 
