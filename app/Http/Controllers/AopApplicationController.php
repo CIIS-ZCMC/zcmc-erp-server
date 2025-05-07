@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
+use App\Http\Resources\AopRemarksResource;
 use App\Http\Resources\AopRequestResource;
 use App\Http\Resources\ApplicationTimelineResource;
 use App\Http\Resources\DesignationResource;
@@ -1042,47 +1043,45 @@ class AopApplicationController extends Controller
     }
 
     /**
-     * This function is used to get the AOP Application Remarks per request
+     * This function is used to get the remarks per AOP application or request
      * 
      * @param Request $request
      * 
      * @return JsonResponse
      * 
-     * Last edited by: Micah Mustaham
+     * Last edited by: Micah Mustaham, Updated by: Cascade
      */
-    public function aopRemarksPerRequest(Request $request)
+    public function aopRemarks($id)
     {
+        if (!$id) {
+            return response()->json([
+                'message' => 'AOP Application ID is required'
+            ], Response::HTTP_BAD_REQUEST);
+        }
 
-        // Validates the request
-        $validated = $request->validate([
-            'aop_application_id' => 'required|integer',
-            'remarks' => 'required|string',
-        ]);
+        // Get the specific AOP application with user and divisionChief relationships
+        $aopApplication = AopApplication::with([
+            'user.assignedArea.designation',
+            'divisionChief.assignedArea.designation'
+        ])->find($id);
 
-        // Find the AOP Application
-        $aopApplication = AopApplication::find($validated['aop_application_id']);
-
-        // If the AOP Application is not found, return a not found response
         if (!$aopApplication) {
             return response()->json([
-                'message' => 'AOP Application not found',
+                'message' => 'AOP Application not found'
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Update the remarks
-        $aopApplication->remarks = $validated['remarks'];
-
-        // Save the changes
-        if (!$aopApplication->save()) {
+        // Check if there are remarks for this application
+        if (!$aopApplication->remarks) {
             return response()->json([
-                'message' => 'Failed to update remarks',
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+                'message' => 'No remarks found for this AOP application'
+            ], Response::HTTP_NOT_FOUND);
         }
 
-        // Return a success response
         return response()->json([
-            'message' => 'Remarks updated successfully',
-            'data' => AopApplicationResource::make($aopApplication),
+            "message" => "Remarks retrieved successfully",
+            "data" => new AopRemarksResource($aopApplication),
+            "metadata" => $this->getMetadata('get')
         ], Response::HTTP_OK);
     }
 }
