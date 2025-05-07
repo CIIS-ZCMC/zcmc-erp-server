@@ -156,7 +156,7 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::get('aop-application-show/{id}', 'AopApplicationController@show');
     Route::get('aop-application-summary/{id}', 'AopApplicationController@getAopApplicationSummary');
     Route::get('aop-application-timeline/{id}', 'AopApplicationController@showTimeline');
-    Route::post('aop-remarks', 'AopApplicationController@aopRemarksPerRequest');
+    Route::get('aop-remarks/{id}', 'AopApplicationController@aopRemarks');
     
     Route::get('get-areas', 'AopApplicationController@getAllArea');
     Route::get('get-designations', 'AopApplicationController@getAllDesignations');
