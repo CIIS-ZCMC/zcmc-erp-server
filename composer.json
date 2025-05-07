@@ -3,7 +3,10 @@
     "name": "laravel/laravel",
     "type": "project",
     "description": "The skeleton application for the Laravel framework.",
-    "keywords": ["laravel", "framework"],
+    "keywords": [
+        "laravel",
+        "framework"
+    ],
     "license": "MIT",
     "require": {
         "php": "^8.2",
@@ -13,7 +16,7 @@
         "laravel/scout": "^10.14",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
-        "opcodesio/log-viewer": "^3.15"
+        "opcodesio/log-viewer": "^3.15",
         "maatwebsite/excel": "^3.1",
         "phpoffice/phpspreadsheet": "^1.29"
     },
