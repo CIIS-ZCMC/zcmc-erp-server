@@ -220,9 +220,11 @@ class ApplicationObjectiveController extends Controller
             'activities',
             'activities.comments',
             'objective',
+            'otherObjective',
             'objective.typeOfFunction', // Added typeOfFunction relationship
             'successIndicator',
         ])
+            ->whereHas('otherObjective') // Only get objectives that have entries in OtherObjective
             ->where('aop_application_id', $id)
             ->whereNull('deleted_at')
             ->get();
@@ -277,7 +279,7 @@ class ApplicationObjectiveController extends Controller
 
             // Begin transaction to ensure both updates succeed or both fail
             DB::beginTransaction();
-            
+
             try {
                 $applicationObjective = ApplicationObjective::findOrFail($request->objective_id);
                 $successIndicator = SuccessIndicator::findOrFail($request->success_indicator_id);
