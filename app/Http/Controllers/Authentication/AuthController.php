@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Authentication;
 
+use App\Http\Controllers\Controller;
 use App\Models\AccessToken;
 use App\Models\User;
 use Carbon\Carbon;

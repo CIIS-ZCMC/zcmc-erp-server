@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Areas;
 
-use App\Http\Resources\DepartmentResource;
-use App\Models\Department;
+use App\Http\Controllers\Controller;
+use App\Models\Division;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use App\Http\Resources\DivisionResource;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -27,18 +28,18 @@ use OpenApi\Attributes as OA;
         )
     ]
 )]
-class DepartmentController extends Controller
+class DivisionController extends Controller
 {
     private $is_development;
 
-    private $module = 'departments';
+    private $module = 'divisions';
 
     public function __construct()
     {
         $this->is_development = env("APP_DEBUG", true);
     }
 
-    private function cleanDepartmentData(array $data): array
+    private function cleanDivisionData(array $data): array
     {
         $cleanData = [];
 
@@ -61,7 +62,7 @@ class DepartmentController extends Controller
 
             if ($this->is_development) {
                 $metadata['urls'] = [
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?department_id=[primary-key]",
+                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?division_id=[primary-key]",
                     env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}",
                     env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
                     env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&search=value",
@@ -213,12 +214,12 @@ class DepartmentController extends Controller
         $last_id = $request->query('last_id') ?? 0;
         $last_initial_id = $request->query('last_initial_id') ?? 0;
         $page_item = $request->query('page_item') ?? 0;
-        $department_id = $request->query('department_id') ?? null;
+        $division_id = $request->query('division_id') ?? null;
 
-        if ($department_id) {
-            $department = Department::find($department_id);
+        if ($division_id) {
+            $division = Division::find($division_id);
 
-            if (!$department) {
+            if (!$division) {
                 return response()->json([
                     'message' => "No record found.",
                     "metadata" => $this->getMetadata('get', [])
@@ -226,7 +227,7 @@ class DepartmentController extends Controller
             }
 
             return response()->json([
-                'data' => new DepartmentResource($department),
+                'data' => new DivisionResource($division),
                 "metadata" => $this->getMetadata('get', [])
             ], 200);
         }
@@ -257,7 +258,7 @@ class DepartmentController extends Controller
             return response()->json($response, 422);
         }
 
-        $query = Department::query();
+        $query = Division::query();
 
         if ($search) {
             $query->where('name', 'LIKE', "%{$search}%")
@@ -265,9 +266,9 @@ class DepartmentController extends Controller
         }
 
         if ($mode === 'selection') {
-            $departments = $query->select('id', 'name', 'code')->get();
+            $divisions = $query->select('id', 'name', 'code')->get();
             return response()->json([
-                'data' => new DepartmentResource($departments),
+                'data' => new DivisionResource($divisions),
                 'metadata' => $this->getMetadata('get', [])
             ], 200);
         }
@@ -275,7 +276,7 @@ class DepartmentController extends Controller
         $total = $query->count();
         $total_page = ceil($total / $per_page);
 
-        $departments = $query->skip(($page - 1) * $per_page)
+        $divisions = $query->skip(($page - 1) * $per_page)
             ->take($per_page)
             ->get();
 
@@ -305,7 +306,7 @@ class DepartmentController extends Controller
         ];
 
         return response()->json([
-            'data' => new DepartmentResource($departments),
+            'data' => new DivisionResource($divisions),
             'metadata' => [
                 'pagination' => $pagination,
                 'page' => $page,
@@ -352,18 +353,18 @@ class DepartmentController extends Controller
             )
         ]
     )]
-    public function update(Request $request, Department $department)
+    public function update(Request $request, Division $division)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255|unique:departments,name,' . $department->id,
-            'code' => 'nullable|string|max:50|unique:departments,code,' . $department->id,
+            'name' => 'required|string|max:255|unique:divisions,name,' . $division->id,
+            'code' => 'nullable|string|max:50|unique:divisions,code,' . $division->id,
         ]);
 
-        $department->update($this->cleanDepartmentData($validated));
+        $division->update($this->cleanDivisionData($validated));
 
         return response()->json([
-            'data' => new DepartmentResource($department),
-            'message' => 'Department updated successfully',
+            'data' => new DivisionResource($division),
+            'message' => 'Division updated successfully',
             'metadata' => $this->getMetadata('put', [])
         ], Response::HTTP_OK);
     }
@@ -392,13 +393,13 @@ class DepartmentController extends Controller
             )
         ]
     )]
-    public function destroy(Department $department)
+    public function destroy(Division $division)
     {
-        $department->delete();
+        $division->delete();
 
         return response()->json([
-            'message' => 'Department deleted successfully',
-            'metadata' => $this->getMetadata('delete', $department->toArray())
+            'message' => 'Division deleted successfully',
+            'metadata' => $this->getMetadata('delete', $division->toArray())
         ], Response::HTTP_OK);
     }
 }

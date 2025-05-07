@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Libraries;
 
+use App\Http\Controllers\Controller;
 use App\Helpers\MetadataComposerHelper;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\GetWithPaginatedSearchModeRequest;
