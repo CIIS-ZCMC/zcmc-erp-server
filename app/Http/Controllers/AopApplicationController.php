@@ -1040,4 +1040,49 @@ class AopApplicationController extends Controller
 
         return 'Unknown';
     }
+
+    /**
+     * This function is used to get the AOP Application Remarks per request
+     * 
+     * @param Request $request
+     * 
+     * @return JsonResponse
+     * 
+     * Last edited by: Micah Mustaham
+     */
+    public function aopRemarksPerRequest(Request $request)
+    {
+
+        // Validates the request
+        $validated = $request->validate([
+            'aop_application_id' => 'required|integer',
+            'remarks' => 'required|string',
+        ]);
+
+        // Find the AOP Application
+        $aopApplication = AopApplication::find($validated['aop_application_id']);
+
+        // If the AOP Application is not found, return a not found response
+        if (!$aopApplication) {
+            return response()->json([
+                'message' => 'AOP Application not found',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        // Update the remarks
+        $aopApplication->remarks = $validated['remarks'];
+
+        // Save the changes
+        if (!$aopApplication->save()) {
+            return response()->json([
+                'message' => 'Failed to update remarks',
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        // Return a success response
+        return response()->json([
+            'message' => 'Remarks updated successfully',
+            'data' => AopApplicationResource::make($aopApplication),
+        ], Response::HTTP_OK);
+    }
 }
