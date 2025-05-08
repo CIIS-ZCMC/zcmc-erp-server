@@ -146,7 +146,7 @@ Route::namespace('App\Http\Controllers')->group(function () {
     // Route::get('application-timelines', 'ApplicationTimelineController@index');
     Route::apiResource('application-timelines', 'ApplicationTimelineController');
     Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
-    Route::put('edit-objective', 'ApplicationObjectiveController@editObjectiveAndSuccessIndicator');
+    Route::put('edit-objective-and-success-indicator', 'ApplicationObjectiveController@editObjectiveAndSuccessIndicator');
     Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
 
     // Aop Application Module
