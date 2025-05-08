@@ -223,8 +223,8 @@ class ApplicationObjectiveController extends Controller
             'otherObjective',
             'objective.typeOfFunction', // Added typeOfFunction relationship
             'successIndicator',
+            'otherSuccessIndicator',
         ])
-            ->whereHas('otherObjective') // Only get objectives that have entries in OtherObjective
             ->where('aop_application_id', $id)
             ->whereNull('deleted_at')
             ->get();
