@@ -48,6 +48,10 @@ class AopRequestResource extends JsonResource
             }),
             'aop_application_uuid' => $this->aop_application_uuid,
             'status' => $this->status,
+            'date_returned' => $this->whenLoaded('applicationTimelines', function () {
+                $returnTimeline = $this->applicationTimelines->where('status', 'returned')->sortByDesc('created_at')->first();
+                return $returnTimeline ? $returnTimeline->date_returned : null;
+            }),
             'year' => $this->created_at ? $this->created_at->format('Y') : null,
         ];
     }
