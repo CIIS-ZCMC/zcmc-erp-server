@@ -19,6 +19,7 @@ use App\Models\Target;
 use App\Models\Resource;
 use App\Models\ResponsiblePerson;
 use App\Models\OtherObjective;
+use App\Models\OtherSuccessIndicator;
 use App\Models\User;
 use App\Models\Designation;
 use App\Models\Division;
@@ -260,13 +261,21 @@ class AopApplicationSeeder extends Seeder
                         'success_indicator_id' => $successIndicator->id
                     ]);
 
-                    // For objectives not in the list, create OtherObjective
-                    if ($index == 0 && $appIndex % 2 == 0) { // Only for even-indexed applications
-                        OtherObjective::create([
-                            'application_objective_id' => $applicationObjective->id,
-                            'description' => 'Custom objective description for ' . $typeOfFunction->type . ' (Application ' . ($appIndex + 1) . ')'
-                        ]);
-                    }
+                    // // For certain application objectives, create both OtherObjective and OtherSuccessIndicator
+                    // // to ensure consistency in the "others" custom entries
+                    // if ($index == 0 && $appIndex % 2 == 0) { // Only for even-indexed applications
+                    //     // Create custom objective
+                    //     OtherObjective::create([
+                    //         'application_objective_id' => $applicationObjective->id,
+                    //         'description' => 'Custom objective description for ' . $typeOfFunction->type . ' (Application ' . ($appIndex + 1) . ')'
+                    //     ]);
+                        
+                    //     // Also create matching custom success indicator
+                    //     OtherSuccessIndicator::create([
+                    //         'application_objective_id' => $applicationObjective->id,
+                    //         'description' => 'Custom success indicator for ' . $typeOfFunction->type . ' (Application ' . ($appIndex + 1) . ')'
+                    //     ]);
+                    // }
 
                     // Create activities for this objective
                     $this->createActivities($applicationObjective, $user);
