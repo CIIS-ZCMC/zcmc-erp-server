@@ -15,6 +15,7 @@ class ShowObjectiveResource extends JsonResource
     public function toArray(Request $request): array {
         return [
             'id' => $this->id,
+            'is_reviewed' => $this->is_reviewed,
             'activity_name' => $this->name,
             'start_month' => $this->start_month,
             'end_month' => $this->end_month,
