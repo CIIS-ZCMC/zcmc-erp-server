@@ -11,6 +11,8 @@ use App\Http\Resources\ManageAopRequestResource;
 use App\Http\Resources\ShowObjectiveResource;
 use App\Models\SuccessIndicator;
 use Illuminate\Support\Facades\DB;
+use App\Models\OtherObjective;
+use App\Models\OtherSuccessIndicator;
 
 #[OA\Schema(
     schema: "ActivityComment",
@@ -271,32 +273,49 @@ class ApplicationObjectiveController extends Controller
     {
         try {
             $request->validate([
-                'objective_id' => 'required|exists:application_objectives,id',
-                'success_indicator_id' => 'required|exists:success_indicators,id',
-                'objective' => 'required|string',
-                'success_indicator' => 'required|string',
+                'application_objective_id' => 'required|exists:application_objectives,id',
+                'objective_description' => 'required|string',
+                'success_indicator_description' => 'required|string',
             ]);
 
-            // Begin transaction to ensure both updates succeed or both fail
+            // Begin transaction to ensure all operations succeed or fail together
             DB::beginTransaction();
 
             try {
-                $applicationObjective = ApplicationObjective::findOrFail($request->objective_id);
-                $successIndicator = SuccessIndicator::findOrFail($request->success_indicator_id);
+                $applicationObjective = ApplicationObjective::where('id', $request->application_objective_id)
+                    ->where('objective_id', 23)
+                    ->where('success_indicator_id', 36)
+                    ->first();
+                    
+                // Get or create otherObjective
+                $otherObjective = $applicationObjective->otherObjective;
+                if (!$otherObjective) {
+                    $otherObjective = new OtherObjective([
+                        'application_objective_id' => $applicationObjective->id,
+                    ]);
+                }
+                $otherObjective->description = $request->objective_description;
+                $otherObjective->save();
 
-                $applicationObjective->objective = $request->objective;
-                $applicationObjective->success_indicator_id = $request->success_indicator_id;
-                $applicationObjective->save();
+                // Get or create otherSuccessIndicator
+                $otherSuccessIndicator = $applicationObjective->otherSuccessIndicator;
+                if (!$otherSuccessIndicator) {
+                    $otherSuccessIndicator = new OtherSuccessIndicator([
+                        'application_objective_id' => $applicationObjective->id,
+                    ]);
+                }
+                $otherSuccessIndicator->description = $request->success_indicator_description;
+                $otherSuccessIndicator->save();
 
-                $successIndicator->success_indicator = $request->success_indicator;
-                $successIndicator->save();
+                // Reload the application objective with its relationships to return
+                $applicationObjective->load(['otherObjective', 'otherSuccessIndicator', 'objective', 'successIndicator']);
 
                 // Commit the transaction if all operations succeed
                 DB::commit();
 
                 return response()->json([
                     'message' => 'Objective and success indicator updated successfully',
-                    'data' => new ShowObjectiveResource($applicationObjective),
+                    'data' => new ManageAopRequestResource($applicationObjective),
                 ], Response::HTTP_OK);
             } catch (\Exception $e) {
                 // Rollback transaction if any operation fails
