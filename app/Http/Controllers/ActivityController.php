@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 use User;
+use App\Helpers\TransactionLogHelper;
 
 
 #[OA\Schema(
@@ -252,7 +253,12 @@ class ActivityController extends Controller
 
     public function commentsPerActivity()
     {
-        $activity_comments = Activity::with(['commenbts.user'])->paginate(15);
+        $activity_comments = Activity::with(['comments.user'])->paginate(15);
+
+        // Register the transaction log if we have activities
+        if ($activity_comments->count() > 0) {
+            TransactionLogHelper::register($activity_comments->first(), 'ACTIVITY_COMMENT_RETRIEVED');
+        }
 
         return response()->json([
             "data" => CommentsPerActivityResource::collection($activity_comments)
@@ -290,6 +296,13 @@ class ActivityController extends Controller
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
 
+        // Register the transaction log - make sure we have a model instance
+        // Re-fetch to ensure fresh model instance if needed
+        if (!($activity instanceof \Illuminate\Database\Eloquent\Model)) {
+            $activity = Activity::where('id', $activity_id)->first();
+        }
+        TransactionLogHelper::register($activity, 'ACTIVITY_MARK_AS_REVIEWED');
+        
         // Return success response
         return response()->json([
             "data" => new ActivityResource($activity),
@@ -327,6 +340,13 @@ class ActivityController extends Controller
                 "message" => "Failed to mark activity as reviewed"
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+
+        // Register the transaction log - make sure we have a model instance
+        // Re-fetch to ensure fresh model instance if needed
+        if (!($activity instanceof \Illuminate\Database\Eloquent\Model)) {
+            $activity = Activity::where('id', $activity_id)->first();
+        }
+        TransactionLogHelper::register($activity, 'ACTIVITY_MARK_AS_UNREVIEWED');
 
         // Return success response
         return response()->json([

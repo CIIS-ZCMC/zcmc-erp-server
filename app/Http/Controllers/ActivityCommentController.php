@@ -10,6 +10,7 @@ use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
 use App\Http\Resources\ActivityCommentResource;
 use App\Http\Resources\CommentsPerActivityResource;
+use App\Helpers\TransactionLogHelper;
 
 #[OA\Info(
     title: "Activity Comments API",
@@ -219,7 +220,13 @@ class ActivityCommentController extends Controller
             "message" => "AOP Application Comments retrieved successfully",
             "data" => ActivityCommentResource::collection($allComments),
             "metadata" => [
-                "methods" => "[GET, POST, PUT, DELETE]",
+                "total" => $allComments->count(),
+                "pagination" => [
+                    "current_page" => 1,
+                    "per_page" => $allComments->count(),
+                    "total_pages" => 1
+                ],
+                "module" => $this->getMetadata('getActivityComments')
             ]
         ]);
     }
@@ -286,6 +293,9 @@ class ActivityCommentController extends Controller
         ]);
 
         $comment = $activity->comments()->latest()->first();
+
+        // Register the transaction log
+        TransactionLogHelper::register($comment, 'ACTIVITY_COMMENT_ADDED');
 
         return response()->json([
             "data" => new ActivityCommentResource($comment),
@@ -429,6 +439,11 @@ class ActivityCommentController extends Controller
     public function destroy(ActivityComment $activityComment)
     {
         $activityComment->delete();
+
+        // Register the transaction log
+        TransactionLogHelper::register($activityComment, 'ACTIVITY_COMMENT_DELETED');
+
         return response()->noContent();
     }
+
 }

@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\OtherObjective;
 use App\Models\OtherSuccessIndicator;
 use App\Models\AopApplication;
+use App\Helpers\TransactionLogHelper;
 
 #[OA\Schema(
     schema: "ActivityComment",
@@ -264,6 +265,9 @@ class ApplicationObjectiveController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
+        // Register the transaction log
+        TransactionLogHelper::register($activity, 'ACTIVITY_DETAILS_RETRIEVED');
+
         return response()->json([
             'message' => 'Activity details retrieved successfully',
             'data' => new ShowObjectiveResource($activity),
@@ -327,6 +331,9 @@ class ApplicationObjectiveController extends Controller
 
                 // Commit the transaction if all operations succeed
                 DB::commit();
+
+                // Register the transaction log
+                TransactionLogHelper::register($applicationObjective, 'OBJECTIVE_AND_SUCCESS_INDICATOR_UPDATED');
 
                 return response()->json([
                     'message' => 'Objective and success indicator updated successfully',
