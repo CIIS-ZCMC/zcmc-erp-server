@@ -136,7 +136,7 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::apiResource('activity-comments', 'ActivityCommentController');
     Route::get('comments-per-activity', 'ActivityController@commentsPerActivity');
     Route::post('activities/{id}/mark-reviewed', 'ActivityController@markAsReviewed');
-    Route::post('activities/{id}/mark-unreviewed', 'ActivityController@markAsUnreviewed');
+
     Route::post('update-osi/{id}', 'ObjectiveSuccessIndicatorController@updateForApproverModule');
 
     // Approver  Module
@@ -147,15 +147,6 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::apiResource('application-timelines', 'ApplicationTimelineController');
     Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
     Route::put('edit-objective-and-success-indicator', 'ApplicationObjectiveController@editObjectiveAndSuccessIndicator');
-    Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
-    // Approver  Module
-    Route::get('aop-requests', 'AopApplicationController@aopRequests');
-    Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
-    // Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
-    // Route::get('application-timelines', 'ApplicationTimelineController@index');
-    Route::apiResource('application-timelines', 'ApplicationTimelineController');
-    Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
-    Route::put('edit-objective', 'ApplicationObjectiveController@editObjectiveAndSuccessIndicator');
     Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
 
     // Aop Application Module
