@@ -148,6 +148,15 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
     Route::put('edit-objective-and-success-indicator', 'ApplicationObjectiveController@editObjectiveAndSuccessIndicator');
     Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
+    // Approver  Module
+    Route::get('aop-requests', 'AopApplicationController@aopRequests');
+    Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
+    // Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
+    // Route::get('application-timelines', 'ApplicationTimelineController@index');
+    Route::apiResource('application-timelines', 'ApplicationTimelineController');
+    Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
+    Route::put('edit-objective', 'ApplicationObjectiveController@editObjectiveAndSuccessIndicator');
+    Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
 
     // Aop Application Module
     Route::get('aop-applications', 'AopApplicationController@index');
@@ -157,9 +166,32 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::get('aop-application-summary/{id}', 'AopApplicationController@getAopApplicationSummary');
     Route::get('aop-application-timeline/{id}', 'AopApplicationController@showTimeline');
     Route::get('aop-remarks/{id}', 'AopApplicationController@aopRemarks');
-    
+
     Route::get('get-areas', 'AopApplicationController@getAllArea');
     Route::get('get-designations', 'AopApplicationController@getAllDesignations');
     Route::get('get-users', 'AopApplicationController@getUsersWithDesignation');
     Route::post('export-aop/{id}', 'AopApplicationController@export');
+
+    // Variant Dummy
+    Route::get('variant', function () {
+        return response()->json([
+            'data' => [
+                [
+                    'id' => 1,
+                    'name' => 'High',
+                    'description' => 'Description for Variant 1',
+                ],
+                [
+                    'id' => 2,
+                    'name' => 'Low',
+                    'description' => 'Description for Variant 2',
+                ],
+                [
+                    'id' => 3,
+                    'name' => 'Mid',
+                    'description' => 'Description for Variant 3',
+                ],
+            ]
+        ], 200);
+    });
 });
