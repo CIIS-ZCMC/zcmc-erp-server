@@ -16,6 +16,7 @@ class ShowObjectiveResource extends JsonResource
         return [
             'id' => $this->id,
             'is_reviewed' => $this->is_reviewed,
+            'is_reviewed_date' => $this->date_updated                                                                                                      ,
             'activity_name' => $this->name,
             'start_month' => $this->start_month,
             'end_month' => $this->end_month,

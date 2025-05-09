@@ -14,12 +14,6 @@ class ManageAopRequestResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        // For debugging - log the resource
-        \Log::info('Resource data:', [
-            'has_other_obj' => $this->whenLoaded('otherObjective') ? 'Yes' : 'No',
-            'other_obj' => $this->otherObjective
-        ]);
-        
         return [
             'id' => $this->id,
             'aop_application_id' => $this->aop_application_id,
@@ -34,7 +28,8 @@ class ManageAopRequestResource extends JsonResource
                     'id' => $activity->id,
                     'name' => $activity->name,
                     'with_comments' => $activity->comments->isNotEmpty(),
-                    'is_reviewed' => $activity->is_reviewed
+                    'is_reviewed' => $activity->is_reviewed,
+                    'is_reviewed_date' => $activity->date_updated
                 ];
             }),
         ];
