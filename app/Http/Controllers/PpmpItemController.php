@@ -180,11 +180,28 @@ class PpmpItemController extends Controller
 
             foreach ($ppmpItems as $item) {
                 $procurement_mode = ProcurementModes::where('name', $item['procurement_mode'])->first();
+                if (!$procurement_mode) {
+                    return response()->json([
+                        'message' => 'Procurement mode not found.',
+                    ], 404);
+                }
+
                 $items = Item::where('code', $item['item_code'])->first();
+                if (!$items) {
+                    return response()->json([
+                        'message' => 'Item not found.',
+                    ], 404);
+                }
 
                 $find_ppmp_item = PpmpItem::where('id', $items->id)->first();
+                if (!$find_ppmp_item) {
+                    return response()->json([
+                        'message' => 'PPMP Item not found.',
+                    ], 404);
+                }
+
                 $ppmp_data = [
-                    'ppmp_application_id' => $ppmp_application->id ?? 1,
+                    'ppmp_application_id' => 1,
                     'item_id' => $items->id,
                     'procurement_mode_id' => $procurement_mode->id,
                     'item_request_id' => $item['item_request_id'] ?? null,
@@ -219,7 +236,7 @@ class PpmpItemController extends Controller
                             'purchase_type_id' => $item['purchase_type_id'] ?? 1,
                             'object_category' => $item['category'] ?? null,
                             'quantity' => $item['aop_quantity'] ?? 0,
-                            'expense_class' => $item['expense_class_id'] ?? null,
+                            'expense_class' => $item['expense_class'],
                         ];
 
                         $resource_controller = new ResourceController();
@@ -239,7 +256,6 @@ class PpmpItemController extends Controller
                         $ppmp_schedule = new PpmpScheduleController();
                         $ppmp_schedule->store(new PpmpScheduleRequest($target_request));
                     }
-
                 }
 
                 // $createdItems[] = $ppmpItem;
