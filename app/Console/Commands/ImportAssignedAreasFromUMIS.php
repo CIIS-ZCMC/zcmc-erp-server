@@ -83,22 +83,23 @@ class ImportAssignedAreasFromUMIS extends Command
             $successCount = 0;
             $errorCount = 0;
 
+            if(count($assignedAreasData) === 0){
+                Log::error('Assigned areas import failed: No assign area data fetch from the umis.');
+                return Command::FAILURE;
+            }
+
             // Populate assigned areas from UMIS
             foreach ($assignedAreasData as $assignedArea) {
                 try {
-                    $user = $assignedArea['employee_profile_id'] !== null ? User::where("umis_employee_profile_id", $assignedArea['employee_profile_id'])->first():null;
-                    Log::warning("User: {$user->id}");
+                    $user = $assignedArea['employee_profile_id'] !== null ? User::find($assignedArea['employee_profile_id']):null;
                     
-                    $division = $assignedArea['division_id'] !== null? Division::where('id', $assignedArea['division_id'])->first():null;
-                    $designation = $assignedArea['designation_id'] !== null? Designation::where('id', $assignedArea['designation_id'])->first():null;
-                    $department = $assignedArea['department_id'] !== null? Department::where('id', $assignedArea['department_id'])->first():null;
-                    $section = $assignedArea['section_id'] !== null? Section::where('id', $assignedArea['section_id'])->first():null;
-                    $unit = $assignedArea['unit_id'] !== null? Unit::where('id', $assignedArea['unit_id'])->first():null;
-
-
+                    $division = $assignedArea['division_id'] !== null? Division::find($assignedArea['division_id']):null;
+                    $designation = $assignedArea['designation_id'] !== null? Designation::find( $assignedArea['designation_id']):null;
+                    $department = $assignedArea['department_id'] !== null? Department::find( $assignedArea['department_id']):null;
+                    $section = $assignedArea['section_id'] !== null? Section::find( $assignedArea['section_id']):null;
+                    $unit = $assignedArea['unit_id'] !== null? Unit::find( $assignedArea['unit_id']):null;
 
                     AssignedArea::create([
-                        'id' => $assignedArea['id'],
                         'user_id' => $user->id,
                         'designation_id' => $designation !== null? $designation->id: null,
                         'division_id' => $division !== null? $division->id: null,
@@ -109,9 +110,9 @@ class ImportAssignedAreasFromUMIS extends Command
                     $successCount++;
                 } catch (\Exception $exception) {
                     $employee_id = $assignedArea['employee_profile_id'] ?? 'unknown';
-                    $this->error("Error processing assigned area for employee profile ID {$employee_id}: " . $exception->getMessage());
-                    Log::error("Error processing assigned area for employee profile ID {$employee_id}: " . $exception->getMessage());
+                    Log::error("Error processing assigned area for employee profile ID :". $exception);
                     $errorCount++;
+                    break;
                 }
             }
 

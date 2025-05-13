@@ -30,6 +30,7 @@ class Section extends Model
      * @var array
      */
     protected $fillable = [
+        'id',
         'head_id',
         'oic_id',
         'division_id',

@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('session_id')->nullable();
             $table->json('permissions')->nullable();
             $table->integer('authorization_pin')->nullable();
+            $table->text('token')->nullable();
+            $table->json('abilities')->nullable();
             $table->unsignedBigInteger('user_id');
             $table->foreign('user_id')->references('id')->on('users');
             $table->dateTime('expire_at');

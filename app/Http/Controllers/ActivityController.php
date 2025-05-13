@@ -252,10 +252,86 @@ class ActivityController extends Controller
 
     public function commentsPerActivity()
     {
-        $activity_comments = Activity::with(['comments.user'])->paginate(15);
+        $activity_comments = Activity::with(['commenbts.user'])->paginate(15);
 
         return response()->json([
             "data" => CommentsPerActivityResource::collection($activity_comments)
         ]);
+    }
+
+    /**
+     * Mark the specified activity as reviewed.
+     *
+     * @param int $activity_id
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * Last edited by Micah Mustaham
+     */
+    public function markAsReviewed($activity_id)
+    {
+        // Find the activity by ID
+        $activity = Activity::find($activity_id);
+
+        // Return error if activity not found
+        if (!$activity) {
+            return response()->json([
+                "message" => "Activity not found"
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        // Mark the activity as reviewed
+        $activity->is_reviewed = true;
+        try {
+            $activity->save();
+        } catch (\Throwable $th) {
+            // Return error response if saving fails
+            return response()->json([
+                "message" => "Failed to mark activity as reviewed"
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        // Return success response
+        return response()->json([
+            "data" => new ActivityResource($activity),
+            "message" => "Activity marked as reviewed"
+        ], Response::HTTP_OK);
+    }
+
+    /**
+     * Mark the specified activity as reviewed.
+     *
+     * @param int $activity_id
+     * @return \Illuminate\Http\JsonResponse
+     *
+     * Last edited by Micah Mustaham
+     */
+    public function markAsUnreviewed($activity_id)
+    {
+        // Find the activity by ID
+        $activity = Activity::find($activity_id);
+
+        // Return error if activity not found
+        if (!$activity) {
+            return response()->json([
+                "message" => "Activity not found"
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        // Mark the activity as reviewed
+        $activity->is_reviewed = false;
+        try {
+            $activity->save();
+        } catch (\Throwable $th) {
+            // Return error response if saving fails
+            return response()->json([
+                "message" => "Failed to mark activity as reviewed"
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+
+        // Return success response
+        return response()->json([
+            "data" => new ActivityResource($activity),
+            "message" => "Activity marked as reviewed"
+        ], Response::HTTP_OK);
     }
 }

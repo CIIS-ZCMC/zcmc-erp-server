@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
+use App\Http\Resources\AopRemarksResource;
 use App\Http\Resources\AopRequestResource;
 use App\Http\Resources\ApplicationTimelineResource;
 use App\Http\Resources\DesignationResource;
@@ -671,8 +672,11 @@ class AopApplicationController extends Controller
         $page = $request->query('page') > 0 ? $request->query('page') : 1;
         $per_page = $request->query('per_page') ?? 15;
 
+        // TEMPORARILY REMOVED VISIBILITY SERVICE - Show all AOP applications
+        // Original code preserved in comments:
+        /*
         // Get current authenticated user
-        $user = $request->user();
+        $user = User::find('1');
         $assignedArea = $user->assignedArea;
 
         if (!$assignedArea) {
@@ -699,6 +703,28 @@ class AopApplicationController extends Controller
         ];
 
         $query = $aopVisibilityService->getVisibleAopApplications($user, $filters);
+        */
+
+        // Direct query to get all AOP applications
+        $query = AopApplication::query();
+
+        // Apply filters directly to the query
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('year')) {
+            $query->whereYear('created_at', $request->year);
+        }
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('id', 'like', "%{$search}%")
+                    ->orWhere('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
 
         $aopApplications = $query->paginate($per_page, ['*'], 'page', $page);
 
@@ -1014,5 +1040,48 @@ class AopApplicationController extends Controller
         }
 
         return 'Unknown';
+    }
+
+    /**
+     * This function is used to get the remarks per AOP application or request
+     * 
+     * @param Request $request
+     * 
+     * @return JsonResponse
+     * 
+     * Last edited by: Micah Mustaham, Updated by: Cascade
+     */
+    public function aopRemarks($id)
+    {
+        if (!$id) {
+            return response()->json([
+                'message' => 'AOP Application ID is required'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        // Get the specific AOP application with user and divisionChief relationships
+        $aopApplication = AopApplication::with([
+            'user.assignedArea.designation',
+            'divisionChief.assignedArea.designation'
+        ])->find($id);
+
+        if (!$aopApplication) {
+            return response()->json([
+                'message' => 'AOP Application not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        // Check if there are remarks for this application
+        if (!$aopApplication->remarks) {
+            return response()->json([
+                'message' => 'No remarks found for this AOP application'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json([
+            "message" => "Remarks retrieved successfully",
+            "data" => new AopRemarksResource($aopApplication),
+            "metadata" => $this->getMetadata('get')
+        ], Response::HTTP_OK);
     }
 }

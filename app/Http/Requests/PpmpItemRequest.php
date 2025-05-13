@@ -26,7 +26,7 @@ class PpmpItemRequest extends FormRequest
             // 'object_category' => 'required|string',
             // "expense_class" => "required|string",
             // "purchase_type_id" => "required|integer",
-            'PPMP_Items' => 'required|json',
+            // 'PPMP_Items' => 'required|json',
             // 'PPMP_Items.*.ppmp_application_id' => 'required|integer',
             // 'PPMP_Items.*.item_id' => 'required|integer',
             // 'PPMP_Items.*.procurement_mode_id' => 'required|integer',

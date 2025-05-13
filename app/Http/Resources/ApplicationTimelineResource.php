@@ -16,15 +16,62 @@ class ApplicationTimelineResource extends JsonResource
     {
         return [
             "id" => $this->id,
-            "aop_application" => $this->aopApplication,
-            "ppmp_application" => $this->ppmpApplication,
-            "approver_id" => $this->user->id,
-            "approved_by" => $this->user->name,
+            "aop_application_uuid" => $this->aop_application_uuid ?? null,
+            "application_details" => [
+                "id" => $this->id,
+                "type" => 'AOP',
+                "reference" => $this->aop_application_uuid
+            ],
+            "mission" => $this->mission,
             "status" => $this->status,
+            "has_discussed" => $this->has_discussed,
             "remarks" => $this->remarks,
-            "date_created" => $this->date_created,
-            "date_approved" => $this->date_approved,
-            "date_returned" => $this->date_returned,
+            "timelines" => $this->whenLoaded('applicationTimelines', function () {
+                return $this->applicationTimelines->map(function ($timeline) {
+                    $activity_comments = $timeline->activityComments ?? collect([]);
+
+                    return [
+                        "id" => $timeline->id,
+                        "approver_id" => $timeline->user->id,
+                        "approved_by" => $timeline->user->name,
+                        "approver_position" => $timeline->user->designation->name ?? null,
+                        "status" => $timeline->status,
+                        "remarks" => $timeline->remarks,
+                        "has_comments" => $activity_comments->count() > 0,
+                        "comments_count" => $activity_comments->count(),
+                        "activities_with_comments" => $activity_comments->pluck('activity_id')->unique()->count(),
+                        "date_created" => $timeline->date_created,
+                        "date_approved" => $timeline->date_approved,
+                        "date_returned" => $timeline->date_returned,
+                        "date_updated" => $timeline->updated_at
+                    ];
+                });
+            }),
+            "approval_roles" => [
+                "applicant" => [
+                    "id" => $this->user->id ?? null,
+                    "name" => $this->user->name ?? null,
+                    "designation" => $this->user->designation->name ?? null,
+                ],
+                "division_chief" => [
+                    "id" => $this->divisionChief->id ?? null,
+                    "name" => $this->divisionChief->name ?? null,
+                    "designation" => $this->divisionChief->designation->name ?? null,
+                ],
+                "planning_officer" => [
+                    "id" => $this->planningOfficer->id ?? null,
+                    "name" => $this->planningOfficer->name ?? null,
+                    "designation" => $this->planningOfficer->designation->name ?? null,
+                ],
+                "mcc_chief" => [
+                    "id" => $this->mccChief->id ?? null,
+                    "name" => $this->mccChief->name ?? null,
+                    "designation" => $this->mccChief->designation->name ?? null,
+                ],
+            ],
+            "current_status" => $this->status ?? $this->whenLoaded('applicationTimelines', function () {
+                return $this->applicationTimelines->sortByDesc('created_at')->first()->status ?? 'pending';
+            }),
         ];
     }
 }

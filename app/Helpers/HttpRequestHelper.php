@@ -17,19 +17,24 @@ class HttpRequestHelper
 {
     public static function forwardRequestToExternalApi($endpoint, $method = 'GET', $data = [], $headers = [])
     {
-        $default = env("UMIS_API") ?? "https://umis.zcmc.online/api/";
-
+        $default = env("UMIS_API_URL")."/" ?? "http://192.168.9.243:8010/api";
         $externalApiUrl =  $default. ltrim($endpoint, '/');
+
+        // Special handling for auth endpoint
+        if ($endpoint === 'auth-with-session-id' && isset($data['session_id'])) {
+            $externalApiUrl .= '?session_id=' . urlencode($data['session_id']);
+            $data = []; // Clear data to avoid sending it twice
+        }
 
         $defaultHeaders = [
             'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . env('EXTERNAL_API_TOKEN') // Use API KEY from umis
+            'Authorization' => 'Bearer ' . env('UMIS_API_KEY') // Use API KEY from umis
         ];
 
         $headers = array_merge($defaultHeaders, $headers);
 
         $response = Http::withHeaders($headers)->{$method}($externalApiUrl, $data);
 
-        return $response->json();
+        return $response;
     }
 }

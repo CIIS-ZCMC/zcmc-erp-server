@@ -1,31 +1,34 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Libraries;
 
+use App\Http\Controllers\Controller;
+use App\Helpers\FileUploadCheckForMalwareAttack;
 use App\Helpers\MetadataComposerHelper;
 use App\Helpers\PaginationHelper;
-use App\Http\Requests\ItemClassificationRequest;
-use App\Http\Resources\ItemClassificationDuplicateResource;
-use App\Http\Resources\ItemClassificationResource;
-use App\Http\Resources\ItemClassificationTrashResource;
-use App\Imports\ItemClassificationsImport;
+use App\Http\Requests\ItemRequestRequest;
+use App\Http\Resources\ItemRequestDuplicateResource;
+use App\Http\Resources\ItemRequestResource;
+use App\Models\FileRecord;
 use App\Models\ItemCategory;
+use App\Models\ItemRequest;
 use App\Models\ItemClassification;
+use App\Models\ItemSpecification;
+use App\Models\ItemUnit;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Maatwebsite\Excel\Excel;
-use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
-    schema: "Item Classifications",
+    schema: "ItemRequestRequest",
     properties: [
         new OA\Property(property: "id", type: "integer"),
-        new OA\Property(property: "name", type: "string"),
-        new OA\Property(property: "code", type: "string", nullable: true),
-        new OA\Property(property: "description", type: "string"),
+        new OA\Property(property: "activity_id", type: "integer"),
+        new OA\Property(property: "user_id", type: "integer", nullable: true),
+        new OA\Property(property: "content", type: "string"),
         new OA\Property(
             property: "created_at",
             type: "string",
@@ -38,11 +41,11 @@ use OpenApi\Attributes as OA;
         )
     ]
 )]
-class ItemClassificationController extends Controller
+class ItemRequestController extends Controller
 {
     private $is_development;
 
-    private $module = 'item-classifications';
+    private $module = 'item-requests';
     
     private $methods = '[GET, POST, PUT, DELETE]';
 
@@ -54,20 +57,50 @@ class ItemClassificationController extends Controller
     private function cleanData(array $data): array
     {
         $cleanData = [];
-        
+
+        // Only include fields that exist in the request
         if (isset($data['name'])) {
             $cleanData['name'] = strip_tags($data['name']);
         }
-        
+
         if (isset($data['code'])) {
             $cleanData['code'] = strip_tags($data['code']);
         }
-        
-        
-        if (isset($data['description'])) {
-            $cleanData['description'] = strip_tags($data['description']);
+
+        if (isset($data['variant'])) {
+            $cleanData['variant'] = strip_tags($data['variant']);
+        }
+
+        if (isset($data['status'])) {
+            $cleanData['status'] = strip_tags($data['status']);
+        }
+
+        if (isset($data['reason'])) {
+            $cleanData['reason'] = strip_tags($data['reason']);
         }
         
+        if (isset($data['estimated_budget'])) {
+            $cleanData['estimated_budget'] = filter_var(
+                $data['estimated_budget'],
+                FILTER_SANITIZE_NUMBER_FLOAT,
+                FILTER_FLAG_ALLOW_FRACTION
+            );
+        }
+
+        if (isset($data['item_unit_id'])) {
+            $cleanData['item_unit_id'] = (int) $data['item_unit_id'];
+        }
+
+        if (isset($data['item_category_id'])) {
+            $cleanData['item_category_id'] = (int) $data['item_category_id'];
+        }
+
+        if (isset($data['item_classification_id'])) {
+            $item_classification = ItemClassification::find($data['item_classification_id']);
+            
+            $cleanData['item_classification_id'] = $item_classification? (int) $data['item_classification_id']: null;
+        }
+
         return $cleanData;
     }
     
@@ -83,12 +116,15 @@ class ItemClassificationController extends Controller
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
 
-        $results = ItemClassification::search($searchTerm)->paginate(
-            perPage: $perPage,
-            page: $page
-        );
+        $results = ItemRequest::where('name', 'like', "%{$searchTerm}%")
+            ->orWhere('code', 'like', "%{$searchTerm}%")
+            ->orWhere('variant', 'like', "%{$searchTerm}%")
+            ->paginate(
+                perPage: $perPage,
+                page: $page
+            );
 
-        return ItemClassificationResource::collection($results)
+        return ItemRequestResource::collection($results)
             ->additional([
                 'meta' => [
                     'methods' => $this->methods,
@@ -107,11 +143,11 @@ class ItemClassificationController extends Controller
             ]);
     }
     
-    protected function all($start)
+    protected function all($start): AnonymousResourceCollection
     {
-        $item_classification = ItemClassification::all();
+        $objective_success_indicator = ItemRequest::all();
 
-        return ItemClassificationResource::collection($item_classification)
+        return ItemRequestResource::collection($objective_success_indicator)
             ->additional([
                 'meta' => [
                     'methods' => $this->methods,
@@ -131,32 +167,33 @@ class ItemClassificationController extends Controller
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
         
-        $item_classification = ItemClassification::paginate($perPage, ['*'], 'page', $page);
+        $item_requests = ItemRequest::paginate($perPage, ['*'], 'page', $page);
 
-        return ItemClassificationResource::collection($item_classification)
+        return ItemRequestResource::collection($item_requests)
             ->additional([
                 'meta' => [
                     'methods' => $this->methods,
                     'time_ms' => round((microtime(true) - $start) * 1000),
                     'pagination' => [
-                        'total' => $item_classification->total(),
-                        'per_page' => $item_classification->perPage(),
-                        'current_page' => $item_classification->currentPage(),
-                        'last_page' => $item_classification->lastPage(),
+                        'total' => $item_requests->total(),
+                        'per_page' => $item_requests->perPage(),
+                        'current_page' => $item_requests->currentPage(),
+                        'last_page' => $item_requests->lastPage(),
                     ]
                 ],
                 'message' => 'Successfully retrieve all records.'
             ]);
     }     
-    protected function singleRecord($item_unit_id, $start):JsonResponse
+
+    protected function singleRecord($item_category_id, $start):JsonResponse
     {
-        $itemUnit = ItemClassification::find($item_unit_id);
+        $itemUnit = ItemRequest::find($item_category_id);
             
         if (!$itemUnit) {
-            return response()->json(["message" => "Item classification not found."], Response::HTTP_NOT_FOUND);
+            return response()->json(["message" => "ItemRequest category not found."], Response::HTTP_NOT_FOUND);
         }
     
-        return (new ItemClassificationResource($itemUnit))
+        return (new ItemRequestResource($itemUnit))
             ->additional([
                 "meta" => [
                     "methods" => $this->methods,
@@ -166,49 +203,83 @@ class ItemClassificationController extends Controller
             ])->response();
     }
 
-    protected function bulkStore(Request $request, $start):ItemClassificationResource|AnonymousResourceCollection|JsonResponse  
+    protected function bulkStore(Request $request, $start):ItemRequestResource|AnonymousResourceCollection|JsonResponse  
     {
-        $existing_items = ItemClassification::whereIn('name', collect($request->item_classifications)->pluck('name'))
-        ->orWhereIn('code', collect($request->item_classifications)->pluck('code'))
-        ->orWhereIn('description', collect($request->item_classifications)->pluck('description'))
-        ->get(['name', 'code'])->toArray();
+        $user = null;
+        $existing_items = [];
+        $existing_items = ItemRequest::whereIn('name', collect($request->item_requests)->pluck('name'))
+            ->get(['name'])->toArray();
 
-        // Convert existing items into a searchable format
+        // Convert existing item_requests into a searchable format
         $existing_names = array_column($existing_items, 'name');
-        $existing_codes = array_column($existing_items, 'code');
-        $existing_description = array_column($existing_items, 'description');
 
-        foreach ($request->item_classifications as $item) {
-            if (!in_array($item['name'], $existing_names) && !in_array($item['code'], $existing_codes) && !in_array($item['description'], $existing_description)) {
+        if (!empty($existing_items)) {
+            $existing_item_collection = ItemRequest::whereIn("name", $existing_names)->get();
+
+            $existing_items = ItemRequestDuplicateResource::collection($existing_item_collection);
+        }
+
+        foreach ($request->item_requests as $item) {
+            if (
+                !in_array($item['name'], $existing_names)
+            ) {
                 $cleanData[] = [
                     "name" => strip_tags($item['name']),
                     "code" => strip_tags($item['code']),
-                    "description" => isset($item['description']) ? strip_tags($item['description']) : null,
+                    "variant" => strip_tags($item['variant']),
+                    "estimated_budget" => strip_tags($item['estimated_budget']),
+                    "item_unit_id" => $item['item_unit_id'] !== null ?  strip_tags($item['item_unit_id']): null,
+                    "item_category_id" => $item['item_category_id'] !== null ? strip_tags($item['item_category_id']): null,
+                    "item_classification_id" => $item['item_classification_id'] !== null ? strip_tags($item['item_classification_id']) : null,
+                    "requested_by" => $user,
+                    'reason' => strip_tags($item['reason']),
                     "created_at" => now(),
                     "updated_at" => now()
                 ];
+
+                continue;
             }
+
+            return response()->json([
+                "message" => "Data already exist.",
+                "meta" => [
+                    "methods" => "[GET, PUT, DELETE]",
+                ]
+            ], Response::HTTP_BAD_REQUEST);
         }
 
         if (empty($cleanData) && count($existing_items) > 0) {
             return response()->json([
                 'data' => $existing_items,
-                'message' => "Failed to bulk insert all item classifications already exist.",
+                'message' => "Failed to bulk insert all item_requests already exist.",
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        ItemClassification::insert($cleanData);
+        ItemRequest::insert($cleanData);
 
-        $latest_item_classifications = ItemClassification::orderBy('id', 'desc')
+        foreach($request->item_requests as $item_request)
+        {
+            $itemRequest = ItemRequest::where('name', $item_request['name'])->first();
+            $item_specifications = $item_request['specifications'];
+
+            foreach($item_specifications as $specification){
+                ItemSpecification::create([
+                    "item_request_id" => $itemRequest->id,
+                    "description" => $specification['description'] 
+                ]);
+            }
+
+        }
+        $latest_item_units = ItemRequest::orderBy('id', 'desc')
             ->limit(count($cleanData))->get()
             ->sortBy('id')->values();
 
-        return ItemClassificationResource::collection($latest_item_classifications)
+        return ItemRequestResource::collection($latest_item_units)
             ->additional([
                 'meta' => [
                     "methods" => $this->methods,
                     'time_ms' => round((microtime(true) - $start) * 1000),
-                    "existings" => $existing_items,
+                    "existings" => $existing_items
                 ],
                 "message" => "Successfully store data."
             ]);
@@ -216,33 +287,33 @@ class ItemClassificationController extends Controller
     
     protected function bulkUpdate(Request $request, $start):AnonymousResourceCollection|JsonResponse
     {
-        $item_classification_ids = $request->query('id') ?? null;
+        $item_request_ids = $request->query('id') ?? null;
 
-        if (count($item_classification_ids) !== count($request->input('item_classifications'))) {
+        if (count($item_request_ids) !== count($request->input('item_requests'))) {
             return response()->json([
-                "message" => "Number of IDs does not match number of item classifications provided.",
+                "message" => "Number of IDs does not match number of item_requests provided.",
                 "meta" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
     
-        $updated_item_classifications = [];
+        $updated_item_units = [];
         $errors = [];
     
-        foreach ($item_classification_ids as $index => $id) {
-            $item_unit = ItemClassification::find($id);
+        foreach ($item_request_ids as $index => $id) {
+            $item_unit = ItemRequest::find($id);
             
             if (!$item_unit) {
-                $errors[] = "Log description with ID {$id} not found.";
+                $errors[] = "ItemRequest with ID {$id} not found.";
                 continue;
             }
     
-            $cleanData = $this->cleanData($request->input('item_classifications')[$index]);
+            $cleanData = $this->cleanData($request->input('item_requests')[$index]);
             $item_unit->update($cleanData);
-            $updated_item_classifications[] = $item_unit;
+            $updated_item_units[] = $item_unit;
         }
     
         if (!empty($errors)) {
-            return ItemClassificationResource::collection($updated_item_classifications)
+            return ItemRequestResource::collection($updated_item_units)
                 ->additional([
                     "meta" => [
                         'methods' => $this->methods,
@@ -256,7 +327,7 @@ class ItemClassificationController extends Controller
                 ->setStatusCode(Response::HTTP_MULTI_STATUS);
         }
         
-        return ItemClassificationResource::collection($updated_item_classifications)
+        return ItemRequestResource::collection($updated_item_units)
             ->additional([
                 "meta" => [
                     'methods' => $this->methods,
@@ -267,97 +338,37 @@ class ItemClassificationController extends Controller
             ]);
     }
 
-    protected function singleRecordUpdate(Request $request, $start): JsonResource|ItemClassificationResource|JsonResponse
+    protected function singleRecordUpdate(Request $request, $start): JsonResource|ItemRequestResource|JsonResponse
     {
-        $item_classification_ids = $request->query('id') ?? null;
+        $item_request_ids = $request->query('id') ?? null;
+    
+        // Handle single update
+        $item = ItemRequest::find($item_request_ids[0]);
         
-        $item_unit = ItemClassification::find($item_classification_ids[0]);
-        
-        if (!$item_unit) {
+        if (!$item) {
             return response()->json([
-                "message" => "Item classification not found."
+                "message" => "ItemRequest not found."
             ], Response::HTTP_NOT_FOUND);
         }
     
         $cleanData = $this->cleanData($request->all());
-        $item_unit->update($cleanData);
+        $item->update($cleanData);
 
-        return (new ItemClassificationResource($item_unit))
+        return (new ItemRequestResource($item))
             ->additional([
                 "meta" => [
                     'methods' => $this->methods,
                     'time_ms' => round((microtime(true) - $start) * 1000),
                 ],
-                'message' => 'Successfully update item classification record.'
+                'message' => 'Successfully update item category record.'
             ])->response();
-    }
-    
-    #[OA\Get(
-        path: '/api/item-classifications/template',
-        summary: 'Download CSV template for log descriptions',
-        description: 'Returns a CSV template file with example log description entries',
-        tags: ['Log Descriptions'],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: 'CSV template file download',
-                content: new OA\MediaType(
-                    mediaType: 'text/csv',
-                    schema: new OA\Schema(
-                        type: 'string',
-                        format: 'binary'
-                    )
-                ),
-                headers: [
-                    new OA\Header(
-                        header: 'Content-Disposition',
-                        description: 'Attachment with filename',
-                        schema: new OA\Schema(type: 'string'))
-                ]
-            ),
-            new OA\Response(
-                response: Response::HTTP_INTERNAL_SERVER_ERROR,
-                description: 'Server error',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'message', type: 'string')
-                    ],
-                    example: ['message' => 'Could not generate template file']
-                )
-            )
-        ]
-    )]
-    public function downloadTemplate()
-    {
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="item_classifications_template.csv"',
-        ];
-        
-        $columns = ['name', 'code', 'description'];
-        
-        $callback = function() use ($columns) {
-            $file = fopen('php://output', 'w');
-            
-            fputcsv($file, $columns);
-            
-            fputcsv($file, [
-                'Sample Name',
-                'SAMPLE-CODE',
-                'Optional description'
-            ]);
-            
-            fclose($file);
-        };
-        
-        return response()->stream($callback, 200, $headers);
     }
     
     #[OA\Post(
         path: '/api/import',
-        summary: 'Import item classifications from Excel/CSV file',
+        summary: 'Import item units from Excel/CSV file',
         requestBody: new OA\RequestBody(
-            description: 'Excel/CSV file containing item classifications',
+            description: 'Excel/CSV file containing item units',
             required: true,
             content: new OA\MediaType(
                 mediaType: 'multipart/form-data',
@@ -385,10 +396,10 @@ class ItemClassificationController extends Controller
                         new OA\Property(
                             property: 'failures',
                             type: 'array',
-                            items: new OA\Items(
+                            item_requests: new OA\ItemRequests(
                                 properties: [
                                     new OA\Property(property: 'row', type: 'integer'),
-                                    new OA\Property(property: 'errors', type: 'array', items: new OA\Items(type: 'string'))
+                                    new OA\Property(property: 'errors', type: 'array', item_requests: new OA\ItemRequests(type: 'string'))
                                 ]
                             )
                         )
@@ -404,7 +415,7 @@ class ItemClassificationController extends Controller
                         new OA\Property(
                             property: 'errors',
                             type: 'object',
-                            additionalProperties: new OA\Property(type: 'array', items: new OA\Items(type: 'string')))
+                            additionalProperties: new OA\Property(type: 'array', item_requests: new OA\ItemRequests(type: 'string')))
                     ]
                 )
             ),
@@ -419,51 +430,24 @@ class ItemClassificationController extends Controller
                 )
             )
         ],
-        tags: ['Item Units']
+        tags: ['ItemRequest Units']
     )]
     public function import(Request $request)
     {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls,csv'
-        ]);
-
-        try {
-            $import = new ItemClassificationsImport();
-            Excel::import($import, $request->file('file'));
-            
-            $successCount = $import->getRowCount() - count($import->failures());
-            $failures = $import->failures();
-            
-            return response()->json([
-                'message' => "$successCount item classifications imported successfully.",
-                'success_count' => $successCount,
-                'failure_count' => count($failures),
-                'failures' => $failures->map(function($failure) {
-                    return [
-                        'row' => $failure->row(),
-                        'errors' => $failure->errors(),
-                        'values' => $failure->values()
-                    ];
-                }),
-            ], 200);
-            
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Error importing file',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'message' => "Succesfully imported record"
+        ], Response::HTTP_OK);
     }
 
     #[OA\Get(
-        path: "/api/activity-comments",
+        path: "/api/ItemRequests",
         summary: "List all activity comments",
-        tags: ["Activity Comments"],
+        tags: ["ItemRequests"],
         parameters: [
             new OA\Parameter(
                 name: "per_page",
                 in: "query",
-                description: "Items per page",
+                description: "ItemRequests per page",
                 required: false,
                 schema: new OA\Schema(type: "integer", default: 15)
             ),
@@ -481,12 +465,12 @@ class ItemClassificationController extends Controller
                 description: "Successful operation",
                 content: new OA\JsonContent(
                     type: "array",
-                    items: new OA\Items(ref: "#/components/schemas/ActivityComment")
+                    item_requests: new OA\ItemRequests(ref: "#/components/schemas/ActivityComment")
                 )
             )
         ]
     )]
-    public function index(Request $request)
+    public function index(Request $request): AnonymousResourceCollection|JsonResponse
     {
         $start = microtime(true);
         $item_unit_id = $request->query('id');
@@ -505,13 +489,13 @@ class ItemClassificationController extends Controller
             return $this->search($request, $start);
         }
 
-        return $this->pagination($request, $start);
+        return $this->pagination($request, $start); 
     }
 
     #[OA\Post(
-        path: "/api/activity-comments",
+        path: "/api/ItemRequests",
         summary: "Create a new activity comment",
-        tags: ["Activity Comments"],
+        tags: ["ItemRequests"],
         requestBody: new OA\RequestBody(
             description: "Comment data",
             required: true,
@@ -536,38 +520,92 @@ class ItemClassificationController extends Controller
             )
         ]
     )]
-    public function store(ItemClassificationRequest $request)
+    public function store(ItemRequestRequest $request): AnonymousResourceCollection|ItemRequestResource|JsonResponse
     {
+        $user = null;
         $start = microtime(true);
 
         // Bulk Insert
-        if ($request->item_classifications !== null || $request->item_classifications > 1) {
+        if ($request->item_requests !== null || $request->item_requests > 1) {
             return $this->bulkStore($request, $start);
         }
 
-        // Single insert
+        $is_valid_unit_id = ItemUnit::find($request->item_unit_id);
+        $is_valid_category_id = ItemCategory::find($request->item_category_id);
+        $is_valid_classification_id = ItemClassification::find($request->item_classification_id);
+
         $cleanData = [
             "name" => strip_tags($request->input('name')),
             "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
+            "variant" => strip_tags($request->input('variant')),
+            "estimated_budget" => strip_tags($request->input('estimated_budget')),
+            "item_unit_id" => !$is_valid_unit_id? null:  strip_tags($request->input('item_unit_id')),
+            "item_category_id" => !$is_valid_category_id? null:  strip_tags($request->input('item_category_id')),
+            "item_classification_id" => !$is_valid_classification_id? null: strip_tags($request->input('item_classification_id')),
+            "requested_by" => $user,
+            "reason" => strip_tags($request->input('reason'))
         ];
 
-        $new_item = ItemClassification::create($cleanData);
-        
-        return (new ItemClassificationResource($new_item))
+        $new_item = ItemRequest::create($cleanData);
+
+        $item_specifications = $request->specifications;
+
+        foreach($item_specifications as $specification){
+            ItemSpecification::create([
+                "item_request_id" => $new_item->id,
+                "description" => $specification['description']
+            ]);
+        }
+
+        if($request->hasFile('file'))
+        {
+            try{
+                $fileChecker = new FileUploadCheckForMalwareAttack();
+            
+                // Check if file is safe
+                if (!$fileChecker->isFileSafe($request->file('file'))) {
+                    return response()->json([
+                        "message" => 'File upload failed security checks'
+                    ], Response::HTTP_BAD_REQUEST);
+                }
+    
+                // File is safe, proceed with saving
+                $file = $request->file('file');
+                $fileExtension = $file->getClientOriginalExtension();
+                $hashedFileName = hash_file('sha256', $file->getRealPath()) . '.' . $fileExtension;
+                
+                // Store file with hashed name
+                $filePath = $file->storeAs('uploads/item_requests', $hashedFileName, 'public');
+    
+                $file = FileRecord::create([
+                    "item_id" => $new_item->id,
+                    'file_path' => $filePath,
+                    'original_name' => $file->getClientOriginalName(),
+                    'file_hash' => $hashedFileName,
+                    'file_size' => $file->getSize(),
+                    'file_type' => $fileExtension,
+                ]);
+
+                $new_item->update(['image' => $filePath]);
+            }catch(\Throwable $th){
+                $metadata['error'] = "Failed to save item image.";
+            }
+        }
+
+        return (new ItemRequestResource($new_item))
             ->additional([
                 'meta' => [
                     "methods" => $this->methods,
                     'time_ms' => round((microtime(true) - $start) * 1000),
                 ],
                 "message" => "Successfully store data."
-            ])->response();
+            ]);
     }
 
     #[OA\Put(
-        path: "/api/activity-comments/{id}",
+        path: "/api/ItemRequests/{id}",
         summary: "Update an activity comment",
-        tags: ["Activity Comments"],
+        tags: ["ItemRequests"],
         parameters: [
             new OA\Parameter(
                 name: "id",
@@ -602,13 +640,13 @@ class ItemClassificationController extends Controller
             )
         ]
     )]
-    public function update(Request $request): AnonymousResourceCollection|ItemClassificationResource|JsonResource|JsonResponse    
+    public function update(Request $request): AnonymousResourceCollection|ItemRequestResource|JsonResource|JsonResponse
     {
         $start = microtime(true);
-        $item_classification_ids = $request->query('id') ?? null;
+        $item_request_ids = $request->query('id') ?? null;
     
         // Validate ID parameter exists
-        if (!$item_classification_ids) {
+        if (!$item_request_ids) {
             $response = ["message" => "ID parameter is required."];
             
             if ($this->is_development) {
@@ -619,51 +657,26 @@ class ItemClassificationController extends Controller
         }
 
         // Bulk Insert
-        if ($request->item_classifications !== null || $request->item_classifications > 1) {
+        if ($request->item_requests !== null && $request->item_requests > 1) {
             return $this->bulkUpdate($request, $start);
         }
     
         return $this->singleRecordUpdate($request, $start);
     }
 
-
-    #[OA\Put(
-        path: "/api/item-classifications/{id}/restore",
-        summary: "Restore delete record",
-        tags: ["Type of Functions"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_NO_CONTENT,
-                description: "Comment deleted"
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            )
-        ]
-    )]
     public function trash(Request $request)
     {
         $search = $request->query('search');
 
-        $query = ItemClassification::onlyTrashed();
+        $query = ItemRequest::onlyTrashed();
 
         if ($search) {
             $query->where('name', 'like', '%' . $search . '%')
-                ->orWhere('code', 'like', '%' . $search . '%')
-                ->orWhere('description', 'like', '%' . $search . '%');
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('variant', 'like', "%{$search}%");
         }
         
-        return ItemClassificationResource::collection(ItemClassification::onlyTrashed()->get())
+        return ItemRequestResource::collection(ItemRequest::onlyTrashed()->get())
             ->additional([
                 "meta" => [
                     "methods" => $this->methods
@@ -673,9 +686,9 @@ class ItemClassificationController extends Controller
     }
 
     #[OA\Put(
-        path: "/api/item-classifications/{id}/restore",
-        summary: "Restore delete record",
-        tags: ["Type of Functions"],
+        path: "/api/ItemRequests/{id}/restore",
+        summary: "Delete an item",
+        tags: ["ItemRequests"],
         parameters: [
             new OA\Parameter(
                 name: "id",
@@ -698,9 +711,9 @@ class ItemClassificationController extends Controller
     )]
     public function restore($id, Request $request)
     {
-        ItemClassification::withTrashed()->where('id', $id)->restore();
+        ItemRequest::withTrashed()->where('id', $id)->restore();
 
-        return (new ItemClassificationTrashResource(ItemClassification::find($id)))
+        return (new ItemRequestResource(ItemRequest::find($id)))
             ->additional([
                 "meta" => [
                     "methods" => $this->methods
@@ -710,9 +723,9 @@ class ItemClassificationController extends Controller
     }
 
     #[OA\Delete(
-        path: "/api/activity-comments/{id}",
+        path: "/api/ItemRequests/{id}",
         summary: "Delete an activity comment",
-        tags: ["Activity Comments"],
+        tags: ["ItemRequests"],
         parameters: [
             new OA\Parameter(
                 name: "id",
@@ -735,87 +748,73 @@ class ItemClassificationController extends Controller
     )]
     public function destroy(Request $request): Response
     {
-        $item_classification_ids = $request->query('id') ?? null;
+        $item_request_ids = $request->query('id') ?? null;
         $query = $request->query('query') ?? null;
-    
-        if (!$item_classification_ids && !$query) {
+
+        if (!$item_request_ids && !$query) {
             $response = ["message" => "Invalid request."];
-    
+
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
                     "meta" => MetadataComposerHelper::compose('delete', $this->module, $this->is_development)
                 ];
             }
-    
+
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-    
-        if ($item_classification_ids) {
-            $item_classification_ids = is_array($item_classification_ids)
-                ? $item_classification_ids
-                : (str_contains($item_classification_ids, ',')
-                    ? explode(',', $item_classification_ids)
-                    : [$item_classification_ids]
-                  );
-    
-            // Convert and validate IDs
-            $item_classification_ids = array_filter(array_map('intval', $item_classification_ids));
-            
-            if (empty($item_classification_ids)) {
-                return response()->json(["message" => "Invalid ID format provided."], Response::HTTP_BAD_REQUEST);
-            }
-    
-            // Get only active records
-            $item_classifications = ItemClassification::whereIn('id', $item_classification_ids)
-                ->whereNull('deleted_at')
-                ->get();
-    
-            if ($item_classifications->isEmpty()) {
-                return response()->json(
-                    ["message" => "No active classifications found with the provided IDs."],
-                    Response::HTTP_NOT_FOUND
-                );
-            }
-    
-            // Get only IDs that were actually found
-            $found_ids = $item_classifications->pluck('id')->toArray();
-            
-            // Perform soft delete
-            ItemClassification::whereIn('id', $found_ids)->delete();
-    
-            return response()->json([
-                "message" => "Successfully deleted " . count($found_ids) . " classification(s).",
-                "deleted_ids" => $found_ids
-            ], Response::HTTP_OK);
-        }
-    
-        // Ensure we only work with active records
-        $item_classifications = ItemClassification::where($query)
-            ->whereNull('deleted_at')
-            ->get();
 
-        if ($item_classifications->count() > 1) {
+        if ($item_request_ids) {
+            $item_request_ids = is_array($item_request_ids)
+                ? $item_request_ids
+                : (str_contains($item_request_ids, ',')
+                    ? explode(',', $item_request_ids)
+                    : [$item_request_ids]
+                );
+
+            // Ensure all IDs are integers
+            $item_request_ids = array_filter(array_map('intval', $item_request_ids));
+
+            if (empty($item_request_ids)) {
+                return response()->json(["message" => "Invalid ID format."], Response::HTTP_BAD_REQUEST);
+            }
+
+            $item_requests = ItemRequest::whereIn('id', $item_request_ids)->whereNull('deleted_at')->get();
+
+            if ($item_requests->isEmpty()) {
+                return response()->json(["message" => "No active records found for the given IDs."], Response::HTTP_NOT_FOUND);
+            }
+
+            // Only soft-delete records that were actually found
+            $found_ids = $item_requests->pluck('id')->toArray();
+            ItemRequest::whereIn('id', $found_ids)->delete();
+
             return response()->json([
-                'data' => $item_classifications,
-                'message' => "Query matches multiple records. Please specify IDs directly."
+                "message" => "Successfully deleted " . count($found_ids) . " record(s).",
+                "deleted_ids" => $found_ids
+            ], Response::HTTP_OK); // Changed from NO_CONTENT to OK to allow response body
+        }
+
+        $item_requests = ItemRequest::where($query)->whereNull('deleted_at')->get();
+
+        if ($item_requests->count() > 1) {
+            return response()->json([
+                'data' => $item_requests,
+                'message' => "Request would affect multiple records. Please specify IDs directly."
             ], Response::HTTP_CONFLICT);
         }
 
-        $item_classification = $item_classifications->first();
+        $item = $item_requests->first();
 
-        if (!$item_classification) {
-            return response()->json(
-                ["message" => "No active classification found matching query."],
-                Response::HTTP_NOT_FOUND
-            );
+        if (!$item) {
+            return response()->json(["message" => "No active record found matching query."], Response::HTTP_NOT_FOUND);
         }
 
-        $item_classification->delete();
+        $item->delete();
 
         return response()->json([
-            "message" => "Successfully deleted classification.",
-            "deleted_id" => $item_classification->id
+            "message" => "Successfully deleted record.",
+            "deleted_id" => $item->id
         ], Response::HTTP_OK);
     }
 }
