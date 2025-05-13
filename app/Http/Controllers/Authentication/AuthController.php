@@ -15,7 +15,11 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
-        $credentials = $request->only('email', 'password');
+        $credentials = $request->only('session_id');
+
+        // $credentials = ['session_id' => "e7d69679-69f0-4e82-a90e-cb341e8f0924"];
+
+        return Auth::guard('auth_user_provider')->attempt($credentials);
 
         if (Auth::guard('auth_user_provider')->attempt($credentials)) {
             $user = Auth::guard('auth_user_provider')->user();

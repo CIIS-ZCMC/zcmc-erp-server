@@ -4,6 +4,7 @@ namespace App\Auth;
 
 use App\Models\AccessToken;
 use App\Helpers\HttpRequestHelper;
+use App\Models\User;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Symfony\Component\HttpFoundation\Request;
@@ -39,7 +40,7 @@ class AuthCookieGuard implements Guard
     public function attempt(array $credentials = [], $remember = false)
     {
         // Modify this to authenticate view session id of umis
-        $user = $this->provider->retrieveByCredentials($credentials);
+        // $user = $this->provider->retrieveByCredentials($credentials);
 
         // if ($user && $this->provider->validateCredentials($user, $credentials)) {
         //     // Log the user in
@@ -53,13 +54,29 @@ class AuthCookieGuard implements Guard
         //     return true;
         // }
 
-        $response = HttpRequestHelper::forwardRequestToExternalApi("auth");
+        $response = HttpRequestHelper::forwardRequestToExternalApi(
+            endpoint: "auth-with-session-id",
+            method: 'POST',
+            data: $credentials
+        );
 
-        if($response->successful()){
-            
+        if(!$response->successful()){
+            return false;
         }
 
-        return false;
+
+        
+        $statusCode = $response->status();
+        $responseData = $response->json();
+
+        $message = $responseData['message'] ?? "Unauthorized request rejected by UMIS.";
+
+        $responseData = $response->json();
+
+        return response()->json([
+            'data' => User::where('umis_employee_profile_id', $responseData['user_details']['employee_profile_id'])->first(),
+            'message' => $message
+        ], $statusCode);
     }
 
     public function user()
