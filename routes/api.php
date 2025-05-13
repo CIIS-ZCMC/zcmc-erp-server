@@ -162,5 +162,5 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('aop-deadline-store', 'DeadlineController@storeAopDeadline');
     Route::post('ppmp-deadline-store', 'DeadlineController@storePpmpDeadline');
     Route::post('aop-deadline-update/{id}', 'DeadlineController@updateAopDeadline');
-    Route::post('ppmp-deadline-update/{id}', 'DeadlineController@updatePpmpDeadline');
+    Route::post('ppmp-deadline-update/{id}', ' @updatePpmpDeadline');
 });

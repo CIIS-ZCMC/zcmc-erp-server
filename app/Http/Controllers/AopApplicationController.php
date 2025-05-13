@@ -504,7 +504,7 @@ class AopApplicationController extends Controller
         ])->findOrFail($id);
 
         return new AopApplicationResource($aopApplication);
-    }
+    } 
 
     public function getUsersWithDesignation()
     {
