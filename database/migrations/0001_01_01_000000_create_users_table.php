@@ -14,13 +14,8 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('umis_employee_profile_id')->nullable();
-            $table->unsignedBigInteger('designation_id')->nullable();
-            $table->unsignedBigInteger('division_id')->nullable();
-            $table->unsignedBigInteger('department_id')->nullable();
-            $table->unsignedBigInteger('section_id')->nullable();
-            $table->unsignedBigInteger('unit_id')->nullable();
             $table->string('name');
-            $table->string('email')->unique();
+            $table->string('email')->nullable();
             $table->string('profile_url')->nullable();
             $table->boolean('is_active')->default(true);
             $table->rememberToken();

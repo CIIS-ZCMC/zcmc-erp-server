@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\AssignedArea;
+use App\Models\Unit;
 use App\Models\User;
 use App\Services\UMISService;
 use Illuminate\Console\Command;
@@ -11,7 +12,6 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Division;
 use App\Models\Department;
 use App\Models\Section;
-use App\Models\Unit;
 
 
 class ImportAreasFromUMIS extends Command
@@ -111,13 +111,16 @@ class ImportAreasFromUMIS extends Command
             // Populate divisions from UMIS
             foreach($divisions as $division) {
                 try {
+                    $user = $division['chief_employee_profile_id'] !== null ? User::where("umis_employee_profile_id", $division['chief_employee_profile_id'])->first():null;
+                    $oic_user = $division['oic_employee_profile_id'] !== null ? User::where("umis_employee_profile_id", $division['oic_employee_profile_id'])->first():null;
+
                     Division::updateOrCreate(
                         ['id' => $division['id']],
                         [
                             'name' => $division['name'],
-                            'umis_division_id' => $division['id'],
-                            'head_id' => $division['chief_employee_profile_id'] ?? null,
-                            'oic_id' => $division['oic_employee_profile_id'] ?? null
+                            'code' => $division['code'],
+                            'head_id' => $user!== null? $user->id: null,
+                            'oic_id' => $oic_user !== null? $oic_user->id: null
                         ]
                     );
                     $successCount++;
@@ -130,14 +133,18 @@ class ImportAreasFromUMIS extends Command
             // Populate departments from UMIS
             foreach($departments as $department) {
                 try {
+                    $user = $department['head_employee_profile_id'] !== null ? User::where("umis_employee_profile_id", $department['head_employee_profile_id'])->first():null;
+                    $oic_user = $department['oic_employee_profile_id'] !== null ? User::where("umis_employee_profile_id", $department['oic_employee_profile_id'])->first():null;
+                    $division = $department['division_id'] !== null? Division::where('id', $department['division_id'])->first():null;
+
                     Department::updateOrCreate(
                         ['id' => $department['id']],
                         [
                             'name' => $department['name'],
-                            'umis_department_id' => $department['id'],
-                            'division_id' => $department['division_id'],
-                            'head_id' => $department['head_employee_profile_id'] ?? null,
-                            'oic_id' => $department['oic_employee_profile_id'] ?? null
+                            'code' => $department['code'],
+                            'division_id' => $division !== null? $division->id: null,
+                            'head_id' => $user!== null? $user->id: null,
+                            'oic_id' => $oic_user !== null? $oic_user->id: null
                         ]
                     );
                     $successCount++;
@@ -149,15 +156,20 @@ class ImportAreasFromUMIS extends Command
 
             foreach($sections as $section) {
                 try {
+                    $user = $section['supervisor_employee_profile_id'] !== null ? User::where("umis_employee_profile_id", $section['supervisor_employee_profile_id'])->first():null;
+                    $oic_user = $section['oic_employee_profile_id'] !== null ? User::where("umis_employee_profile_id", $section['oic_employee_profile_id'])->first():null;
+                    $division = $section['division_id'] !== null? Division::where('id', $section['division_id'])->first():null;
+                    $department = $section['department_id'] !== null? Department::where('id', $section['department_id'])->first():null;
+
                     Section::updateOrCreate(
                         ['id' => $section['id']],
                         [
                             'name' => $section['name'],
-                            'umis_section_id' => $section['id'],
-                            'division_id' => $section['division_id'],
-                            'department_id' => $section['department_id'],
-                            'head_id' => $section['supervisor_employee_profile_id'] ?? null,
-                            'oic_id' => $section['oic_employee_profile_id'] ?? null
+                            'code' => $section['code'],
+                            'division_id' => $division !== null? $division->id: null,
+                            'department_id' => $department !== null? $department->id: null,
+                            'head_id' => $user!== null? $user->id: null,
+                            'oic_id' => $oic_user !== null? $oic_user->id: null
                         ]
                     );
                     $successCount++;
@@ -169,14 +181,18 @@ class ImportAreasFromUMIS extends Command
 
             foreach($units as $unit) {
                 try {
+                    $user = $unit['head_employee_profile_id'] !== null ? User::where("umis_employee_profile_id", $unit['head_employee_profile_id'])->first():null;
+                    $oic_user = $unit['oic_employee_profile_id'] !== null ? User::where("umis_employee_profile_id", $unit['oic_employee_profile_id'])->first():null;
+                    $section = $unit['section_id'] !== null? Section::where('id', $unit['section_id'])->first():null;
+
                     Unit::updateOrCreate(
                         ['id' => $unit['id']],
                         [
                             'name' => $unit['name'],
-                            'umis_unit_id' => $unit['id'],
-                            'section_id' => $unit['section_id'],
-                            'head_id' => $unit['head_employee_profile_id'] ?? null,
-                            'oic_id' => $unit['oic_employee_profile_id'] ?? null
+                            'code' => $unit['code'],
+                            'section_id' => $section !== null? $section->id : null,
+                            'head_id' => $user!== null? $user->id: null,
+                            'oic_id' => $oic_user !== null? $oic_user->id: null
                         ]
                     );
                     $successCount++;
@@ -184,7 +200,9 @@ class ImportAreasFromUMIS extends Command
                     $this->error("Error processing unit {$unit['id']}: " . $e->getMessage());
                     $errorCount++;
                 }
-            } //         // Find user by UMIS ID
+            } 
+            
+            //         // Find user by UMIS ID
             //         $user = User::where('umis_id', $umisUserId)->first();
                     
             //         if (!$user) {

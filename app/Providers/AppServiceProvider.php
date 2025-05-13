@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Auth\AuthCookieGuard;
 use App\Auth\AuthUserProvider;
+use App\Services\ItemService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
@@ -19,6 +20,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton('App\Services\UMISService', function ($app) {
             return new \App\Services\UMISService();
         });
+
+        // Register the ItemService
+        $this->app->singleton(ItemService::class, function ($app) {
+            return new ItemService();
+        });
     }
 
     /**
@@ -30,10 +36,10 @@ class AppServiceProvider extends ServiceProvider
         Auth::extend('auth_user_provider', function ($app, $name, array $config) {
             $provider = Auth::createUserProvider($config['provider']);
             $request = $app['request'];
-    
+
             return new AuthCookieGuard($provider, $request);
         });
-    
+
         // Register the custom provider
         Auth::provider('auth_user_provider', function ($app, array $config) {
             return new AuthUserProvider($config['model']);

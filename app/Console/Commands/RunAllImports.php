@@ -42,9 +42,9 @@ class RunAllImports extends Command
     {
         $this->info('Starting all UMIS imports...');
         
+        $this->call('import:users-from-umis');
         $this->call('import:areas-from-umis');
         $this->call('import:designations-from-umis');
-        $this->call('import:users-from-umis');
         $this->call('import:assigned-areas-from-umis');
         
         $this->info('All imports completed successfully.');

@@ -20,14 +20,17 @@ class ActivityResource extends JsonResource
             'activity_code' => $this->activity_code,
             'name' => $this->name,
             'is_gad_related' => $this->is_gad_related,
+            'is_reviewed' => $this->is_reviewed,
+            'is_reviewed_date' => $this->date_updated,
             'cost' => $this->cost,
+            'expense_class' => $this->expense_class,
             'start_month' => $this->start_month,
             'end_month' => $this->end_month,
             'target' => new TargetResource($this->whenLoaded('target')),
             'resources' => ResourceResource::collection($this->whenLoaded('resources')),
             'responsible_people' => ResponsiblePersonResource::collection($this->whenLoaded('responsiblePeople')),
-            'comments' => ActivityCommentResource::collection($this->whenLoaded('comments')),
-            'ppmp_items' => PpmpItemResource::collection($this->ppmpItems) ?? []
+            'comments' => ActivityCommentResource::collection($this->whenLoaded('comments')) ?? [],
+
         ];
     }
 }

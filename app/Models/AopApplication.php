@@ -37,7 +37,7 @@ class AopApplication extends Model
 
         static::creating(function ($model) {
             if (empty($model->aop_application_uuid)) {
-                $model->aop_application_uuid = Str::uuid();
+                $model->aop_application_uuid = substr(Str::uuid(), 0, 8);
             }
         });
     }
@@ -67,7 +67,7 @@ class AopApplication extends Model
         return $this->hasMany(ApplicationObjective::class);
     }
 
-    public function applicationTimeline(): HasMany
+    public function applicationTimelines(): HasMany
     {
         return $this->hasMany(ApplicationTimeline::class);
     }

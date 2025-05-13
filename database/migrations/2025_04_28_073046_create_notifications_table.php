@@ -11,11 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('others_objectives', function (Blueprint $table) {
+        Schema::create('notifications', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('application_objective_id');
-            $table->foreign('application_objective_id')->references('id')->on('application_objectives');
-            $table->string('description');
+            $table->string('title');
+            $table->text('description');
+            $table->string('module_path')->nullable();
             $table->timestamps();
         });
     }
@@ -25,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('others_objectives');
+        Schema::dropIfExists('notifications');
     }
 };

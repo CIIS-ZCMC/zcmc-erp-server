@@ -41,50 +41,6 @@ class PpmpApplicationController extends Controller
         $this->is_development = env("APP_DEBUG", true);
     }
 
-    protected function getMetadata($method): array
-    {
-        if ($method === 'get') {
-            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
-            $metadata['modes'] = ['selection', 'pagination'];
-
-            if ($this->is_development) {
-                $metadata['urls'] = [
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?ppmp_application_id=[primary-key]",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                ];
-            }
-
-            return $metadata;
-        }
-
-        if ($method === 'put') {
-            $metadata = ["methods" => "[PUT]"];
-
-            if ($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                ];
-                $metadata['fields'] = ["type"];
-            }
-
-            return $metadata;
-        }
-
-        $metadata = ['methods' => ["GET, PUT, DELETE"]];
-
-        if ($this->is_development) {
-            $metadata["urls"] = [
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-            ];
-
-            $metadata["fields"] = ["type"];
-        }
-
-        return $metadata;
-    }
-
     #[OA\Get(
         path: "/api/activity-comments",
         summary: "List all activity comments",
@@ -116,19 +72,26 @@ class PpmpApplicationController extends Controller
             )
         ]
     )]
-    public function index()
+    public function index(Request $request)
     {
-        //paginate display 10 data per page
         $ppmp_application = PpmpApplication::with([
-            'aop_application_id',
-            'user',
-            'divisionChief',
-            'budgetOfficer',
-            'ppmpItem' => function ($query) {
-                $query->whereNull('ppmp_items.deleted_at');
-            }
-        ])->whereNull('deleted_at')
-            ->paginate(10);
+            'ppmpItems' => function ($query) {
+                $query->with([
+                    'item',
+                    'procurementMode',
+                    'itemRequest',
+                    'activities'
+                ]);
+            },
+        ])->latest()->first();
+
+        $itemCount = $ppmp_application->ppmpItems->count();
+        $activityCount = $ppmp_application->ppmpItems
+            ->flatMap(fn($item): mixed => $item->activities)
+            ->count();
+
+        $totalQuantity = $ppmp_application->ppmpItems->sum('total_quantity');
+        $totalBudget = $ppmp_application->ppmpItems->sum('estimated_budget');
 
         if (!$ppmp_application) {
             return response()->json([
@@ -136,15 +99,17 @@ class PpmpApplicationController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
+        $data = [
+            'ppmp_application' => $ppmp_application,
+            'item_count' => $itemCount,
+            'activity_count' => $activityCount,
+            'total_quantity' => $totalQuantity,
+            'total_budget' => $totalBudget,
+        ];
+
         return response()->json([
-            'data' => PpmpApplicationResource::collection($ppmp_application),
-            'pagination' => [
-                'current_page' => $ppmp_application->currentPage(),
-                'last_page' => $ppmp_application->lastPage(),
-                'per_page' => $ppmp_application->perPage(),
-                'total' => $ppmp_application->total(),
-            ],
-            'message' => 'PPMP Application retrieved successfully.',
+            'data' => $data,
+            'message' => 'PPMP Application retrieved successfully.'
         ], Response::HTTP_OK);
     }
 
@@ -207,13 +172,7 @@ class PpmpApplicationController extends Controller
 
         return response()->json([
             'data' => new PpmpApplicationResource($data),
-            'pagination' => [
-                'current_page' => $data->currentPage(),
-                'last_page' => $data->lastPage(),
-                'per_page' => $data->perPage(),
-                'total' => $data->total(),
-            ],
-            'message' => $this->getMetadata('post'),
+            'message' => 'PPMP Application created successfully.',
         ], Response::HTTP_CREATED);
 
     }
@@ -293,13 +252,7 @@ class PpmpApplicationController extends Controller
 
         return response()->json([
             'data' => new PpmpApplicationResource($data),
-            'pagination' => [
-                'current_page' => $ppmpApplication->currentPage(),
-                'last_page' => $ppmpApplication->lastPage(),
-                'per_page' => $ppmpApplication->perPage(),
-                'total' => $ppmpApplication->total(),
-            ],
-            'message' => $this->getMetadata('put'),
+            'message' => 'PPMP Application updated successfully.',
         ], Response::HTTP_OK);
     }
 
@@ -340,13 +293,7 @@ class PpmpApplicationController extends Controller
         $ppmpApplication->delete();
 
         return response()->json([
-            'pagination' => [
-                'current_page' => $ppmpApplication->currentPage(),
-                'last_page' => $ppmpApplication->lastPage(),
-                'per_page' => $ppmpApplication->perPage(),
-                'total' => $ppmpApplication->total(),
-            ],
-            'message' => $this->getMetadata('delete'),
+            'message' => 'PPMP Application deleted successfully.',
         ], Response::HTTP_OK);
     }
 }

@@ -25,6 +25,7 @@ class Activity extends Model
         'cost',
         'start_month',
         'end_month',
+        'expense_class'
     ];
 
     protected $casts = [
@@ -73,6 +74,8 @@ class Activity extends Model
 
     public function ppmpItems()
     {
-        return $this->BelongsToMany(PpmpItem::class);
+        return $this->belongsToMany(PpmpItem::class, 'activity_ppmp_item')
+            ->withPivot('remarks', 'is_draft')
+            ->withTimestamps();
     }
 }

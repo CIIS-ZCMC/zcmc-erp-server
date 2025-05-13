@@ -39,7 +39,7 @@ class AuthCookieGuard implements Guard
     public function attempt(array $credentials = [], $remember = false)
     {
         // Modify this to authenticate view session id of umis
-        // $user = $this->provider->retrieveByCredentials($credentials);
+        $user = $this->provider->retrieveByCredentials($credentials);
 
         // if ($user && $this->provider->validateCredentials($user, $credentials)) {
         //     // Log the user in
@@ -53,7 +53,11 @@ class AuthCookieGuard implements Guard
         //     return true;
         // }
 
-        HttpRequestHelper::forwardRequestToExternalApi("auth");
+        $response = HttpRequestHelper::forwardRequestToExternalApi("auth");
+
+        if($response->successful()){
+            
+        }
 
         return false;
     }

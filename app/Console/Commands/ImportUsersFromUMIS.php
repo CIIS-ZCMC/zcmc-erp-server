@@ -83,13 +83,9 @@ class ImportUsersFromUMIS extends Command
                     User::updateOrCreate(
                         ['umis_employee_profile_id' => $user['employee_profile_id']],
                         [
+                            'id' => $user['employee_profile_id'],
                             'name' => trim($user['name']),
                             'email' => $user['email'],
-                            'designation_id' => isset($user['designation_id']) ? $user['designation_id'] : null,
-                            'division_id' => isset($user['division_id']) ? $user['division_id'] : null,
-                            'department_id' => isset($user['department_id']) ? $user['department_id'] : null,
-                            'section_id' => isset($user['section_id']) ? $user['section_id'] : null,
-                            'unit_id' => isset($user['unit_id']) ? $user['unit_id'] : null,
                             'profile_url' => isset($user['profile_url']) ? $user['profile_url'] : null,
                             'is_active' => true,
                         ]

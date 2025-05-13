@@ -17,6 +17,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('ppmp_item_id');
             $table->foreign('ppmp_item_id')->references('id')->on('ppmp_items');
             $table->string('remarks')->nullable();
+            $table->boolean('is_draft')->default(false);
             $table->softDeletes();
             $table->timestamps();
         });

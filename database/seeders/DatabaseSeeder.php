@@ -24,9 +24,10 @@ class DatabaseSeeder extends Seeder
             ItemUnitSeeder::class,
             ObjectiveSeeder::class,
             SuccessIndicatorSeeder::class,
-            // ObjectiveSuccessIndicatorSeeder::class,
+                // ObjectiveSuccessIndicatorSeeder::class,
             ItemSpecificationSeeder::class,
-            ItemSeeder::class
+            ItemSeeder::class,
+            PpmpItemSeeder::class,
         ]);
     }
 }

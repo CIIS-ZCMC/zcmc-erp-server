@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\AssignedArea;
 use App\Models\PpmpApplication;
 use App\Models\PpmpItem;
+use App\Models\ProcurementModes;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ use App\Models\Target;
 use App\Models\Resource;
 use App\Models\ResponsiblePerson;
 use App\Models\OtherObjective;
+use App\Models\OtherSuccessIndicator;
 use App\Models\User;
 use App\Models\Designation;
 use App\Models\Division;
@@ -95,57 +97,47 @@ class AopApplicationSeeder extends Seeder
         ];
 
         $aopApplications = [];
-        $ppmpApplications = [];
+        // $ppmpApplications = [];
 
         // Get first user as default owner and find users with specific designations
         // Find users with various designations or create dummy users if none exist
         $user = User::first() ?? User::factory()->create();
-        $divisionChief = User::where('designation_id', $divisionHead->id)->first();
-        if (!$divisionChief) {
-            $divisionChief = User::factory()->create(['designation_id' => $divisionHead->id]);
-        }
-        $mccChief = User::whereNotNull('designation_id')->inRandomOrder()->first() 
-            ?? User::factory()->create(['designation_id' => $getRandomItem($designations)->id]);
-        $planningOfficer = User::whereNotNull('designation_id')->inRandomOrder()->first() 
-            ?? User::factory()->create(['designation_id' => $getRandomItem($designations)->id]);
-        $budgetOfficer = User::whereNotNull('designation_id')->inRandomOrder()->first() 
-            ?? User::factory()->create(['designation_id' => $getRandomItem($designations)->id]);
+
+        $divisionChief = Division::where('name', 'Hospital Operations & Patient Support Service')->first();
+        $mccChief = Division::where('name', 'Office of Medical Center Chief')->first();
+        $planningOfficer = Section::where('name', 'IISU')->first();
+        $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
+
 
         // Create 5 sample AOP Applications with corresponding PPMP Applications
         for ($i = 0; $i < 5; $i++) {
             // Get random user for each application
             $randomUser = User::inRandomOrder()->first() ?? $user;
-            // Get a random division chief using direct designation_id query instead of a relation
-            $randomDivisionChief = User::whereIn('designation_id', 
-                Designation::where('name', 'like', '%chief%')
-                    ->orWhere('name', 'like', '%director%')
-                    ->pluck('id')
-            )->inRandomOrder()->first() ?? $divisionChief;
-            
+
             $aopApplication = AopApplication::create([
-                'user_id' => $randomUser->umis_employee_profile_id,
-                'division_chief_id' => $randomDivisionChief->umis_employee_profile_id ?? $randomDivisionChief->id,
-                'mcc_chief_id' => $mccChief->umis_employee_profile_id ?? $mccChief->id,
-                'planning_officer_id' => $planningOfficer->umis_employee_profile_id ?? $planningOfficer->id,
+                'user_id' => $randomUser->id,
+                'division_chief_id' => $divisionChief->head_id,
+                'mcc_chief_id' => $mccChief->head_id,
+                'planning_officer_id' => $planningOfficer->head_id ?? 494,
                 'mission' => $missionStatements[$i] ?? 'Default mission statement',
                 'status' => $statusOptions[array_rand($statusOptions)],
-                'has_discussed' => (bool)rand(0, 1),
+                'has_discussed' => (bool) rand(0, 1),
                 'remarks' => $remarkOptions[array_rand($remarkOptions)]
             ]);
 
-            $ppmpApplication = PpmpApplication::create([
-                'aop_application_id' => $aopApplication->id,
-                'user_id' => $randomUser->umis_employee_profile_id ?? $randomUser->id,
-                'division_chief_id' => $randomDivisionChief->umis_employee_profile_id ?? $randomDivisionChief->id,
-                'budget_officer_id' => $budgetOfficer->umis_employee_profile_id ?? $budgetOfficer->id,
-                'ppmp_application_uuid' => Str::uuid(),
-                'ppmp_total' => rand(10000, 1000000) / 100,
-                'status' => $statusOptions[array_rand($statusOptions)],
-                'remarks' => $remarkOptions[array_rand($remarkOptions)]
-            ]);
+            // $ppmpApplication = PpmpApplication::create([
+            //     'aop_application_id' => $aopApplication->id,
+            //     'user_id' => $randomUser->id,
+            //     'division_chief_id' => $divisionChief->head_id,
+            //     'budget_officer_id' => $budgetOfficer->head_id,
+            //     'ppmp_application_uuid' => Str::uuid(),
+            //     'ppmp_total' => rand(10000, 1000000) / 100,
+            //     'status' => $statusOptions[array_rand($statusOptions)],
+            //     'remarks' => $remarkOptions[array_rand($remarkOptions)]
+            // ]);
 
             $aopApplications[] = $aopApplication;
-            $ppmpApplications[] = $ppmpApplication;
+            // $ppmpApplications[] = $ppmpApplication;
         }
 
         // Get or create Type of Functions (strategic, core, support)
@@ -269,13 +261,21 @@ class AopApplicationSeeder extends Seeder
                         'success_indicator_id' => $successIndicator->id
                     ]);
 
-                    // For objectives not in the list, create OtherObjective
-                    if ($index == 0 && $appIndex % 2 == 0) { // Only for even-indexed applications
-                        OtherObjective::create([
-                            'application_objective_id' => $applicationObjective->id,
-                            'description' => 'Custom objective description for ' . $typeOfFunction->type . ' (Application ' . ($appIndex + 1) . ')'
-                        ]);
-                    }
+                    // // For certain application objectives, create both OtherObjective and OtherSuccessIndicator
+                    // // to ensure consistency in the "others" custom entries
+                    // if ($index == 0 && $appIndex % 2 == 0) { // Only for even-indexed applications
+                    //     // Create custom objective
+                    //     OtherObjective::create([
+                    //         'application_objective_id' => $applicationObjective->id,
+                    //         'description' => 'Custom objective description for ' . $typeOfFunction->type . ' (Application ' . ($appIndex + 1) . ')'
+                    //     ]);
+                        
+                    //     // Also create matching custom success indicator
+                    //     OtherSuccessIndicator::create([
+                    //         'application_objective_id' => $applicationObjective->id,
+                    //         'description' => 'Custom success indicator for ' . $typeOfFunction->type . ' (Application ' . ($appIndex + 1) . ')'
+                    //     ]);
+                    // }
 
                     // Create activities for this objective
                     $this->createActivities($applicationObjective, $user);

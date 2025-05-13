@@ -37,7 +37,7 @@ class PpmpItem extends Model
 
     public function procurementMode()
     {
-        return $this->belongsTo(ProcurementModes::class, 'procurement_modes_id');
+        return $this->belongsTo(ProcurementModes::class, 'procurement_mode_id');
     }
 
     public function itemRequest()
@@ -53,6 +53,11 @@ class PpmpItem extends Model
     public function comments()
     {
         return $this->hasMany(PpmpItemComment::class, 'ppmp_item_id');
+    }
+
+    public function ppmpSchedule()
+    {
+        return $this->hasMany(PpmpSchedule::class);
     }
 
     public function logs()

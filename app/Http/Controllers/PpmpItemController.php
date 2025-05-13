@@ -3,10 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PpmpItemRequest;
+use App\Http\Requests\PpmpScheduleRequest;
+use App\Http\Requests\ResourceRequest;
+use App\Http\Resources\PpmpApplicationResource;
 use App\Http\Resources\PpmpItemResource;
 use App\Models\Activity;
-use App\Models\AopApplication;
+use App\Models\Item;
+use App\Models\PpmpApplication;
 use App\Models\PpmpItem;
+use App\Models\ProcurementModes;
 use App\Models\Resource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -43,53 +48,6 @@ class PpmpItemController extends Controller
         $this->is_development = env("APP_DEBUG", true);
     }
 
-    protected function getMetadata($method): array
-    {
-        if ($method === 'get') {
-            $metadata['methods'] = ["GET, POST, PUT, DELETE"];
-            $metadata['modes'] = ['selection', 'pagination'];
-
-            if ($this->is_development) {
-                $metadata['urls'] = [
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?ppmp_item_id=[primary-key]",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&mode=selection",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?page={currentPage}&per_page={number_of_record_to_return}&search=value",
-                ];
-            }
-
-            return $metadata;
-        }
-
-        if ($method === 'put') {
-            $metadata = ["methods" => "[PUT]"];
-
-            if ($this->is_development) {
-                $metadata["urls"] = [
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                    env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2"
-                ];
-                $metadata['fields'] = ["type"];
-            }
-
-            return $metadata;
-        }
-
-        $metadata = ['methods' => ["GET, PUT, DELETE"]];
-
-        if ($this->is_development) {
-            $metadata["urls"] = [
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id=1",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?id[]=1&id[]=2",
-                env("SERVER_DOMAIN") . "/api/" . $this->module . "?query[target_field]=value"
-            ];
-
-            $metadata["fields"] = ["type"];
-        }
-
-        return $metadata;
-    }
-
     #[OA\Get(
         path: "/api/activity-comments",
         summary: "List all activity comments",
@@ -121,27 +79,41 @@ class PpmpItemController extends Controller
             )
         ]
     )]
-    public function index()
+    public function index(Request $request)
     {
-        dd("adad");
-        //paginate display 10 data per page
-        $ppmp_item = PpmpItem::whereNull('deleted_at')->paginate(10);
+        $ppmp_application = PpmpApplication::with([
+            'user',
+            'divisionChief',
+            'budgetOfficer',
+            'aopApplication',
+            'ppmpItems' => function ($query) {
+                $query->with([
+                    'item' => function ($query) {
+                        $query->with([
+                            'itemUnit',
+                            'itemCategory',
+                            'itemClassification',
+                            'itemSpecifications',
+                        ]);
+                    },
+                    'procurementMode',
+                    'itemRequest',
+                    'activities',
+                    'comments',
+                    'ppmpSchedule',
+                ]);
+            },
+        ])->whereNull('deleted_at')->latest()->first();
 
-        if ($ppmp_item->isEmpty()) {
+        if (!$ppmp_application) {
             return response()->json([
                 'message' => "No record found.",
-                "metadata" => $this->getMetadata('get')
             ], Response::HTTP_NOT_FOUND);
         }
 
         return response()->json([
-            'data' => PpmpItemResource::collection($ppmp_item),
-            'meta' => [
-                'current_page' => $ppmp_item->currentPage(),
-                'last_page' => $ppmp_item->lastPage(),
-                'per_page' => $ppmp_item->perPage(),
-                'total' => $ppmp_item->total()
-            ],
+            'data' => new PpmpApplicationResource($ppmp_application),
+            'message' => 'PPMP Application retrieved successfully.',
         ], Response::HTTP_OK);
     }
 
@@ -179,44 +151,114 @@ class PpmpItemController extends Controller
         try {
             DB::beginTransaction();
 
-            $validatedData = $request->validated();
-
             $createdItems = [];
 
-            $activity = Activity::findOrFail($validatedData['activity_id']);
+            $ppmp_application = PpmpApplication::latest()->first();
 
-            foreach ($validatedData['ppmp_item'] as $item) {
-                // Calculate total amount
-                $totalAmount = ($item['total_quantity'] ?? 0) * ($item['estimated_budget'] ?? 0);
+            if (!$ppmp_application) {
+                return response()->json([
+                    'message' => "No record found.",
+                ], Response::HTTP_NOT_FOUND);
+            }
 
-                // Create PPMP item
-                $ppmpItem = PpmpItem::create([
-                    'ppmp_application_id' => $item['ppmp_application_id'],
-                    'item_id' => $item['item_id'],
-                    'procurement_mode_id' => $item['procurement_mode_id'],
-                    'item_request_id' => $item['item_request_id'],
+            $monthMap = [
+                'jan' => 1,
+                'feb' => 2,
+                'mar' => 3,
+                'apr' => 4,
+                'may' => 5,
+                'jun' => 6,
+                'jul' => 7,
+                'aug' => 8,
+                'sep' => 9,
+                'oct' => 10,
+                'nov' => 11,
+                'dec' => 12,
+            ];
+
+            $ppmpItems = json_decode($request['PPMP_Items'], true);
+
+            foreach ($ppmpItems as $item) {
+                $procurement_mode = ProcurementModes::where('name', $item['procurement_mode'])->first();
+                if (!$procurement_mode) {
+                    return response()->json([
+                        'message' => 'Procurement mode not found.',
+                    ], 404);
+                }
+
+                $items = Item::where('code', $item['item_code'])->first();
+                if (!$items) {
+                    return response()->json([
+                        'message' => 'Item not found.',
+                    ], 404);
+                }
+
+                $find_ppmp_item = PpmpItem::where('id', $items->id)->first();
+                if (!$find_ppmp_item) {
+                    return response()->json([
+                        'message' => 'PPMP Item not found.',
+                    ], 404);
+                }
+
+                $ppmp_data = [
+                    'ppmp_application_id' => 1,
+                    'item_id' => $items->id,
+                    'procurement_mode_id' => $procurement_mode->id,
+                    'item_request_id' => $item['item_request_id'] ?? null,
                     'remarks' => $item['remarks'] ?? null,
                     'estimated_budget' => $item['estimated_budget'] ?? 0,
-                    'total_quantity' => $item['total_quantity'] ?? 0,
-                    'total_amount' => $totalAmount,
-                ]);
+                    'total_quantity' => $item['quantity'] ?? 0,
+                    'total_amount' => $item['total_amount'] ?? 0,
+                ];
 
-                // Associate PPMP item with the activity (pivot)
-                $activity->ppmpItems()->attach($ppmpItem->id, [
-                    'remarks' => $item['remarks'] ?? null,
-                ]);
+                if (!$find_ppmp_item) {
+                    // Create PPMP item
+                    $ppmpItem = PpmpItem::create($ppmp_data);
+                } else {
+                    // Update PPMP item
+                    $ppmpItem = $find_ppmp_item;
+                    $ppmpItem->update($ppmp_data);
+                }
 
-                // Create resource record
-                $resource = new Resource();
-                $resource->activity_id = $activity->id;
-                $resource->item_id = $item['item_id'];
-                $resource->purchase_type_id = $item['procurement_mode_id'];
-                $resource->object_category = $validatedData['object_category'] ?? null;
-                $resource->quantity = $item['total_quantity'] ?? null;
-                $resource->expense_class = $validatedData['expense_class'] ?? null;
-                $resource->save();
 
-                $createdItems[] = $ppmpItem;
+                foreach ($item['activities'] as $activity) {
+                    $activities = Activity::find($activity['activity_id'] ?? $activity['id'] ?? null);
+
+                    if ($activities) {
+                        $activities->ppmpItems()->attach($ppmpItem->id, [
+                            'remarks' => $item['remarks'] ?? null,
+                            'is_draft' => $request->is_draft ?? 0,
+                        ]);
+
+                        $resource_request = [
+                            'activity_id' => $activities->id,
+                            'item_id' => $items->id,
+                            'purchase_type_id' => $item['purchase_type_id'] ?? 1,
+                            'object_category' => $item['category'] ?? null,
+                            'quantity' => $item['aop_quantity'] ?? 0,
+                            'expense_class' => $item['expense_class'],
+                        ];
+
+                        $resource_controller = new ResourceController();
+                        $resource_controller->store(new ResourceRequest($resource_request));
+                    }
+                }
+
+                foreach ($item['target_by_quarter'] as $monthly => $quantity) {
+                    if ($quantity >= 0 && isset($monthMap[$monthly])) {
+                        $target_request = [
+                            'ppmp_item_id' => $ppmpItem->id,
+                            'month' => $monthMap[$monthly],
+                            'year' => now()->addYear()->year,
+                            'quantity' => $quantity,
+                        ];
+
+                        $ppmp_schedule = new PpmpScheduleController();
+                        $ppmp_schedule->store(new PpmpScheduleRequest($target_request));
+                    }
+                }
+
+                // $createdItems[] = $ppmpItem;
             }
 
             DB::commit();
@@ -355,5 +397,16 @@ class PpmpItemController extends Controller
         return response()->json([
             'message' => "PPMP Item deleted successfully."
         ], Response::HTTP_NO_CONTENT);
+    }
+
+    public function import(Request $request)
+    {
+        // Handle the import logic here
+        // You can use a package like Maatwebsite Excel for importing Excel files
+        // or handle CSV files directly using PHP's built-in functions.
+
+        return response()->json([
+            'message' => "Import functionality is not implemented yet."
+        ], Response::HTTP_NOT_IMPLEMENTED);
     }
 }

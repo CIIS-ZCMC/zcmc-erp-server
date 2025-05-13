@@ -16,9 +16,12 @@ class PpmpItemResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'ppmp_application' => $this->ppmp_application,
-            'item' => $this->item,
-            'procurement_modes' => $this->procurement_modes,
+            'ppmp_application_id' => $this->ppmp_application_id,
+            'items' => new ItemResource($this->item),
+            'procurement_mode' => new ProcurementModeResource($this->procurementMode),
+            'target' => PpmpScheduleResource::collection($this->ppmpSchedule),
+            'activity' => ActivityResource::collection($this->activities),
+            'comments' => ActivityCommentResource::collection($this->comments),
             'item_request' => $this->item_request,
             'total_quantity' => $this->total_quantity,
             'estimated_budget' => $this->estimated_budget,
@@ -27,13 +30,6 @@ class PpmpItemResource extends JsonResource
             'comment' => $this->comment,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
-
-            'meta' => [
-                'current_page' => $this->currentPage(),
-                'last_page' => $this->lastPage(),
-                'per_page' => $this->perPage(),
-                'total' => $this->total(),
-            ],
         ];
     }
 }

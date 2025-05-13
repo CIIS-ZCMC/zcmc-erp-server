@@ -19,7 +19,7 @@ class ApplicationObjectiveResource extends JsonResource
             'objective_code' => $this->objective_code,
 
             'function_type' => $this->whenLoaded('objective', function () {
-                return $this->objective->function->type ?? null;
+                return $this->objective->typeOfFunction->type ?? null;
             }),
             'objective_description' => $this->whenLoaded('objective', function () {
                 $description = $this->objective->description ?? null;

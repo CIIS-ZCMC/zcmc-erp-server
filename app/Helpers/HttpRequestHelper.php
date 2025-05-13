@@ -17,13 +17,13 @@ class HttpRequestHelper
 {
     public static function forwardRequestToExternalApi($endpoint, $method = 'GET', $data = [], $headers = [])
     {
-        $default = env("UMIS_API") ?? "https://umis.zcmc.online/api/";
+        $default = env("UMIS_DOMAIN") ?? "https://umis.zcmc.online/api/";
 
         $externalApiUrl =  $default. ltrim($endpoint, '/');
 
         $defaultHeaders = [
             'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . env('EXTERNAL_API_TOKEN') // Use API KEY from umis
+            'Authorization' => 'Bearer ' . env('API_KEY') // Use API KEY from umis
         ];
 
         $headers = array_merge($defaultHeaders, $headers);

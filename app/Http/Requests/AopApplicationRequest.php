@@ -23,9 +23,6 @@ class AopApplicationRequest extends FormRequest
     {
         return [
             'user_id' => 'required|exists:users,id',
-            'division_chief_id' => 'required|exists:users,id',
-            'mcc_chief_id' => 'required|exists:users,id',
-            'planning_officer_id' => 'required|exists:users,id',
             'mission' => 'required|string',
             'status' => 'required|string',
             'has_discussed' => 'required|boolean',
@@ -44,6 +41,7 @@ class AopApplicationRequest extends FormRequest
             'application_objectives.*.activities.*.is_gad_related' => 'required|boolean',
             'application_objectives.*.activities.*.cost' => 'required|numeric|min:0',
             'application_objectives.*.activities.*.start_month' => 'required|date',
+            'application_objectives.*.activities.*.expense_class' => 'required|string',
             'application_objectives.*.activities.*.end_month' => 'required|date|after_or_equal:application_objectives.*.activities.*.start_month',
 
             'application_objectives.*.activities.*.target' => 'required|array',
@@ -60,12 +58,8 @@ class AopApplicationRequest extends FormRequest
             'application_objectives.*.activities.*.resources.*.expense_class' => 'required|string',
 
             'application_objectives.*.activities.*.responsible_people' => 'required|array',
-            'application_objectives.*.activities.*.responsible_people.*.user_id' => 'nullable|exists:users,id',
-            'application_objectives.*.activities.*.responsible_people.*.division_id' => 'nullable|exists:divisions,id',
-            'application_objectives.*.activities.*.responsible_people.*.department_id' => 'nullable|exists:departments,id',
-            'application_objectives.*.activities.*.responsible_people.*.section_id' => 'nullable|exists:sections,id',
-            'application_objectives.*.activities.*.responsible_people.*.unit_id' => 'nullable|exists:units,id',
-            'application_objectives.*.activities.*.responsible_people.*.designation_id' => 'required|exists:designations,id',
+
+
         ];
     }
 }
