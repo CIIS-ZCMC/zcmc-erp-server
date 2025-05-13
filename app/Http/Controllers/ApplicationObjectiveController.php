@@ -13,6 +13,7 @@ use App\Models\SuccessIndicator;
 use Illuminate\Support\Facades\DB;
 use App\Models\OtherObjective;
 use App\Models\OtherSuccessIndicator;
+use App\Models\AopApplication;
 
 #[OA\Schema(
     schema: "ActivityComment",
@@ -272,23 +273,37 @@ class ApplicationObjectiveController extends Controller
     public function editObjectiveAndSuccessIndicator(Request $request)
     {
         try {
+
             $request->validate([
-                'application_objective_id' => 'required|exists:application_objectives,id',
+                'aop_application_id' => 'required|exists:aop_applications,id',
                 'objective_description' => 'required|string',
                 'success_indicator_description' => 'required|string',
             ]);
+
 
             // Begin transaction to ensure all operations succeed or fail together
             DB::beginTransaction();
 
             try {
-                $applicationObjective = ApplicationObjective::where('id', $request->application_objective_id)
+                // Find the application objective using AopApplication model
+                $aopApplication = AopApplication::findOrFail($request->aop_application_id);
+
+                // Get the application objective related to this aop application with specific objective and success indicator IDs
+                $applicationObjective = ApplicationObjective::with(['otherObjective', 'otherSuccessIndicator'])
+                    ->where('aop_application_id', $aopApplication->id)
                     ->where('objective_id', 23)
                     ->where('success_indicator_id', 36)
                     ->first();
-                    
+
+                if (!$applicationObjective) {
+                    return response()->json([
+                        'message' => 'Application objective not found',
+                    ], Response::HTTP_NOT_FOUND);
+                }
+
                 // Get or create otherObjective
                 $otherObjective = $applicationObjective->otherObjective;
+
                 if (!$otherObjective) {
                     $otherObjective = new OtherObjective([
                         'application_objective_id' => $applicationObjective->id,
