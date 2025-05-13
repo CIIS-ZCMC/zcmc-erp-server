@@ -39,15 +39,12 @@ class PpmpItemSeeder extends Seeder
             'remarks' => ""
         ]);
 
-        for ($i = 0; $i < 21; $i++) {
-            $randomItem = Item::inRandomOrder()->first();
+        $items = Item::all();
+        foreach ($items as $item) {
             $procurement = ProcurementModes::inRandomOrder()->first();
-            $item_quantity = rand(5, 20);
-            $activity = Activity::inRandomOrder()->first();
-
             $ppmpItem = PpmpItem::create([
                 'ppmp_application_id' => $ppmp_application->id,
-                'item_id' => $randomItem->id,
+                'item_id' => $item->id,
                 'procurement_mode_id' => $procurement->id,
                 'item_request_id' => null,
                 'total_quantity' => 0,
@@ -56,10 +53,13 @@ class PpmpItemSeeder extends Seeder
                 'remarks' => ""
             ]);
 
-            $activity->ppmpItems()->attach($ppmpItem->id, [
-                'remarks' => "",
-                'is_draft' => rand(0, 1),
-            ]);
+            $activities = Activity::inRandomOrder()->take(rand(1, 3))->get();
+            foreach ($activities as $activity) {
+                $activity->ppmpItems()->attach($ppmpItem->id, [
+                    'remarks' => "",
+                    'is_draft' => rand(0, 1),
+                ]);
+            }
 
             for ($j = 0; $j < 12; $j++) {
                 PpmpSchedule::create([

@@ -269,7 +269,7 @@ class AopApplicationSeeder extends Seeder
                     //         'application_objective_id' => $applicationObjective->id,
                     //         'description' => 'Custom objective description for ' . $typeOfFunction->type . ' (Application ' . ($appIndex + 1) . ')'
                     //     ]);
-                        
+
                     //     // Also create matching custom success indicator
                     //     OtherSuccessIndicator::create([
                     //         'application_objective_id' => $applicationObjective->id,
@@ -332,6 +332,7 @@ class AopApplicationSeeder extends Seeder
                 'cost' => rand(10000, 100000) / 100,
                 'start_month' => $startMonth,
                 'end_month' => $endMonth,
+                'expense_class' => $expenseClasses[array_rand($expenseClasses)], //added by kim
             ]);
 
             // Create target by Quarter (including unit of target)
@@ -406,7 +407,7 @@ class AopApplicationSeeder extends Seeder
                 'item_id' => $itemId,
                 'purchase_type_id' => $purchaseTypeId,
                 'expense_class' => $expenseClass,
-                'object_category' => $objectCategories[array_rand($objectCategories)],
+                // 'object_category' => $objectCategories[array_rand($objectCategories)],
                 'quantity' => rand(1, 20)
             ]);
 

@@ -12,8 +12,6 @@ return new class extends Migration {
     {
         Schema::create('item_requests', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('activity_id')->nullable();
-            $table->foreign('activity_id')->references('id')->on('activities');
             $table->string('name');
             $table->string('code')->nullable();
             $table->text('image')->nullable();
