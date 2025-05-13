@@ -4,6 +4,8 @@ use App\Http\Middleware\AuthenticateApi;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
+use Laravel\Sanctum\Http\Middleware\CheckForAnyAbility;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -16,6 +18,8 @@ return Application::configure(basePath: dirname(__DIR__))
         // Register the custom middleware as a named middleware
         $middleware->alias([
             'auth.api' => AuthenticateApi::class,
+            'abilities' => CheckAbilities::class,
+            'ability' => CheckForAnyAbility::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

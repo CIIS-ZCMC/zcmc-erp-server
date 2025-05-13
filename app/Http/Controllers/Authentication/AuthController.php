@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Authentication;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserAuthResource;
 use App\Http\Resources\UserResource;
 use App\Models\AccessToken;
 use App\Models\User;
@@ -31,7 +32,7 @@ class AuthController extends Controller
 
         $token = json_encode($session->token);
 
-        return (new UserResource( $user))
+        return (new UserAuthResource( $user))
             ->additional([
                 'message' => "Successfully signin."
             ])

@@ -14,12 +14,14 @@ class AccessToken extends Model
         'permissions',
         'authorization_pin',
         'token',
-        'expire_at'
+        'expire_at',
+        'abilities'
     ];
 
     public $timestamps = true;
 
     protected $casts = [
+        'abilities' => 'json',
         'permissions' => 'json'
     ];
 

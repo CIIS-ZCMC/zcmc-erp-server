@@ -64,4 +64,38 @@ class User extends Authenticatable
     {
         return $this->hasOne(AccessToken::class);
     }
+
+    /**
+     * Determine if the current API token has a given ability.
+     *
+     * @param  string  $ability
+     * @return bool
+     */
+    public function tokenCan($ability)
+    {
+        $token = $this->currentAccessToken();
+
+        if (! $token) {
+            return false;
+        }
+
+        // Check if the token has wildcard ability
+        if (in_array('*', $token->abilities)) {
+            return true;
+        }
+
+        // Check for specific ability
+        return in_array($ability, $token->abilities);
+    }
+
+    /**
+     * Get the current access token being used by the user.
+     *
+     * @return \App\Models\AccessToken|null
+     */
+    public function currentAccessToken()
+    {   
+        return $this->session;
+    }
+    
 }

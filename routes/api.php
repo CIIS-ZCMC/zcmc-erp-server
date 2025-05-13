@@ -13,7 +13,9 @@ Route::middleware('auth.api:auth_user_provider')->group(function () {
 Route::post('authenticate', [AuthController::class, 'login']);
 
 Route::middleware('auth')->group(function(){
-    Route::get('auth/user', [AuthController::class, 'index']);
+    Route::middleware('ability:IM-001:view')->group(function(){    
+        Route::get('auth/user', [AuthController::class, 'index']);
+    });
 });
 
 Route::namespace('App\Http\Controllers')->group(function () {

@@ -58,6 +58,15 @@ class AuthCookieGuard implements Guard
             return response()->json(['message' => "Failed to authenticate user not found from the record."], 401);
         }
 
+        $abilities = [];
+        $modules = $responseData['permissions']['modules'];
+
+        foreach($modules as $module){
+            foreach($module['permissions'] as $permission){
+                $abilities[] = $module['code'].':'.$permission;
+            }
+        }
+
         // Remove access token that may exist even if user is not active
         AccessToken::where('user_id', $user->id)->delete();
 
@@ -68,7 +77,8 @@ class AuthCookieGuard implements Guard
             'permissions' => $responseData['permissions'],
             'authorization_pin' => $responseData['authorization_pin'],
             'expire_at' => $responseData['session']['token_exp'],
-            'token' => $responseData['session']['token']
+            'token' => $responseData['session']['token'],
+            'abilities' => $abilities
         ]);
         
         $this->setUser($user);
