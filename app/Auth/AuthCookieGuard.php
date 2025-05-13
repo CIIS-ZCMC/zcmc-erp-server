@@ -63,8 +63,6 @@ class AuthCookieGuard implements Guard
         if(!$response->successful()){
             return false;
         }
-
-
         
         $statusCode = $response->status();
         $responseData = $response->json();
