@@ -117,6 +117,7 @@ class ImportAreasFromUMIS extends Command
                     Division::updateOrCreate(
                         ['id' => $division['id']],
                         [
+                            'id' => $division['id'],
                             'name' => $division['name'],
                             'code' => $division['code'],
                             'head_id' => $user!== null? $user->id: null,
@@ -140,6 +141,7 @@ class ImportAreasFromUMIS extends Command
                     Department::updateOrCreate(
                         ['id' => $department['id']],
                         [
+                            'id' => $department['id'],
                             'name' => $department['name'],
                             'code' => $department['code'],
                             'division_id' => $division !== null? $division->id: null,
@@ -164,6 +166,7 @@ class ImportAreasFromUMIS extends Command
                     Section::updateOrCreate(
                         ['id' => $section['id']],
                         [
+                            'id' => $section['id'],
                             'name' => $section['name'],
                             'code' => $section['code'],
                             'division_id' => $division !== null? $division->id: null,
@@ -188,6 +191,7 @@ class ImportAreasFromUMIS extends Command
                     Unit::updateOrCreate(
                         ['id' => $unit['id']],
                         [
+                            'id' => $unit['id'],
                             'name' => $unit['name'],
                             'code' => $unit['code'],
                             'section_id' => $section !== null? $section->id : null,

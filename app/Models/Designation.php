@@ -25,6 +25,7 @@ class Designation extends Model
      * @var array<string>
      */
     protected $fillable = [
+        'id',
         'name',
         'code',
         'probation'
