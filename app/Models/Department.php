@@ -30,6 +30,7 @@ class Department extends Model
      * @var array
      */
     protected $fillable = [
+        'id',
         'head_id',
         'oid_id',
         'division_id',

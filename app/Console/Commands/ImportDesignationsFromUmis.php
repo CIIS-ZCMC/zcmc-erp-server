@@ -80,6 +80,7 @@ class ImportDesignationsFromUmis extends Command
                     Designation::updateOrCreate(
                         ['id' => $designation['id']],
                         [
+                            'id' => $designation['id'],
                             'name' => $designation['name'],
                             'code' => $designation['code'],
                             'probation' => $designation['probation'],

@@ -1,15 +1,8 @@
 <?php
 
+use App\Http\Controllers\Authentication\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
-
-Route::get('test', function (Request $request) {
-    return response()->json(['message' => "PASSED"], 200);
-});
 
 Route::middleware('auth.api:auth_user_provider')->group(function () {
     Route::namespace('App\Http\Controllers')->group(function () {
@@ -17,9 +10,12 @@ Route::middleware('auth.api:auth_user_provider')->group(function () {
     });
 });
 
-Route::namespace('App\Http\Controllers')->group(function () {
-    Route::post('login', 'AuthController@login');
-    Route::get('signup', 'AuthController@signup');
+Route::post('authenticate', [AuthController::class, 'login']);
+
+Route::middleware('auth')->group(function(){
+    Route::middleware('ability:IM-001:view')->group(function(){    
+        Route::get('auth/user', [AuthController::class, 'index']);
+    });
 });
 
 Route::namespace('App\Http\Controllers')->group(function () {

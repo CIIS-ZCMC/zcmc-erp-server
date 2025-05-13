@@ -18,6 +18,7 @@ class Division extends Model
      * @var array
      */
     protected $fillable = [
+        'id',
         'head_id',
         'oic_id',
         'name',

@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Areas;
 
+use App\Http\Controllers\Controller;
 use App\Models\Section;
 use App\Helpers\PaginationHelper;
 use Illuminate\Http\Request;

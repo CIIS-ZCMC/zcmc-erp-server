@@ -44,6 +44,7 @@ class AssignedArea extends Model
      * @var array<int, string>
      */
     protected $fillable = [
+        'id',
         'user_id',
         'designation_id',
         'division_id',
