@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Symfony\Component\HttpFoundation\Request;
+use Illuminate\Support\Facades\Log;
 use OpenApi\Attributes as OA;
 
 #[OA\Schema(
@@ -39,21 +40,6 @@ class AuthCookieGuard implements Guard
     
     public function attempt(array $credentials = [], $remember = false)
     {
-        // Modify this to authenticate view session id of umis
-        // $user = $this->provider->retrieveByCredentials($credentials);
-
-        // if ($user && $this->provider->validateCredentials($user, $credentials)) {
-        //     // Log the user in
-        //     $this->setUser($user);
-
-        //     // Optionally, set a "remember me" cookie
-        //     if ($remember) {
-        //         $this->createRememberToken($user);
-        //     }
-
-        //     return true;
-        // }
-
         $response = HttpRequestHelper::forwardRequestToExternalApi(
             endpoint: "auth-with-session-id",
             method: 'POST',
@@ -61,20 +47,33 @@ class AuthCookieGuard implements Guard
         );
 
         if(!$response->successful()){
-            return false;
+            return 'Failed to authenticate with UMIS';
         }
+    
+        $responseData = $response->json();
+
+        $user = User::find($responseData['user_details']['employee_profile_id']);
+
+        if(!$user){
+            return response()->json(['message' => "Failed to authenticate user not found from the record."], 401);
+        }
+
+        // Remove access token that may exist even if user is not active
+        AccessToken::where('user_id', $user->id)->delete();
+
+        // Create user session
+        AccessToken::create([
+            'user_id' => $user->id,
+            'session_id' => $credentials['session_id'],
+            'permissions' => $responseData['permissions'],
+            'authorization_pin' => $responseData['authorization_pin'],
+            'expire_at' => $responseData['session']['token_exp'],
+            'token' => $responseData['session']['token']
+        ]);
         
-        $statusCode = $response->status();
-        $responseData = $response->json();
+        $this->setUser($user);
 
-        $message = $responseData['message'] ?? "Unauthorized request rejected by UMIS.";
-
-        $responseData = $response->json();
-
-        return response()->json([
-            'data' => User::where('umis_employee_profile_id', $responseData['user_details']['employee_profile_id'])->first(),
-            'message' => $message
-        ], $statusCode);
+        return true;
     }
 
     public function user()
@@ -82,32 +81,27 @@ class AuthCookieGuard implements Guard
         if (!is_null($this->user)) {
             return $this->user;
         }
-
-        // Retrieve the token from the cookie
-        $cookie = $this->request->cookie('apms-cookie');
+    
+        // 1. Check for the auth cookie
+        $cookie = $this->request->cookie(env('COOKIE_NAME'));
+        
         if (!$cookie) {
-            return null;
+            return null; // No cookie found
         }
 
-        $tokenData = json_decode($cookie, true);
-        $token = $tokenData['token'] ?? null;
-
-        if (!$token) {
-            return null;
-        }
-
-        // Retrieve the access token from the AccessToken table
-        $accessToken = AccessToken::where('session_id', $token)
+        $token = json_decode($cookie);
+    
+        // 3. Validate the token against your database
+        $accessToken = AccessToken::where('token', $token)
             ->where('expire_at', '>', now())
             ->first();
-
+    
         if (!$accessToken) {
             return null;
         }
-
-        // Retrieve the user from the User table using the user_id from AccessToken
+    
+        // 4. Return the authenticated user
         $this->user = $this->provider->retrieveById($accessToken->user_id);
-
         return $this->user;
     }
 

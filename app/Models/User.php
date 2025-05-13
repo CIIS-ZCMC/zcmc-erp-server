@@ -59,4 +59,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Designation::class);
     }
+
+    public function session()
+    {
+        return $this->hasOne(AccessToken::class);
+    }
 }

@@ -18,7 +18,8 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'umis_id' => $this->umis_id,
             'name' => $this->name,
-            'email' => $this->email
+            'email' => $this->email,
+            'assignedArea' => new AssignedAreaResource($this->assignedArea)
         ];
     }
 }

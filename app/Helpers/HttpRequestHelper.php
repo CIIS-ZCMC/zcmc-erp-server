@@ -17,7 +17,7 @@ class HttpRequestHelper
 {
     public static function forwardRequestToExternalApi($endpoint, $method = 'GET', $data = [], $headers = [])
     {
-        $default = env("UMIS_DOMAIN") ?? "https://umis.zcmc.online/api/";
+        $default = env("UMIS_API_URL")."/" ?? "http://192.168.9.243:8010/api";
         $externalApiUrl =  $default. ltrim($endpoint, '/');
 
         // Special handling for auth endpoint
@@ -28,7 +28,7 @@ class HttpRequestHelper
 
         $defaultHeaders = [
             'Accept' => 'application/json',
-            'Authorization' => 'Bearer ' . env('API_KEY') // Use API KEY from umis
+            'Authorization' => 'Bearer ' . env('UMIS_API_KEY') // Use API KEY from umis
         ];
 
         $headers = array_merge($defaultHeaders, $headers);

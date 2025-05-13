@@ -13,6 +13,7 @@ class AccessToken extends Model
         'session_id',
         'permissions',
         'authorization_pin',
+        'token',
         'expire_at'
     ];
 
