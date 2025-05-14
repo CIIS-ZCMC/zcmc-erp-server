@@ -51,6 +51,7 @@ class AuthCookieGuard implements Guard
         }
     
         $responseData = $response->json();
+        
 
         $user = User::find($responseData['user_details']['employee_profile_id']);
 
@@ -99,7 +100,11 @@ class AuthCookieGuard implements Guard
             return null; // No cookie found
         }
 
-        $token = json_decode($cookie);
+        // Only try to decode if it's a string
+        $token = $cookie;
+        if (is_string($cookie) && !is_array(json_decode($cookie, true))) {
+            $token = json_decode($cookie);
+        }
     
         // 3. Validate the token against your database
         $accessToken = AccessToken::where('token', $token)
