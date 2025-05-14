@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class CheckAbility
 {
@@ -24,6 +25,7 @@ class CheckAbility
         $user = auth()->user();
 
         if (! $user) {
+            Log::warning('Authentication failed: No authenticated user found');
             throw new AuthenticationException(
                 'Unauthenticated.', ['auth_user_provider'], route('login')
             );
@@ -33,10 +35,17 @@ class CheckAbility
         $accessToken = $user->currentAccessToken();
         
         // Check if the token has the required abilities
-        if (! $accessToken || ! $accessToken->can($abilities)) {
+        if (! $accessToken) {
+            Log::warning("User {$user->id} has no access token");
+            abort(403, 'Insufficient abilities.');
+        }
+        
+        if (! $accessToken->can($abilities)) {
+            Log::warning("User {$user->id} lacks required abilities: " . implode(', ', $abilities));
             abort(403, 'Insufficient abilities.');
         }
 
+        Log::info("User {$user->id} authorized with abilities: " . implode(', ', $abilities));
         return $next($request);
     }
 }

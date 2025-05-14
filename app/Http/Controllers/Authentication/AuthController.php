@@ -27,18 +27,44 @@ class AuthController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        $user = auth()->user();
-        $session = $user->session;
+        $user = Auth::user();
+    
+        // Check if user was authenticated but no session exists
+        if (!$user || !$user->session) {
+            return response()->json([
+                'message' => "Session not found or invalid",
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+    
+        $token = $user->session->token;
 
-        $token = json_encode($session->token);
-
-        return (new UserAuthResource( $user))
+        if (is_array($token)) {
+            $token = json_encode($token);
+        }
+        
+        // Sanitize token to prevent newline characters in headers
+        $token = str_replace(["\r", "\n"], '', $token);
+        
+        // Create a cookie separately using the cookie helper
+        $cookie = cookie(
+            env('COOKIE_NAME'), 
+            $token, 
+            30, 
+            '/', 
+            env('SESSION_DOMAIN'), 
+            false,
+            false // HttpOnly set to false for JS access
+        );
+        
+        // Build the response and attach the cookie with withCookie
+        $resource = new UserAuthResource($user);
+        return $resource
             ->additional([
                 'message' => "Successfully signin."
             ])
             ->response()
             ->setStatusCode(Response::HTTP_OK)
-            ->cookie(env('COOKIE_NAME'), $token, 30, '/', env('SESSION_DOMAIN'), false);
+            ->withCookie($cookie);
     }
 
     public function index(Request $request)
