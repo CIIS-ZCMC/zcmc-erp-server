@@ -12,19 +12,12 @@ Route::middleware('auth.api:auth_user_provider')->group(function () {
 
 Route::post('authenticate', [AuthController::class, 'login']);
 
-Route::middleware('auth')->group(function(){
-    Route::middleware('ability:IM-001:view')->group(function(){
+Route::middleware('auth')->group(function () {
+    Route::middleware('ability:IM-001:view')->group(function () {
         Route::get('auth/user', [AuthController::class, 'index']);
     });
 });
-Route::namespace('App\Http\Controllers')->group(function () {
-    Route::post('login', 'AuthController@login');
-    Route::get('signup', 'AuthController@signup');
-});
 
-Route::namespace('App\Http\Controllers')->group(function () {
-    Route::post('login', 'AuthController@login');
-    Route::get('signup', 'AuthController@signup');
 Route::namespace('App\Http\Controllers')->group(function () {
     Route::post('login', 'AuthController@login');
     Route::get('signup', 'AuthController@signup');
@@ -236,18 +229,20 @@ Route::namespace('App\Http\Controllers')->group(function () {
     // Approver  Module
     Route::get('aop-requests', 'AopApplicationController@aopRequests');
     Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
-    // Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
-    // Route::get('application-timelines', 'ApplicationTimelineController@index');
+    Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
+    Route::get('application-timelines', 'ApplicationTimelineController@index');
+
     Route::apiResource('application-timelines', 'ApplicationTimelineController');
     Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
     Route::put('edit-objective-and-success-indicator', 'ApplicationObjectiveController@editObjectiveAndSuccessIndicator');
     Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
+
     // Approver  Module
-    Route::get('aop-requests', 'AopApplicationController@listOfAopRequests');
-    Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
-    Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
-    Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
-    Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
+    // Route::get('aop-requests', 'AopApplicationController@listOfAopRequests');
+    // Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
+    // Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
+    // Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
+    // Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
 
     // Aop Application Module
     Route::get('aop-applications', 'AopApplicationController@index');
@@ -285,7 +280,6 @@ Route::namespace('App\Http\Controllers')->group(function () {
             ]
         ], 200);
     });
-});
     // Aop Application Module
     Route::get('aop-applications', 'AopApplicationController@index');
     Route::post('aop-application-store', 'AopApplicationController@store');
