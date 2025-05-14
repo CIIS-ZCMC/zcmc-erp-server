@@ -197,6 +197,7 @@ class AopApplicationController extends Controller
                 $objective->otherObjective()->delete();
                 $objective->otherSuccessIndicator()->delete();
             }
+
             $aopApplication->applicationObjectives()->delete();
 
 
@@ -221,7 +222,7 @@ class AopApplicationController extends Controller
 
                 foreach ($objectiveData['activities'] as $activityData) {
                     $activity = $applicationObjective->activities()->create([
-                        'activity_code' => $activityData['activity_code'],
+                        'activity_code' => $this->generateUniqueActivityCode(),
                         'name' => $activityData['name'],
                         'is_gad_related' => $activityData['is_gad_related'],
                         'cost' => $activityData['cost'],
@@ -289,6 +290,15 @@ class AopApplicationController extends Controller
         return response()->json(['message' => 'AOP Application updated successfully.']);
     }
 
+    protected function generateUniqueActivityCode(): string
+    {
+        do {
+            $code = 'ACT-' . strtoupper(Str::random(6)); // e.g. ACT-X8Y9Z1
+        } while (\App\Models\Activity::where('activity_code', $code)->exists());
+
+        return $code;
+    }
+
     public function store(AopApplicationRequest $request)
     {
 
@@ -346,7 +356,7 @@ class AopApplicationController extends Controller
 
 
                 if ($applicationObjective->objective->description === 'Others' && isset($objectiveData['others_objective'])) {
-                    $applicationObjective->othersObjective()->create([
+                    $applicationObjective->otherObjective()->create([
                         'description' => $objectiveData['others_objective'],
                     ]);
                 }
@@ -365,7 +375,7 @@ class AopApplicationController extends Controller
 
                 foreach ($objectiveData['activities'] as $activityData) {
                     $activity = $applicationObjective->activities()->create([
-                        'activity_code' => $activityData['activity_code'],
+                        'activity_code' => $this->generateUniqueActivityCode(),
                         'name' => $activityData['name'],
                         'is_gad_related' => $activityData['is_gad_related'],
                         'cost' => $activityData['cost'],
