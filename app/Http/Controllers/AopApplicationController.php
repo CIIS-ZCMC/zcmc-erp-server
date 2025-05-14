@@ -922,18 +922,27 @@ class AopApplicationController extends Controller
                     $quantity = $resource->quantity ?? '';
                     $itemName = $resource->item->name ?? '';
                     return "{$quantity} {$itemName}";
-                })->filter()->implode(', ');
+                })->filter()->implode("\n");
 
                 // Process responsible people
                 $responsiblePeople = $activity->responsiblePeople->map(function ($responsible) use ($getResponsiblePersonName) {
                     return $getResponsiblePersonName($responsible); // Get the name
-                })->filter()->implode(', ');
+                })->filter()->implode("\n");
+
+                $expenseClasses = $activity->resources->map(function ($resource) {
+                    return $resource->expense_class ?? '';
+                })->filter()->implode("\n");
 
                 return [
                     'mission' => $aopApplication->mission,
                     'type_of_function' => $objective->objective->typeOfFunction->type ?? '',
-                    'objective' => $objective->objective->description ?? '',
-                    'success_indicator' => $objective->successIndicator->description ?? '',
+                    'objective' => ($objective->objective->description === 'Others')
+                        ? ($objective->otherObjective->description ?? '')
+                        : ($objective->objective->description ?? ''),
+
+                    'success_indicator' => ($objective->successIndicator->description === 'Others')
+                        ? ($objective->otherSuccessIndicator->description ?? '')
+                        : ($objective->successIndicator->description ?? ''), 
                     'activity_name' => $activity->name,
                     'start_month' => $activity->start_month ? \Carbon\Carbon::parse($activity->start_month)->format('F') : '',
                     'end_month' => $activity->end_month ? \Carbon\Carbon::parse($activity->end_month)->format('F') : '',
@@ -943,7 +952,7 @@ class AopApplicationController extends Controller
                     'target_q4' => $activity->target->fourth_quarter ?? '',
                     'resources' => $resources,
                     'cost' => $activity->cost ?? 0,
-                    'expense_class' => $activity->expense_class,
+                    'expense_class' => $expenseClasses,
                     'responsible_people' => $responsiblePeople,
                     'is_gad_related' => $activity->is_gad_related,
                 ];
