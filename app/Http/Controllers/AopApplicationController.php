@@ -221,7 +221,6 @@ class AopApplicationController extends Controller
 
                 foreach ($objectiveData['activities'] as $activityData) {
                     $activity = $applicationObjective->activities()->create([
-                        'expense_class' => $activityData['expense_class'],
                         'activity_code' => $activityData['activity_code'],
                         'name' => $activityData['name'],
                         'is_gad_related' => $activityData['is_gad_related'],
@@ -366,7 +365,6 @@ class AopApplicationController extends Controller
 
                 foreach ($objectiveData['activities'] as $activityData) {
                     $activity = $applicationObjective->activities()->create([
-                        'expense_class' => $activityData['expense_class'],
                         'activity_code' => $activityData['activity_code'],
                         'name' => $activityData['name'],
                         'is_gad_related' => $activityData['is_gad_related'],
@@ -505,7 +503,7 @@ class AopApplicationController extends Controller
         ])->findOrFail($id);
 
         return new AopApplicationResource($aopApplication);
-    } 
+    }
 
     public function getUsersWithDesignation()
     {
@@ -1044,11 +1042,11 @@ class AopApplicationController extends Controller
 
     /**
      * This function is used to get the remarks per AOP application or request
-     * 
+     *
      * @param Request $request
-     * 
+     *
      * @return JsonResponse
-     * 
+     *
      * Last edited by: Micah Mustaham, Updated by: Cascade
      */
     public function aopRemarks($id)

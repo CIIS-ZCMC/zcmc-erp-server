@@ -41,7 +41,6 @@ class AopApplicationRequest extends FormRequest
             'application_objectives.*.activities.*.is_gad_related' => 'required|boolean',
             'application_objectives.*.activities.*.cost' => 'required|numeric|min:0',
             'application_objectives.*.activities.*.start_month' => 'required|date',
-            'application_objectives.*.activities.*.expense_class' => 'required|string',
             'application_objectives.*.activities.*.end_month' => 'required|date|after_or_equal:application_objectives.*.activities.*.start_month',
 
             'application_objectives.*.activities.*.target' => 'required|array',
@@ -54,7 +53,7 @@ class AopApplicationRequest extends FormRequest
             'application_objectives.*.activities.*.resources.*.item_id' => 'required|exists:items,id',
             'application_objectives.*.activities.*.resources.*.purchase_type_id' => 'required|exists:purchase_types,id',
             'application_objectives.*.activities.*.resources.*.quantity' => 'required|integer|min:1',
-
+            'application_objectives.*.activities.*.resources.*.expense_class' => 'required|string',
 
             'application_objectives.*.activities.*.responsible_people' => 'required|array',
 
