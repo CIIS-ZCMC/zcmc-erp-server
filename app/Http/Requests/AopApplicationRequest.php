@@ -53,9 +53,8 @@ class AopApplicationRequest extends FormRequest
             'application_objectives.*.activities.*.resources' => 'required|array',
             'application_objectives.*.activities.*.resources.*.item_id' => 'required|exists:items,id',
             'application_objectives.*.activities.*.resources.*.purchase_type_id' => 'required|exists:purchase_types,id',
-            'application_objectives.*.activities.*.resources.*.object_category' => 'required|string',
             'application_objectives.*.activities.*.resources.*.quantity' => 'required|integer|min:1',
-            'application_objectives.*.activities.*.resources.*.expense_class' => 'required|string',
+
 
             'application_objectives.*.activities.*.responsible_people' => 'required|array',
 

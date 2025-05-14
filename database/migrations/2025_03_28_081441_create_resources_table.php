@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('purchase_type_id');
             $table->foreign('purchase_type_id')->references('id')->on('purchase_types');
             $table->integer('quantity');
-            $table->string('expense_class');
+            $table->string('expense_class')->nullable();
             $table->timestamps();
         });
     }
