@@ -28,11 +28,16 @@ class AuthController extends Controller
         }
 
         $user = auth()->user();
+        
         $session = $user->session;
 
-        $token = json_encode($session->token);
+        $token = $session->token;
 
-        return (new UserAuthResource( $user))
+        if (is_array($token)) {
+            $token = json_encode($token);
+        }
+
+        return (new UserAuthResource($user))
             ->additional([
                 'message' => "Successfully signin."
             ])
