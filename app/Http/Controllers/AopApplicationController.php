@@ -680,11 +680,8 @@ class AopApplicationController extends Controller
         $page = $request->query('page') > 0 ? $request->query('page') : 1;
         $per_page = $request->query('per_page') ?? 15;
 
-        // TEMPORARILY REMOVED VISIBILITY SERVICE - Show all AOP applications
-        // Original code preserved in comments:
-        /*
         // Get current authenticated user
-        $user = User::find('1');
+        $user = User::find($request->user()->id);
         $assignedArea = $user->assignedArea;
 
         if (!$assignedArea) {
@@ -710,30 +707,10 @@ class AopApplicationController extends Controller
             'search' => $request->has('search') ? $request->search : null,
         ];
 
+        // Get query from visibility service with proper permissions and filters already applied
         $query = $aopVisibilityService->getVisibleAopApplications($user, $filters);
-        */
 
-        // Direct query to get all AOP applications
-        $query = AopApplication::query();
-
-        // Apply filters directly to the query
-        if ($request->has('status')) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->has('year')) {
-            $query->whereYear('created_at', $request->year);
-        }
-
-        if ($request->has('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('id', 'like', "%{$search}%")
-                    ->orWhere('title', 'like', "%{$search}%")
-                    ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
-
+        // Paginate the results
         $aopApplications = $query->paginate($per_page, ['*'], 'page', $page);
 
         return response()->json([
@@ -757,14 +734,21 @@ class AopApplicationController extends Controller
      */
     public function processAopRequest(Request $request): mixed
     {
+        // Check if user is authenticated
+        if (!$request->user()) {
+            return response()->json([
+                'message' => 'Unauthenticated user',
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        $user_id = $request->user()->id;
+
         $validated = Validator::make($request->all(), [
             'aop_application_id' => 'required|integer',
             'status' => 'required|string|',
             'remarks' => 'nullable|string|max:500',
             'auth_pin' => 'required|integer|digits:6',
         ]);
-
-        $user_id = 495; // This should be the authenticated user's ID
 
         if ($validated->fails()) {
             return response()->json([
@@ -942,7 +926,7 @@ class AopApplicationController extends Controller
 
                     'success_indicator' => ($objective->successIndicator->description === 'Others')
                         ? ($objective->otherSuccessIndicator->description ?? '')
-                        : ($objective->successIndicator->description ?? ''), 
+                        : ($objective->successIndicator->description ?? ''),
                     'activity_name' => $activity->name,
                     'start_month' => $activity->start_month ? \Carbon\Carbon::parse($activity->start_month)->format('F') : '',
                     'end_month' => $activity->end_month ? \Carbon\Carbon::parse($activity->end_month)->format('F') : '',

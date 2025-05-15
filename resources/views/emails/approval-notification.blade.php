@@ -2,7 +2,7 @@
     <div style="font-family: Arial, sans-serif; color: #333333;">
         <h2 style="color: #0056b3; margin-bottom: 20px;">{{ $title }}</h2>
 
-        <p style="margin-bottom: 15px; line-height: 1.5;">{{ $message }}</p>
+        <p style="margin-bottom: 15px; line-height: 1.5;">{!! nl2br(e($message)) !!}</p>
 
         @if (isset($actionUser) && $actionUser)
             <div style="background-color: #f7f7f7; padding: 10px 15px; border-left: 4px solid #0056b3; margin: 15px 0;">
@@ -16,7 +16,7 @@
             View AOP Application
         @endcomponent
 
-        <p style="margin-top: 30px; font-size: 14px; color: #666;">This is an automated message from the ZCMC ERP System.
+        <p style="margin-top: 30px; font-size: 14px; color: #666;">This is an automated message from the {{ config('app.name') }} System.
             Please do not reply to this email.</p>
     </div>
 
