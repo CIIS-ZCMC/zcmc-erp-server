@@ -100,7 +100,6 @@ class ResourceController extends Controller
         $data->activity_id = $request->activity_id;
         $data->item_id = $request->item_id;
         $data->purchase_type_id = $request->purchase_type_id;
-        $data->object_category = $request->object_category;
         $data->quantity = $request->quantity;
         $data->expense_class = $request->expense_class;
         $data->save();
