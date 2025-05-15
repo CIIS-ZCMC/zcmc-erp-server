@@ -42,7 +42,8 @@ class ApplicationTimelineController extends Controller
         $aopApplicationTimeline = AopApplication::with(
             [
                 'user',
-                'user.designation',
+                'user.assignedArea',
+                'user.assignedArea.designation',
                 'divisionChief',
                 'divisionChief.designation',
                 'planningOfficer',
