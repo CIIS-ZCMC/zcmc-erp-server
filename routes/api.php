@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes - no authentication required
 Route::post('authenticate', [AuthController::class, 'login'])->name('login');
-Route::get('authenticate', [AuthController::class, 'login']); // Added GET support for authentication
+// Route::get('authenticate', [AuthController::class, 'login']); // Added GET support for authentication
 
 // Protected routes - require API authentication
 Route::middleware('auth.api')->group(function () {
