@@ -58,8 +58,12 @@ class AuthController extends Controller
         
         // Build the response and attach the cookie with withCookie
         $resource = new UserAuthResource($user);
+
         return $resource
             ->additional([
+                'meta' => [
+                    'redirect_to' => '/'
+                ],
                 'message' => "Successfully signin."
             ])
             ->response()

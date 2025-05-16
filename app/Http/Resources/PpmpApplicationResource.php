@@ -76,7 +76,7 @@ class PpmpApplicationResource extends JsonResource
                     'classification' => $item->itemClassification->name ?? "",
                     'estimated_budget' => $item->estimated_budget ?? "",
                     'category' => $item->itemCategory->name,
-                    'aop_quantity' => $first->total_quantity,
+                    'aop_quantity' => $first->total_quantity * count($first->activities),
                     'unit' => $item->itemUnit->code,
                     'total_amount' => $first->total_amount,
                     'target_by_quarter' => $targetByQuarter,
