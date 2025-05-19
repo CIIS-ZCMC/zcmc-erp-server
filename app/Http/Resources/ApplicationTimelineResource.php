@@ -32,9 +32,9 @@ class ApplicationTimelineResource extends JsonResource
 
                     return [
                         "id" => $timeline->id,
-                        "approver_id" => $timeline->user->id,
-                        "approved_by" => $timeline->user->name,
-                        "approver_position" => $timeline->user->designation->name ?? null,
+                        "user_id" => $timeline->user->id,
+                        "user" => $timeline->user->name,
+                        "user_position" => $timeline->user->assignedArea->designation->name ?? null,
                         "status" => $timeline->status,
                         "remarks" => $timeline->remarks,
                         "has_comments" => $activity_comments->count() > 0,
@@ -51,22 +51,22 @@ class ApplicationTimelineResource extends JsonResource
                 "applicant" => [
                     "id" => $this->user->id ?? null,
                     "name" => $this->user->name ?? null,
-                    "designation" => $this->user->designation->name ?? null,
+                    "designation" => $this->user->assignedArea->designation->name ?? null,
                 ],
                 "division_chief" => [
                     "id" => $this->divisionChief->id ?? null,
                     "name" => $this->divisionChief->name ?? null,
-                    "designation" => $this->divisionChief->designation->name ?? null,
+                    "designation" => $this->divisionChief->assignedArea->designation->name ?? null,
                 ],
                 "planning_officer" => [
                     "id" => $this->planningOfficer->id ?? null,
                     "name" => $this->planningOfficer->name ?? null,
-                    "designation" => $this->planningOfficer->designation->name ?? null,
+                    "designation" => $this->planningOfficer->assignedArea->designation->name ?? null,
                 ],
                 "mcc_chief" => [
                     "id" => $this->mccChief->id ?? null,
                     "name" => $this->mccChief->name ?? null,
-                    "designation" => $this->mccChief->designation->name ?? null,
+                    "designation" => $this->mccChief->assignedArea->designation->name ?? null,
                 ],
             ],
             "current_status" => $this->status ?? $this->whenLoaded('applicationTimelines', function () {

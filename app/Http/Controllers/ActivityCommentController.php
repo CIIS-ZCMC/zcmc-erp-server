@@ -10,6 +10,7 @@ use OpenApi\Attributes as OA;
 use Symfony\Component\HttpFoundation\Response;
 use App\Http\Resources\ActivityCommentResource;
 use App\Http\Resources\CommentsPerActivityResource;
+use App\Models\User;
 
 #[OA\Info(
     title: "Activity Comments API",
@@ -273,6 +274,7 @@ class ActivityCommentController extends Controller
     )]
     public function store(Request $request)
     {
+        $user = User::find($request->user()->id);
         $validated = $request->validate([
             'activity_id' => 'required|integer|exists:activities,id',
             'comment' => 'required|string',
@@ -282,7 +284,7 @@ class ActivityCommentController extends Controller
 
         $activity->comments()->create([
             'comment' => $validated['comment'],
-            'user_id' => 1
+            'user_id' => $user->id,
         ]);
 
         $comment = $activity->comments()->latest()->first();

@@ -16,7 +16,7 @@ class AopVisibilityService
     /**
      * Constants for the special identifiers
      */
-    const PLANNING_UNIT_SECTION_ID = 48;
+    const PLANNING_UNIT_SECTION_ID = 53;
     const OMCC_DIVISION_ID = 1;
 
     /**
@@ -29,8 +29,9 @@ class AopVisibilityService
      */
     public function getVisibleAopApplications(User $user, array $filters = []): Builder
     {
+
         $query = AopApplication::with(['user', 'applicationTimelines']);
-        
+
         // If the user is the OMCC Chief, they can see all AOP requests
         if ($this->isOmccChief($user)) {
             Log::info('User is OMCC Chief, showing all AOP applications', [
@@ -38,9 +39,10 @@ class AopVisibilityService
             ]);
             return $this->applyFilters($query, $filters);
         }
-        
+
         // Get the user's assigned area
         $assignedArea = $user->assignedArea;
+
         if (!$assignedArea) {
             Log::info('User does not have an assigned area, showing no applications', [
                 'user_id' => $user->id
@@ -85,17 +87,17 @@ class AopVisibilityService
                           FROM application_timelines 
                           WHERE aop_application_id = aop_applications.id
                           GROUP BY aop_application_id
-                      )')->where('next_area_id', function($q3) use ($user) {
-                          $q3->select('id')
-                            ->from('assigned_areas')
-                            ->where('user_id', $user->id)
-                            ->limit(1);
-                      });
+                      )')->where('next_area_id', function ($q3) use ($user) {
+                            $q3->select('id')
+                                ->from('assigned_areas')
+                                ->where('user_id', $user->id)
+                                ->limit(1);
+                        });
                     });
             })
-            ->when($filters, function ($q) use ($filters) {
-                return $this->applyFilters($q, $filters);
-            });
+                ->when($filters, function ($q) use ($filters) {
+                    return $this->applyFilters($q, $filters);
+                });
         }
 
         // Regular User (Office/Area Staff)
@@ -114,17 +116,17 @@ class AopVisibilityService
                         FROM application_timelines 
                         WHERE aop_application_id = aop_applications.id
                         GROUP BY aop_application_id
-                    )')->where('next_area_id', function($q3) use ($user) {
+                    )')->where('next_area_id', function ($q3) use ($user) {
                         $q3->select('id')
-                          ->from('assigned_areas')
-                          ->where('user_id', $user->id)
-                          ->limit(1);
+                            ->from('assigned_areas')
+                            ->where('user_id', $user->id)
+                            ->limit(1);
                     });
                 });
         })
-        ->when($filters, function ($q) use ($filters) {
-            return $this->applyFilters($q, $filters);
-        });
+            ->when($filters, function ($q) use ($filters) {
+                return $this->applyFilters($q, $filters);
+            });
     }
 
     /**
@@ -140,48 +142,48 @@ class AopVisibilityService
         if ($this->isOmccChief($user)) {
             return true;
         }
-        
+
         $assignedArea = $user->assignedArea;
         if (!$assignedArea) {
             return false;
         }
-        
+
         // Planning Unit can see all applications
         if ($this->isUserInPlanningUnit($assignedArea)) {
             return true;
         }
-        
+
         // Creator of the application can always see it
         if ($aopApplication->user_id === $user->id) {
             return true;
         }
-        
+
         // Get the latest timeline to check current stage
         $latestTimeline = $aopApplication->applicationTimelines()
             ->orderBy('created_at', 'desc')
             ->first();
-        
+
         if (!$latestTimeline) {
             // If no timeline exists, only the creator can see it
             return $aopApplication->user_id === $user->id;
         }
-        
+
         // Check if this application is waiting for this user's action
         if ($latestTimeline->next_area_id === $assignedArea->id) {
             return true;
         }
-        
+
         // Division Head can see applications from users in their division
         if ($this->isUserDivisionHead($user, $assignedArea)) {
             // Get the creator's assigned area to check division
             $creatorAssignedArea = AssignedArea::where('user_id', $aopApplication->user_id)->first();
-            
+
             // If creator is in the same division, division head can see it
             if ($creatorAssignedArea && $creatorAssignedArea->division_id === $assignedArea->division_id) {
                 return true;
             }
         }
-        
+
         // In all other cases, deny access
         return false;
     }
@@ -207,7 +209,7 @@ class AopVisibilityService
             $search = $filters['search'];
             $query->where(function ($q) use ($search) {
                 $q->where('mission', 'like', "%{$search}%")
-                  ->orWhere('remarks', 'like', "%{$search}%");
+                    ->orWhere('remarks', 'like', "%{$search}%");
             });
         }
 
@@ -234,6 +236,7 @@ class AopVisibilityService
      */
     private function isUserInPlanningUnit(AssignedArea $assignedArea): bool
     {
+
         return $assignedArea->section_id === self::PLANNING_UNIT_SECTION_ID;
     }
 
@@ -249,7 +252,7 @@ class AopVisibilityService
         if (!$assignedArea->division_id) {
             return false;
         }
-        
+
         $division = Division::find($assignedArea->division_id);
         return $division && $division->head_id === $user->id;
     }
