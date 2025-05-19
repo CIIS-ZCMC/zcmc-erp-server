@@ -21,6 +21,7 @@ use App\Models\SuccessIndicator;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\ApplicationTimeline;
+use App\Models\Log;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
@@ -411,6 +412,14 @@ class AopApplicationController extends Controller
                 }
             }
 
+            Log::create([
+                'aop_application_id' => $aopApplication->id,
+                'ppmp_application_id' => null,
+                'action' => "Create Aop",
+                'action_by' => $validatedData['user_id'],
+            ]);
+
+
             $assignedArea = AssignedArea::with('division')->where('user_id', $validatedData['user_id'])->first();
             $divisionChiefId = optional($assignedArea->division)->head_id;
 
@@ -454,6 +463,13 @@ class AopApplicationController extends Controller
                     }
                 }
             }
+
+            Log::create([
+                'aop_application_id' => null,
+                'ppmp_application_id' => $ppmpApplication->id,
+                'action' => "Create Ppmp",
+                'action_by' => $validatedData['user_id'],
+            ]);
 
             $aopApplicationTimeline = $aopApplication->applicationTimelines()->create([
                 'aop_application_id' => $aopApplication->id,
