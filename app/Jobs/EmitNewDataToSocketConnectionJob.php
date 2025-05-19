@@ -2,17 +2,23 @@
 
 namespace App\Jobs;
 
+use App\Helpers\RealtimeCommunicationHelper;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
-use App\Helpers\RealtimeCommunicationHelper;
 
 class EmitNewDataToSocketConnectionJob implements ShouldQueue
 {
     use Queueable;
-
     protected string $targetSocketEndpointBaseOnTableRecord;
     protected $newRegisteredData;
+
+    /**
+     * The number of seconds the job can run before timing out.
+     *
+     * @var int
+     */
+    public $timeout = 30;
 
     /**
      * Create a new job instance.
@@ -21,6 +27,7 @@ class EmitNewDataToSocketConnectionJob implements ShouldQueue
     {
         $this->targetSocketEndpointBaseOnTableRecord = $endPoint;
         $this->newRegisteredData = $newRegisteredData;
+        $this->queue = 'socket';
     }
 
     /**
