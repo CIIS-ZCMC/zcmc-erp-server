@@ -9,7 +9,7 @@ use Laravel\Scout\Searchable;
 class Item extends Model
 {
     use SoftDeletes, Searchable;
-    
+
     protected $table = 'items';
 
     public $fillable = [
@@ -54,6 +54,11 @@ class Item extends Model
     public function itemSpecifications()
     {
         return $this->hasMany(ItemSpecification::class);
+    }
+
+    public function ppmpItems()
+    {
+        return $this->hasMany(PpmpItem::class);
     }
 
     public function logs()
