@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PpmpItem extends Model
 {
-    use SoftDeletes, HasFactory;
+    use SoftDeletes;
 
     protected $table = 'ppmp_items';
 
@@ -47,7 +47,12 @@ class PpmpItem extends Model
 
     public function activities()
     {
-        return $this->belongsToMany(Activity::class);
+        // return $this->belongsToMany(Activity::class);
+        return $this->belongsToMany(Activity::class, 'activity_ppmp_item')
+            ->using(ActivityPpmpItem::class)
+            ->withPivot('remarks', 'is_draft', 'deleted_at')
+            ->withTimestamps()
+            ->wherePivotNull('deleted_at');
     }
 
     public function comments()

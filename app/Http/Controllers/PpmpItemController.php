@@ -8,9 +8,11 @@ use App\Http\Requests\ResourceRequest;
 use App\Http\Resources\PpmpApplicationResource;
 use App\Http\Resources\PpmpItemResource;
 use App\Models\Activity;
+use App\Models\ActivityPpmpItem;
 use App\Models\Item;
 use App\Models\PpmpApplication;
 use App\Models\PpmpItem;
+use App\Models\PpmpSchedule;
 use App\Models\ProcurementModes;
 use App\Models\Resource;
 use Illuminate\Http\Request;
@@ -179,7 +181,7 @@ class PpmpItemController extends Controller
             $ppmpItems = json_decode($request['PPMP_Items'], true);
 
             foreach ($ppmpItems as $item) {
-                $procurement_mode = ProcurementModes::where('name', $item['procurement_mode'])->first();
+                $procurement_mode = ProcurementModes::where('name', $item['procurement_mode']['name'])->first();
                 if (!$procurement_mode) {
                     return response()->json([
                         'message' => 'Procurement mode not found.',
@@ -237,8 +239,15 @@ class PpmpItemController extends Controller
                                 'expense_class' => $item['expense_class'],
                             ];
 
-                            $resource_controller = new ResourceController();
-                            $resource_controller->store(new ResourceRequest($resource_request));
+                            $resource = Resource::where('activity_id', $activities->id)
+                                ->where('item_id', $items->id)
+                                ->first();
+
+                            if ($resource) {
+                                $resource->update($resource_request);
+                            } else {
+                                Resource::create($resource_request);
+                            }
                         }
                     }
                 }
@@ -252,8 +261,16 @@ class PpmpItemController extends Controller
                             'quantity' => $quantity,
                         ];
 
-                        $ppmp_schedule = new PpmpScheduleController();
-                        $ppmp_schedule->store(new PpmpScheduleRequest($target_request));
+                        $ppmp_schedule = PpmpSchedule::where('ppmp_item_id', $ppmpItem->id)
+                            ->where('month', $monthMap[$monthly])
+                            ->where('year', now()->addYear()->year)
+                            ->first();
+
+                        if ($ppmp_schedule) {
+                            $ppmp_schedule->update($target_request);
+                        } else {
+                            PpmpSchedule::create($target_request);
+                        }
                     }
                 }
             }
@@ -380,8 +397,10 @@ class PpmpItemController extends Controller
             )
         ]
     )]
-    public function destroy(PpmpItem $ppmpItem)
+    public function destroy($id)
     {
+        $ppmpItem = PpmpItem::where('item_id', $id)->first();
+
         // Check if the PPMP Item exists
         if (!$ppmpItem) {
             return response()->json([
@@ -389,11 +408,19 @@ class PpmpItemController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
+        // Soft delete pivot records (activity_ppmp_item)
+        foreach ($ppmpItem->activities as $activity) {
+            ActivityPpmpItem::where('activity_id', $activity->id)
+                ->where('ppmp_item_id', $ppmpItem->id)
+                ->first()?->delete();
+        }
+
+        // Soft delete the PPMP Item
         $ppmpItem->delete();
 
         return response()->json([
             'message' => "PPMP Item deleted successfully."
-        ], Response::HTTP_NO_CONTENT);
+        ], Response::HTTP_OK);
     }
 
     public function import(Request $request)
