@@ -17,23 +17,28 @@ class AssignedAreaResource extends JsonResource
 
         $name = null;
         $type = null;
+        $area_id = null;
 
         if ($this->division_id && $this->whenLoaded('division') && $this->division) {
             $name = $this->division->name;
             $type = 'division';
+            $area_id = $this->division_id;
         } elseif ($this->department_id && $this->whenLoaded('department') && $this->department) {
             $name = $this->department->name;
             $type = 'department';
+            $area_id = $this->department_id;
         } elseif ($this->section_id && $this->whenLoaded('section') && $this->section) {
             $name = $this->section->name;
             $type = 'section';
+            $area_id = $this->section_id;
         } elseif ($this->unit_id && $this->whenLoaded('unit') && $this->unit) {
             $name = $this->unit->name;
             $type = 'unit';
+            $area_id = $this->unit_id;
         }
 
         return [
-            'id' => $this->id,
+            'id' => $area_id,
             'name' => $name,
             'type' => $type,
         ];
