@@ -24,9 +24,6 @@ Route::middleware('auth.api')->group(function () {
 
 Route::
         namespace('App\Http\Controllers')->group(function () {
-            // ObjectiveSuccessIndicator routes
-            Route::get('objective-success-indicators', "ObjectiveSuccessIndicatorController@index");
-            Route::post('update-osi/{id}', 'ObjectiveSuccessIndicatorController@updateForApproverModule');
 
             Route::namespace('Libraries')->group(function () {
                 // Item routes
@@ -147,6 +144,7 @@ Route::
 
             // Ppmp Item Module
             Route::apiResource('ppmp-items', 'PpmpItemController');
+            Route::apiResource('ppmp-item-requests', 'PpmpItemRequestControlller');
 
             // Activity Module
             Route::apiResource('activities', 'ActivityController');

@@ -16,8 +16,13 @@ class ObjectiveResource extends JsonResource
     {
         return [
             "id" => $this->id,
-            "code" => $this->code,
-            "description" => $this->description,
+            'function' => $this->typeOfFunction,
+            'objective' => [
+                "id" => $this->id,
+                "code" => $this->code,
+                "description" => $this->description,
+            ],
+            'success_indicator' => SuccessIndicatorResource::collection($this->whenLoaded('successIndicators')),
             "meta" => [
                 "created_at" => $this->created_at,
                 "updated_at" => $this->updated_at
