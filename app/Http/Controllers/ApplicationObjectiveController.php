@@ -241,7 +241,10 @@ class ApplicationObjectiveController extends Controller
 
         return response()->json([
             'message' => 'AOP request retrieved successfully',
-            'data' => ManageAopRequestResource::collection($applicationObjectives),
+            'data' => [
+                'application' => AopApplication::where('id', $id)->first(),
+                'objectives' => ManageAopRequestResource::collection($applicationObjectives)
+            ],
         ], Response::HTTP_OK);
     }
 
