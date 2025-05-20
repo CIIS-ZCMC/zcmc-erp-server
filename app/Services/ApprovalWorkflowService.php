@@ -27,7 +27,7 @@ class ApprovalWorkflowService
      */
     public function __construct(?NotificationService $notificationService = null)
     {
-        $this->notificationService = $notificationService ?: new NotificationService();
+        $this->notificationService = $notificationService ?: new NotificationService(new EmailService());
     }
 
     /**
