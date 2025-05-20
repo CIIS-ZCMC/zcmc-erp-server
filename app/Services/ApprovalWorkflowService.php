@@ -9,6 +9,7 @@ use App\Models\Division;
 use App\Models\Section;
 use Illuminate\Support\Facades\Log;
 use App\Http\Resources\AssignedAreaResource;
+use App\Helpers\TransactionLogHelper;
 
 class ApprovalWorkflowService
 {
@@ -49,7 +50,7 @@ class ApprovalWorkflowService
                     'application_id' => $application_id
                 ]);
                 return null;
-            }   
+            }
 
             if (!$aopApplication) {
                 Log::error("Cannot create timeline - AOP application not found", [
@@ -240,15 +241,9 @@ class ApprovalWorkflowService
                 'status' => $status
             ]);
 
-            // Create and send notifications via the notification service
-            $this->notificationService->sendAopStatusChangeNotifications(
-                $aopApplication,
-                $timeline,
-                $userId,
-                $next_area_id,
-                $status,
-                $stage
-            );
+            // Log the transaction after timeline creation
+            $logCode = 'AOP_TIMELINE_' . strtoupper($status);
+            TransactionLogHelper::register($timeline, $logCode);
 
             return $timeline;
         } catch (\Exception $e) {

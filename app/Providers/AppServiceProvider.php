@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Auth\AuthCookieGuard;
 use App\Auth\AuthUserProvider;
+use App\Services\EmailService;
 use App\Services\ItemService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
@@ -24,6 +25,11 @@ class AppServiceProvider extends ServiceProvider
         // Register the ItemService
         $this->app->singleton(ItemService::class, function ($app) {
             return new ItemService();
+        });
+
+        // Register the EmailService
+        $this->app->singleton(EmailService::class, function ($app) {
+            return new EmailService();
         });
     }
 

@@ -10,6 +10,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use App\Mail\ApprovalNotification;
 
 class SendEmailJob implements ShouldQueue
 {
@@ -49,25 +50,25 @@ class SendEmailJob implements ShouldQueue
     {
         try {
             // Send the email
-            // Mail::to($this->recipient)->send(new ApprovalNotification($this->email_data));
+            Mail::to($this->recipient)->send(new ApprovalNotification($this->email_data));
 
             // // Log the successful email action
-            // EmailLog::create([
-            //     'recipient_email' => $this->recipient,
-            //     'subject' => $this->email_data['subject'] ?? 'No Subject',
-            //     'body' => json_encode($this->email_data), // Optional: store the entire data
-            //     'status' => 'Sent',
-            //     'sent_at' => now(),
-            // ]);
+            EmailLog::create([
+                'recipient_email' => $this->recipient,
+                'subject' => $this->email_data['subject'] ?? 'No Subject',
+                'body' => json_encode($this->email_data), // Optional: store the entire data
+                'status' => 'Sent',
+                'sent_at' => now(),
+            ]);
         } catch (\Exception $e) {
             // Log the failed email action
-            // EmailLog::create([
-            //     'recipient_email' => $this->recipient,
-            //     'subject' => $this->email_data['subject'] ?? 'No Subject',
-            //     'body' => json_encode($this->email_data), // Optional: store the entire data
-            //     'status' => 'Failed',
-            //     'error_message' => $e->getMessage(),
-            // ]);
+            EmailLog::create([
+                'recipient_email' => $this->recipient,
+                'subject' => $this->email_data['subject'] ?? 'No Subject',
+                'body' => json_encode($this->email_data), // Optional: store the entire data
+                'status' => 'Failed',
+                'error_message' => $e->getMessage(),
+            ]);
             Log::error($e->getMessage());
         }
     }
