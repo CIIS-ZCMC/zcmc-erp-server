@@ -142,18 +142,18 @@ class AopApplicationController extends Controller
         $totalUsers = $totalResponsiblePeople->pluck('user_id')->filter()->unique()->count();
 
         return response()->json([
-            'total_objectives'          => $totalObjectives,
-            'total_success_indicators'  => $totalSuccessIndicators,
-            'total_activities'          => $totalActivities,
-            'total_gad_related'         => $totalGadRelated,
-            'total_not_gad_related'     => $totalNotGadRelated,
-            'total_cost'                => $totalActivityCost,
-            'total_resources'           => $totalResources,
-            'total_comments'            => $totalComments,
-            'total_responsible_people'  => $totalResponsiblePeople->count(),
-            'total_areas'               => $totalAreas,
-            'total_job_positions'       => $totalJobPositions,
-            'total_users'               => $totalUsers,
+            'total_objectives' => $totalObjectives,
+            'total_success_indicators' => $totalSuccessIndicators,
+            'total_activities' => $totalActivities,
+            'total_gad_related' => $totalGadRelated,
+            'total_not_gad_related' => $totalNotGadRelated,
+            'total_cost' => $totalActivityCost,
+            'total_resources' => $totalResources,
+            'total_comments' => $totalComments,
+            'total_responsible_people' => $totalResponsiblePeople->count(),
+            'total_areas' => $totalAreas,
+            'total_job_positions' => $totalJobPositions,
+            'total_users' => $totalUsers,
         ]);
     }
 
@@ -351,7 +351,7 @@ class AopApplicationController extends Controller
 
 
                 $applicationObjective = $aopApplication->applicationObjectives()->create([
-                    'objective_id'         => $objectiveData['objective_id'],
+                    'objective_id' => $objectiveData['objective_id'],
                     'success_indicator_id' => $objectiveData['success_indicator_id'],
                 ]);
 
@@ -453,11 +453,11 @@ class AopApplicationController extends Controller
 
                             PpmpItem::create([
                                 'ppmp_application_id' => $ppmpApplication->id,
-                                'item_id'             => $resource->item_id,
-                                'total_quantity'      => $resource->quantity,
-                                'estimated_budget'    => $estimatedBudget,
-                                'total_amount'        => $totalAmount,
-                                'remarks'             => null,
+                                'item_id' => $resource->item_id,
+                                'total_quantity' => $resource->quantity,
+                                'estimated_budget' => $estimatedBudget,
+                                'total_amount' => $totalAmount,
+                                'remarks' => null,
                             ]);
                         }
                     }
@@ -537,9 +537,9 @@ class AopApplicationController extends Controller
             ->get()
             ->map(function ($user) {
                 return [
-                    'id'          => $user->id,
-                    'name'        => $user->name,
-                    'label'       =>  $user->name,
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'label' => $user->name,
                     'designation' => $user->designation?->name
                 ];
             });

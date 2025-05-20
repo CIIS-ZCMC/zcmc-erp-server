@@ -28,27 +28,7 @@ class GetWithPaginatedSearchModeRequest extends FormRequest
                 'nullable',
                 'string',
             ],
-            'mode' => 'nullable|string',
-            'per_page' => [
-                'nullable',
-                'integer',
-                Rule::requiredIf(function () {
-                    // Required only if search exists without mode
-                    return !request()->has('id') && 
-                           !request()->has('mode');
-                }),
-                'min:1',
-                'max:100'
-            ],
-            'page' => [
-                'nullable',
-                'integer',
-                Rule::requiredIf(function () {
-                    // Required only if per_page exists
-                    return request()->has('per_page');
-                }),
-                'min:1'
-            ],
+            'mode' => 'nullable|string'
         ];
     }
 }

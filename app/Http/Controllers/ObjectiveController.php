@@ -16,7 +16,6 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 use Illuminate\Support\Facades\DB;
-use App\Models\ObjectiveSuccessIndicator;
 
 #[OA\Schema(
     schema: "Objective",
@@ -63,17 +62,17 @@ class ObjectiveController extends Controller
 
         return $cleanData;
     }
-    
+
     // Protected function
     protected function search(Request $request, $start): JsonResource
-    {   
+    {
         $validated = $request->validate([
             'search' => 'required|string|min:2|max:100',
             'per_page' => 'sometimes|integer|min:1|max:100',
             'page' => 'sometimes|integer|min:1|max:100'
         ]);
-        
-        $searchTerm = '%'.trim($validated['search']).'%';
+
+        $searchTerm = '%' . trim($validated['search']) . '%';
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
 
@@ -102,7 +101,7 @@ class ObjectiveController extends Controller
                 'message' => 'Search completed successfully'
             ]);
     }
-    
+
     protected function all($start)
     {
         $objective_success_indicator = Objective::all();
@@ -116,9 +115,9 @@ class ObjectiveController extends Controller
                 'message' => 'Successfully retrieve all records.'
             ]);
     }
-    
+
     protected function pagination(Request $request, $start): AnonymousResourceCollection
-    {   
+    {
         $validated = $request->validate([
             'per_page' => 'sometimes|integer|min:1|max:100',
             'page' => 'sometimes|integer|min:1|max:100'
@@ -126,8 +125,9 @@ class ObjectiveController extends Controller
 
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
-        
-        $objective_success_indicator = Objective::paginate($perPage, ['*'], 'page', $page);
+
+        $objective_success_indicator = Objective::with(['typeOfFunction', 'successIndicators'])
+            ->paginate($perPage, ['*'], 'page', $page);
 
         return ObjectiveResource::collection($objective_success_indicator)
             ->additional([
@@ -143,16 +143,16 @@ class ObjectiveController extends Controller
                 ],
                 'message' => 'Successfully retrieve all records.'
             ]);
-    }     
+    }
 
-    protected function singleRecord($item_unit_id, $start):JsonResponse
+    protected function singleRecord($item_unit_id, $start): JsonResponse
     {
         $itemUnit = Objective::find($item_unit_id);
-            
+
         if (!$itemUnit) {
             return response()->json(["message" => "Item unit not found."], Response::HTTP_NOT_FOUND);
         }
-    
+
         return (new ObjectiveResource($itemUnit))
             ->additional([
                 "meta" => [
@@ -163,11 +163,11 @@ class ObjectiveController extends Controller
             ])->response();
     }
 
-    protected function bulkStore(Request $request, $start):ObjectiveResource|AnonymousResourceCollection|JsonResponse  
+    protected function bulkStore(Request $request, $start): ObjectiveResource|AnonymousResourceCollection|JsonResponse
     {
         $existing_items = Objective::whereIn('code', collect($request->objectives)->pluck('code'))
-        ->orWhereIn('description', collect($request->objectives)->pluck('description'))
-        ->get(['code', 'description'])->toArray();
+            ->orWhereIn('description', collect($request->objectives)->pluck('description'))
+            ->get(['code', 'description'])->toArray();
 
         // Convert existing items into a searchable format
         $existing_names = array_column($existing_items, 'code');
@@ -207,8 +207,8 @@ class ObjectiveController extends Controller
                 "message" => "Successfully store data."
             ]);
     }
-    
-    protected function bulkUpdate(Request $request, $start):AnonymousResourceCollection|JsonResponse
+
+    protected function bulkUpdate(Request $request, $start): AnonymousResourceCollection|JsonResponse
     {
         $objective_ids = $request->query('id') ?? null;
 
@@ -218,23 +218,23 @@ class ObjectiveController extends Controller
                 // "meta" => MetadataComposerHelper::compose('put', $this->module)
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-    
+
         $updated_objectives = [];
         $errors = [];
-    
+
         foreach ($objective_ids as $index => $id) {
             $objective = Objective::find($id);
-            
+
             if (!$objective) {
                 $errors[] = "Log description with ID {$id} not found.";
                 continue;
             }
-    
+
             $cleanData = $this->cleanObjectivesData($request->input('objectives')[$index]);
             $objective->update($cleanData);
             $updated_objectives[] = $objective;
         }
-    
+
         if (!empty($errors)) {
             return ObjectiveResource::collection($updated_objectives)
                 ->additional([
@@ -248,7 +248,7 @@ class ObjectiveController extends Controller
                 ->response()
                 ->setStatusCode(Response::HTTP_MULTI_STATUS);
         }
-        
+
         return ObjectiveResource::collection($updated_objectives)
             ->additional([
                 "meta" => [
@@ -263,24 +263,24 @@ class ObjectiveController extends Controller
     protected function singleRecordUpdate(Request $request, $start): JsonResource|ObjectiveResource|JsonResponse
     {
         $objectives = $request->query('id') ?? null;
-        
+
         // Convert single ID to array for consistent processing
         $objectives = is_array($objectives) ? $objectives : [$objectives];
-    
+
         // Handle bulk update
         if ($request->has('objectives')) {
             $this->bulkUpdate($request, $start);
         }
-    
+
         // Handle single update
         $objective = Objective::find($objectives[0]);
-        
+
         if (!$objective) {
             return response()->json([
                 "message" => "Objective not found."
             ], Response::HTTP_NOT_FOUND);
         }
-    
+
         $cleanData = $this->cleanObjectivesData($request->all());
         $objective->update($cleanData);
 
@@ -408,15 +408,15 @@ class ObjectiveController extends Controller
         $search = $request->search;
         $mode = $request->mode;
 
-        if($item_unit_id){
+        if ($item_unit_id) {
             return $this->singleRecord($item_unit_id, $start);
         }
 
-        if($mode && $mode === 'selection'){
+        if ($mode && $mode === 'selection') {
             return $this->all($start);
         }
-        
-        if($search){
+
+        if ($search) {
             return $this->search($request, $start);
         }
 
@@ -467,7 +467,7 @@ class ObjectiveController extends Controller
         ];
 
         $new_item = Objective::create($cleanData);
-        
+
         return (new ObjectiveResource($new_item))
             ->additional([
                 'meta' => [
@@ -516,11 +516,11 @@ class ObjectiveController extends Controller
             )
         ]
     )]
-    public function update(Request $request): AnonymousResourceCollection|JsonResource|JsonResponse    
+    public function update(Request $request): AnonymousResourceCollection|JsonResource|JsonResponse
     {
         $start = microtime(true);
         $objectives = $request->query('id') ?? null;
-    
+
         // Validate ID parameter exists
         if (!$objectives) {
             $response = ["message" => "ID parameter is required."];
@@ -536,7 +536,7 @@ class ObjectiveController extends Controller
         if ($request->objectives !== null || $request->objectives > 1) {
             return $this->bulkUpdate($request, $start);
         }
-    
+
         return $this->singleRecordUpdate($request, $start);
     }
 
@@ -611,9 +611,14 @@ class ObjectiveController extends Controller
             }
 
             $found_ids = $objectives->pluck('id')->toArray();
-            
+
+            // 🔥 Delete related success indicators for each objective
+            foreach ($objectives as $objective) {
+                $objective->successIndicators()->delete(); // Assuming soft deletes
+            }
+
             $deletedCount = Objective::whereIn('id', $found_ids)->delete();
-    
+
             return response()->json([
                 "message" => "Successfully deleted {$deletedCount} objective(s).",
                 "deleted_ids" => $found_ids,
