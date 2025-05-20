@@ -9,12 +9,22 @@ use App\Models\AssignedArea;
 use App\Models\Notification;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Services\EmailService;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Config;
 
 class NotificationService
 {
+    protected EmailService $emailService;
+
+    /**
+     * Create a new NotificationService instance.
+     */
+    public function __construct(EmailService $emailService)
+    {
+        $this->emailService = $emailService;
+    }
+
     /**
      * Create and send notifications for AOP application status changes
      * 
@@ -55,8 +65,8 @@ class NotificationService
                     'user_id' => $requestorId
                 ]);
 
-                // Send email notification to requestor
-                $this->sendApprovalEmail(
+                // Send email notification to requestor using the email service
+                $this->emailService->sendApprovalEmail(
                     $aopApplication,
                     $requestorId,
                     $currentUserId,
@@ -93,25 +103,24 @@ class NotificationService
                         'user_id' => $nextArea->user_id
                     ]);
 
-                    // Send email notification to the next approver
-                    $this->sendApprovalEmail(
+                    // Send email notification to the next approver using the email service
+                    $this->emailService->sendApprovalEmail(
                         $aopApplication,
                         $nextArea->user_id,
                         $currentUserId,
                         'AOP Application Requires Your Action',
-                        'An AOP application is waiting for your review and action.'
+                        "An AOP application is waiting for your review and action."
                     );
-                    
+
                     Log::info('Sent notification to next approver', [
                         'notification_id' => $nextApproverNotification->id,
-                        'next_area_id' => $nextAreaId,
-                        'next_user_id' => $nextArea->user_id
+                        'next_user_id' => $nextArea->user_id,
+                        'status' => $status
                     ]);
                 }
             }
         } catch (\Exception $e) {
-            // We don't want to fail the whole process if notifications fail, just log it
-            Log::error('Error in notification: ' . $e->getMessage(), [
+            Log::error('Error in sendAopStatusChangeNotifications: ' . $e->getMessage(), [
                 'exception' => $e,
                 'trace' => $e->getTraceAsString()
             ]);
@@ -154,8 +163,8 @@ class NotificationService
      * @param int $userId The recipient user ID
      * @param string $title The notification title
      * @param string $description The notification description
-     * @param string $modulePath The module path (URL) for this notification
-     * @param int $creatorId The user ID who created this notification
+     * @param string $modulePath Optional link to a specific module
+     * @param int $creatorId Optional ID of the user who created this notification
      * @return Notification|null The created notification or null on failure
      */
     public function sendUserNotification(
@@ -206,8 +215,8 @@ class NotificationService
      * @param array $userIds Array of recipient user IDs
      * @param string $title The notification title
      * @param string $description The notification description
-     * @param string $modulePath The module path (URL) for this notification
-     * @param int $creatorId The user ID who created this notification
+     * @param string $modulePath Optional link to a specific module
+     * @param int $creatorId Optional ID of the user who created this notification
      * @return Notification|null The created notification or null on failure
      */
     public function sendMultiUserNotification(
@@ -253,73 +262,32 @@ class NotificationService
             return null;
         }
     }
-    
+
     /**
      * Send an email notification for AOP approval workflow
      * 
      * @param AopApplication $aopApplication The AOP application
      * @param int $recipientUserId The user ID of the email recipient
      * @param int $actionUserId The user ID who performed the action
-     * @param string $title The email subject/title
-     * @param string $message The email message body
+     * @param string $title The email subject
+     * @param string $message The email message/body
      * @return bool Whether the email was queued successfully
+     * @deprecated Use EmailService::sendApprovalEmail() instead
      */
-    protected function sendApprovalEmail(
+    public function sendApprovalEmail(
         AopApplication $aopApplication,
         int $recipientUserId,
         int $actionUserId,
         string $title,
         string $message
     ): bool {
-        try {
-            // Get the recipient user
-            $recipient = User::find($recipientUserId);
-            
-            if (!$recipient || empty($recipient->email)) {
-                Log::warning('Cannot send email - recipient not found or has no email', [
-                    'recipient_id' => $recipientUserId
-                ]);
-                return false;
-            }
-            
-            // Get the user who performed the action
-            $actionUser = null;
-            if ($actionUserId) {
-                $actionUser = User::find($actionUserId);
-            }
-            
-            // Use test email in non-production environments
-            // $recipientEmail = Config::get('app.env') === 'production' 
-            //     ? $recipient->email 
-            //     : Config::get('mail.test_email', 'test@example.com');
-                
-            $recipientEmail = 'mustaham.zcmc@gmail.com';
-            // Queue the email using Laravel's mail queue system
-            Mail::to($recipientEmail)
-                ->queue(new ApprovalNotification(
-                    $aopApplication,
-                    $title,
-                    $message,
-                    $actionUser
-                ));
-            
-            Log::info('Email notification queued', [
-                'recipient' => $recipientEmail,
-                'title' => $title,
-                'aop_id' => $aopApplication->id
-            ]);
-            
-            return true;
-            
-        } catch (\Exception $e) {
-            Log::error('Error sending email notification: ' . $e->getMessage(), [
-                'exception' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'recipient_id' => $recipientUserId,
-                'aop_id' => $aopApplication->id
-            ]);
-            
-            return false;
-        }
+        // Delegate to the EmailService
+        return $this->emailService->sendApprovalEmail(
+            $aopApplication,
+            $recipientUserId,
+            $actionUserId,
+            $title,
+            $message
+        );
     }
 }
