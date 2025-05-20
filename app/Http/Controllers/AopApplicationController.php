@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\TransactionLogHelper;
 use App\Http\Requests\AopApplicationRequest;
 use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\AopRemarksResource;
@@ -815,6 +816,10 @@ class AopApplicationController extends Controller
         if (isset($statusMap[$request->status])) {
             $aop_application->status = $statusMap[$request->status];
             $aop_application->save();
+            
+            // Log the transaction after status update
+            $logCode = 'AOP_' . strtoupper($request->status);
+            TransactionLogHelper::register($aop_application, $logCode);
         }
 
         // Get the current user information
