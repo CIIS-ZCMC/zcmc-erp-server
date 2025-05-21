@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Libraries;
 
+use App\Http\Controllers\Controller;
 use App\Http\Requests\VariantRequest;
 use App\Http\Resources\VariantResource;
 use App\Models\Variant;

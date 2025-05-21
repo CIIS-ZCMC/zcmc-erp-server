@@ -47,6 +47,12 @@ Route::
                 Route::put('item-units', "ItemUnitController@update");
                 Route::delete('item-units', "ItemUnitController@destroy");
 
+                // Variant routes
+                Route::get('variants', "VariantController@index");
+                Route::post('variants', "VariantController@store");
+                Route::put('variants', "VariantController@update");
+                Route::delete('variants', "VariantController@destroy");
+
                 // Item Categories routes
                 Route::post('item-categories/import', "ItemCategoryController@import");
                 Route::get('item-categories/template', "ItemCategoryController@downloadTemplate");
