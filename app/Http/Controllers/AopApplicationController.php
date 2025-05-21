@@ -310,7 +310,7 @@ class AopApplicationController extends Controller
 
         try {
 
-            $assignedArea = AssignedArea::with('division')->where('user_id', $validatedData['user_id'])->first();
+            $assignedArea = AssignedArea::with('division')->where('user_id', 1)->first();
             $divisionChiefId = optional($assignedArea->division)->head_id;
 
             $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
@@ -325,13 +325,13 @@ class AopApplicationController extends Controller
 
             // Create AOP Application
             $aopApplication = AopApplication::create([
-                'user_id' => $validatedData['user_id'],
+                'user_id' => 1,
                 'division_chief_id' => $divisionChiefId,
                 'mcc_chief_id' => $mccChiefId,
                 'planning_officer_id' => $planningOfficerId,
                 'aop_application_uuid' => Str::uuid(),
                 'mission' => $validatedData['mission'],
-                'status' => $validatedData['status'],
+                'status' => "Pending",
                 'has_discussed' => $validatedData['has_discussed'],
                 'remarks' => $validatedData['remarks'] ?? null,
             ]);
@@ -416,11 +416,11 @@ class AopApplicationController extends Controller
                 'aop_application_id' => $aopApplication->id,
                 'ppmp_application_id' => null,
                 'action' => "Create Aop",
-                'action_by' => $validatedData['user_id'],
+                'action_by' => 1,
             ]);
 
 
-            $assignedArea = AssignedArea::with('division')->where('user_id', $validatedData['user_id'])->first();
+            $assignedArea = AssignedArea::with('division')->where('user_id', 1)->first();
             $divisionChiefId = optional($assignedArea->division)->head_id;
 
             $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
@@ -431,12 +431,12 @@ class AopApplicationController extends Controller
 
 
             $ppmpApplication = $aopApplication->ppmpApplication()->create([
-                'user_id' => $validatedData['user_id'],
+                'user_id' => 1,
                 'division_chief_id' => $divisionChiefId,
                 'budget_officer_id' => 1,
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => $ppmpTotal,
-                'status' => $validatedData['status'],
+                'status' => "Pending",
 
             ]);
 
@@ -468,7 +468,7 @@ class AopApplicationController extends Controller
                 'aop_application_id' => null,
                 'ppmp_application_id' => $ppmpApplication->id,
                 'action' => "Create Ppmp",
-                'action_by' => $validatedData['user_id'],
+                'action_by' => 1,
             ]);
 
             $aopApplicationTimeline = $aopApplication->applicationTimelines()->create([
@@ -476,7 +476,7 @@ class AopApplicationController extends Controller
                 'user_id' => 1,
                 'current_area_id' => 1,
                 'next_area_id' => 2,
-                'status' => $validatedData['status'],
+                'status' => "Pending",
                 'date_created' => now(),
             ]);
             DB::commit();
