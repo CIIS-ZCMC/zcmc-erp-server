@@ -15,27 +15,7 @@ use App\Models\ItemUnit;
 use App\Models\Item;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use OpenApi\Attributes as OA;
 
-#[OA\Schema(
-    schema: "ActivityComment",
-    properties: [
-        new OA\Property(property: "id", type: "integer"),
-        new OA\Property(property: "activity_id", type: "integer"),
-        new OA\Property(property: "user_id", type: "integer", nullable: true),
-        new OA\Property(property: "content", type: "string"),
-        new OA\Property(
-            property: "created_at",
-            type: "string",
-            format: "date-time"
-        ),
-        new OA\Property(
-            property: "updated_at",
-            type: "string",
-            format: "date-time"
-        )
-    ]
-)]
 class ItemRequestController extends Controller
 {
     private $is_development;
@@ -146,115 +126,6 @@ class ItemRequestController extends Controller
         return $newItem;
     }
 
-    #[OA\Post(
-        path: '/api/item-requests/{id}/approve',
-        summary: 'Approve or reject an item request',
-        description: 'Updates the status of an item request and creates a new item if approved',
-        security: [['bearerAuth' => []]],
-        tags: ['Item Requests'],
-        parameters: [
-            new OA\Parameter(
-                name: 'id',
-                in: 'path',
-                description: 'ID of the item request to process',
-                required: true,
-                schema: new OA\Schema(type: 'integer'))
-        ],
-        requestBody: new OA\RequestBody(
-            description: 'Approval decision and details',
-            required: true,
-            content: new OA\JsonContent(
-                required: ['status'],
-                properties: [
-                    new OA\Property(
-                        property: 'status',
-                        type: 'string',
-                        enum: ['approve', 'reject'],
-                        example: 'approve'
-                    ),
-                    new OA\Property(
-                        property: 'reason',
-                        type: 'string',
-                        description: 'Required if status is reject',
-                        nullable: true,
-                        example: 'Insufficient documentation'
-                    )
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_CREATED,
-                description: 'Item request approved and item created',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(
-                            property: 'data',
-                            ref: '#/components/schemas/Item'
-                        ),
-                        new OA\Property(
-                            property: 'metadata',
-                            properties: [
-                                new OA\Property(
-                                    property: 'methods',
-                                    type: 'array',
-                                    items: new OA\Items(type: 'string'))
-                            ]
-                        )
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: 'Item request rejected',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(
-                            property: 'message',
-                            type: 'string'
-                        )
-                    ],
-                    example: [
-                        'message' => 'Item request is rejected.'
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNPROCESSABLE_ENTITY,
-                description: 'Validation error',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(
-                            property: 'message',
-                            type: 'string'
-                        ),
-                        new OA\Property(
-                            property: 'errors',
-                            type: 'object',
-                            additionalProperties: new OA\Property(
-                                type: 'array',
-                                items: new OA\Items(type: 'string'))
-                        )
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNAUTHORIZED,
-                description: 'Unauthorized',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(
-                            property: 'message',
-                            type: 'string'
-                        )
-                    ],
-                    example: [
-                        'message' => 'Unauthenticated.'
-                    ]
-                )
-            )
-        ]
-    )]
     public function approve(Request $request, ItemRequest $itemRequest)
     {
         $cleanData = [
@@ -281,37 +152,6 @@ class ItemRequestController extends Controller
         ], Response::HTTP_CREATED);
     }
 
-    #[OA\Get(
-        path: "/api/activity-comments",
-        summary: "List all activity comments",
-        tags: ["Activity Comments"],
-        parameters: [
-            new OA\Parameter(
-                name: "per_page",
-                in: "query",
-                description: "Items per page",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 15)
-            ),
-            new OA\Parameter(
-                name: "page",
-                in: "query",
-                description: "Page number",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 1)
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: "Successful operation",
-                content: new OA\JsonContent(
-                    type: "array",
-                    items: new OA\Items(ref: "#/components/schemas/ActivityComment")
-                )
-            )
-        ]
-    )]
     public function index(Request $request)
     {
         $page = $request->query('page') > 0? $request->query('page'): 1;
@@ -476,35 +316,6 @@ class ItemRequestController extends Controller
             ]
         ], Response::HTTP_OK);
     }
-
-    #[OA\Post(
-        path: "/api/activity-comments",
-        summary: "Create a new activity comment",
-        tags: ["Activity Comments"],
-        requestBody: new OA\RequestBody(
-            description: "Comment data",
-            required: true,
-            content: new OA\JsonContent(
-                required: ["activity_id", "content"],
-                properties: [
-                    new OA\Property(property: "activity_id", type: "integer"),
-                    new OA\Property(property: "content", type: "string"),
-                    new OA\Property(property: "user_id", type: "integer", nullable: true)
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_CREATED,
-                description: "Comment created",
-                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNPROCESSABLE_ENTITY,
-                description: "Validation error"
-            )
-        ]
-    )]
     public function store(ItemRequestRequest $request)
     {
         $base_message = "Successfully created items";
@@ -580,44 +391,6 @@ class ItemRequestController extends Controller
         ], Response::HTTP_CREATED);
     }
 
-    #[OA\Put(
-        path: "/api/activity-comments/{id}",
-        summary: "Update an activity comment",
-        tags: ["Activity Comments"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        requestBody: new OA\RequestBody(
-            description: "Comment data",
-            required: true,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: "content", type: "string")
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: "Comment updated",
-                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNPROCESSABLE_ENTITY,
-                description: "Validation error"
-            )
-        ]
-    )]
     public function update(Request $request, ItemRequest $itemRequest): Response
     {   
         $cleanData = $this->cleanItemRequestData($request->all());
@@ -631,31 +404,6 @@ class ItemRequestController extends Controller
         
         return response()->json($response, Response::HTTP_OK);
     }
-
-    #[OA\Delete(
-        path: "/api/activity-comments/{id}",
-        summary: "Delete an activity comment",
-        tags: ["Activity Comments"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_NO_CONTENT,
-                description: "Comment deleted"
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            )
-        ]
-    )]
     public function destroy(Request $request): Response
     {
         $item_ids = $request->query('id') ?? null;
