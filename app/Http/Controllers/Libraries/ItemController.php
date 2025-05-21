@@ -14,6 +14,7 @@ use App\Models\ItemCategory;
 use App\Models\Item;
 use App\Models\ItemClassification;
 use App\Models\ItemUnit;
+use App\Models\Variant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -108,8 +109,7 @@ class ItemController extends Controller
         ->where(function($query) use ($searchTerm) {
             // Search item fields
             $query->where('items.name', 'like', "%{$searchTerm}%")
-                  ->orWhere('items.code', 'like', "%{$searchTerm}%")
-                  ->orWhere('items.variant', 'like', "%{$searchTerm}%");
+                  ->orWhere('items.code', 'like', "%{$searchTerm}%");
             
             // Search through itemUnit relationship
             $query->orWhereHas('itemUnit', function($q) use ($searchTerm) {
@@ -130,6 +130,12 @@ class ItemController extends Controller
                 $q->where('name', 'like', "%{$searchTerm}%")
                   ->orWhere('code', 'like', "%{$searchTerm}%")
                   ->orWhere('description', 'like', "%{$searchTerm}%");
+            });
+            
+            // Search through variant relationship
+            $query->orWhereHas('variant', function($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('code', 'like', "%{$searchTerm}%");
             });
         })
         ->paginate($perPage, ['*'], 'page', $page);
@@ -380,6 +386,7 @@ class ItemController extends Controller
                 ->whereIn('item_unit_id', collect($request->items)->pluck('item_unit_id'))
                 ->whereIn('item_category_id', collect($request->items)->pluck('item_category_id'))
                 ->whereIn('item_classification_id', collect($request->items)->pluck('item_classification_id'))
+                ->whereIn('variant_id', collect($request->items)->pluck('variant_id'))
                 ->get(['name'])->toArray();
 
             // Convert existing items into a searchable format
@@ -387,6 +394,7 @@ class ItemController extends Controller
             $existing_estimated_budget = array_column($existing_items, 'estimated_budget');
             $existing_item_unit_id = array_column($existing_items, 'item_unit_id');
             $existing_item_category_id = array_column($existing_items, 'item_category_id');
+            $existing_variant_id = array_column($existing_items, 'variant_id');
             $existing_item_classification_id = array_column($existing_items, 'item_classification_id');
 
             if (!empty($existing_items)) {
@@ -394,6 +402,7 @@ class ItemController extends Controller
                     ->whereIn('estimated_budget', collect($existing_estimated_budget)->pluck('estimated_budget'))
                     ->whereIn('item_unit_id', collect($existing_item_unit_id)->pluck('item_unit_id'))
                     ->whereIn('item_category_id', collect($existing_item_category_id)->pluck('item_category_id'))
+                    ->whereIn('variant_id', collect($existing_variant_id)->pluck('variant_id'))
                     ->whereIn('item_classification_id', collect($existing_item_classification_id)->pluck('item_classification_id'))->get();
 
                 $existing_items = ItemDuplicateResource::collection($existing_item_collection);
@@ -401,6 +410,7 @@ class ItemController extends Controller
 
             foreach ($request->items as $item) {
                 $is_valid_unit_id = ItemUnit::find($item['item_unit_id']);
+                $is_valid_variant_id = Variant::find($item['variant_id']);
                 $is_valid_category_id = ItemCategory::find($item['item_category_id']);
                 $is_valid_classification_id = ItemClassification::find($item['item_classification_id']);
 
@@ -409,13 +419,14 @@ class ItemController extends Controller
                         !in_array($item['name'], $existing_names) && !in_array($item['estimated_budget'], $existing_estimated_budget)
                         && !in_array($item['item_unit_id'], $existing_item_unit_id) && !in_array($item['item_category_id'], $existing_item_category_id)
                         && !in_array($item['item_classification_id'], $existing_item_classification_id)
+                        && !in_array($item['variant_id'], $existing_variant_id)
                     ) {
                         $cleanData[] = [
                             "name" => strip_tags($item['name']),
                             "code" => strip_tags($item['code']),
-                            "variant" => strip_tags($item['variant']),
                             "estimated_budget" => strip_tags($item['estimated_budget']),
                             "item_unit_id" => strip_tags($item['item_unit_id']),
+                            "variant_id" => strip_tags($item['variant_id']),
                             "item_category_id" => strip_tags($item['item_category_id']),
                             "item_classification_id" => strip_tags($item['item_classification_id']),
                             "created_at" => now(),
@@ -459,10 +470,11 @@ class ItemController extends Controller
         }
 
         $is_valid_unit_id = ItemUnit::find($request->item_unit_id);
+        $is_valid_variant_id = Variant::find($request->variant_id);
         $is_valid_category_id = ItemCategory::find($request->item_category_id);
         $is_valid_classification_id = ItemClassification::find($request->item_classification_id);
 
-        if (!($is_valid_unit_id && $is_valid_category_id && $is_valid_classification_id)) {
+        if (!($is_valid_unit_id && $is_valid_variant_id && $is_valid_category_id && $is_valid_classification_id)) {
             return response()->json([
                 "message" => "Invalid data given.",
                 "metadata" => [
@@ -474,16 +486,14 @@ class ItemController extends Controller
         $cleanData = [
             "name" => strip_tags($request->input('name')),
             "code" => strip_tags($request->input('code')),
-            "variant" => strip_tags($request->input('variant')),
             "estimated_budget" => strip_tags($request->input('estimated_budget')),
             "item_unit_id" => strip_tags($request->input('item_unit_id')),
+            "variant_id" => strip_tags($request->input('variant_id')),
             "item_category_id" => strip_tags($request->input('item_category_id')),
             "item_classification_id" => strip_tags($request->input('item_classification_id')),
         ];
 
         $new_item = Item::create($cleanData);
-
-        $metadata = ["methods" => ['GET, POST, PUT, DELETE']];
 
         if($request->hasFile('file'))
         {
@@ -575,9 +585,9 @@ class ItemController extends Controller
         if (!$item_ids) {
             $response = ["message" => "ID parameter is required."];
 
-            if ($this->is_development) {
-                $response['metadata'] = $this->getMetadata('put');
-            }
+            // if ($this->is_development) {
+            //     $response['metadata'] = $this->getMetadata('put');
+            // }
 
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -590,7 +600,7 @@ class ItemController extends Controller
             if (count($item_ids) !== count($request->input('items'))) {
                 return response()->json([
                     "message" => "Number of IDs does not match number of items provided.",
-                    "metadata" => $this->getMetadata('put')
+                    // "metadata" => $this->getMetadata('put')
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
@@ -626,7 +636,7 @@ class ItemController extends Controller
             return response()->json([
                 "data" => ItemResource::collection($updated_items),
                 "message" => "Successfully updated " . count($updated_items) . " items.",
-                "metadata" => $this->getMetadata('put')
+                // "metadata" => $this->getMetadata('put')
             ], Response::HTTP_OK);
         }
 
@@ -651,7 +661,7 @@ class ItemController extends Controller
         $response = [
             "data" => new ItemResource($item),
             "message" => "Item updated successfully.",
-            "metadata" => $this->getMetadata('put')
+            // "metadata" => $this->getMetadata('put')
         ];
 
         return response()->json($response, Response::HTTP_OK);
@@ -692,7 +702,7 @@ class ItemController extends Controller
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => $this->getMetadata('delete')
+                    // "metadata" => $this->getMetadata('delete')
                 ];
             }
 
