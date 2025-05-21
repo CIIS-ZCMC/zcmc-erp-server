@@ -20,7 +20,6 @@ class Item extends Model
         "name",
         "code",
         "image",
-        "variant",
         "estimated_budget"
     ];
 
@@ -32,8 +31,7 @@ class Item extends Model
     {
         return [
             'name' => $this->name,
-            'code' => $this->code,
-            'variant' => $this->variant,
+            'code' => $this->code
         ];
     }
 

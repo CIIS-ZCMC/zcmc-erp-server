@@ -23,12 +23,11 @@ return new class extends Migration {
             $table->string('name');
             $table->string('code')->nullable();
             $table->text('image')->nullable();
-            $table->string('variant')->nullable();
             $table->float('estimated_budget')->default(0);
             $table->softDeletes();
             $table->timestamps();
     
-            $table->fullText(['name', 'code', 'variant']);
+            $table->fullText(['name', 'code']);
         });
     }
 

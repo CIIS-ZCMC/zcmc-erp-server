@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('code');
             $table->softDeletes();
             $table->timestamps();
+            
+            $table->fullText(['name', 'code']);
         });
     }
 
