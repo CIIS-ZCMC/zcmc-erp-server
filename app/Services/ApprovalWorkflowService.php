@@ -14,20 +14,11 @@ use App\Helpers\TransactionLogHelper;
 class ApprovalWorkflowService
 {
     /**
-     * The notification service instance.
-     *
-     * @var NotificationService
-     */
-    protected $notificationService;
-
-    /**
      * Create a new class instance.
-     *
-     * @param NotificationService|null $notificationService
      */
-    public function __construct(?NotificationService $notificationService = null)
+    public function __construct()
     {
-        $this->notificationService = $notificationService ?: new NotificationService(new EmailService());
+        // Constructor with no dependencies now
     }
 
     /**

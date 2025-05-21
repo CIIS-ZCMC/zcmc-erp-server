@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\TransactionLogHelper;
 use App\Http\Requests\AopApplicationRequest;
+use App\Http\Requests\ProcessAopRequest;
 use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\AopRemarksResource;
 use App\Http\Resources\AopRequestResource;
@@ -23,6 +24,7 @@ use App\Models\Unit;
 use App\Models\User;
 use App\Models\ApplicationTimeline;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use OpenApi\Attributes as OA;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +37,6 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
 use App\Services\ApprovalWorkflowService;
-use App\Services\NotificationService;
 use App\Services\AopVisibilityService;
 
 #[OA\Schema(
@@ -730,33 +731,11 @@ class AopApplicationController extends Controller
     /**
      * Process an AOP application request through the approval workflow
      *
-     * @param Request $request The incoming request
-     * @return mixed JSON response
+     * @param ProcessAopRequest $request The incoming request
+     * @return \Illuminate\Http\JsonResponse JSON response
      */
-    public function processAopRequest(Request $request): mixed
+    public function processAopRequest(ProcessAopRequest $request): JsonResponse
     {
-        // Check if user is authenticated
-        if (!$request->user()) {
-            return response()->json([
-                'message' => 'Unauthenticated user',
-            ], Response::HTTP_UNAUTHORIZED);
-        }
-
-        $user_id = $request->user()->id;
-
-        $validated = Validator::make($request->all(), [
-            'aop_application_id' => 'required|integer',
-            'status' => 'required|string|',
-            'remarks' => 'nullable|string|max:500',
-            'auth_pin' => 'required|integer|digits:6',
-        ]);
-
-        if ($validated->fails()) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $validated->errors(),
-            ], Response::HTTP_BAD_REQUEST);
-        }
 
         $aop_application = AopApplication::with([
             'applicationObjectives',
@@ -773,6 +752,10 @@ class AopApplicationController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
+
+        $user = User::find($request->user()->id);
+        $user_assigned_area = $user->assignedArea;
+
         // Get the current user's assigned area
         $current_user_area = AssignedArea::with([
             'department',
@@ -780,7 +763,7 @@ class AopApplicationController extends Controller
             'unit',
             'division',
             'user'
-        ])->where('user_id', $user_id)->first();
+        ])->where('user_id', $request->user()->id)->first();
 
         if (!$current_user_area) {
             return response()->json([
@@ -794,7 +777,7 @@ class AopApplicationController extends Controller
         // Create a timeline entry using the service
         $aop_application_timeline = $workflow_service->createApplicationTimeline(
             $aop_application->id,
-            $user_id,
+            $request->user()->id,
             $current_user_area->id,
             $request->status,
             $request->remarks
@@ -816,10 +799,6 @@ class AopApplicationController extends Controller
         if (isset($statusMap[$request->status])) {
             $aop_application->status = $statusMap[$request->status];
             $aop_application->save();
-            
-            // Log the transaction after status update
-            $logCode = 'AOP_' . strtoupper($request->status);
-            TransactionLogHelper::register($aop_application, $logCode);
         }
 
         // Get the current user information
