@@ -77,7 +77,7 @@ class VariantController extends Controller
                     ->orWhere('code', 'like', "%{$search}%");
         }
         
-        return VariantResource::collection(Variant::onlyTrashed()->get())
+        return VariantResource::collection($query->get())
             ->additional([
                 "meta" => [
                     "methods" => $this->methods
