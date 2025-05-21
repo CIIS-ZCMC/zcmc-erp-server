@@ -11,27 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Symfony\Component\HttpFoundation\Response;
-use OpenApi\Attributes as OA;
 
-#[OA\Schema(
-    schema: "ItemSpecification",
-    properties: [
-        new OA\Property(property: "id", type: "integer"),
-        new OA\Property(property: "item_id", type: "integer", nullable: true),
-        new OA\Property(property: "item_request_id", type: "integer", nullable: true),
-        new OA\Property(property: "item_specification_id", type: "integer", nullable: true),
-        new OA\Property(
-            property: "created_at",
-            type: "string",
-            format: "date-time"
-        ),
-        new OA\Property(
-            property: "updated_at",
-            type: "string",
-            format: "date-time"
-        )
-    ]
-)]
 class ItemSpecificationController extends Controller
 {
     private $is_development;
@@ -322,37 +302,6 @@ class ItemSpecificationController extends Controller
             ])->response();
     }
 
-    #[OA\Get(
-        path: "/api/item-specifications",
-        summary: "List all item specification",
-        tags: ["Item Specification"],
-        parameters: [
-            new OA\Parameter(
-                name: "per_page",
-                in: "query",
-                description: "Item Specifications per page",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 15)
-            ),
-            new OA\Parameter(
-                name: "page",
-                in: "query",
-                description: "Page number",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 1)
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: "Successful operation",
-                content: new OA\JsonContent(
-                    type: "array",
-                    items: new OA\Items(ref: "#/components/schemas/ItemSpecification")
-                )
-            )
-        ]
-    )]
     public function index(Request $request)
     {
         $start = microtime(true);
@@ -375,34 +324,6 @@ class ItemSpecificationController extends Controller
         return $this->pagination($request, $start); 
     }
 
-    #[OA\Post(
-        path: "/api/item-specifications",
-        summary: "Create a new item specification",
-        tags: ["Activity Comments"],
-        requestBody: new OA\RequestBody(
-            description: "Comment data",
-            required: true,
-            content: new OA\JsonContent(
-                required: ["activity_id", "content"],
-                properties: [
-                    new OA\Property(property: "activity_id", type: "integer"),
-                    new OA\Property(property: "content", type: "string"),
-                    new OA\Property(property: "user_id", type: "integer", nullable: true)
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_CREATED,
-                description: "Comment created",
-                content: new OA\JsonContent(ref: "#/components/schemas/ItemSpecification")
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNPROCESSABLE_ENTITY,
-                description: "Validation error"
-            )
-        ]
-    )]
     public function store(Request $request)
     {
         $start = microtime(true);
@@ -440,44 +361,6 @@ class ItemSpecificationController extends Controller
             ])->response();
     }
 
-    #[OA\Put(
-        path: "/api/item-specifications/{id}",
-        summary: "Update an item specification",
-        tags: ["Activity Comments"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        requestBody: new OA\RequestBody(
-            description: "Comment data",
-            required: true,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: "content", type: "string")
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: "Comment updated",
-                content: new OA\JsonContent(ref: "#/components/schemas/ItemSpecification")
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNPROCESSABLE_ENTITY,
-                description: "Validation error"
-            )
-        ]
-    )]
     public function update(Request $request, ItemSpecification $itemSpecification)
     {
         $start = microtime(true);
@@ -521,30 +404,6 @@ class ItemSpecificationController extends Controller
             ]);
     }
 
-    #[OA\Put(
-        path: "/api/item-specifications/{id}/restore",
-        summary: "Delete an item specification",
-        tags: ["Item Specifications"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_NO_CONTENT,
-                description: "Comment deleted"
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            )
-        ]
-    )]
     public function restore($id, Request $request)
     {
         ItemSpecification::withTrashed()->where('id', $id)->restore();
@@ -558,30 +417,6 @@ class ItemSpecificationController extends Controller
             ]);
     }
 
-    #[OA\Delete(
-        path: "/api/activity-specifications/{id}",
-        summary: "Delete an item specification",  
-        tags: ["Item specification"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_NO_CONTENT,
-                description: "Comment deleted"
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            )
-        ]
-    )]
     public function destroy(Request $request): Response
     {
         $item_category_ids = $request->query('id') ?? null;

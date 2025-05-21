@@ -4,8 +4,6 @@ namespace App\Http\Controllers\Libraries;
 
 use App\Http\Controllers\Controller;
 use App\Helpers\FileUploadCheckForMalwareAttack;
-use App\Helpers\MetadataComposerHelper;
-use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemRequest;
 use App\Http\Resources\ItemDuplicateResource;
 use App\Http\Resources\ItemResource;
@@ -14,31 +12,13 @@ use App\Models\ItemCategory;
 use App\Models\Item;
 use App\Models\ItemClassification;
 use App\Models\ItemUnit;
+use App\Models\Snomed;
+use App\Models\Variant;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Symfony\Component\HttpFoundation\Response;
-use OpenApi\Attributes as OA;
 
-#[OA\Schema(
-    schema: "ActivityComment",
-    properties: [
-        new OA\Property(property: "id", type: "integer"),
-        new OA\Property(property: "activity_id", type: "integer"),
-        new OA\Property(property: "user_id", type: "integer", nullable: true),
-        new OA\Property(property: "content", type: "string"),
-        new OA\Property(
-            property: "created_at",
-            type: "string",
-            format: "date-time"
-        ),
-        new OA\Property(
-            property: "updated_at",
-            type: "string",
-            format: "date-time"
-        )
-    ]
-)]
 class ItemController extends Controller
 {
     private $is_development;
@@ -108,8 +88,7 @@ class ItemController extends Controller
         ->where(function($query) use ($searchTerm) {
             // Search item fields
             $query->where('items.name', 'like', "%{$searchTerm}%")
-                  ->orWhere('items.code', 'like', "%{$searchTerm}%")
-                  ->orWhere('items.variant', 'like', "%{$searchTerm}%");
+                  ->orWhere('items.code', 'like', "%{$searchTerm}%");
             
             // Search through itemUnit relationship
             $query->orWhereHas('itemUnit', function($q) use ($searchTerm) {
@@ -130,6 +109,17 @@ class ItemController extends Controller
                 $q->where('name', 'like', "%{$searchTerm}%")
                   ->orWhere('code', 'like', "%{$searchTerm}%")
                   ->orWhere('description', 'like', "%{$searchTerm}%");
+            });
+            
+            // Search through variant relationship
+            $query->orWhereHas('variant', function($q) use ($searchTerm) {
+                $q->where('name', 'like', "%{$searchTerm}%")
+                  ->orWhere('code', 'like', "%{$searchTerm}%");
+            });
+            
+            // Search through snomed relationship
+            $query->orWhereHas('snomed', function($q) use ($searchTerm) {
+                $q->where('code', 'like', "%{$searchTerm}%");
             });
         })
         ->paginate($perPage, ['*'], 'page', $page);
@@ -211,75 +201,6 @@ class ItemController extends Controller
                 "message" => "Successfully retrieved record."
             ])->response();
     }
-    
-    #[OA\Post(
-        path: '/api/import',
-        summary: 'Import item units from Excel/CSV file',
-        requestBody: new OA\RequestBody(
-            description: 'Excel/CSV file containing item units',
-            required: true,
-            content: new OA\MediaType(
-                mediaType: 'multipart/form-data',
-                schema: new OA\Schema(
-                    properties: [
-                        new OA\Property(
-                            property: 'file',
-                            type: 'string',
-                            format: 'binary',
-                            description: 'Excel file (xlsx, xls, csv)'
-                        )
-                    ]
-                )
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: 200,
-                description: 'Successful import',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(property: 'success_count', type: 'integer'),
-                        new OA\Property(property: 'failure_count', type: 'integer'),
-                        new OA\Property(
-                            property: 'failures',
-                            type: 'array',
-                            items: new OA\Items(
-                                properties: [
-                                    new OA\Property(property: 'row', type: 'integer'),
-                                    new OA\Property(property: 'errors', type: 'array', items: new OA\Items(type: 'string'))
-                                ]
-                            )
-                        )
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 422,
-                description: 'Validation error',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(
-                            property: 'errors',
-                            type: 'object',
-                            additionalProperties: new OA\Property(type: 'array', items: new OA\Items(type: 'string')))
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 500,
-                description: 'Server error',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(property: 'error', type: 'string')
-                    ]
-                )
-            )
-        ],
-        tags: ['Item Units']
-    )]
     public function import(Request $request)
     {
         return response()->json([
@@ -287,37 +208,6 @@ class ItemController extends Controller
         ], Response::HTTP_OK);
     }
 
-    #[OA\Get(
-        path: "/api/activity-comments",
-        summary: "List all activity comments",
-        tags: ["Activity Comments"],
-        parameters: [
-            new OA\Parameter(
-                name: "per_page",
-                in: "query",
-                description: "Items per page",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 15)
-            ),
-            new OA\Parameter(
-                name: "page",
-                in: "query",
-                description: "Page number",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 1)
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: "Successful operation",
-                content: new OA\JsonContent(
-                    type: "array",
-                    items: new OA\Items(ref: "#/components/schemas/ActivityComment")
-                )
-            )
-        ]
-    )]
     public function index(Request $request)
     {
         $start = microtime(true);
@@ -340,34 +230,6 @@ class ItemController extends Controller
         return $this->pagination($request, $start);
     }
 
-    #[OA\Post(
-        path: "/api/activity-comments",
-        summary: "Create a new activity comment",
-        tags: ["Activity Comments"],
-        requestBody: new OA\RequestBody(
-            description: "Comment data",
-            required: true,
-            content: new OA\JsonContent(
-                required: ["activity_id", "content"],
-                properties: [
-                    new OA\Property(property: "activity_id", type: "integer"),
-                    new OA\Property(property: "content", type: "string"),
-                    new OA\Property(property: "user_id", type: "integer", nullable: true)
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_CREATED,
-                description: "Comment created",
-                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNPROCESSABLE_ENTITY,
-                description: "Validation error"
-            )
-        ]
-    )]
     public function store(ItemRequest $request):Response
     {
         $base_message = "Successfully created items";
@@ -380,6 +242,8 @@ class ItemController extends Controller
                 ->whereIn('item_unit_id', collect($request->items)->pluck('item_unit_id'))
                 ->whereIn('item_category_id', collect($request->items)->pluck('item_category_id'))
                 ->whereIn('item_classification_id', collect($request->items)->pluck('item_classification_id'))
+                ->whereIn('variant_id', collect($request->items)->pluck('variant_id'))
+                ->whereIn('snomed_id', collect($request->items)->pluck('snomed_id'))
                 ->get(['name'])->toArray();
 
             // Convert existing items into a searchable format
@@ -387,6 +251,8 @@ class ItemController extends Controller
             $existing_estimated_budget = array_column($existing_items, 'estimated_budget');
             $existing_item_unit_id = array_column($existing_items, 'item_unit_id');
             $existing_item_category_id = array_column($existing_items, 'item_category_id');
+            $existing_variant_id = array_column($existing_items, 'variant_id');
+            $existing_snomed_id = array_column($existing_items, 'snomed_id');
             $existing_item_classification_id = array_column($existing_items, 'item_classification_id');
 
             if (!empty($existing_items)) {
@@ -394,6 +260,8 @@ class ItemController extends Controller
                     ->whereIn('estimated_budget', collect($existing_estimated_budget)->pluck('estimated_budget'))
                     ->whereIn('item_unit_id', collect($existing_item_unit_id)->pluck('item_unit_id'))
                     ->whereIn('item_category_id', collect($existing_item_category_id)->pluck('item_category_id'))
+                    ->whereIn('variant_id', collect($existing_variant_id)->pluck('variant_id'))
+                    ->whereIn('snomed_id', collect($existing_snomed_id)->pluck('snomed_id'))
                     ->whereIn('item_classification_id', collect($existing_item_classification_id)->pluck('item_classification_id'))->get();
 
                 $existing_items = ItemDuplicateResource::collection($existing_item_collection);
@@ -401,6 +269,8 @@ class ItemController extends Controller
 
             foreach ($request->items as $item) {
                 $is_valid_unit_id = ItemUnit::find($item['item_unit_id']);
+                $is_valid_variant_id = Variant::find($item['variant_id']);
+                $is_valid_snomed_id = Snomed::find($item['snomed_id']);
                 $is_valid_category_id = ItemCategory::find($item['item_category_id']);
                 $is_valid_classification_id = ItemClassification::find($item['item_classification_id']);
 
@@ -409,13 +279,16 @@ class ItemController extends Controller
                         !in_array($item['name'], $existing_names) && !in_array($item['estimated_budget'], $existing_estimated_budget)
                         && !in_array($item['item_unit_id'], $existing_item_unit_id) && !in_array($item['item_category_id'], $existing_item_category_id)
                         && !in_array($item['item_classification_id'], $existing_item_classification_id)
+                        && !in_array($item['variant_id'], $existing_variant_id)
+                        && !in_array($item['snomed_id'], $existing_snomed_id)
                     ) {
                         $cleanData[] = [
                             "name" => strip_tags($item['name']),
                             "code" => strip_tags($item['code']),
-                            "variant" => strip_tags($item['variant']),
                             "estimated_budget" => strip_tags($item['estimated_budget']),
                             "item_unit_id" => strip_tags($item['item_unit_id']),
+                            "variant_id" => strip_tags($item['variant_id']),
+                            "snomed_id" => strip_tags($item['snomed_id']),
                             "item_category_id" => strip_tags($item['item_category_id']),
                             "item_classification_id" => strip_tags($item['item_classification_id']),
                             "created_at" => now(),
@@ -459,10 +332,12 @@ class ItemController extends Controller
         }
 
         $is_valid_unit_id = ItemUnit::find($request->item_unit_id);
+        $is_valid_variant_id = Variant::find($request->variant_id);
+        $is_valid_snomed_id = Snomed::find($request->snomed_id);
         $is_valid_category_id = ItemCategory::find($request->item_category_id);
         $is_valid_classification_id = ItemClassification::find($request->item_classification_id);
 
-        if (!($is_valid_unit_id && $is_valid_category_id && $is_valid_classification_id)) {
+        if (!($is_valid_unit_id && $is_valid_variant_id && $is_valid_category_id && $is_valid_classification_id)) {
             return response()->json([
                 "message" => "Invalid data given.",
                 "metadata" => [
@@ -474,16 +349,15 @@ class ItemController extends Controller
         $cleanData = [
             "name" => strip_tags($request->input('name')),
             "code" => strip_tags($request->input('code')),
-            "variant" => strip_tags($request->input('variant')),
             "estimated_budget" => strip_tags($request->input('estimated_budget')),
             "item_unit_id" => strip_tags($request->input('item_unit_id')),
+            "variant_id" => strip_tags($request->input('variant_id')),
+            "snomed_id" => strip_tags($request->input('snomed_id')),
             "item_category_id" => strip_tags($request->input('item_category_id')),
             "item_classification_id" => strip_tags($request->input('item_classification_id')),
         ];
 
         $new_item = Item::create($cleanData);
-
-        $metadata = ["methods" => ['GET, POST, PUT, DELETE']];
 
         if($request->hasFile('file'))
         {
@@ -529,44 +403,6 @@ class ItemController extends Controller
         ], Response::HTTP_CREATED);
     }
 
-    #[OA\Put(
-        path: "/api/activity-comments/{id}",
-        summary: "Update an activity comment",
-        tags: ["Activity Comments"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        requestBody: new OA\RequestBody(
-            description: "Comment data",
-            required: true,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: "content", type: "string")
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: "Comment updated",
-                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNPROCESSABLE_ENTITY,
-                description: "Validation error"
-            )
-        ]
-    )]
     public function update(Request $request): Response
     {
         $item_ids = $request->query('id') ?? null;
@@ -575,9 +411,9 @@ class ItemController extends Controller
         if (!$item_ids) {
             $response = ["message" => "ID parameter is required."];
 
-            if ($this->is_development) {
-                $response['metadata'] = $this->getMetadata('put');
-            }
+            // if ($this->is_development) {
+            //     $response['metadata'] = $this->getMetadata('put');
+            // }
 
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
@@ -590,7 +426,7 @@ class ItemController extends Controller
             if (count($item_ids) !== count($request->input('items'))) {
                 return response()->json([
                     "message" => "Number of IDs does not match number of items provided.",
-                    "metadata" => $this->getMetadata('put')
+                    // "metadata" => $this->getMetadata('put')
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
@@ -626,7 +462,7 @@ class ItemController extends Controller
             return response()->json([
                 "data" => ItemResource::collection($updated_items),
                 "message" => "Successfully updated " . count($updated_items) . " items.",
-                "metadata" => $this->getMetadata('put')
+                // "metadata" => $this->getMetadata('put')
             ], Response::HTTP_OK);
         }
 
@@ -651,36 +487,12 @@ class ItemController extends Controller
         $response = [
             "data" => new ItemResource($item),
             "message" => "Item updated successfully.",
-            "metadata" => $this->getMetadata('put')
+            // "metadata" => $this->getMetadata('put')
         ];
 
         return response()->json($response, Response::HTTP_OK);
     }
-
-    #[OA\Delete(
-        path: "/api/activity-comments/{id}",
-        summary: "Delete an activity comment",
-        tags: ["Activity Comments"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_NO_CONTENT,
-                description: "Comment deleted"
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            )
-        ]
-    )]
+    
     public function destroy(Request $request): Response
     {
         $item_ids = $request->query('id') ?? null;
@@ -692,7 +504,7 @@ class ItemController extends Controller
             if ($this->is_development) {
                 $response = [
                     "message" => "No parameters found.",
-                    "metadata" => $this->getMetadata('delete')
+                    // "metadata" => $this->getMetadata('delete')
                 ];
             }
 
