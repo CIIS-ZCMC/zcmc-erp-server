@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\ActivityComment;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 
 class ActivityCommentController extends Controller
 {
+   
     public function index()
     {
         return ActivityComment::when(request('activity_id'), function ($query) {
@@ -41,6 +43,7 @@ class ActivityCommentController extends Controller
         $activityComment->update($validated);
         return $activityComment;
     }
+
 
     public function destroy(ActivityComment $activityComment)
     {
