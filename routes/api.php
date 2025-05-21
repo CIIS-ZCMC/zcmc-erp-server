@@ -49,8 +49,10 @@ Route::
 
                 // Variant routes
                 Route::get('variants', "VariantController@index");
+                Route::get('variants/trashbin', "VariantController@trash");
                 Route::post('variants', "VariantController@store");
                 Route::put('variants', "VariantController@update");
+                Route::put('variants/{id}/restore', "VariantController@restore");
                 Route::delete('variants', "VariantController@destroy");
 
                 // Item Categories routes

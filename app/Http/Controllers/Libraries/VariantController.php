@@ -66,6 +66,39 @@ class VariantController extends Controller
             ]);
     }
 
+    public function trash(Request $request)
+    {
+        $search = $request->query('search');
+
+        $query = Variant::onlyTrashed();
+
+        if ($search) {
+            $query->where('name', 'like', '%' . $search . '%')
+                    ->orWhere('code', 'like', "%{$search}%");
+        }
+        
+        return VariantResource::collection(Variant::onlyTrashed()->get())
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods
+                ],
+                "message" => "Successfully retrieved deleted records."
+            ]);
+    }
+
+    public function restore($id, Request $request)
+    {
+        Variant::withTrashed()->where('id', $id)->restore();
+
+        return (new VariantResource(Variant::find($id)))
+            ->additional([
+                "meta" => [
+                    "methods" => $this->methods
+                ],
+                "message" => "Succcessfully restore record."
+            ]);
+    }
+
     /**
      * Remove the specified resource from storage.
      */
