@@ -57,7 +57,7 @@ Route::
 
                 // Snomed routes
                 Route::get('snomeds', "SnomedController@index");
-                Route::get('snomeds/trashbin', "SnomedController@trash");
+                Route::get('snomeds/trashbin', "SnomedController@trashbin");
                 Route::post('snomeds', "SnomedController@store");
                 Route::put('snomeds/{snomed}', "SnomedController@update");
                 Route::put('snomeds/{id}/restore', "SnomedController@restore");
