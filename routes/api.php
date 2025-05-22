@@ -178,19 +178,19 @@ Route::
             Route::put('edit-objective-and-success-indicator', 'ApplicationObjectiveController@editObjectiveAndSuccessIndicator');
             Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
 
-    // Aop Application Module
-    Route::get('aop-applications', 'AopApplicationController@index');
-    Route::post('aop-application-store', 'AopApplicationController@store');
-    Route::post('aop-application-update/{id}', 'AopApplicationController@update');
-    Route::get('aop-application-show/{id}', 'AopApplicationController@show');
-    Route::get('aop-application-summary/{id}', 'AopApplicationController@getAopApplicationSummary');
-    Route::get('aop-application-timeline/{id}', 'AopApplicationController@showTimeline');
-    Route::get('aop-remarks/{id}', 'AopApplicationController@aopRemarks');
-    Route::get('get-areas', 'AopApplicationController@getAllArea');
-    Route::get('get-designations', 'AopApplicationController@getAllDesignations');
-    Route::get('get-users', 'AopApplicationController@getUsersWithDesignation');
-    Route::post('export-aop/{id}', 'AopApplicationController@export');
-    Route::get('preview-aop/{id}', 'AopApplicationController@preview');
+            // Aop Application Module
+            Route::get('aop-applications', 'AopApplicationController@index');
+            Route::post('aop-application-store', 'AopApplicationController@store');
+            Route::post('aop-application-update/{id}', 'AopApplicationController@update');
+            Route::get('aop-application-show/{id}', 'AopApplicationController@show');
+            Route::get('aop-application-summary/{id}', 'AopApplicationController@getAopApplicationSummary');
+            Route::get('aop-application-timeline/{id}', 'AopApplicationController@showTimeline');
+            Route::get('aop-remarks/{id}', 'AopApplicationController@aopRemarks');
+            Route::get('get-areas', 'AopApplicationController@getAllArea');
+            Route::get('get-designations', 'AopApplicationController@getAllDesignations');
+            Route::get('get-users', 'AopApplicationController@getUsersWithDesignation');
+            Route::post('export-aop/{id}', 'AopApplicationController@export');
+            Route::get('preview-aop/{id}', 'AopApplicationController@preview');
 
             // Variant Dummy
             Route::get('variant', function () {
