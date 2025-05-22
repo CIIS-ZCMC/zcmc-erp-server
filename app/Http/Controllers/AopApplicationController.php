@@ -287,22 +287,53 @@ class AopApplicationController extends Controller
 
         $validatedData = $request->validated();
 
-
         DB::beginTransaction();
 
         try {
+            $user = $request->user();
+            $assignedArea = AssignedArea::where('user_id', $user)->first();
+            $area = $assignedArea->findDetails();
+            switch ($area['sector']) {
+                case 'Division':
+                    $division = Division::where('name', $area['details']['name'])->first();
+                    $divisionChiefId = $division->head_id;
+                    break;
+                case 'Department':
+                    $department = Department::where('name', $area['details']['name'])->first();
+                    $division = Division::where('id', $department->division_id)->first();
+                    $divisionChiefId = $division->head_id;
+                    break;
+                case 'Section':
+                    $section = Section::where('name', $area['details']['name'])->first();
+                    if ($section?->department_id) {
+                        $department = Department::find($section->department_id);
+                        $division = Division::find($department?->division_id);
+                    } else {
+                        $division = Division::find($section?->division_id);
+                    }
 
-            $assignedArea = AssignedArea::with('division')->where('user_id', 1)->first();
-            $divisionChiefId = optional($assignedArea->division)->head_id;
+                    $divisionChiefId = $division?->head_id ?? null;
 
+                    break;
+                case 'Unit':
+                    $unit = Unit::where('name', $area['details']['name'])->first();
+                    $section = Section::where('id', $unit->section_id)->first();
+
+                    if ($section?->department_id) {
+                        $department = Department::find($section->department_id);
+                        $division = Division::find($department?->division_id);
+                    } else {
+
+                        $division = Division::find($section?->division_id);
+                    }
+                    $divisionChiefId = $division?->head_id ?? null;
+                    break;
+            }
             $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
             $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
 
-            $planningOfficer = Section::where('name', 'OMCC: Planning Unit')->first();
+            $planningOfficer = Section::where('name', 'Planning Unit')->first();
             $planningOfficerId = optional($planningOfficer)->head_id;
-
-
-
 
 
             // Create AOP Application
@@ -402,11 +433,11 @@ class AopApplicationController extends Controller
             ]);
 
 
-            $assignedArea = AssignedArea::with('division')->where('user_id', 1)->first();
-            $divisionChiefId = optional($assignedArea->division)->head_id;
+            // $assignedArea = AssignedArea::with('division')->where('user_id', 1)->first();
+            // $divisionChiefId = optional($assignedArea->division)->head_id;
 
-            $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
-            $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
+            // $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
+            // $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
 
             // $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
             // $budgetOfficerId = optional($budgetOfficer)->head_id;
@@ -466,7 +497,13 @@ class AopApplicationController extends Controller
             return response()->json(['message' => 'AOP Application created successfully'], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => 'Something went wrong.',
+                'exception_message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ], 500);
         }
     }
 

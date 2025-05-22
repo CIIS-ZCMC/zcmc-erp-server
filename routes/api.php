@@ -17,6 +17,7 @@ Route::middleware('auth.api')->group(function () {
     // Routes with specific permissions
     Route::middleware('ability:ERP-AOP-MAN:view-all')->group(function () {
         Route::get('aop-requests', [AopApplicationController::class, 'aopRequests']);
+        Route::post('aop-application-store', [AopApplicationController::class, 'store']);
     });
 });
 
@@ -179,7 +180,7 @@ Route::namespace('App\Http\Controllers')->group(function () {
 
     // Aop Application Module
     Route::get('aop-applications', 'AopApplicationController@index');
-    Route::post('aop-application-store', 'AopApplicationController@store');
+    // Route::post('aop-application-store', 'AopApplicationController@store');
     Route::post('aop-application-update/{id}', 'AopApplicationController@update');
     Route::get('aop-application-show/{id}', 'AopApplicationController@show');
     Route::get('aop-application-summary/{id}', 'AopApplicationController@getAopApplicationSummary');
