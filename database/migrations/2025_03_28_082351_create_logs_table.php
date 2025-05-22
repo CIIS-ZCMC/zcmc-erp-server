@@ -16,8 +16,7 @@ return new class extends Migration {
             $table->foreign('aop_application_id')->references('id')->on('aop_applications');
             $table->unsignedBigInteger('ppmp_application_id')->nullable();
             $table->foreign('ppmp_application_id')->references('id')->on('ppmp_applications');
-            $table->unsignedBigInteger('action');
-            $table->foreign('action')->references('id')->on('users');
+            $table->string('action');
             $table->unsignedBigInteger('action_by');
             $table->foreign('action_by')->references('id')->on('users');
             $table->timestamps();

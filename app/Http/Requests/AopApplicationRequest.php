@@ -22,9 +22,9 @@ class AopApplicationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,id',
+            // 'user_id' => 'required|exists:users,id',
             'mission' => 'required|string',
-            'status' => 'required|string',
+            // 'status' => 'required|string',
             'has_discussed' => 'required|boolean',
             'remarks' => 'nullable|string',
 
