@@ -47,6 +47,22 @@ Route::
                 Route::put('item-units', "ItemUnitController@update");
                 Route::delete('item-units', "ItemUnitController@destroy");
 
+                // Variant routes
+                Route::get('variants', "VariantController@index");
+                Route::get('variants/trashbin', "VariantController@trash");
+                Route::post('variants', "VariantController@store");
+                Route::put('variants/{variant}', "VariantController@update");
+                Route::put('variants/{id}/restore', "VariantController@restore");
+                Route::delete('variants/{variant}', "VariantController@destroy");
+
+                // Snomed routes
+                Route::get('snomeds', "SnomedController@index");
+                Route::get('snomeds/trashbin', "SnomedController@trashbin");
+                Route::post('snomeds', "SnomedController@store");
+                Route::put('snomeds/{snomed}', "SnomedController@update");
+                Route::put('snomeds/{id}/restore', "SnomedController@restore");
+                Route::delete('snomeds/{snomed}', "SnomedController@destroy");
+
                 // Item Categories routes
                 Route::post('item-categories/import', "ItemCategoryController@import");
                 Route::get('item-categories/template', "ItemCategoryController@downloadTemplate");
@@ -143,6 +159,7 @@ Route::
             Route::apiResource('ppmp-applications', 'PpmpApplicationController');
 
             // Ppmp Item Module
+            Route::get('ppmp-item-search', 'PpmpItemController@search');
             Route::apiResource('ppmp-items', 'PpmpItemController');
             Route::apiResource('ppmp-item-requests', 'PpmpItemRequestControlller');
 
@@ -161,19 +178,19 @@ Route::
             Route::put('edit-objective-and-success-indicator', 'ApplicationObjectiveController@editObjectiveAndSuccessIndicator');
             Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
 
-    // Aop Application Module
-    Route::get('aop-applications', 'AopApplicationController@index');
-    Route::post('aop-application-store', 'AopApplicationController@store');
-    Route::post('aop-application-update/{id}', 'AopApplicationController@update');
-    Route::get('aop-application-show/{id}', 'AopApplicationController@show');
-    Route::get('aop-application-summary/{id}', 'AopApplicationController@getAopApplicationSummary');
-    Route::get('aop-application-timeline/{id}', 'AopApplicationController@showTimeline');
-    Route::get('aop-remarks/{id}', 'AopApplicationController@aopRemarks');
-    Route::get('get-areas', 'AopApplicationController@getAllArea');
-    Route::get('get-designations', 'AopApplicationController@getAllDesignations');
-    Route::get('get-users', 'AopApplicationController@getUsersWithDesignation');
-    Route::post('export-aop/{id}', 'AopApplicationController@export');
-    Route::get('preview-aop/{id}', 'AopApplicationController@preview');
+            // Aop Application Module
+            Route::get('aop-applications', 'AopApplicationController@index');
+            Route::post('aop-application-store', 'AopApplicationController@store');
+            Route::post('aop-application-update/{id}', 'AopApplicationController@update');
+            Route::get('aop-application-show/{id}', 'AopApplicationController@show');
+            Route::get('aop-application-summary/{id}', 'AopApplicationController@getAopApplicationSummary');
+            Route::get('aop-application-timeline/{id}', 'AopApplicationController@showTimeline');
+            Route::get('aop-remarks/{id}', 'AopApplicationController@aopRemarks');
+            Route::get('get-areas', 'AopApplicationController@getAllArea');
+            Route::get('get-designations', 'AopApplicationController@getAllDesignations');
+            Route::get('get-users', 'AopApplicationController@getUsersWithDesignation');
+            Route::post('export-aop/{id}', 'AopApplicationController@export');
+            Route::get('preview-aop/{id}', 'AopApplicationController@preview');
 
             // Variant Dummy
             Route::get('variant', function () {

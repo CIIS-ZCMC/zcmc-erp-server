@@ -20,27 +20,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Symfony\Component\HttpFoundation\Response;
-use OpenApi\Attributes as OA;
 
-#[OA\Schema(
-    schema: "ItemRequestRequest",
-    properties: [
-        new OA\Property(property: "id", type: "integer"),
-        new OA\Property(property: "activity_id", type: "integer"),
-        new OA\Property(property: "user_id", type: "integer", nullable: true),
-        new OA\Property(property: "content", type: "string"),
-        new OA\Property(
-            property: "created_at",
-            type: "string",
-            format: "date-time"
-        ),
-        new OA\Property(
-            property: "updated_at",
-            type: "string",
-            format: "date-time"
-        )
-    ]
-)]
 class ItemRequestController extends Controller
 {
     private $is_development;
@@ -363,75 +343,7 @@ class ItemRequestController extends Controller
                 'message' => 'Successfully update item category record.'
             ])->response();
     }
-    
-    #[OA\Post(
-        path: '/api/import',
-        summary: 'Import item units from Excel/CSV file',
-        requestBody: new OA\RequestBody(
-            description: 'Excel/CSV file containing item units',
-            required: true,
-            content: new OA\MediaType(
-                mediaType: 'multipart/form-data',
-                schema: new OA\Schema(
-                    properties: [
-                        new OA\Property(
-                            property: 'file',
-                            type: 'string',
-                            format: 'binary',
-                            description: 'Excel file (xlsx, xls, csv)'
-                        )
-                    ]
-                )
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: 200,
-                description: 'Successful import',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(property: 'success_count', type: 'integer'),
-                        new OA\Property(property: 'failure_count', type: 'integer'),
-                        new OA\Property(
-                            property: 'failures',
-                            type: 'array',
-                            item_requests: new OA\ItemRequests(
-                                properties: [
-                                    new OA\Property(property: 'row', type: 'integer'),
-                                    new OA\Property(property: 'errors', type: 'array', item_requests: new OA\ItemRequests(type: 'string'))
-                                ]
-                            )
-                        )
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 422,
-                description: 'Validation error',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(
-                            property: 'errors',
-                            type: 'object',
-                            additionalProperties: new OA\Property(type: 'array', item_requests: new OA\ItemRequests(type: 'string')))
-                    ]
-                )
-            ),
-            new OA\Response(
-                response: 500,
-                description: 'Server error',
-                content: new OA\JsonContent(
-                    properties: [
-                        new OA\Property(property: 'message', type: 'string'),
-                        new OA\Property(property: 'error', type: 'string')
-                    ]
-                )
-            )
-        ],
-        tags: ['ItemRequest Units']
-    )]
+
     public function import(Request $request)
     {
         return response()->json([
@@ -439,37 +351,6 @@ class ItemRequestController extends Controller
         ], Response::HTTP_OK);
     }
 
-    #[OA\Get(
-        path: "/api/ItemRequests",
-        summary: "List all activity comments",
-        tags: ["ItemRequests"],
-        parameters: [
-            new OA\Parameter(
-                name: "per_page",
-                in: "query",
-                description: "ItemRequests per page",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 15)
-            ),
-            new OA\Parameter(
-                name: "page",
-                in: "query",
-                description: "Page number",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 1)
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: "Successful operation",
-                content: new OA\JsonContent(
-                    type: "array",
-                    item_requests: new OA\ItemRequests(ref: "#/components/schemas/ActivityComment")
-                )
-            )
-        ]
-    )]
     public function index(Request $request): AnonymousResourceCollection|JsonResponse
     {
         $start = microtime(true);
@@ -492,34 +373,6 @@ class ItemRequestController extends Controller
         return $this->pagination($request, $start); 
     }
 
-    #[OA\Post(
-        path: "/api/ItemRequests",
-        summary: "Create a new activity comment",
-        tags: ["ItemRequests"],
-        requestBody: new OA\RequestBody(
-            description: "Comment data",
-            required: true,
-            content: new OA\JsonContent(
-                required: ["activity_id", "content"],
-                properties: [
-                    new OA\Property(property: "activity_id", type: "integer"),
-                    new OA\Property(property: "content", type: "string"),
-                    new OA\Property(property: "user_id", type: "integer", nullable: true)
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_CREATED,
-                description: "Comment created",
-                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNPROCESSABLE_ENTITY,
-                description: "Validation error"
-            )
-        ]
-    )]
     public function store(ItemRequestRequest $request): AnonymousResourceCollection|ItemRequestResource|JsonResponse
     {
         $user = null;
@@ -537,7 +390,7 @@ class ItemRequestController extends Controller
         $cleanData = [
             "name" => strip_tags($request->input('name')),
             "code" => strip_tags($request->input('code')),
-            "variant" => strip_tags($request->input('variant')),
+            "variant_id" => strip_tags($request->input('variant_id')),
             "estimated_budget" => strip_tags($request->input('estimated_budget')),
             "item_unit_id" => !$is_valid_unit_id? null:  strip_tags($request->input('item_unit_id')),
             "item_category_id" => !$is_valid_category_id? null:  strip_tags($request->input('item_category_id')),
@@ -602,44 +455,6 @@ class ItemRequestController extends Controller
             ]);
     }
 
-    #[OA\Put(
-        path: "/api/ItemRequests/{id}",
-        summary: "Update an activity comment",
-        tags: ["ItemRequests"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        requestBody: new OA\RequestBody(
-            description: "Comment data",
-            required: true,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: "content", type: "string")
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: "Comment updated",
-                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNPROCESSABLE_ENTITY,
-                description: "Validation error"
-            )
-        ]
-    )]
     public function update(Request $request): AnonymousResourceCollection|ItemRequestResource|JsonResource|JsonResponse
     {
         $start = microtime(true);
@@ -685,30 +500,6 @@ class ItemRequestController extends Controller
             ]);
     }
 
-    #[OA\Put(
-        path: "/api/ItemRequests/{id}/restore",
-        summary: "Delete an item",
-        tags: ["ItemRequests"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_NO_CONTENT,
-                description: "Comment deleted"
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            )
-        ]
-    )]
     public function restore($id, Request $request)
     {
         ItemRequest::withTrashed()->where('id', $id)->restore();
@@ -721,31 +512,7 @@ class ItemRequestController extends Controller
                 "message" => "Succcessfully restore record."
             ]);
     }
-
-    #[OA\Delete(
-        path: "/api/ItemRequests/{id}",
-        summary: "Delete an activity comment",
-        tags: ["ItemRequests"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_NO_CONTENT,
-                description: "Comment deleted"
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            )
-        ]
-    )]
+    
     public function destroy(Request $request): Response
     {
         $item_request_ids = $request->query('id') ?? null;

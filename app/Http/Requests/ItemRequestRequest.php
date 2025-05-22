@@ -44,6 +44,7 @@ class ItemRequestRequest extends FormRequest
             'estimated_budget' => 'required|numeric',
             'reason' => 'required_without:items|string|max:255',
             'item_unit_id' => 'required|int',     
+            'variant_id' => 'required|int',     
             'item_category_id' => 'required|int',     
             'item_classification_id' => 'nullable|int',
             'specifications' => [
