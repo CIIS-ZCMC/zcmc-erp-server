@@ -20,14 +20,14 @@ class DatabaseSeeder extends Seeder
             ItemCategorySeeder::class,
             TypeOfFunctionSeeder::class,
             ProcurementModeSeeder::class,
-            AopApplicationSeeder::class,
-            ApplicationTimelineSeeder::class,
+            // AopApplicationSeeder::class,
+            // ApplicationTimelineSeeder::class,
             ItemUnitSeeder::class,
             ObjectiveSeeder::class,
             SuccessIndicatorSeeder::class,
             ItemSpecificationSeeder::class,
-            ItemSeeder::class,
-            PpmpItemSeeder::class,
+            // ItemSeeder::class,
+            // PpmpItemSeeder::class,
         ]);
     }
 }

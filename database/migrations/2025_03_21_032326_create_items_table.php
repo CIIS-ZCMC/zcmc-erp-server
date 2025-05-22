@@ -20,7 +20,7 @@ return new class extends Migration {
             $table->foreign('item_unit_id')->references('id')->on('item_units');
             $table->unsignedBigInteger('variant_id');
             $table->foreign('variant_id')->references('id')->on('variants');
-            $table->unsignedBigInteger('snomed_id');
+            $table->unsignedBigInteger('snomed_id')->nullable();
             $table->foreign('snomed_id')->references('id')->on('snomeds');
             $table->string('name');
             $table->string('code')->nullable();
@@ -28,7 +28,7 @@ return new class extends Migration {
             $table->float('estimated_budget')->default(0);
             $table->softDeletes();
             $table->timestamps();
-    
+
             $table->fullText(['name', 'code']);
         });
     }
@@ -38,7 +38,7 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('items', function(Blueprint $table){
+        Schema::table('items', function (Blueprint $table) {
             $table->dropSoftDeletes();
         });
 
