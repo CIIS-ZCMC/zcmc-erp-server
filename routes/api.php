@@ -159,6 +159,7 @@ Route::
             Route::apiResource('ppmp-applications', 'PpmpApplicationController');
 
             // Ppmp Item Module
+            Route::get('ppmp-item-search', 'PpmpItemController@search');
             Route::apiResource('ppmp-items', 'PpmpItemController');
             Route::apiResource('ppmp-item-requests', 'PpmpItemRequestControlller');
 
