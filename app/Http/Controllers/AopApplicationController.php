@@ -23,6 +23,7 @@ use App\Models\SuccessIndicator;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\ApplicationTimeline;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
@@ -35,11 +36,17 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 
-use App\Services\ApprovalWorkflowService;
+use App\Services\ApprovalService;
 use App\Services\AopVisibilityService;
 
 class AopApplicationController extends Controller
 {
+
+    protected NotificationService $notificationService;
+
+    public function __construct(NotificationService $notificationService) {
+        $this->notificationService = $notificationService;
+    }
     /**
      * Get metadata for API responses
      *
@@ -616,7 +623,7 @@ class AopApplicationController extends Controller
      * @param ProcessAopRequest $request The incoming request
      * @return \Illuminate\Http\JsonResponse JSON response
      */
-    public function processAopRequest(ProcessAopRequest $request): JsonResponse
+    public function processAopRequest(ProcessAopRequest $request)
     {
 
         $aop_application = AopApplication::with([
@@ -634,33 +641,17 @@ class AopApplicationController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-
         $user = User::find($request->user()->id);
-        $user_assigned_area = $user->assignedArea;
+        $user_assigned_area = $user->assignedArea->id;
 
-        // Get the current user's assigned area
-        $current_user_area = AssignedArea::with([
-            'department',
-            'section',
-            'unit',
-            'division',
-            'user'
-        ])->where('user_id', $request->user()->id)->first();
-
-        if (!$current_user_area) {
-            return response()->json([
-                'message' => 'User does not have an assigned area',
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        // Use ApprovalWorkflowService to process the request
-        $workflow_service = new ApprovalWorkflowService();
+        // Use ApprovalService to process the request
+        $workflow_service = new ApprovalService();
 
         // Create a timeline entry using the service
         $aop_application_timeline = $workflow_service->createApplicationTimeline(
             $aop_application->id,
             $request->user()->id,
-            $current_user_area->id,
+            $user_assigned_area->id,
             $request->status,
             $request->remarks
         );
@@ -684,7 +675,7 @@ class AopApplicationController extends Controller
         }
 
         // Get the current user information
-        $user_info = $current_user_area->user;
+        $user_info = $user_assigned_area->user;
 
         // Get the next office information based on the updated application's current area
         // This is set in the workflow service during timeline creation
@@ -702,7 +693,7 @@ class AopApplicationController extends Controller
         }
 
         // Build detailed success response
-        $current_area_info = new AssignedAreaResource($current_user_area);
+        $current_area_info = new AssignedAreaResource($user_assigned_area);
 
         $status_text = ucfirst($request->status);
 

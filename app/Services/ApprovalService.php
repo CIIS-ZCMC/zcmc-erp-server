@@ -11,40 +11,35 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Resources\AssignedAreaResource;
 use App\Helpers\TransactionLogHelper;
 
-class ApprovalWorkflowService
+class ApprovalService
 {
+
+    protected NotificationService $notificationService;
     /**
      * Create a new class instance.
      */
     public function __construct()
     {
-        // Constructor with no dependencies now
+        $this->notificationService = new NotificationService();
     }
 
     /**
      * Create a timeline entry for the application with appropriate next area routing based on workflow
-     * 
+     *
      * @param int $application_id
      * @param int $userId
      * @param int $current_area_id
      * @param string $status
-     * @param string $remarks
+     * @param string|null $remarks
      * @return ApplicationTimeline|null
      */
-    public function createApplicationTimeline($application_id, $userId, $current_area_id, $status, $remarks = null)
+    public function createApplicationTimeline(int $application_id, int $userId, int $current_area_id, string $status, string $remarks = null): ?ApplicationTimeline
     {
         try {
             // Get the AOP application for reference
             $aopApplication = AopApplication::find($application_id);
             if (!$aopApplication instanceof AopApplication) {
                 Log::error("Cannot create timeline - AOP application not found or invalid", [
-                    'application_id' => $application_id
-                ]);
-                return null;
-            }
-
-            if (!$aopApplication) {
-                Log::error("Cannot create timeline - AOP application not found", [
                     'application_id' => $application_id
                 ]);
                 return null;
@@ -110,11 +105,6 @@ class ApprovalWorkflowService
                         } elseif ($department) {
                             $divisionChief = $department->getDivisionChief();
                         }
-
-                        Log::info('Division Chief determined', [
-                            'division_chief_id' => $divisionChief ? $divisionChief->id : null,
-                            'division_chief_name' => $divisionChief ? $divisionChief->name : 'Not found'
-                        ]);
 
                         // Get the assigned area for the division chief
                         if ($divisionChief) {
@@ -221,20 +211,6 @@ class ApprovalWorkflowService
             ]);
 
             $timeline->save();
-
-            // Log the timeline creation for debugging
-            Log::info('Application timeline created', [
-                'timeline_id' => $timeline->id,
-                'application_id' => $application_id,
-                'stage' => $stage,
-                'current_area_id' => $current_area_id,
-                'next_area_id' => $next_area_id,
-                'status' => $status
-            ]);
-
-            // Log the transaction after timeline creation
-            $logCode = 'AOP_TIMELINE_' . strtoupper($status);
-            TransactionLogHelper::register($timeline, $logCode);
 
             return $timeline;
         } catch (\Exception $e) {
