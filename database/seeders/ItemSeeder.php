@@ -26,7 +26,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'A4 Bond Paper',
                 'code' => 'ITM-PAP-001',
-                'variant' => '70gsm, 500 sheets',
+                'variant_id' => 1,
                 'estimated_budget' => 250.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -34,7 +34,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Ballpoint Pen',
                 'code' => 'ITM-PEN-001',
-                'variant' => 'Black Ink, Box of 12',
+                'variant_id' => 1,
                 'estimated_budget' => 120.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -42,7 +42,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Stapler',
                 'code' => 'ITM-STP-001',
-                'variant' => 'Medium Size, 20 Sheets Capacity',
+                'variant_id' => 1,
                 'estimated_budget' => 300.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -50,7 +50,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Paper Clips',
                 'code' => 'ITM-CLP-001',
-                'variant' => '33mm, Box of 100',
+                'variant_id' => 1,
                 'estimated_budget' => 50.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -58,7 +58,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Sticky Notes',
                 'code' => 'ITM-STK-001',
-                'variant' => '3x3 Inches, Pack of 5',
+                'variant_id' => 1,
                 'estimated_budget' => 200.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -68,7 +68,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Laptop',
                 'code' => 'ITM-LAP-001',
-                'variant' => '15.6" FHD, 8GB RAM, 256GB SSD',
+                'variant_id' => 1,
                 'estimated_budget' => 45000.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -76,7 +76,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Wireless Mouse',
                 'code' => 'ITM-MOU-001',
-                'variant' => 'Optical, USB Receiver',
+                'variant_id' => 1,
                 'estimated_budget' => 600.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -84,7 +84,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Keyboard',
                 'code' => 'ITM-KBD-001',
-                'variant' => 'Mechanical, RGB Backlit',
+                'variant_id' => 1,
                 'estimated_budget' => 2500.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -92,7 +92,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Monitor',
                 'code' => 'ITM-MON-001',
-                'variant' => '24" FHD, IPS Panel',
+                'variant_id' => 1,
                 'estimated_budget' => 12000.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -100,7 +100,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'External Hard Drive',
                 'code' => 'ITM-HDD-001',
-                'variant' => '1TB, USB 3.0',
+                'variant_id' => 1,
                 'estimated_budget' => 4500.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -110,7 +110,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Office Chair',
                 'code' => 'ITM-CHR-001',
-                'variant' => 'Ergonomic, Adjustable Height',
+                'variant_id' => 1,
                 'estimated_budget' => 3500.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -118,7 +118,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Office Desk',
                 'code' => 'ITM-DSK-001',
-                'variant' => '120x60 cm, Wooden Finish',
+                'variant_id' => 1,
                 'estimated_budget' => 5500.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -126,7 +126,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Filing Cabinet',
                 'code' => 'ITM-CAB-001',
-                'variant' => '4 Drawers, Metal',
+                'variant_id' => 1,
                 'estimated_budget' => 4500.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -134,7 +134,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Conference Table',
                 'code' => 'ITM-TBL-001',
-                'variant' => '8-Seater, Oval Shape',
+                'variant_id' => 1,
                 'estimated_budget' => 12000.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -142,7 +142,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Bookshelf',
                 'code' => 'ITM-BKS-001',
-                'variant' => '5 Shelves, Wooden',
+                'variant_id' => 1,
                 'estimated_budget' => 3000.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -152,7 +152,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Whiteboard',
                 'code' => 'ITM-WB-001',
-                'variant' => '4x3 Feet, Magnetic',
+                'variant_id' => 1,
                 'estimated_budget' => 2000.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -160,7 +160,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Projector',
                 'code' => 'ITM-PJT-001',
-                'variant' => '3000 Lumens, HDMI',
+                'variant_id' => 1,
                 'estimated_budget' => 15000.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -168,7 +168,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'First Aid Kit',
                 'code' => 'ITM-FAK-001',
-                'variant' => 'Complete Set',
+                'variant_id' => 1,
                 'estimated_budget' => 800.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -176,7 +176,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Fire Extinguisher',
                 'code' => 'ITM-FEX-001',
-                'variant' => '2kg, ABC Type',
+                'variant_id' => 1,
                 'estimated_budget' => 1500.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
@@ -184,7 +184,7 @@ class ItemSeeder extends Seeder
             [
                 'name' => 'Coffee Maker',
                 'code' => 'ITM-CFM-001',
-                'variant' => '12-Cup Programmable',
+                'variant_id' => 1,
                 'estimated_budget' => 2500.00,
                 'item_category_id' => $this->getRandomId($categoryIds),
                 'item_unit_id' => $this->getRandomId($unitIds),
