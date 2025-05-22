@@ -15,7 +15,6 @@ return new class extends Migration {
             $table->string('name');
             $table->string('code')->nullable();
             $table->text('image')->nullable();
-            $table->string('variant')->nullable();
             $table->float('estimated_budget')->default(0);
             $table->string('status')->default("pending");
             $table->unsignedBigInteger('item_unit_id')->nullable();
@@ -29,6 +28,8 @@ return new class extends Migration {
             $table->foreign('requested_by')->references('id')->on('users');
             $table->unsignedBigInteger('action_by')->nullable();
             $table->foreign('action_by')->references('id')->on('users');
+            $table->unsignedBigInteger('variant_id');
+            $table->foreign('variant_id')->references('id')->on('variants');
             $table->softDeletes();
             $table->timestamps();
         });

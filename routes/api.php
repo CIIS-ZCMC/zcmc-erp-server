@@ -143,6 +143,7 @@ Route::
             Route::apiResource('ppmp-applications', 'PpmpApplicationController');
 
             // Ppmp Item Module
+            Route::get('ppmp-item-search', 'PpmpItemController@search');
             Route::apiResource('ppmp-items', 'PpmpItemController');
             Route::apiResource('ppmp-item-requests', 'PpmpItemRequestControlller');
 
@@ -173,6 +174,7 @@ Route::
             Route::get('get-designations', 'AopApplicationController@getAllDesignations');
             Route::get('get-users', 'AopApplicationController@getUsersWithDesignation');
             Route::post('export-aop/{id}', 'AopApplicationController@export');
+            Route::get('preview-aop/{id}', 'AopApplicationController@preview');
 
             // Variant Dummy
             Route::get('variant', function () {

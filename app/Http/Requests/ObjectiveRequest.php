@@ -22,15 +22,15 @@ class ObjectiveRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'objectives' => [
-                'nullable',
-                'array', // Ensure it's an array when bulk inserting
-            ],
-            'objectives.*.code' => 'required_with:objectives|string|max:255',
-            'objectives.*.description' => 'nullable|string',
-    
-            'code' => 'required_without:objectives|string|max:255',
-            'description' => 'nullable|string',     
+            // 'objectives' => [
+            //     'nullable',
+            //     'array', // Ensure it's an array when bulk inserting
+            // ],
+            // 'objectives.*.code' => 'required_with:objectives|string|max:255',
+            // 'objectives.*.description' => 'nullable|string',
+
+            // 'code' => 'required_without:objectives|string|max:255',
+            // 'description' => 'nullable|string',
         ];
     }
 }

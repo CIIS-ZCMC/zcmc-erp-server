@@ -9,6 +9,7 @@ use App\Http\Requests\ObjectiveRequest;
 use App\Http\Resources\ObjectiveDuplicateResource;
 use App\Http\Resources\ObjectiveResource;
 use App\Models\Objective;
+use App\Models\SuccessIndicator;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -308,17 +309,31 @@ class ObjectiveController extends Controller
         $start = microtime(true);
 
         // Bulk Insert
-        if ($request->objectives !== null || $request->objectives > 1) {
-            return $this->bulkStore($request, $start);
-        }
+        // if ($request->objective !== null || $request->objective > 1) {
+        //     return $this->bulkStore($request, $start);
+        // }
+
+        $json_decode_function = json_decode($request->input('function'), true);
+        $rndomCodeNumber = str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+        $json_decode_success_indicator = json_decode($request->input('indicators'), true);
 
         // Single insert
         $cleanData = [
-            "code" => strip_tags($request->input('code')),
-            "description" => strip_tags($request->input('description')),
+            'type_of_function_id' => $json_decode_function['id'],
+            'code' => strip_tags('OBJ-' . $rndomCodeNumber),
+            "description" => strip_tags($request->input('objective')),
+            "success_indicator" => $json_decode_success_indicator,
         ];
 
         $new_item = Objective::create($cleanData);
+
+        foreach ($cleanData['success_indicator'] as $indicator) {
+            SuccessIndicator::create([
+                'objective_id' => $new_item->id,
+                'code' => 'SI-' . $rndomCodeNumber,
+                'description' => $indicator
+            ]);
+        }
 
         return (new ObjectiveResource($new_item))
             ->additional([

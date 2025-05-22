@@ -26,4 +26,9 @@ class Variant extends Model
     {
         return $this->hasMany(Item::class);
     }
+
+    public function itemRequests()
+    {
+        return $this->hasMany(ItemRequest::class);
+    }
 }
