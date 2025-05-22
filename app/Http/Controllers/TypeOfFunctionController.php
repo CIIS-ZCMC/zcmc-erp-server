@@ -5,32 +5,13 @@ namespace App\Http\Controllers;
 use App\Helpers\MetadataComposerHelper;
 use App\Helpers\PaginationHelper;
 use App\Http\Requests\TypeOfFunctionRequest;
-use App\Http\Resources\TypeOfFunctionDuplicateResource;
 use App\Http\Resources\TypeOfFunctionResource;
 use App\Http\Resources\TypeOfFunctionsWithObjectiveAndSuccessIndicatorsResource;
 use App\Models\TypeOfFunction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
-use OpenApi\Attributes as OA;
 
-#[OA\Schema(
-    schema: "Type of Function",
-    properties: [
-        new OA\Property(property: "id", type: "integer"),
-        new OA\Property(property: "type", type: "string"),
-        new OA\Property(
-            property: "created_at",
-            type: "string",
-            format: "date-time"
-        ),
-        new OA\Property(
-            property: "updated_at",
-            type: "string",
-            format: "date-time"
-        )
-    ]
-)]
 class TypeOfFunctionController extends Controller
 {
     private $is_development;
@@ -119,37 +100,6 @@ class TypeOfFunctionController extends Controller
             ])->response();
     }
 
-    #[OA\Get(
-        path: "/api/type-of-functions?per_page=15&page=1",
-        summary: "List all type of functions",
-        tags: ["Type of Functions"],
-        parameters: [
-            new OA\Parameter(
-                name: "per_page",
-                in: "query",
-                description: "Items per page",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 15)
-            ),
-            new OA\Parameter(
-                name: "page",
-                in: "query",
-                description: "Page number",
-                required: false,
-                schema: new OA\Schema(type: "integer", default: 1)
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: "Successful operation",
-                content: new OA\JsonContent(
-                    type: "array",
-                    items: new OA\Items(ref: "#/components/schemas/ActivityComment")
-                )
-            )
-        ]
-    )]
     public function index(Request $request)
     {
         $with_sub_data = $request->query('with_sub_data');
@@ -170,34 +120,6 @@ class TypeOfFunctionController extends Controller
             ])->response();
     }
 
-    #[OA\Post(
-        path: "/api/type-of-functions",
-        summary: "Create a new type of function",
-        tags: ["Type of Functions"],
-        requestBody: new OA\RequestBody(
-            description: "Comment data",
-            required: true,
-            content: new OA\JsonContent(
-                required: ["activity_id", "content"],
-                properties: [
-                    new OA\Property(property: "activity_id", type: "integer"),
-                    new OA\Property(property: "content", type: "string"),
-                    new OA\Property(property: "user_id", type: "integer", nullable: true)
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_CREATED,
-                description: "Comment created",
-                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNPROCESSABLE_ENTITY,
-                description: "Validation error"
-            )
-        ]
-    )]
     public function store(TypeOfFunctionRequest $request)
     {
         // Bulk insert
@@ -236,44 +158,6 @@ class TypeOfFunctionController extends Controller
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
-    #[OA\Put(
-        path: "/api/type-of-functions?id[]=1&id[]=2",
-        summary: "Update an activity comment",
-        tags: ["Activity Comments"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        requestBody: new OA\RequestBody(
-            description: "Comment data",
-            required: true,
-            content: new OA\JsonContent(
-                properties: [
-                    new OA\Property(property: "content", type: "string")
-                ]
-            )
-        ),
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_OK,
-                description: "Comment updated",
-                content: new OA\JsonContent(ref: "#/components/schemas/ActivityComment")
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            ),
-            new OA\Response(
-                response: Response::HTTP_UNPROCESSABLE_ENTITY,
-                description: "Validation error"
-            )
-        ]
-    )]
     public function update(Request $request):Response    
     {
         $type_of_functions = $request->query('id') ?? null;
@@ -325,31 +209,6 @@ class TypeOfFunctionController extends Controller
             ->response();
     }
 
-
-    #[OA\Put(
-        path: "/api/type-of-functions/{id}/restore",
-        summary: "Restore delete record",
-        tags: ["Type of Functions"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_NO_CONTENT,
-                description: "Comment deleted"
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            )
-        ]
-    )]
     public function trash(Request $request)
     {
         $search = $request->get("search");
@@ -373,30 +232,6 @@ class TypeOfFunctionController extends Controller
             ]);
     }
 
-    #[OA\Put(
-        path: "/api/type-of-functions/{id}/restore",
-        summary: "Restore delete record",
-        tags: ["Type of Functions"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_NO_CONTENT,
-                description: "Comment deleted"
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            )
-        ]
-    )]
     public function restore($id, Request $request): TypeOfFunctionResource
     {
         TypeOfFunction::withTrashed()->where("id", $id)->restore();
@@ -410,30 +245,6 @@ class TypeOfFunctionController extends Controller
             ]);
     }
 
-    #[OA\Delete(
-        path: "/api/type-of-functions/{id}",
-        summary: "Delete an type of function",
-        tags: ["Type of Functions"],
-        parameters: [
-            new OA\Parameter(
-                name: "id",
-                in: "path",
-                required: true,
-                description: "Comment ID",
-                schema: new OA\Schema(type: "integer")
-            )
-        ],
-        responses: [
-            new OA\Response(
-                response: Response::HTTP_NO_CONTENT,
-                description: "Comment deleted"
-            ),
-            new OA\Response(
-                response: Response::HTTP_NOT_FOUND,
-                description: "Comment not found"
-            )
-        ]
-    )]
     public function destroy(Request $request): Response
     {
         $type_of_function_ids = $request->query('id') ?? null;

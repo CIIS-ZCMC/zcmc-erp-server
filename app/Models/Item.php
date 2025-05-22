@@ -16,10 +16,11 @@ class Item extends Model
         "item_unit_id",
         "item_category_id",
         "item_classification_id",
+        "variant_id",
+        "snomed_id",
         "name",
         "code",
         "image",
-        "variant",
         "estimated_budget"
     ];
 
@@ -31,8 +32,7 @@ class Item extends Model
     {
         return [
             'name' => $this->name,
-            'code' => $this->code,
-            'variant' => $this->variant,
+            'code' => $this->code
         ];
     }
 
@@ -54,6 +54,16 @@ class Item extends Model
     public function itemSpecifications()
     {
         return $this->hasMany(ItemSpecification::class);
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(Variant::class);
+    }
+
+    public function snomed()
+    {
+        return $this->belongsTo(Snomed::class);
     }
 
     public function ppmpItems()
