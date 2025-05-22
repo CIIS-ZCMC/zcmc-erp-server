@@ -419,6 +419,7 @@ class PpmpItemController extends Controller
         $ppmpItem->delete();
 
         return response()->json([
+            'data' => $ppmpItem,
             'message' => "PPMP Item deleted successfully."
         ], Response::HTTP_OK);
     }
@@ -432,5 +433,40 @@ class PpmpItemController extends Controller
         return response()->json([
             'message' => "Import functionality is not implemented yet."
         ], Response::HTTP_NOT_IMPLEMENTED);
+    }
+
+    public function search(Request $request)
+    {
+        $term = $request->input('search');
+        $terms = $term ? explode(' ', $term) : [];
+
+        $query = PpmpApplication::with([
+            'user',
+            'divisionChief',
+            'budgetOfficer',
+            'aopApplication',
+            'ppmpItems' => function ($query) use ($terms) {
+                $query->with([
+                    'item' => function ($query) {
+                        $query->with([
+                            'itemUnit',
+                            'itemCategory',
+                            'itemClassification',
+                            'itemSpecifications',
+                        ]);
+                    },
+                    'procurementMode',
+                    'itemRequest',
+                    'activities',
+                    'comments',
+                    'ppmpSchedule',
+                ])->search($terms);
+            },
+        ])->whereNull('deleted_at')->latest()->first();
+
+        return response()->json([
+            'data' => new PpmpApplicationResource($query),
+            'message' => "PPMP Items retrieved successfully."
+        ], Response::HTTP_OK);
     }
 }
