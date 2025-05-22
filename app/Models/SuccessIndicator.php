@@ -15,7 +15,6 @@ class SuccessIndicator extends Model
         'objective_id',
         'code',
         'description',
-        'objective_id'
     ];
 
     public $timestamps = true;
