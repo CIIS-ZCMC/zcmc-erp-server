@@ -84,7 +84,7 @@ class AopApplicationController extends Controller
     public function index()
     {
 
-        return $aopApplications = AopApplication::query()
+        $aopApplications = AopApplication::query()
             ->with([
                 'applicationObjectives.objective',
                 'applicationObjectives.otherObjective',
@@ -243,7 +243,7 @@ class AopApplicationController extends Controller
                 }
             }
 
-             Log::create([
+            Log::create([
                 'aop_application_id' => $aopApplication->id,
                 'ppmp_application_id' => null,
                 'action' => "Update Aop",

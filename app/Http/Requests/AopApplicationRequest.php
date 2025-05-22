@@ -36,7 +36,7 @@ class AopApplicationRequest extends FormRequest
 
             'application_objectives.*.activities' => 'required|array',
 
-            'application_objectives.*.activities.*.activity_code' => 'required|string',
+            // 'application_objectives.*.activities.*.activity_code' => 'required|string',
             'application_objectives.*.activities.*.name' => 'required|string',
             'application_objectives.*.activities.*.is_gad_related' => 'required|boolean',
             'application_objectives.*.activities.*.cost' => 'required|numeric|min:0',
