@@ -177,15 +177,12 @@ class AopApplicationController extends Controller
 
 
             $aopApplication->update($request->only([
-                'user_id',
-                'division_chief_id',
-                'mcc_chief_id',
-                'planning_officer_id',
                 'mission',
-                'status',
                 'has_discussed',
-                'remarks',
             ]));
+
+            $aopApplication->status = 'pending';
+            $aopApplication->save();
 
 
             foreach ($aopApplication->applicationObjectives as $objective) {
@@ -246,6 +243,12 @@ class AopApplicationController extends Controller
                 }
             }
 
+             Log::create([
+                'aop_application_id' => $aopApplication->id,
+                'ppmp_application_id' => null,
+                'action' => "Update Aop",
+                'action_by' => 1,
+            ]);
 
             $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
             $ppmpTotal = 0;
