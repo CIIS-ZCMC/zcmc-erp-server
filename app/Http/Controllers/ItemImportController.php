@@ -63,6 +63,6 @@ class ItemImportController extends Controller
             }
         }, $request->file('file'));
 
-        return back()->with('success', 'Items imported successfully.');
+        return response()->json(['message' => 'Items imported successfully.']);
     }
 }
