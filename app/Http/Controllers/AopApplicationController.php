@@ -78,8 +78,38 @@ class AopApplicationController extends Controller
         return AopApplicationResource::collection($aopApplications);
     }
 
+    public function getUserAopSummary(Request $request)
+    {
+
+        // $user_id = $request->user()->id;
+        $user_id=2;
+        $assignedArea = AssignedArea::where('user_id', $user_id)->first();
+        if (!$assignedArea) {
+            return response()->json(['message' => 'User has no assigned area.'], 404);
+        }
+
+        $area = $assignedArea->findDetails();
+
+        if (!$area || !isset($area['sector'], $area['details']['id'])) {
+            return response()->json(['message' => 'Assigned area details are incomplete.'], 422);
+        }
+
+
+        $userAopApplication = AopApplication::where('user_id', $user_id)
+            ->where('sector', $area['sector'])
+            ->where('sector_id', $area['details']['id'])
+            ->first();
+
+        if (!$userAopApplication) {
+            return response()->json(['message' => 'No AOP application found for this user\'s assigned area.'], 404);
+        }
+
+        return $this->getAopApplicationSummary($userAopApplication->id);
+    }
     public function getAopApplicationSummary($aopApplicationId)
     {
+
+
         $aopApplication = AopApplication::with([
             'applicationObjectives.successIndicator',
             'applicationObjectives.activities.resources',
@@ -294,6 +324,15 @@ class AopApplicationController extends Controller
             $user_id = 2;
             $assignedArea = AssignedArea::where('user_id', $user_id)->first();
             $area = $assignedArea->findDetails();
+            $existingAop = AopApplication::where('sector', $area['sector'])
+                ->where('sector_id', $area['details']['id'])
+                ->first();
+
+            if ($existingAop) {
+                return response()->json([
+                    'message' => 'You already have an AOP application in your area.',
+                ], 409);
+            }
             switch ($area['sector']) {
                 case 'Division':
                     $division = Division::where('name', $area['details']['name'])->first();
@@ -346,6 +385,8 @@ class AopApplicationController extends Controller
                 'aop_application_uuid' => Str::uuid(),
                 'mission' => $validatedData['mission'],
                 'status' => "Pending",
+                'sector' => $area['sector'],
+                'sector_id' => $area['details']['id'],
                 'has_discussed' => $validatedData['has_discussed'],
                 'remarks' => $validatedData['remarks'] ?? null,
             ]);
@@ -486,11 +527,9 @@ class AopApplicationController extends Controller
 
             return response()->json(['message' => 'AOP Application created successfully'], Response::HTTP_OK);
         } catch (\Exception $e) {
-
-
-
             return response()->json([
-                'error' => 'Something went wrong. Please contact the system administrator.',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTrace(), // optional: useful for debugging
             ], 500);
         }
     }
@@ -513,7 +552,6 @@ class AopApplicationController extends Controller
         foreach ($aopApplication->applicationObjectives as $objective) {
             foreach ($objective->activities as $activity) {
                 foreach ($activity->responsiblePeople as $responsiblePerson) {
-                    // Check and resolve the name
                     $responsiblePerson->resolved_name = $this->getResponsiblePersonName($responsiblePerson);
                 }
             }
