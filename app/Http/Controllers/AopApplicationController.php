@@ -97,6 +97,7 @@ class AopApplicationController extends Controller
 
         $userAopApplication = AopApplication::where('sector', $area['sector'])
             ->where('sector_id', $area['details']['id'])
+            ->whereYear('created_at', now()->year)
             ->first();
 
         if (!$userAopApplication) {
