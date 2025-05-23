@@ -18,11 +18,9 @@ return new class extends Migration
             $table->foreign('item_id')->references('id')->on('items');
             $table->unsignedBigInteger('item_request_id')->nullable();
             $table->foreign('item_request_id')->references('id')->on('item_requests');
-            $table->unsignedBigInteger('item_specification_id')->nullable();
-            $table->foreign('item_specification_id')->references('id')->on('item_specifications');
             $table->softDeletes();
             $table->timestamps();
-            
+
             $table->fullText(['description']);
         });
     }
@@ -32,7 +30,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('item_specifications', function(Blueprint $table){
+        Schema::table('item_specifications', function (Blueprint $table) {
             $table->dropSoftDeletes();
         });
 

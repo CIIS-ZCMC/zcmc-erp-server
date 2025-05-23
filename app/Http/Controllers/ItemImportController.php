@@ -51,7 +51,7 @@ class ItemImportController extends Controller
                         'estimated_budget' => floatval($row[2]),
                     ]);
 
-                    $specs = [trim($row[5]), trim($row[6])];
+                    $specs = [trim($row[6]), trim($row[7])];
                     foreach ($specs as $spec) {
                         if ($spec) {
                             $item->itemSpecifications()->create([

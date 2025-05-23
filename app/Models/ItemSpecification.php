@@ -15,13 +15,12 @@ class ItemSpecification extends Model
         'description',
         'item_id',
         'item_request_id',
-        'item_specification_id'
     ];
 
     public $timestamps = true;
 
     protected $casts = ['deleted_at' => 'datetime'];
-    
+
     public function toSearchableArray()
     {
         return [
@@ -37,11 +36,6 @@ class ItemSpecification extends Model
     public function itemRequest()
     {
         return $this->belongsTo(ItemRequest::class);
-    }
-
-    public function itemSpecification()
-    {
-        return $this->belongsTo(ItemSpecification::class);
     }
 
     public function itemSpecifications()
