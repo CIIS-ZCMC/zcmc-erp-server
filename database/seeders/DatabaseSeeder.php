@@ -17,17 +17,18 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             VariantSeeder::class,
+            SnomedSeeder::class,
             ItemCategorySeeder::class,
             TypeOfFunctionSeeder::class,
             ProcurementModeSeeder::class,
-            AopApplicationSeeder::class,
-            ApplicationTimelineSeeder::class,
             ItemUnitSeeder::class,
             ObjectiveSeeder::class,
             SuccessIndicatorSeeder::class,
             ItemSpecificationSeeder::class,
             ItemSeeder::class,
-            PpmpItemSeeder::class,
+//            PpmpItemSeeder::class,
+            AopApplicationSeeder::class,
+            ApplicationTimelineSeeder::class,
         ]);
     }
 }
