@@ -82,7 +82,7 @@ class AopApplicationController extends Controller
     {
 
         // $user_id = $request->user()->id;
-        $user_id=2;
+        $user_id = 2;
         $assignedArea = AssignedArea::where('user_id', $user_id)->first();
         if (!$assignedArea) {
             return response()->json(['message' => 'User has no assigned area.'], 404);
@@ -95,8 +95,7 @@ class AopApplicationController extends Controller
         }
 
 
-        $userAopApplication = AopApplication::where('user_id', $user_id)
-            ->where('sector', $area['sector'])
+        $userAopApplication = AopApplication::where('sector', $area['sector'])
             ->where('sector_id', $area['details']['id'])
             ->first();
 
