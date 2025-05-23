@@ -290,45 +290,47 @@ class AopApplicationController extends Controller
         DB::beginTransaction();
 
         try {
-            $user = $request->user();
-            $assignedArea = AssignedArea::where('user_id', $user)->first();
-            $area = $assignedArea->findDetails();
-            switch ($area['sector']) {
-                case 'Division':
-                    $division = Division::where('name', $area['details']['name'])->first();
-                    $divisionChiefId = $division->head_id;
-                    break;
-                case 'Department':
-                    $department = Department::where('name', $area['details']['name'])->first();
-                    $division = Division::where('id', $department->division_id)->first();
-                    $divisionChiefId = $division->head_id;
-                    break;
-                case 'Section':
-                    $section = Section::where('name', $area['details']['name'])->first();
-                    if ($section?->department_id) {
-                        $department = Department::find($section->department_id);
-                        $division = Division::find($department?->division_id);
-                    } else {
-                        $division = Division::find($section?->division_id);
-                    }
+            // $user_id = $request->user()->id;
+            $user_id = 1;
+            $divisionChiefId = 1;
+            // $assignedArea = AssignedArea::where('user_id', $user_id)->first();
+            // $area = $assignedArea->findDetails();
+            // switch ($area['sector']) {
+            //     case 'Division':
+            //         $division = Division::where('name', $area['details']['name'])->first();
+            //         $divisionChiefId = $division->head_id;
+            //         break;
+            //     case 'Department':
+            //         $department = Department::where('name', $area['details']['name'])->first();
+            //         $division = Division::where('id', $department->division_id)->first();
+            //         $divisionChiefId = $division->head_id;
+            //         break;
+            //     case 'Section':
+            //         $section = Section::where('name', $area['details']['name'])->first();
+            //         if ($section?->department_id) {
+            //             $department = Department::find($section->department_id);
+            //             $division = Division::find($department?->division_id);
+            //         } else {
+            //             $division = Division::find($section?->division_id);
+            //         }
 
-                    $divisionChiefId = $division?->head_id ?? null;
+            //         $divisionChiefId = $division?->head_id ?? null;
 
-                    break;
-                case 'Unit':
-                    $unit = Unit::where('name', $area['details']['name'])->first();
-                    $section = Section::where('id', $unit->section_id)->first();
+            //         break;
+            //     case 'Unit':
+            //         $unit = Unit::where('name', $area['details']['name'])->first();
+            //         $section = Section::where('id', $unit->section_id)->first();
 
-                    if ($section?->department_id) {
-                        $department = Department::find($section->department_id);
-                        $division = Division::find($department?->division_id);
-                    } else {
+            //         if ($section?->department_id) {
+            //             $department = Department::find($section->department_id);
+            //             $division = Division::find($department?->division_id);
+            //         } else {
 
-                        $division = Division::find($section?->division_id);
-                    }
-                    $divisionChiefId = $division?->head_id ?? null;
-                    break;
-            }
+            //             $division = Division::find($section?->division_id);
+            //         }
+            //         $divisionChiefId = $division?->head_id ?? null;
+            //         break;
+            // }
             $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
             $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
 
@@ -494,15 +496,18 @@ class AopApplicationController extends Controller
             ]);
             DB::commit();
 
-            return response()->json(['message' => 'AOP Application created successfully'], 201);
+            return response()->json(['message' => 'AOP Application created successfully'], Response::HTTP_OK);
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'error' => 'Something went wrong.',
-                'exception_message' => $e->getMessage(),
+
+            // Log the exception details to the Laravel log file
+            \Log::error('AOP Application Store Error', [
+                'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'error' => 'Something went wrong. Please contact the system administrator.',
             ], 500);
         }
     }
