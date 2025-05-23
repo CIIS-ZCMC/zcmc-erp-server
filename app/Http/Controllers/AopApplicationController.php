@@ -625,7 +625,6 @@ class AopApplicationController extends Controller
      */
     public function processAopRequest(ProcessAopRequest $request)
     {
-
         $aop_application = AopApplication::with([
             'applicationObjectives',
             'applicationTimelines',
@@ -642,16 +641,17 @@ class AopApplicationController extends Controller
         }
 
         $user = User::find($request->user()->id);
-        $user_assigned_area = $user->assignedArea->id;
+        $user_assigned_area = $user->assignedArea;
+        $user_assigned_area_id= $user->assignedArea->id;
 
         // Use ApprovalService to process the request
-        $workflow_service = new ApprovalService();
+        $approval_service = new ApprovalService();
 
         // Create a timeline entry using the service
-        $aop_application_timeline = $workflow_service->createApplicationTimeline(
+        $aop_application_timeline = $approval_service->createApplicationTimeline(
             $aop_application->id,
             $request->user()->id,
-            $user_assigned_area->id,
+            $user_assigned_area_id,
             $request->status,
             $request->remarks
         );

@@ -51,6 +51,11 @@ class ApprovalService
                 ->where('user_id', $userId)
                 ->first();
 
+            Log::info('Current area details', [
+                'current_area_id' => $current_area_id,
+                'current_area' => $currentArea
+            ]);
+
             if (!$currentArea) {
                 Log::error("Cannot create timeline - Current area not found", [
                     'current_area_id' => $current_area_id
