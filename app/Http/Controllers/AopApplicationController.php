@@ -291,46 +291,45 @@ class AopApplicationController extends Controller
 
         try {
             // $user_id = $request->user()->id;
-            $user_id = 1;
-            $divisionChiefId = 1;
-            // $assignedArea = AssignedArea::where('user_id', $user_id)->first();
-            // $area = $assignedArea->findDetails();
-            // switch ($area['sector']) {
-            //     case 'Division':
-            //         $division = Division::where('name', $area['details']['name'])->first();
-            //         $divisionChiefId = $division->head_id;
-            //         break;
-            //     case 'Department':
-            //         $department = Department::where('name', $area['details']['name'])->first();
-            //         $division = Division::where('id', $department->division_id)->first();
-            //         $divisionChiefId = $division->head_id;
-            //         break;
-            //     case 'Section':
-            //         $section = Section::where('name', $area['details']['name'])->first();
-            //         if ($section?->department_id) {
-            //             $department = Department::find($section->department_id);
-            //             $division = Division::find($department?->division_id);
-            //         } else {
-            //             $division = Division::find($section?->division_id);
-            //         }
+            $user_id = 2;
+            $assignedArea = AssignedArea::where('user_id', $user_id)->first();
+            $area = $assignedArea->findDetails();
+            switch ($area['sector']) {
+                case 'Division':
+                    $division = Division::where('name', $area['details']['name'])->first();
+                    $divisionChiefId = $division->head_id;
+                    break;
+                case 'Department':
+                    $department = Department::where('name', $area['details']['name'])->first();
+                    $division = Division::where('id', $department->division_id)->first();
+                    $divisionChiefId = $division->head_id;
+                    break;
+                case 'Section':
+                    $section = Section::where('name', $area['details']['name'])->first();
+                    if ($section?->department_id) {
+                        $department = Department::find($section->department_id);
+                        $division = Division::find($department?->division_id);
+                    } else {
+                        $division = Division::find($section?->division_id);
+                    }
 
-            //         $divisionChiefId = $division?->head_id ?? null;
+                    $divisionChiefId = $division?->head_id ?? null;
 
-            //         break;
-            //     case 'Unit':
-            //         $unit = Unit::where('name', $area['details']['name'])->first();
-            //         $section = Section::where('id', $unit->section_id)->first();
+                    break;
+                case 'Unit':
+                    $unit = Unit::where('name', $area['details']['name'])->first();
+                    $section = Section::where('id', $unit->section_id)->first();
 
-            //         if ($section?->department_id) {
-            //             $department = Department::find($section->department_id);
-            //             $division = Division::find($department?->division_id);
-            //         } else {
+                    if ($section?->department_id) {
+                        $department = Department::find($section->department_id);
+                        $division = Division::find($department?->division_id);
+                    } else {
 
-            //             $division = Division::find($section?->division_id);
-            //         }
-            //         $divisionChiefId = $division?->head_id ?? null;
-            //         break;
-            // }
+                        $division = Division::find($section?->division_id);
+                    }
+                    $divisionChiefId = $division?->head_id ?? null;
+                    break;
+            }
             $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
             $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
 
@@ -340,7 +339,7 @@ class AopApplicationController extends Controller
 
             // Create AOP Application
             $aopApplication = AopApplication::create([
-                'user_id' => 1,
+                'user_id' => $user_id,
                 'division_chief_id' => $divisionChiefId,
                 'mcc_chief_id' => $mccChiefId,
                 'planning_officer_id' => $planningOfficerId,
@@ -431,22 +430,12 @@ class AopApplicationController extends Controller
                 'aop_application_id' => $aopApplication->id,
                 'ppmp_application_id' => null,
                 'action' => "Create Aop",
-                'action_by' => 1,
+                'action_by' => $user_id,
             ]);
 
 
-            // $assignedArea = AssignedArea::with('division')->where('user_id', 1)->first();
-            // $divisionChiefId = optional($assignedArea->division)->head_id;
-
-            // $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
-            // $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
-
-            // $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
-            // $budgetOfficerId = optional($budgetOfficer)->head_id;
-
-
             $ppmpApplication = $aopApplication->ppmpApplication()->create([
-                'user_id' => 1,
+                'user_id' => $user_id,
                 'division_chief_id' => $divisionChiefId,
                 'budget_officer_id' => 1,
                 'ppmp_application_uuid' => Str::uuid(),
@@ -454,7 +443,6 @@ class AopApplicationController extends Controller
                 'status' => "Pending",
 
             ]);
-
 
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
@@ -483,12 +471,12 @@ class AopApplicationController extends Controller
                 'aop_application_id' => null,
                 'ppmp_application_id' => $ppmpApplication->id,
                 'action' => "Create Ppmp",
-                'action_by' => 1,
+                'action_by' => $user_id,
             ]);
 
             $aopApplicationTimeline = $aopApplication->applicationTimelines()->create([
                 'aop_application_id' => $aopApplication->id,
-                'user_id' => 1,
+                'user_id' => $user_id,
                 'current_area_id' => 1,
                 'next_area_id' => 2,
                 'status' => "Pending",
@@ -499,12 +487,7 @@ class AopApplicationController extends Controller
             return response()->json(['message' => 'AOP Application created successfully'], Response::HTTP_OK);
         } catch (\Exception $e) {
 
-            // Log the exception details to the Laravel log file
-            \Log::error('AOP Application Store Error', [
-                'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-            ]);
+
 
             return response()->json([
                 'error' => 'Something went wrong. Please contact the system administrator.',
