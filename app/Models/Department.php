@@ -33,6 +33,7 @@ class Department extends Model
         'id',
         'head_id',
         'oid_id',
+        'area_id',
         'division_id',
         'name',
         'code',

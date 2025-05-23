@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->foreign('oic_id')->references('id')->on('users');
             $table->unsignedBigInteger('division_id')->nullable();
             $table->foreign('division_id')->references('id')->on('divisions');
+            $table->string('area_id', 50)->nullable();
             $table->string('name');
             $table->string('code')->nullable();
             $table->timestamps();
