@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             VariantSeeder::class,
             SnomedSeeder::class,
+            ItemClassificationSeeder::class,
             ItemCategorySeeder::class,
             TypeOfFunctionSeeder::class,
             ProcurementModeSeeder::class,
