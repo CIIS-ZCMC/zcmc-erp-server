@@ -166,15 +166,48 @@ class AopApplicationController extends Controller
         ]);
     }
 
-    public function showTimeline($aopApplicationId)
+    public function showUserTimeline(Request $request)
     {
+        // $user_id = $request->user()->id;
+        $user_id = 2;
+
+        // Get the user's assigned area
+        $assignedArea = AssignedArea::where('user_id', $user_id)->first();
+
+        if (!$assignedArea) {
+            return response()->json(['message' => 'User has no assigned area.'], 404);
+        }
+
+        $area = $assignedArea->findDetails();
+
+        if (!$area || !isset($area['sector'], $area['details']['id'])) {
+            return response()->json(['message' => 'Assigned area details are incomplete.'], 422);
+        }
+
+        // Find the AOP application for the user's sector, sector_id, and current year
         $aopApplication = AopApplication::with('applicationTimelines')
-            ->findOrFail($aopApplicationId);
+            ->where('sector', $area['sector'])
+            ->where('sector_id', $area['details']['id'])
+            ->whereYear('created_at', now()->year)
+            ->first();
+
+        if (!$aopApplication) {
+            return response()->json(['message' => 'No AOP application found for this year in your assigned area.'], 404);
+        }
 
         return ApplicationTimelineResource::collection(
             $aopApplication->applicationTimelines
         );
     }
+    // public function showTimeline($aopApplicationId)
+    // {
+    //     $aopApplication = AopApplication::with('applicationTimelines')
+    //         ->findOrFail($aopApplicationId);
+
+    //     return ApplicationTimelineResource::collection(
+    //         $aopApplication->applicationTimelines
+    //     );
+    // }
 
     public function update(AopApplicationRequest $request, $id)
     {
