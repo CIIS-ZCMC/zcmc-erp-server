@@ -225,6 +225,9 @@ class AopApplicationController extends Controller
                 'ppmpApplication',
             ])->findOrFail($id);
 
+            $user_id = 2;
+            $user = User::where('id', $user_id)->first();
+            $user_assigned_area_id = $user->assignedArea->id;
 
             $aopApplication->update($request->only([
                 'user_id',
@@ -296,6 +299,12 @@ class AopApplicationController extends Controller
                 }
             }
 
+            Log::create([
+                'aop_application_id' => $aopApplication->id,
+                'ppmp_application_id' => null,
+                'action' => "Update Aop",
+                'action_by' => $user_id,
+            ]);
 
             $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
             $ppmpTotal = 0;
@@ -315,7 +324,7 @@ class AopApplicationController extends Controller
                 'remarks' => $request->remarks ?? null,
             ]);
 
-
+            $ppmpApplication = $aopApplication->ppmpApplication;
             $aopApplication->ppmpApplication->ppmpItems()->delete();
 
             foreach ($aopApplication->applicationObjectives as $objective) {
@@ -337,9 +346,14 @@ class AopApplicationController extends Controller
                 }
             }
 
-            $user_id = 2;
-            $user = User::where('id', $user_id)->first();
-            $user_assigned_area_id = $user->assignedArea->id;
+            Log::create([
+                'aop_application_id' => null,
+                'ppmp_application_id' => $ppmpApplication->id,
+                'action' => "Update Ppmp",
+                'action_by' => $user_id,
+            ]);
+
+
 
             // Use ApprovalService to process the request
             $approval_service = new ApprovalService();
