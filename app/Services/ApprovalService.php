@@ -7,9 +7,11 @@ use App\Models\ApplicationTimeline;
 use App\Models\AopApplication;
 use App\Models\Division;
 use App\Models\Section;
+use App\Models\User;
 use Illuminate\Support\Facades\Log;
 use App\Http\Resources\AssignedAreaResource;
 use App\Helpers\TransactionLogHelper;
+use App\Services\NotificationService;
 
 class ApprovalService
 {
@@ -18,9 +20,9 @@ class ApprovalService
     /**
      * Create a new class instance.
      */
-    public function __construct()
+    public function __construct(NotificationService $notificationService)
     {
-        $this->notificationService = new NotificationService();
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -247,6 +249,33 @@ class ApprovalService
             ]);
 
             $timeline->save();
+
+            // Send notifications to the next area user if there is a next area
+            if ($next_area_id) {
+                $nextArea = AssignedArea::find($next_area_id);
+                if ($nextArea && $nextArea->user_id) {
+                    $nextUser = User::find($nextArea->user_id);
+                    if ($nextUser) {
+                        $this->notificationService->notify($nextUser, [
+                            'title' => 'AOP Application Requires Your Action',
+                            'description' => "An AOP application has been routed to you for review.",
+                            'module_path' => "/aop-application/{$aop_application->id}",
+                            'aop_application_id' => $aop_application->id,
+                            'status' => $status
+                        ]);
+                    }
+                }
+            }
+
+            // Notify the AOP application owner about the status change
+            $this->notificationService->notify($aop_user, [
+                'title' => 'AOP Application Status Update',
+                'description' => "Your AOP application has been {$status}." . 
+                                ($remarks ? " Remarks: {$remarks}" : ""),
+                'module_path' => "/aop-application/{$aop_application->id}",
+                'aop_application_id' => $aop_application->id,
+                'status' => $status
+            ]);
 
             // Log successful creation
             Log::info('Application timeline created successfully', [
