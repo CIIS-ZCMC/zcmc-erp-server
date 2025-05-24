@@ -18,22 +18,22 @@ class ItemCategorySeeder extends Seeder
 
         // Main categories to be seeded
         $mainCategories = [
-            ['name' => 'Software and Subscription', 'code' => 'SAS'],
-            ['name' => 'Equipment', 'code' => 'EQP'],
-            ['name' => 'Services and Consultancy', 'code' => 'SAC'],
-            ['name' => 'Training Expenses', 'code' => 'TRE'],
-            ['name' => 'Furniture and Fixture', 'code' => 'FAF'],
-            ['name' => 'Supply', 'code' => 'SUP'],
-            ['name' => 'Instrument', 'code' => 'INS'],
-            ['name' => 'Book, Journal, Publication', 'code' => 'BJP'],
-            ['name' => 'Maintenance', 'code' => 'MNT'],
-            ['name' => 'Parts and Spare', 'code' => 'PAS'],
-            ['name' => 'Tax, License, Membership/Accreditation/Registration', 'code' => 'TLM'],
-            ['name' => 'Subscription, Postage & Insurance', 'code' => 'SPI'],
-            ['name' => 'Building and Construction', 'code' => 'BAC'],
-            ['name' => 'Celebration and Events', 'code' => 'CAE'],
-            ['name' => 'Instruments and Tools', 'code' => 'IAT'],
-            ['name' => 'Implant', 'code' => 'IMP'],
+            ['name' => 'Software and Subscription', 'code' => 'SAS', 'item_reference_terminology_id' => 1],
+            ['name' => 'Equipment', 'code' => 'EQP', 'item_reference_terminology_id' => 1],
+            ['name' => 'Services and Consultancy', 'code' => 'SAC', 'item_reference_terminology_id' => 1],
+            ['name' => 'Training Expenses', 'code' => 'TRE', 'item_reference_terminology_id' => 1],
+            ['name' => 'Furniture and Fixture', 'code' => 'FAF', 'item_reference_terminology_id' => 1],
+            ['name' => 'Supply', 'code' => 'SUP', 'item_reference_terminology_id' => 1],
+            ['name' => 'Instrument', 'code' => 'INS', 'item_reference_terminology_id' => 1],
+            ['name' => 'Book, Journal, Publication', 'code' => 'BJP', 'item_reference_terminology_id' => 1],
+            ['name' => 'Maintenance', 'code' => 'MNT', 'item_reference_terminology_id' => 1],
+            ['name' => 'Parts and Spare', 'code' => 'PAS', 'item_reference_terminology_id' => 1],
+            ['name' => 'Tax, License, Membership/Accreditation/Registration', 'code' => 'TLM', 'item_reference_terminology_id' => 1],
+            ['name' => 'Subscription, Postage & Insurance', 'code' => 'SPI', 'item_reference_terminology_id' => 1],
+            ['name' => 'Building and Construction', 'code' => 'BAC', 'item_reference_terminology_id' => 1],
+            ['name' => 'Celebration and Events', 'code' => 'CAE', 'item_reference_terminology_id' => 1],
+            ['name' => 'Instruments and Tools', 'code' => 'IAT', 'item_reference_terminology_id' => 1],
+            ['name' => 'Implant', 'code' => 'IMP', 'item_reference_terminology_id' => 1],
         ];
 
         // First create all main categories
@@ -43,6 +43,7 @@ class ItemCategorySeeder extends Seeder
                 'name' => $category['name'],
                 'code' => $category['code'],
                 'description' => 'Main category for ' . $category['name'],
+                'item_reference_terminology_id' => $category['item_reference_terminology_id']
             ]);
 
             $categoryMap[$category['name']] = $newCategory->id;
@@ -51,28 +52,28 @@ class ItemCategorySeeder extends Seeder
         // Sub-categories with their parent categories
         $subCategories = [
             // Equipment sub-categories
-            ['parent' => 'Equipment', 'name' => 'ICT', 'code' => 'EQP-ICT'],
-            ['parent' => 'Equipment', 'name' => 'Medical', 'code' => 'EQP-MED'],
-            ['parent' => 'Equipment', 'name' => 'Other', 'code' => 'EQP-OTH'],
-            ['parent' => 'Equipment', 'name' => 'Kitchen', 'code' => 'EQP-KIT'],
+            ['parent' => 'Equipment', 'name' => 'ICT', 'code' => 'EQP-ICT', 'item_reference_terminology_id' => 1],
+            ['parent' => 'Equipment', 'name' => 'Medical', 'code' => 'EQP-MED', 'item_reference_terminology_id' => 1],
+            ['parent' => 'Equipment', 'name' => 'Other', 'code' => 'EQP-OTH', 'item_reference_terminology_id' => 1],
+            ['parent' => 'Equipment', 'name' => 'Kitchen', 'code' => 'EQP-KIT', 'item_reference_terminology_id' => 1],
             
             // Supply sub-categories
-            ['parent' => 'Supply', 'name' => 'Office', 'code' => 'SUP-OFF'],
-            ['parent' => 'Supply', 'name' => 'Medical', 'code' => 'SUP-MED'],
-            ['parent' => 'Supply', 'name' => 'Food', 'code' => 'SUP-FOD'],
-            ['parent' => 'Supply', 'name' => 'Construction', 'code' => 'SUP-CON'],
-            ['parent' => 'Supply', 'name' => 'Others', 'code' => 'SUP-OTH'],
-            ['parent' => 'Supply', 'name' => 'Janitorial', 'code' => 'SUP-JAN'],
-            ['parent' => 'Supply', 'name' => 'Equipment Maintenance', 'code' => 'SUP-EQM'],
-            ['parent' => 'Supply', 'name' => 'Linen and Laundry', 'code' => 'SUP-LAL'],
-            ['parent' => 'Supply', 'name' => 'Laboratory', 'code' => 'SUP-LAB'],
+            ['parent' => 'Supply', 'name' => 'Office', 'code' => 'SUP-OFF', 'item_reference_terminology_id' => 1],
+            ['parent' => 'Supply', 'name' => 'Medical', 'code' => 'SUP-MED', 'item_reference_terminology_id' => 1],
+            ['parent' => 'Supply', 'name' => 'Food', 'code' => 'SUP-FOD', 'item_reference_terminology_id' => 1],
+            ['parent' => 'Supply', 'name' => 'Construction', 'code' => 'SUP-CON', 'item_reference_terminology_id' => 1],
+            ['parent' => 'Supply', 'name' => 'Others', 'code' => 'SUP-OTH', 'item_reference_terminology_id' => 1],
+            ['parent' => 'Supply', 'name' => 'Janitorial', 'code' => 'SUP-JAN', 'item_reference_terminology_id' => 1],
+            ['parent' => 'Supply', 'name' => 'Equipment Maintenance', 'code' => 'SUP-EQM', 'item_reference_terminology_id' => 1],
+            ['parent' => 'Supply', 'name' => 'Linen and Laundry', 'code' => 'SUP-LAL', 'item_reference_terminology_id' => 1],
+            ['parent' => 'Supply', 'name' => 'Laboratory', 'code' => 'SUP-LAB', 'item_reference_terminology_id' => 1],
             
             // Instrument sub-categories
-            ['parent' => 'Instrument', 'name' => 'Medical', 'code' => 'INS-MED'],
+            ['parent' => 'Instrument', 'name' => 'Medical', 'code' => 'INS-MED', 'item_reference_terminology_id' => 1],
             
             // Maintenance sub-categories
-            ['parent' => 'Maintenance', 'name' => 'Medical Equipment', 'code' => 'MNT-MED'],
-            ['parent' => 'Maintenance', 'name' => 'Other Equipment', 'code' => 'MNT-OEQ'],
+            ['parent' => 'Maintenance', 'name' => 'Medical Equipment', 'code' => 'MNT-MED', 'item_reference_terminology_id' => 1],
+            ['parent' => 'Maintenance', 'name' => 'Other Equipment', 'code' => 'MNT-OEQ', 'item_reference_terminology_id' => 1],
             ['parent' => 'Maintenance', 'name' => 'ICT', 'code' => 'MNT-ICT'],
         ];
 
@@ -83,6 +84,7 @@ class ItemCategorySeeder extends Seeder
                 'name' => $subCategory['name'],
                 'code' => $subCategory['code'],
                 'description' => 'Sub-category of ' . $subCategory['parent'],
+                'item_reference_terminology_id' => $subCategory['item_reference_terminology_id']
             ]);
         }
     }
