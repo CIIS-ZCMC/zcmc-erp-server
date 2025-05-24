@@ -50,7 +50,7 @@ class PpmpApplicationController extends Controller
 
         if ($ppmp_application === null) {
             return response()->json([
-                'data' => null,
+                'data' => (object) [],
                 'message' => 'PPMP Application retrieved successfully.'
             ], Response::HTTP_OK);
         }
