@@ -640,12 +640,17 @@ class AopApplicationController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $user = User::find($request->user()->id);
-        $user_assigned_area = $user->assignedArea;
-        $user_assigned_area_id= $user->assignedArea->id;
-        $user_authorization_pin = $user->authorization_pin;
+        // Get the current user and its area
+        $curr_user = User::find($request->user()->id);
+        $curr_user_assigned_area = $curr_user->assignedArea;
+        $curr_user_authorization_pin = $curr_user->authorization_pin;
 
-        if ($user_authorization_pin !== $request->authorization_pin) {
+        // Get the aop user and its area
+        $aop_user = User::find($aop_application->user_id);
+        $aop_user_assigned_area = $aop_user->assignedArea;
+
+
+        if ($curr_user_authorization_pin !== $request->authorization_pin) {
             return response()->json([
                 'message' => 'Invalid Authorization Pin'
             ], Response::HTTP_BAD_REQUEST);
@@ -656,12 +661,14 @@ class AopApplicationController extends Controller
 
         // Create a timeline entry using the service
         $aop_application_timeline = $approval_service->createApplicationTimeline(
-            $aop_application->id,
-            $request->user()->id,
-            $user_assigned_area_id,
+            $aop_application,
+            $curr_user,
+            $aop_user,
             $request->status,
             $request->remarks
         );
+
+        return $aop_application_timeline;
 
         if (!$aop_application_timeline) {
             return response()->json([
