@@ -23,6 +23,8 @@ class PpmpApplicationController extends Controller
 
     public function index(Request $request)
     {
+        $year = $request->query('year', now()->year + 1);
+
         $ppmp_application = PpmpApplication::with([
             'ppmpItems' => function ($query) {
                 $query->with([
@@ -32,7 +34,14 @@ class PpmpApplicationController extends Controller
                     'activities'
                 ]);
             },
-        ])->latest()->first();
+        ])->whereYear('created_at', $year)->first();
+
+        if (!$ppmp_application) {
+            return response()->json([
+                'data' => (object) [],
+                'message' => 'No PPMP Application found.'
+            ], Response::HTTP_OK);
+        }
 
         $itemCount = $ppmp_application->ppmpItems->count();
         $activityCount = $ppmp_application->ppmpItems
@@ -41,19 +50,6 @@ class PpmpApplicationController extends Controller
 
         $totalQuantity = $ppmp_application->ppmpItems->sum('total_quantity');
         $totalBudget = $ppmp_application->ppmpItems->sum('estimated_budget');
-
-        if (!$ppmp_application) {
-            return response()->json([
-                'message' => "No record found.",
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        if ($ppmp_application === null) {
-            return response()->json([
-                'data' => (object) [],
-                'message' => 'PPMP Application retrieved successfully.'
-            ], Response::HTTP_OK);
-        }
 
         $data = [
             'ppmp_application' => $ppmp_application ?? null,
