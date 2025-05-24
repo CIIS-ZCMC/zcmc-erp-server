@@ -21,8 +21,10 @@ return new class extends Migration {
             $table->unsignedBigInteger('planning_officer_id');
             $table->foreign('planning_officer_id')->references('id')->on('users');
             $table->uuid('aop_application_uuid');
+            $table->integer('sector_id');
+            $table->string('sector');
             $table->text('mission');
-            $table->string('status');
+            $table->string('status')->default('pending');
             $table->boolean('has_discussed');
             $table->text('remarks')->nullable();
             $table->softDeletes();

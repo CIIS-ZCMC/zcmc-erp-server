@@ -72,60 +72,60 @@ class PpmpItem extends Model
 
     public function scopeSearch($query, array $terms)
     {
-        return $query->where(function ($query) use ($terms) {
+        return $query->where(function ($q) use ($terms) {
             foreach ($terms as $term) {
-                $query->where('total_quantity', 'like', "%{$term}%")
+                $q->where('total_quantity', 'like', "%{$term}%")
                     ->orWhere('estimated_budget', 'like', "%{$term}%")
                     ->orWhere('total_amount', 'like', "%{$term}%")
                     ->orWhere('remarks', 'like', "%{$term}%")
-                    ->orWhereHas('item', function ($query) use ($term) {
-                        $query->where('name', 'like', "%{$term}%")
+                    ->orWhereHas('item', function ($q) use ($term) {
+                        $q->where('name', 'like', "%{$term}%")
                             ->orWhere('code', 'like', "%{$term}%")
                             ->orWhere('variant', 'like', "%{$term}%")
                             ->orWhere('estimated_budget', 'like', "%{$term}%")
-                            ->orWhereHas('itemUnit', function ($query) use ($term) {
-                                $query->where('name', 'like', "%{$term}%")
+                            ->orWhereHas('itemUnit', function ($q) use ($term) {
+                                $q->where('name', 'like', "%{$term}%")
                                     ->orWhere('code', 'like', "%{$term}%")
                                     ->orWhere('description', 'like', "%{$term}%");
                             })
-                            ->orWhereHas('itemCategory', function ($query) use ($term) {
-                                $query->where('name', 'like', "%{$term}%")
+                            ->orWhereHas('itemCategory', function ($q) use ($term) {
+                                $q->where('name', 'like', "%{$term}%")
                                     ->orWhere('code', 'like', "%{$term}%")
                                     ->orWhere('description', 'like', "%{$term}%");
                             })
-                            ->orWhereHas('itemClassification', function ($query) use ($term) {
-                                $query->where('name', 'like', "%{$term}%")
+                            ->orWhereHas('itemClassification', function ($q) use ($term) {
+                                $q->where('name', 'like', "%{$term}%")
                                     ->orWhere('code', 'like', "%{$term}%")
                                     ->orWhere('description', 'like', "%{$term}%");
                             })
-                            ->orWhereHas('itemSpecifications', function ($query) use ($term) {
-                                $query->where('description', 'like', "%{$term}%");
+                            ->orWhereHas('itemSpecifications', function ($q) use ($term) {
+                                $q->where('description', 'like', "%{$term}%");
                             });
                     })
-                    ->orWhereHas('procurementMode', function ($query) use ($term) {
-                        $query->where('name', 'like', "%{$term}%");
+                    ->orWhereHas('procurementMode', function ($q) use ($term) {
+                        $q->where('name', 'like', "%{$term}%");
                     })
-                    ->orWhereHas('itemRequest', function ($query) use ($term) {
-                        $query->where('name', 'like', "%{$term}%")
+                    ->orWhereHas('itemRequest', function ($q) use ($term) {
+                        $q->where('name', 'like', "%{$term}%")
                             ->orWhere('code', 'like', "%{$term}%")
                             ->orWhere('variant', 'like', "%{$term}%")
                             ->orWhere('estimated_budget', 'like', "%{$term}%")
                             ->orWhere('status', 'like', "%{$term}%")
                             ->orWhere('reason', 'like', "%{$term}%");
                     })
-                    ->orWhereHas('activities', function ($query) use ($term) {
-                        $query->where('activity_code', 'like', "%{$term}%")
+                    ->orWhereHas('activities', function ($q) use ($term) {
+                        $q->where('activity_code', 'like', "%{$term}%")
                             ->orWhere('name', 'like', "%{$term}%")
                             ->orWhere('cost', 'like', "%{$term}%")
                             ->orWhere('start_month', 'like', "%{$term}%")
                             ->orWhere('end_month', 'like', "%{$term}%")
                             ->orWhere('expense_class', 'like', "%{$term}%");
                     })
-                    ->orWhereHas('comments', function ($query) use ($term) {
-                        $query->where('comment', 'like', "%{$term}%");
+                    ->orWhereHas('comments', function ($q) use ($term) {
+                        $q->where('comment', 'like', "%{$term}%");
                     })
-                    ->orWhereHas('ppmpSchedule', function ($query) use ($term) {
-                        $query->where('quantity', 'like', "%{$term}%")
+                    ->orWhereHas('ppmpSchedule', function ($q) use ($term) {
+                        $q->where('quantity', 'like', "%{$term}%")
                             ->orWhere('month', 'like', "%{$term}%")
                             ->orWhere('year', 'like', "%{$term}%");
                     });

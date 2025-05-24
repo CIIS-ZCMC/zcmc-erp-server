@@ -16,6 +16,7 @@ use App\Models\AssignedArea;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Division;
+use App\Models\Log;
 use App\Models\PpmpItem;
 use App\Models\PurchaseType;
 use App\Models\Section;
@@ -33,9 +34,7 @@ use Illuminate\Support\Facades\Validator;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Support\Facades\File;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
-
 use PhpOffice\PhpSpreadsheet\IOFactory;
-
 use App\Services\ApprovalService;
 use App\Services\AopVisibilityService;
 
@@ -44,7 +43,8 @@ class AopApplicationController extends Controller
 
     protected NotificationService $notificationService;
 
-    public function __construct(NotificationService $notificationService) {
+    public function __construct(NotificationService $notificationService)
+    {
         $this->notificationService = $notificationService;
     }
     /**
@@ -71,7 +71,7 @@ class AopApplicationController extends Controller
     public function index()
     {
 
-        return $aopApplications = AopApplication::query()
+        $aopApplications = AopApplication::query()
             ->with([
                 'applicationObjectives.objective',
                 'applicationObjectives.otherObjective',
@@ -86,8 +86,38 @@ class AopApplicationController extends Controller
         return AopApplicationResource::collection($aopApplications);
     }
 
+    public function getUserAopSummary(Request $request)
+    {
+
+        // $user_id = $request->user()->id;
+        $user_id = 2;
+        $assignedArea = AssignedArea::where('user_id', $user_id)->first();
+        if (!$assignedArea) {
+            return response()->json(['message' => 'User has no assigned area.'], 404);
+        }
+
+        $area = $assignedArea->findDetails();
+
+        if (!$area || !isset($area['sector'], $area['details']['id'])) {
+            return response()->json(['message' => 'Assigned area details are incomplete.'], 422);
+        }
+
+
+        $userAopApplication = AopApplication::where('sector', $area['sector'])
+            ->where('sector_id', $area['details']['id'])
+            ->whereYear('created_at', now()->year)
+            ->first();
+
+        if (!$userAopApplication) {
+            return response()->json(['message' => 'No AOP application found for this user\'s assigned area.'], 404);
+        }
+
+        return $this->getAopApplicationSummary($userAopApplication->id);
+    }
     public function getAopApplicationSummary($aopApplicationId)
     {
+
+
         $aopApplication = AopApplication::with([
             'applicationObjectives.successIndicator',
             'applicationObjectives.activities.resources',
@@ -144,15 +174,48 @@ class AopApplicationController extends Controller
         ]);
     }
 
-    public function showTimeline($aopApplicationId)
+    public function showUserTimeline(Request $request)
     {
+        // $user_id = $request->user()->id;
+        $user_id = 2;
+
+        // Get the user's assigned area
+        $assignedArea = AssignedArea::where('user_id', $user_id)->first();
+
+        if (!$assignedArea) {
+            return response()->json(['message' => 'User has no assigned area.'], 404);
+        }
+
+        $area = $assignedArea->findDetails();
+
+        if (!$area || !isset($area['sector'], $area['details']['id'])) {
+            return response()->json(['message' => 'Assigned area details are incomplete.'], 422);
+        }
+
+        // Find the AOP application for the user's sector, sector_id, and current year
         $aopApplication = AopApplication::with('applicationTimelines')
-            ->findOrFail($aopApplicationId);
+            ->where('sector', $area['sector'])
+            ->where('sector_id', $area['details']['id'])
+            ->whereYear('created_at', now()->year)
+            ->first();
+
+        if (!$aopApplication) {
+            return response()->json(['message' => 'No AOP application found for this year in your assigned area.'], 404);
+        }
 
         return ApplicationTimelineResource::collection(
             $aopApplication->applicationTimelines
         );
     }
+    // public function showTimeline($aopApplicationId)
+    // {
+    //     $aopApplication = AopApplication::with('applicationTimelines')
+    //         ->findOrFail($aopApplicationId);
+
+    //     return ApplicationTimelineResource::collection(
+    //         $aopApplication->applicationTimelines
+    //     );
+    // }
 
     public function update(AopApplicationRequest $request, $id)
     {
@@ -292,33 +355,76 @@ class AopApplicationController extends Controller
 
         $validatedData = $request->validated();
 
-
         DB::beginTransaction();
 
         try {
+            // $user_id = $request->user()->id;
+            $user_id = 2;
+            $assignedArea = AssignedArea::where('user_id', $user_id)->first();
+            $area = $assignedArea->findDetails();
+            $existingAop = AopApplication::where('sector', $area['sector'])
+                ->where('sector_id', $area['details']['id'])
+                ->first();
 
-            $assignedArea = AssignedArea::with('division')->where('user_id', $validatedData['user_id'])->first();
-            $divisionChiefId = optional($assignedArea->division)->head_id;
+            if ($existingAop) {
+                return response()->json([
+                    'message' => 'You already have an AOP application in your area.',
+                ], 409);
+            }
+            switch ($area['sector']) {
+                case 'Division':
+                    $division = Division::where('name', $area['details']['name'])->first();
+                    $divisionChiefId = $division->head_id;
+                    break;
+                case 'Department':
+                    $department = Department::where('name', $area['details']['name'])->first();
+                    $division = Division::where('id', $department->division_id)->first();
+                    $divisionChiefId = $division->head_id;
+                    break;
+                case 'Section':
+                    $section = Section::where('name', $area['details']['name'])->first();
+                    if ($section?->department_id) {
+                        $department = Department::find($section->department_id);
+                        $division = Division::find($department?->division_id);
+                    } else {
+                        $division = Division::find($section?->division_id);
+                    }
 
+                    $divisionChiefId = $division?->head_id ?? null;
+
+                    break;
+                case 'Unit':
+                    $unit = Unit::where('name', $area['details']['name'])->first();
+                    $section = Section::where('id', $unit->section_id)->first();
+
+                    if ($section?->department_id) {
+                        $department = Department::find($section->department_id);
+                        $division = Division::find($department?->division_id);
+                    } else {
+
+                        $division = Division::find($section?->division_id);
+                    }
+                    $divisionChiefId = $division?->head_id ?? null;
+                    break;
+            }
             $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
             $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
 
-            $planningOfficer = Section::where('name', 'OMCC: Planning Unit')->first();
+            $planningOfficer = Section::where('name', 'Planning Unit')->first();
             $planningOfficerId = optional($planningOfficer)->head_id;
-
-
-
 
 
             // Create AOP Application
             $aopApplication = AopApplication::create([
-                'user_id' => $validatedData['user_id'],
+                'user_id' => $user_id,
                 'division_chief_id' => $divisionChiefId,
                 'mcc_chief_id' => $mccChiefId,
                 'planning_officer_id' => $planningOfficerId,
                 'aop_application_uuid' => Str::uuid(),
                 'mission' => $validatedData['mission'],
                 'status' => $validatedData['status'],
+                'sector' => $area['sector'],
+                'sector_id' => $area['details']['id'],
                 'has_discussed' => $validatedData['has_discussed'],
                 'remarks' => $validatedData['remarks'] ?? null,
             ]);
@@ -399,18 +505,16 @@ class AopApplicationController extends Controller
                 }
             }
 
-            $assignedArea = AssignedArea::with('division')->where('user_id', $validatedData['user_id'])->first();
-            $divisionChiefId = optional($assignedArea->division)->head_id;
-
-            $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
-            $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
-
-            // $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
-            // $budgetOfficerId = optional($budgetOfficer)->head_id;
+            Log::create([
+                'aop_application_id' => $aopApplication->id,
+                'ppmp_application_id' => null,
+                'action' => "Create Aop",
+                'action_by' => $user_id,
+            ]);
 
 
             $ppmpApplication = $aopApplication->ppmpApplication()->create([
-                'user_id' => $validatedData['user_id'],
+                'user_id' => $user_id,
                 'division_chief_id' => $divisionChiefId,
                 'budget_officer_id' => 1,
                 'ppmp_application_uuid' => Str::uuid(),
@@ -418,7 +522,6 @@ class AopApplicationController extends Controller
                 'status' => $validatedData['status'],
 
             ]);
-
 
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
@@ -443,9 +546,16 @@ class AopApplicationController extends Controller
                 }
             }
 
+            Log::create([
+                'aop_application_id' => null,
+                'ppmp_application_id' => $ppmpApplication->id,
+                'action' => "Create Ppmp",
+                'action_by' => $user_id,
+            ]);
+
             $aopApplicationTimeline = $aopApplication->applicationTimelines()->create([
                 'aop_application_id' => $aopApplication->id,
-                'user_id' => 1,
+                'user_id' => $user_id,
                 'current_area_id' => 1,
                 'next_area_id' => 2,
                 'status' => $validatedData['status'],
@@ -453,10 +563,12 @@ class AopApplicationController extends Controller
             ]);
             DB::commit();
 
-            return response()->json(['message' => 'AOP Application created successfully'], 201);
+            return response()->json(['message' => 'AOP Application created successfully'], Response::HTTP_OK);
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['error' => $e->getMessage()], 500);
+            return response()->json([
+                'error' => $e->getMessage(),
+                'trace' => $e->getTrace(), // optional: useful for debugging
+            ], 500);
         }
     }
 
@@ -478,7 +590,6 @@ class AopApplicationController extends Controller
         foreach ($aopApplication->applicationObjectives as $objective) {
             foreach ($objective->activities as $activity) {
                 foreach ($activity->responsiblePeople as $responsiblePerson) {
-                    // Check and resolve the name
                     $responsiblePerson->resolved_name = $this->getResponsiblePersonName($responsiblePerson);
                 }
             }

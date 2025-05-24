@@ -77,7 +77,6 @@ class AopApplicationSeeder extends Seeder
         $divisionHead = $getRandomItem($designations);
         $randomDivision = $getRandomItem($divisions);
 
-
         // Create 5 AOP Applications with different data
         $missionStatements = [
             'To provide excellent healthcare services to the community through strategic planning and resource management',
@@ -97,7 +96,6 @@ class AopApplicationSeeder extends Seeder
         ];
 
         $aopApplications = [];
-        // $ppmpApplications = [];
 
         // Get first user as default owner and find users with specific designations
         // Find users with various designations or create dummy users if none exist
@@ -106,13 +104,12 @@ class AopApplicationSeeder extends Seeder
         $divisionChief = Division::where('name', 'Hospital Operations & Patient Support Service')->first();
         $mccChief = Division::where('name', 'Office of Medical Center Chief')->first();
         $planningOfficer = Section::where('name', 'IISU')->first();
-        $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
-
 
         // Create 5 sample AOP Applications with corresponding PPMP Applications
         for ($i = 0; $i < 5; $i++) {
             // Get random user for each application
             $randomUser = User::inRandomOrder()->first() ?? $user;
+            $sector = $randomUser->assignedArea->findDetails();
 
             $aopApplication = AopApplication::create([
                 'user_id' => $randomUser->id,
@@ -122,22 +119,12 @@ class AopApplicationSeeder extends Seeder
                 'mission' => $missionStatements[$i] ?? 'Default mission statement',
                 'status' => $statusOptions[array_rand($statusOptions)],
                 'has_discussed' => (bool) rand(0, 1),
-                'remarks' => $remarkOptions[array_rand($remarkOptions)]
+                'remarks' => $remarkOptions[array_rand($remarkOptions)],
+                'sector' => $sector['sector'],
+                'sector_id' => $sector['details']['id']
             ]);
 
-            // $ppmpApplication = PpmpApplication::create([
-            //     'aop_application_id' => $aopApplication->id,
-            //     'user_id' => $randomUser->id,
-            //     'division_chief_id' => $divisionChief->head_id,
-            //     'budget_officer_id' => $budgetOfficer->head_id,
-            //     'ppmp_application_uuid' => Str::uuid(),
-            //     'ppmp_total' => rand(10000, 1000000) / 100,
-            //     'status' => $statusOptions[array_rand($statusOptions)],
-            //     'remarks' => $remarkOptions[array_rand($remarkOptions)]
-            // ]);
-
             $aopApplications[] = $aopApplication;
-            // $ppmpApplications[] = $ppmpApplication;
         }
 
         // Get or create Type of Functions (strategic, core, support)
@@ -376,6 +363,7 @@ class AopApplicationSeeder extends Seeder
                     'item_unit_id' => $unitId,
                     'name' => 'Sample Item',
                     'estimated_budget' => $activity->cost,
+                    'variant_id' => 1,
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);

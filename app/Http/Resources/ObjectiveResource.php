@@ -22,7 +22,7 @@ class ObjectiveResource extends JsonResource
                 "code" => $this->code,
                 "description" => $this->description,
             ],
-            'success_indicator' => SuccessIndicatorResource::collection($this->whenLoaded('successIndicators')),
+            'success_indicator' => SuccessIndicatorResource::collection($this->successIndicators),
             "meta" => [
                 "created_at" => $this->created_at,
                 "updated_at" => $this->updated_at

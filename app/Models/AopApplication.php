@@ -25,6 +25,8 @@ class AopApplication extends Model
         'status',
         'has_discussed',
         'remarks',
+        'sector',
+        'sector_id',
     ];
 
     protected $casts = [

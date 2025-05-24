@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\ItemClassification;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -22,13 +23,14 @@ class DatabaseSeeder extends Seeder
             ItemCategorySeeder::class,
             TypeOfFunctionSeeder::class,
             ProcurementModeSeeder::class,
+            AopApplicationSeeder::class,
             ItemUnitSeeder::class,
+            ItemClassificationSeeder::class,
             ObjectiveSeeder::class,
             SuccessIndicatorSeeder::class,
             ItemSpecificationSeeder::class,
             ItemSeeder::class,
-//            PpmpItemSeeder::class,
-            AopApplicationSeeder::class,
+            PpmpItemSeeder::class,
             ApplicationTimelineSeeder::class,
         ]);
     }

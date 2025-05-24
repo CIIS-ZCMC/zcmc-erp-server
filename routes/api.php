@@ -14,6 +14,7 @@ Route::middleware('auth.api')->group(function () {
     // User profile/data routes
     Route::get('user', [AuthController::class, 'index']);
     Route::get('auth/user', [AuthController::class, 'index']);
+
     // Routes with specific permissions
     Route::middleware('ability:ERP-AOP-MAN:view-all')->group(function () {
         Route::get('aop-requests', [AopApplicationController::class, 'aopRequests']);
@@ -46,6 +47,22 @@ Route::
                 Route::post('item-units', "ItemUnitController@store");
                 Route::put('item-units', "ItemUnitController@update");
                 Route::delete('item-units', "ItemUnitController@destroy");
+
+                // Variant routes
+                Route::get('variants', "VariantController@index");
+                Route::get('variants/trashbin', "VariantController@trash");
+                Route::post('variants', "VariantController@store");
+                Route::put('variants/{variant}', "VariantController@update");
+                Route::put('variants/{id}/restore', "VariantController@restore");
+                Route::delete('variants/{variant}', "VariantController@destroy");
+
+                // Snomed routes
+                Route::get('snomeds', "SnomedController@index");
+                Route::get('snomeds/trashbin', "SnomedController@trashbin");
+                Route::post('snomeds', "SnomedController@store");
+                Route::put('snomeds/{snomed}', "SnomedController@update");
+                Route::put('snomeds/{id}/restore', "SnomedController@restore");
+                Route::delete('snomeds/{snomed}', "SnomedController@destroy");
 
                 // Item Categories routes
                 Route::post('item-categories/import', "ItemCategoryController@import");
@@ -167,14 +184,15 @@ Route::
             Route::post('aop-application-store', 'AopApplicationController@store');
             Route::post('aop-application-update/{id}', 'AopApplicationController@update');
             Route::get('aop-application-show/{id}', 'AopApplicationController@show');
-            Route::get('aop-application-summary/{id}', 'AopApplicationController@getAopApplicationSummary');
-            Route::get('aop-application-timeline/{id}', 'AopApplicationController@showTimeline');
+            Route::get('aop-application-summary', 'AopApplicationController@getUserAopSummary');
+            Route::get('aop-application-timeline', 'AopApplicationController@showUserTimeline');
             Route::get('aop-remarks/{id}', 'AopApplicationController@aopRemarks');
             Route::get('get-areas', 'AopApplicationController@getAllArea');
             Route::get('get-designations', 'AopApplicationController@getAllDesignations');
             Route::get('get-users', 'AopApplicationController@getUsersWithDesignation');
             Route::post('export-aop/{id}', 'AopApplicationController@export');
             Route::get('preview-aop/{id}', 'AopApplicationController@preview');
+            Route::post('import/items', 'ItemImportController@import');
 
             // Variant Dummy
             Route::get('variant', function () {
