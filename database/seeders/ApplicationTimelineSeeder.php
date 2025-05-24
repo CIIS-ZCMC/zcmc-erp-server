@@ -21,26 +21,26 @@ class ApplicationTimelineSeeder extends Seeder
     {
         // Get existing AOP applications created by AopApplicationSeeder
         $aopApplications = AopApplication::all();
-        
+
         if ($aopApplications->isEmpty()) {
             $this->command->info('No AOP applications found. Please run AopApplicationSeeder first.');
             return;
         }
-        
+
         // Get users for approvals
         $users = User::all();
         if ($users->isEmpty()) {
             $this->command->info('No users found. Please seed users first.');
             return;
         }
-        
+
         // Get assigned areas for routing
         $assignedAreas = AssignedArea::all();
         if ($assignedAreas->isEmpty()) {
             $this->command->info('No assigned areas found. Please seed assigned areas first.');
             return;
         }
-        
+
         // Check for PPMP applications or create a default one if none exists
         $ppmpApplication = PpmpApplication::first();
         if (!$ppmpApplication) {
@@ -49,14 +49,14 @@ class ApplicationTimelineSeeder extends Seeder
         } else {
             $ppmpId = $ppmpApplication->id;
         }
-        
+
         foreach ($aopApplications as $application) {
             // If we don't have at least one user and one assigned area, we can't create a timeline
             if ($users->isEmpty() || $assignedAreas->isEmpty()) {
                 $this->command->info('No users or assigned areas available for timeline creation.');
                 return;
             }
-            
+
             // Create a single timeline entry for each AOP application
             $this->createApplicationTimeline(
                 $application->id,
@@ -70,10 +70,10 @@ class ApplicationTimelineSeeder extends Seeder
                 null
             );
         }
-        
+
         $this->command->info('Application timeline entries created successfully.');
     }
-    
+
     /**
      * Helper method to create application timeline entries
      */

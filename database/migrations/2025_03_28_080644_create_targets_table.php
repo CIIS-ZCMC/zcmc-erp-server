@@ -14,10 +14,10 @@ return new class extends Migration {
             $table->id();
             $table->unsignedBigInteger('activity_id');
             $table->foreign('activity_id')->references('id')->on('activities');
-            $table->string('first_quarter');
-            $table->string('second_quarter');
-            $table->string('third_quarter');
-            $table->string('fourth_quarter');
+            $table->string('first_quarter')->nullable();
+            $table->string('second_quarter')->nullable();
+            $table->string('third_quarter')->nullable();
+            $table->string('fourth_quarter')->nullable();
             $table->timestamps();
         });
     }

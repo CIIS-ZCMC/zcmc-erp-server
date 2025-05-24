@@ -34,7 +34,10 @@ class PpmpApplicationController extends Controller
                     'activities'
                 ]);
             },
-        ])->whereYear('created_at', $year)->first();
+            'aopApplication' => function ($query) {
+                $query->where('sector_id', 33);
+            }
+        ])->first();
 
         if (!$ppmp_application) {
             return response()->json([

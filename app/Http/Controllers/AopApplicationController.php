@@ -422,7 +422,7 @@ class AopApplicationController extends Controller
                 'planning_officer_id' => $planningOfficerId,
                 'aop_application_uuid' => Str::uuid(),
                 'mission' => $validatedData['mission'],
-                'status' => "Pending",
+                'status' => $validatedData['status'],
                 'sector' => $area['sector'],
                 'sector_id' => $area['details']['id'],
                 'has_discussed' => $validatedData['has_discussed'],

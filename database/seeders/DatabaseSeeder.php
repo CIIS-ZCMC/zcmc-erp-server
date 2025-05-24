@@ -24,7 +24,6 @@ class DatabaseSeeder extends Seeder
             TypeOfFunctionSeeder::class,
             ProcurementModeSeeder::class,
             AopApplicationSeeder::class,
-            ApplicationTimelineSeeder::class,
             ItemUnitSeeder::class,
             ItemClassificationSeeder::class,
             ObjectiveSeeder::class,
@@ -32,6 +31,7 @@ class DatabaseSeeder extends Seeder
             ItemSpecificationSeeder::class,
             ItemSeeder::class,
             PpmpItemSeeder::class,
+            ApplicationTimelineSeeder::class,
         ]);
     }
 }

@@ -13,6 +13,7 @@ use App\Models\PpmpItem;
 use App\Models\PpmpSchedule;
 use App\Models\ProcurementModes;
 use App\Models\Resource;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -227,8 +228,9 @@ class PpmpItemController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function destroy($id)
+    public function destroy($id, Request $request)
     {
+        $validate_pin = User::where('pin', $request->pin)->first();
         $ppmpItem = PpmpItem::where('item_id', $id)->first();
 
         // Check if the PPMP Item exists

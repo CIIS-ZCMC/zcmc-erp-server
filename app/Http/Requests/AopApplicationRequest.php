@@ -24,7 +24,7 @@ class AopApplicationRequest extends FormRequest
         return [
             // 'user_id' => 'required|exists:users,id',
             'mission' => 'required|string',
-            // 'status' => 'required|string',
+            'status' => 'required|string',
             'has_discussed' => 'required|boolean',
             'remarks' => 'nullable|string',
 
@@ -43,11 +43,11 @@ class AopApplicationRequest extends FormRequest
             'application_objectives.*.activities.*.start_month' => 'required|date',
             'application_objectives.*.activities.*.end_month' => 'required|date|after_or_equal:application_objectives.*.activities.*.start_month',
 
-            'application_objectives.*.activities.*.target' => 'required|array',
-            'application_objectives.*.activities.*.target.first_quarter' => 'required|string',
-            'application_objectives.*.activities.*.target.second_quarter' => 'required|string',
-            'application_objectives.*.activities.*.target.third_quarter' => 'required|string',
-            'application_objectives.*.activities.*.target.fourth_quarter' => 'required|string',
+            'application_objectives.*.activities.*.target' => 'nullable|array',
+            'application_objectives.*.activities.*.target.first_quarter' => 'nullable|string',
+            'application_objectives.*.activities.*.target.second_quarter' => 'nullable|string',
+            'application_objectives.*.activities.*.target.third_quarter' => 'nullable|string',
+            'application_objectives.*.activities.*.target.fourth_quarter' => 'nullable|string',
 
             'application_objectives.*.activities.*.resources' => 'required|array',
             'application_objectives.*.activities.*.resources.*.item_id' => 'required|exists:items,id',
