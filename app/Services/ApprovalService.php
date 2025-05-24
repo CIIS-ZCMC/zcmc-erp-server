@@ -27,13 +27,29 @@ class ApprovalService
      * Create a timeline entry for the application with appropriate next area routing based on workflow
      *
      * @param object $aop_application
+     * @param object $current_user
+     * @param object $aop_user
      * @param string $status
      * @param string|null $remarks
-     * @return ApplicationTimeline|null
+     * @return ApplicationTimeline|array
+     * @throws \Exception
      */
     public function createApplicationTimeline(object $aop_application, $current_user, $aop_user, string $status, string $remarks = null)
     {
         try {
+            // Validate essential inputs
+            if (!$aop_application || !isset($aop_application->id)) {
+                throw new \InvalidArgumentException('Invalid AOP application object provided');
+            }
+
+            if (!$current_user || !isset($current_user->id) || !$current_user->assignedArea) {
+                throw new \InvalidArgumentException('Invalid current user or missing assigned area');
+            }
+
+            if (!$aop_user || !isset($aop_user->id) || !$aop_user->assignedArea) {
+                throw new \InvalidArgumentException('Invalid AOP user or missing assigned area');
+            }
+
             // Determine the next area ID based on the workflow
             $next_area_id = null;
             $division_chief_area = null;
@@ -79,17 +95,33 @@ class ApprovalService
                         // Get the assigned area for the division chief
                         if ($division_chief) {
                             $division_chief_area = AssignedArea::where('user_id', $division_chief->id)->first();
+                        } else {
+                            Log::warning('No division chief found for area', [
+                                'unit_id' => $unit ? $unit->id : null,
+                                'section_id' => $section ? $section->id : null,
+                                'department_id' => $department ? $department->id : null
+                            ]);
                         }
 
                         if ($division_chief_area) {
                             $next_area_id = $division_chief_area->id;
+                        } else {
+                            Log::warning('No assigned area found for division chief', [
+                                'division_chief_id' => $division_chief ? $division_chief->id : null
+                            ]);
                         }
                     } else {
                         // Get the division for this area
                         $division = $current_user_assigned_area->division()->first();
 
+                        if (!$division) {
+                            Log::warning('No division found for current user assigned area', [
+                                'assigned_area_id' => $current_user_assigned_area->id
+                            ]);
+                        }
+
                         // Check if current area is Division Chief (but not OMCC)
-                        if ($division && $current_user_assigned_area->user_id == $division->head_id && $division->id != 1) {
+                        if ($division && $aop_user->id == $division->head_id && $division->id != 1) {
                             $stage = 'omcc';
 
                             // Next is Medical Center Chief (Office of the Medical Center Chief, division id = 1)
@@ -98,10 +130,19 @@ class ApprovalService
                             if ($omcc_division && $omcc_division->head_id) {
                                 // Get the assigned area for the Medical Center Chief
                                 $omcc_area = AssignedArea::where('user_id', $omcc_division->head_id)->first();
+                            } else {
+                                Log::warning('OMCC division or head not found', [
+                                    'omcc_division_exists' => (bool)$omcc_division,
+                                    'has_head_id' => $omcc_division ? (bool)$omcc_division->head_id : false
+                                ]);
                             }
 
                             if ($omcc_area) {
                                 $next_area_id = $omcc_area->id;
+                            } else {
+                                Log::warning('No assigned area found for OMCC head', [
+                                    'omcc_head_id' => $omcc_division ? $omcc_division->head_id : null
+                                ]);
                             }
                         } elseif ($division && $division->id == 1 && $current_user_assigned_area->user_id == $division->head_id) {
                             // This is the final approval stage
@@ -143,10 +184,14 @@ class ApprovalService
                     }
                 } else {
                     Log::error('Planning section not found', ['section_id' => 53]);
+                    throw new \RuntimeException('Planning section (ID: 53) not found in the system');
                 }
 
                 if ($planning_unit_area) {
                     $next_area_id = $planning_unit_area->id;
+                } else {
+                    Log::error('No planning unit area found', ['section_id' => 53]);
+                    throw new \RuntimeException('No planning unit area found for routing');
                 }
             }
 
@@ -166,7 +211,11 @@ class ApprovalService
                     if ($planningFallback) {
                         $next_area_id = $planningFallback->id;
                         Log::info('Using fallback Planning area', ['area_id' => $next_area_id]);
+                    } else {
+                        throw new \RuntimeException('Unable to determine next approval area - no planning unit fallback found');
                     }
+                } else {
+                    throw new \RuntimeException('Unable to determine next approval area for stage: ' . $stage);
                 }
             }
 
@@ -183,13 +232,61 @@ class ApprovalService
 
             $timeline->save();
 
-            return $timeline;
-        } catch (\Exception $e) {
-            Log::error('Error creating application timeline: ' . $e->getMessage(), [
-                'exception' => $e,
-                'trace' => $e->getTraceAsString()
+            // Log successful creation
+            Log::info('Application timeline created successfully', [
+                'timeline_id' => $timeline->id,
+                'application_id' => $aop_application->id,
+                'stage' => $stage,
+                'status' => $status
             ]);
-            return null;
+
+            return $timeline;
+        } catch (\InvalidArgumentException $e) {
+            // Handle validation errors
+            Log::error('Validation error in createApplicationTimeline: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'application_id' => $aop_application->id ?? null
+            ]);
+
+            // Re-throw with more context for API response
+            throw new \InvalidArgumentException('Failed to create application timeline: ' . $e->getMessage(), 0, $e);
+        } catch (\RuntimeException $e) {
+            // Handle runtime errors
+            Log::error('Runtime error in createApplicationTimeline: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'application_id' => $aop_application->id ?? null
+            ]);
+
+            // Re-throw with more context for API response
+            throw new \RuntimeException('Failed to process application timeline: ' . $e->getMessage(), 0, $e);
+        } catch (\Exception $e) {
+            // Handle all other errors
+            $errorDetails = [
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'application_id' => $aop_application->id ?? null,
+                'current_user_id' => $current_user->id ?? null,
+                'aop_user_id' => $aop_user->id ?? null,
+                'status' => $status
+            ];
+
+            Log::error('Error creating application timeline: ', $errorDetails);
+
+            // Return detailed error information instead of null
+            return [
+                'success' => false,
+                'error' => 'An error occurred while creating the application timeline',
+                'details' => $errorDetails,
+            ];
         }
     }
 }
