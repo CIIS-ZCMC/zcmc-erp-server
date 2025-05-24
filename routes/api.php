@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Authentication\AuthController;
 use App\Http\Controllers\AopApplicationController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // Public routes - no authentication required
