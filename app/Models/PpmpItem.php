@@ -81,7 +81,6 @@ class PpmpItem extends Model
                     ->orWhereHas('item', function ($q) use ($term) {
                         $q->where('name', 'like', "%{$term}%")
                             ->orWhere('code', 'like', "%{$term}%")
-                            ->orWhere('variant', 'like', "%{$term}%")
                             ->orWhere('estimated_budget', 'like', "%{$term}%")
                             ->orWhereHas('itemUnit', function ($q) use ($term) {
                                 $q->where('name', 'like', "%{$term}%")
@@ -108,7 +107,6 @@ class PpmpItem extends Model
                     ->orWhereHas('itemRequest', function ($q) use ($term) {
                         $q->where('name', 'like', "%{$term}%")
                             ->orWhere('code', 'like', "%{$term}%")
-                            ->orWhere('variant', 'like', "%{$term}%")
                             ->orWhere('estimated_budget', 'like', "%{$term}%")
                             ->orWhere('status', 'like', "%{$term}%")
                             ->orWhere('reason', 'like', "%{$term}%");
@@ -118,8 +116,7 @@ class PpmpItem extends Model
                             ->orWhere('name', 'like', "%{$term}%")
                             ->orWhere('cost', 'like', "%{$term}%")
                             ->orWhere('start_month', 'like', "%{$term}%")
-                            ->orWhere('end_month', 'like', "%{$term}%")
-                            ->orWhere('expense_class', 'like', "%{$term}%");
+                            ->orWhere('end_month', 'like', "%{$term}%");
                     })
                     ->orWhereHas('comments', function ($q) use ($term) {
                         $q->where('comment', 'like', "%{$term}%");

@@ -14,6 +14,7 @@ use App\Models\PpmpSchedule;
 use App\Models\ProcurementModes;
 use App\Models\Resource;
 use App\Models\User;
+use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -53,7 +54,9 @@ class PpmpItemController extends Controller
                     'ppmpSchedule',
                 ]);
             },
-        ])->whereNull('deleted_at')->latest()->first();
+        ])
+            ->where('id', 1)
+            ->whereNull('deleted_at')->latest()->first();
 
         if (!$ppmp_application) {
             return response()->json([
@@ -100,11 +103,9 @@ class PpmpItemController extends Controller
             $ppmpItems = json_decode($request['PPMP_Items'], true);
 
             foreach ($ppmpItems as $item) {
-                $procurement_mode = ProcurementModes::where('name', $item['procurement_mode']['name'])->first();
-                if (!$procurement_mode) {
-                    return response()->json([
-                        'message' => 'Procurement mode not found.',
-                    ], 404);
+                $procurement_mode = null;
+                if ($item['procurement_mode'] !== "") {
+                    $procurement_mode = ProcurementModes::where('name', $item['procurement_mode']['name'])->first()->id;
                 }
 
                 $items = Item::where('code', $item['item_code'])->first();
@@ -118,7 +119,7 @@ class PpmpItemController extends Controller
                 $ppmp_data = [
                     'ppmp_application_id' => 1,
                     'item_id' => $items->id,
-                    'procurement_mode_id' => $procurement_mode->id,
+                    'procurement_mode_id' => $procurement_mode,
                     'item_request_id' => $item['item_request_id'] ?? null,
                     'remarks' => $item['remarks'] ?? null,
                     'estimated_budget' => $item['estimated_budget'] ?? 0,
@@ -146,9 +147,31 @@ class PpmpItemController extends Controller
 
                         if (!$activity_ppmp_item) {
                             $activities->ppmpItems()->attach($ppmpItem->id, [
-                                'remarks' => $item['remarks'] ?? null,
+                                'remarks' => $ppmpItem['remarks'] ?? null,
                                 'is_draft' => $request->is_draft ?? 0,
                             ]);
+
+                            $resource_request = [
+                                'activity_id' => $activities->id,
+                                'item_id' => $items->id,
+                                'purchase_type_id' => $item['purchase_type_id'] ?? 1,
+                                'quantity' => $item['aop_quantity'] ?? 0,
+                                'expense_class' => $item['expense_class'],
+                            ];
+
+                            $resource = Resource::where('activity_id', $activities->id)
+                                ->where('item_id', $items->id)
+                                ->first();
+
+                            if ($resource) {
+                                $resource->update($resource_request);
+                            } else {
+                                Resource::create($resource_request);
+                            }
+                        } else {
+                            $activity_ppmp_item->pivot->remarks = $item['remarks'];
+                            $activity_ppmp_item->pivot->is_draft = $request->is_draft ?? 0;
+                            $activity_ppmp_item->pivot->save();
 
                             $resource_request = [
                                 'activity_id' => $activities->id,
@@ -228,32 +251,44 @@ class PpmpItemController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function destroy($id, Request $request)
+    public function destroy(Request $request)
     {
-        $validate_pin = User::where('pin', $request->pin)->first();
-        $ppmpItem = PpmpItem::where('item_id', $id)->first();
+        // Get the current user and its area
+        return $curr_user = User::find($request->user()->id);
+        $curr_user_assigned_area = $curr_user->assignedArea;
+        $curr_user_authorization_pin = $curr_user->authorization_pin;
 
-        // Check if the PPMP Item exists
-        if (!$ppmpItem) {
+        if ($curr_user_authorization_pin !== $request->authorization_pin) {
             return response()->json([
-                'message' => "PPMP Item not found."
-            ], Response::HTTP_NOT_FOUND);
+                'message' => 'Invalid Authorization Pin'
+            ], Response::HTTP_BAD_REQUEST);
         }
 
-        // Soft delete pivot records (activity_ppmp_item)
-        foreach ($ppmpItem->activities as $activity) {
-            ActivityPpmpItem::where('activity_id', $activity->id)
-                ->where('ppmp_item_id', $ppmpItem->id)
-                ->first()?->delete();
-        }
+        $validate_pin = User::where('pin', $request->pin)->first();
 
-        // Soft delete the PPMP Item
-        $ppmpItem->delete();
+        // $ppmpItem = PpmpItem::where('item_id', $id)->first();
 
-        return response()->json([
-            'data' => $ppmpItem,
-            'message' => "PPMP Item deleted successfully."
-        ], Response::HTTP_OK);
+        // // Check if the PPMP Item exists
+        // if (!$ppmpItem) {
+        //     return response()->json([
+        //         'message' => "PPMP Item not found."
+        //     ], Response::HTTP_NOT_FOUND);
+        // }
+
+        // // Soft delete pivot records (activity_ppmp_item)
+        // foreach ($ppmpItem->activities as $activity) {
+        //     ActivityPpmpItem::where('activity_id', $activity->id)
+        //         ->where('ppmp_item_id', $ppmpItem->id)
+        //         ->first()?->delete();
+        // }
+
+        // // Soft delete the PPMP Item
+        // $ppmpItem->delete();
+
+        // return response()->json([
+        //     'data' => $ppmpItem,
+        //     'message' => "PPMP Item deleted successfully."
+        // ], Response::HTTP_OK);
     }
 
     public function import(Request $request)

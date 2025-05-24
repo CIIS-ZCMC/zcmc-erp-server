@@ -119,29 +119,32 @@ Route::
             Route::put('procurement-modes/{id}', "ProcurementModesController@update");
             Route::delete('procurement-modes', "ProcurementModesController@destroy");
 
-            // Divisions routes
-            Route::get('divisions/import', "DivisionController@import");
-            Route::get('divisions', "DivisionController@index");
-            Route::put('divisions', "DivisionController@update");
-            Route::delete('divisions', "DivisionController@destroy");
+            Route::namespace('Areas')->group(function () {
 
-            // Departments routes
-            Route::get('departments/import', "DepartmentController@import");
-            Route::get('departments', "DepartmentController@index");
-            Route::put('departments', "DepartmentController@update");
-            Route::delete('departments', "DepartmentController@destroy");
+                // Divisions routes
+                Route::get('divisions/import', "DivisionController@import");
+                Route::get('divisions', "DivisionController@index");
+                Route::put('divisions', "DivisionController@update");
+                Route::delete('divisions', "DivisionController@destroy");
 
-            // Sections routes
-            Route::get('sections/import', "SectionController@import");
-            Route::get('sections', "SectionController@index");
-            Route::put('sections', "SectionController@update");
-            Route::delete('sections', "SectionController@destroy");
+                // Departments routes
+                Route::get('departments/import', "DepartmentController@import");
+                Route::get('departments', "DepartmentController@index");
+                Route::put('departments', "DepartmentController@update");
+                Route::delete('departments', "DepartmentController@destroy");
 
-            // Units routes
-            Route::get('units/import', "UnitController@import");
-            Route::get('units', "UnitController@index");
-            Route::put('units', "UnitController@update");
-            Route::delete('units', "UnitController@destroy");
+                // Sections routes
+                Route::get('sections/import', "SectionController@import");
+                Route::get('sections', "SectionController@index");
+                Route::put('sections', "SectionController@update");
+                Route::delete('sections', "SectionController@destroy");
+
+                // Units routes
+                Route::get('units/import', "UnitController@import");
+                Route::get('units', "UnitController@index");
+                Route::put('units', "UnitController@update");
+                Route::delete('units', "UnitController@destroy");
+            });
 
             // Log Descriptions routes
             Route::post('log-descriptions/template', "LogDescriptionController@import");
@@ -161,7 +164,8 @@ Route::
 
             // Ppmp Item Module
             Route::get('ppmp-item-search', 'PpmpItemController@search');
-            Route::apiResource('ppmp-items', 'PpmpItemController');
+            Route::apiResource('ppmp-items', 'PpmpItemController')->only(['index', 'store', 'update']);
+            Route::delete('ppmp-items', 'PpmpItemController@destroy');
             Route::apiResource('ppmp-item-requests', 'PpmpItemRequestControlller');
 
             // Activity Module
