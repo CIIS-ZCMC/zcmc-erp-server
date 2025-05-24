@@ -336,7 +336,31 @@ class AopApplicationController extends Controller
                     }
                 }
             }
+
+            $user_id = 2;
+            $user = User::where('id', $user_id)->first();
+            $user_assigned_area_id = $user->assignedArea->id;
+
+            // Use ApprovalService to process the request
+            $approval_service = new ApprovalService();
+
+            // Create a timeline entry using the service
+            $aop_application_timeline = $approval_service->createApplicationTimeline(
+                $aopApplication->id,
+                $user_id,
+                $user_assigned_area_id,
+                $request->status,
+                $request->remarks
+            );
+
+            if (!$aop_application_timeline) {
+                return response()->json([
+                    'message' => 'AOP application timeline not created',
+                ], Response::HTTP_BAD_REQUEST);
+            }
         });
+
+
 
         return response()->json(['message' => 'AOP Application updated successfully.']);
     }
@@ -553,14 +577,35 @@ class AopApplicationController extends Controller
                 'action_by' => $user_id,
             ]);
 
-            $aopApplicationTimeline = $aopApplication->applicationTimelines()->create([
-                'aop_application_id' => $aopApplication->id,
-                'user_id' => $user_id,
-                'current_area_id' => 1,
-                'next_area_id' => 2,
-                'status' => $validatedData['status'],
-                'date_created' => now(),
-            ]);
+            $user = User::where('id', $user_id)->first();
+            $user_assigned_area_id = $user->assignedArea->id;
+
+            // Use ApprovalService to process the request
+            $approval_service = new ApprovalService();
+
+            // Create a timeline entry using the service
+            $aop_application_timeline = $approval_service->createApplicationTimeline(
+                $aopApplication->id,
+                $user_id,
+                $user_assigned_area_id,
+                $request->status,
+                $request->remarks
+            );
+
+            if (!$aop_application_timeline) {
+                return response()->json([
+                    'message' => 'AOP application timeline not created',
+                ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // $aopApplicationTimeline = $aopApplication->applicationTimelines()->create([
+            //     'aop_application_id' => $aopApplication->id,
+            //     'user_id' => $user_id,
+            //     'current_area_id' => 1,
+            //     'next_area_id' => 2,
+            //     'status' => $validatedData['status'],
+            //     'date_created' => now(),
+            // ]);
             DB::commit();
 
             return response()->json(['message' => 'AOP Application created successfully'], Response::HTTP_OK);
