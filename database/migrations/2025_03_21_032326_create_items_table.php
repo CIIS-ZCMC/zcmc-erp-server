@@ -18,10 +18,6 @@ return new class extends Migration {
             $table->foreign('item_category_id')->references('id')->on('item_categories');
             $table->unsignedBigInteger('item_unit_id');
             $table->foreign('item_unit_id')->references('id')->on('item_units');
-            $table->unsignedBigInteger('variant_id');
-            $table->foreign('variant_id')->references('id')->on('variants');
-            $table->unsignedBigInteger('snomed_id');
-            $table->foreign('snomed_id')->references('id')->on('snomeds');
             $table->string('name');
             $table->string('code')->nullable();
             $table->text('image')->nullable();

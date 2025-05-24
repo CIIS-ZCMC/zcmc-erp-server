@@ -9,7 +9,7 @@ class ItemReferenceTerminology extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'item_reference_terminologies';
+    protected $table = 'reference_terminologies';
 
     public $fillable = [
         'code',
