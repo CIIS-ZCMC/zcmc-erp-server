@@ -10,44 +10,20 @@ use Illuminate\Mail\Mailable;
 use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Mail\Mailables\Address;
 
 class ApprovalNotification extends Mailable implements ShouldQueue
 {
     use Queueable, SerializesModels;
 
-    /**
-     * The application instance.
-     */
-    public AopApplication $application;
-    
-    /**
-     * The notification title.
-     */
-    public string $title;
-    
-    /**
-     * The notification message.
-     */
-    public string $message;
-    
-    /**
-     * The user who performed the action.
-     */
-    public ?User $actionUser;
+    public array $data;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(
-        AopApplication $application, 
-        string $title, 
-        string $message, 
-        ?User $actionUser = null
-    ) {
-        $this->application = $application;
-        $this->title = $title;
-        $this->message = $message;
-        $this->actionUser = $actionUser;
+    public function __construct($data)
+    {
+        $this->data = $data;
     }
 
     /**
@@ -56,7 +32,8 @@ class ApprovalNotification extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: config('app.name') . ' - ' . $this->title,
+            from: new Address('zcmcprtracking@gmail.com', 'ZCMC PR Tracking System'),
+            subject: $this->data['subject']
         );
     }
 
@@ -66,17 +43,11 @@ class ApprovalNotification extends Mailable implements ShouldQueue
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.approval-notification',
-            with: [
-                'application' => $this->application,
-                'title' => $this->title,
-                'message' => $this->message,
-                'actionUser' => $this->actionUser,
-                'url' => url('/aop-application/' . $this->application->id),
-                'appName' => config('app.name'),
-            ],
+            view: 'emails.approval-notification',
+            with: ['data' => $this->data]
         );
     }
+
 
     /**
      * Get the attachments for the message.

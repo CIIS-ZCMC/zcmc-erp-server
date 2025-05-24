@@ -54,12 +54,12 @@ class ImportAreasFromUMIS extends Command
      *
      * @return int
      */
-    public function handle()
+    public function handle(): int
     {
         $this->info('Starting import of areas from UMIS...');
-        
+
         $response = $this->umisService->getOrganizationStructure();
-        
+
         if (!$response) {
             $this->error('Failed to fetch areas from UMIS.');
             return Command::FAILURE;
@@ -71,12 +71,12 @@ class ImportAreasFromUMIS extends Command
         $departments = $areasData['departments'] ?? null;
         $sections = $areasData['sections'] ?? null;
         $units = $areasData['units'] ?? null;
-        
+
         if (!$areasData || !is_array($areasData)) {
             $this->error('Invalid data format received from UMIS.');
             return Command::FAILURE;
         }
-        
+
         if (!$divisions || !is_array($divisions)) {
             $this->error('Invalid divisions data format received from UMIS.');
             return Command::FAILURE;
@@ -98,13 +98,13 @@ class ImportAreasFromUMIS extends Command
         }
 
         $this->info('Received ' . count($areasData) . ' areas from UMIS.');
-        
+
         try {
             DB::beginTransaction();
-            
+
             // Clear existing assigned areas (if needed based on sync strategy)
             // AssignedArea::truncate(); // Uncomment if complete resync is needed
-            
+
             $successCount = 0;
             $errorCount = 0;
 
@@ -118,6 +118,7 @@ class ImportAreasFromUMIS extends Command
                         ['id' => $division['id']],
                         [
                             'id' => $division['id'],
+                            'area_id' => $division['area_id'],
                             'name' => $division['name'],
                             'code' => $division['code'],
                             'head_id' => $user!== null? $user->id: null,
@@ -142,6 +143,7 @@ class ImportAreasFromUMIS extends Command
                         ['id' => $department['id']],
                         [
                             'id' => $department['id'],
+                            'area_id' => $department['area_id'],
                             'name' => $department['name'],
                             'code' => $department['code'],
                             'division_id' => $division !== null? $division->id: null,
@@ -167,6 +169,7 @@ class ImportAreasFromUMIS extends Command
                         ['id' => $section['id']],
                         [
                             'id' => $section['id'],
+                            'area_id' => $section['area_id'],
                             'name' => $section['name'],
                             'code' => $section['code'],
                             'division_id' => $division !== null? $division->id: null,
@@ -192,6 +195,7 @@ class ImportAreasFromUMIS extends Command
                         ['id' => $unit['id']],
                         [
                             'id' => $unit['id'],
+                            'area_id' => $unit['area_id'],
                             'name' => $unit['name'],
                             'code' => $unit['code'],
                             'section_id' => $section !== null? $section->id : null,
@@ -204,16 +208,16 @@ class ImportAreasFromUMIS extends Command
                     $this->error("Error processing unit {$unit['id']}: " . $e->getMessage());
                     $errorCount++;
                 }
-            } 
-            
+            }
+
             //         // Find user by UMIS ID
             //         $user = User::where('umis_id', $umisUserId)->first();
-                    
+
             //         if (!$user) {
             //             $this->warn("User with UMIS ID {$umisUserId} not found. Skipping area assignment.");
             //             continue;
             //         }
-                    
+
             //         // Update or create the assignment
             //         $assignedArea = AssignedArea::updateOrCreate(
             //             [
@@ -229,9 +233,9 @@ class ImportAreasFromUMIS extends Command
             //             $this->warn("Failed to assign area for user: {$areaData['employee_profile_id']}");
             //             continue;
             //         }
-                    
+
             //         $this->info("Assigned area for user: {$areaData['employee_profile_id']}");
-                    
+
             //         $successCount++;
             //     } catch (\Exception $e) {
             //         $this->error("Error processing area: " . $e->getMessage());
@@ -242,12 +246,12 @@ class ImportAreasFromUMIS extends Command
             //         $errorCount++;
             //     }
             // }
-            
+
             DB::commit();
-            
+
             $this->info("Import completed. Processed areas: $successCount success, $errorCount errors.");
             return Command::SUCCESS;
-            
+
         } catch (\Exception $e) {
             DB::rollBack();
             $this->error("Import failed: " . $e->getMessage());

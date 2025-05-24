@@ -21,6 +21,7 @@ class Division extends Model
         'id',
         'head_id',
         'oic_id',
+        'area_id',
         'name',
         'code',
     ];
@@ -28,13 +29,13 @@ class Division extends Model
     /**
      * Get the user that heads this division.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function head(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
-    
+
     public function departments(): HasMany
     {
         return $this->hasMany(Department::class);
@@ -52,7 +53,7 @@ class Division extends Model
     /**
      * Get the transaction logs for this division.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     * @return MorphMany
      */
     public function logs(): MorphMany
     {

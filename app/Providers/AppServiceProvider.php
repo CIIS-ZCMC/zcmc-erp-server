@@ -25,6 +25,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(ItemService::class, function ($app) {
             return new ItemService();
         });
+
+
     }
 
     /**

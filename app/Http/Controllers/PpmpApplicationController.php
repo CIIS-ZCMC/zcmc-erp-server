@@ -48,12 +48,20 @@ class PpmpApplicationController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
+        if ($ppmp_application === null) {
+            return response()->json([
+                'data' => null,
+                'message' => 'PPMP Application retrieved successfully.'
+            ], Response::HTTP_OK);
+        }
+
         $data = [
-            'ppmp_application' => $ppmp_application,
-            'item_count' => $itemCount,
-            'activity_count' => $activityCount,
-            'total_quantity' => $totalQuantity,
-            'total_budget' => $totalBudget,
+            'ppmp_application' => $ppmp_application ?? null,
+            'item_count' => $itemCount ?? null,
+            'activity_count' => $activityCount ?? null,
+            'total_quantity' => $totalQuantity ?? null,
+            'total_budget' => $totalBudget ?? null,
+            'year' => $ppmp_application->created_at->format('Y')
         ];
 
         return response()->json([

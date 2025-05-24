@@ -13,9 +13,9 @@ use App\Models\Division;
 
 /**
  * Department Model
- * 
+ *
  * Represents an organizational department within the system.
- * 
+ *
  * @property int $id
  * @property int $head_id Foreign key to users table
  * @property string $name Name of the department
@@ -33,6 +33,7 @@ class Department extends Model
         'id',
         'head_id',
         'oid_id',
+        'area_id',
         'division_id',
         'name',
         'code',
@@ -41,7 +42,7 @@ class Department extends Model
     /**
      * Get the user who heads this department.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function head(): BelongsTo
     {
@@ -51,7 +52,7 @@ class Department extends Model
     /**
      * Get the division where the department belongs.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function division(): BelongsTo
     {
@@ -71,7 +72,7 @@ class Department extends Model
     /**
      * Get the user that OIC this department.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return BelongsTo
      */
     public function oic(): BelongsTo
     {
@@ -80,18 +81,18 @@ class Department extends Model
 
     /**
      * Get the division chief for this department
-     * 
+     *
      * @return User|null
      */
-    public function getDivisionChief()
+    public function getDivisionChief(): ?User
     {
         // Get the division this department belongs to - use the method explicitly
         $division = $this->division()->first();
-        
+
         if (!$division) {
             return null;
         }
-        
+
         // The division chief is the head of the division - use method explicitly
         return $division->head()->first();
     }
@@ -99,7 +100,7 @@ class Department extends Model
     /**
      * Get all transaction logs associated with this department.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\MorphMany
+     * @return MorphMany
      */
     public function logs(): MorphMany
     {

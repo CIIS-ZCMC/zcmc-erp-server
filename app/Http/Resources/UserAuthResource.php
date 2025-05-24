@@ -22,6 +22,7 @@ class UserAuthResource extends JsonResource
             'name' => $this->name,
             'email' => $this->email,
             'assignedArea' => new AssignedAreaResource($this->assignedArea),
+            'designation' => new DesignationResource($this->assignedArea->designation),
             'meta' => [
                 'permissions' => $abilities,
                 'created_at' => $this->created_at,
