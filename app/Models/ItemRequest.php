@@ -15,7 +15,7 @@ class ItemRequest extends Model
         "name",
         "code",
         "image",
-        "variant",
+        "variant_id",
         "estimated_budget",
         "item_unit_id",
         "item_category_id",
@@ -43,6 +43,11 @@ class ItemRequest extends Model
     public function itemClassification()
     {
         return $this->belongsTo(ItemClassification::class);
+    }
+
+    public function variant()
+    {
+        return $this->belongsTo(Variant::class);
     }
 
     public function itemSpecifications()

@@ -390,7 +390,7 @@ class ItemRequestController extends Controller
         $cleanData = [
             "name" => strip_tags($request->input('name')),
             "code" => strip_tags($request->input('code')),
-            "variant" => strip_tags($request->input('variant')),
+            "variant_id" => strip_tags($request->input('variant_id')),
             "estimated_budget" => strip_tags($request->input('estimated_budget')),
             "item_unit_id" => !$is_valid_unit_id? null:  strip_tags($request->input('item_unit_id')),
             "item_category_id" => !$is_valid_category_id? null:  strip_tags($request->input('item_category_id')),

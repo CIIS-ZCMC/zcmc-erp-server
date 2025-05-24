@@ -1,4 +1,4 @@
-<?php
+                   <?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->foreign('head_id')->references('id')->on('users');
             $table->unsignedBigInteger('oic_id')->nullable();
             $table->foreign('oic_id')->references('id')->on('users');
+            $table->string('area_id', 50)->nullable();
             $table->string('name');
             $table->string('code')->nullable();
             $table->timestamps();

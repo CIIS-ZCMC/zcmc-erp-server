@@ -12,6 +12,7 @@ class ApplicationTimeline extends Model
         'aop_application_id',
         'ppmp_application_id',
         'user_id',
+        'approver_user_id',
         'current_area_id',
         'next_area_id',
         'status',

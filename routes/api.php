@@ -47,22 +47,6 @@ Route::
                 Route::put('item-units', "ItemUnitController@update");
                 Route::delete('item-units', "ItemUnitController@destroy");
 
-                // Variant routes
-                Route::get('variants', "VariantController@index");
-                Route::get('variants/trashbin', "VariantController@trash");
-                Route::post('variants', "VariantController@store");
-                Route::put('variants/{variant}', "VariantController@update");
-                Route::put('variants/{id}/restore', "VariantController@restore");
-                Route::delete('variants/{variant}', "VariantController@destroy");
-
-                // Snomed routes
-                Route::get('snomeds', "SnomedController@index");
-                Route::get('snomeds/trashbin', "SnomedController@trashbin");
-                Route::post('snomeds', "SnomedController@store");
-                Route::put('snomeds/{snomed}', "SnomedController@update");
-                Route::put('snomeds/{id}/restore', "SnomedController@restore");
-                Route::delete('snomeds/{snomed}', "SnomedController@destroy");
-
                 // Item Categories routes
                 Route::post('item-categories/import', "ItemCategoryController@import");
                 Route::get('item-categories/template', "ItemCategoryController@downloadTemplate");

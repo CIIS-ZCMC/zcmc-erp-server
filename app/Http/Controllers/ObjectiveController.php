@@ -104,7 +104,7 @@ class ObjectiveController extends Controller
             'page' => 'sometimes|integer|min:1|max:100'
         ]);
 
-        $perPage = $validated['per_page'] ?? 15;
+        $perPage = $validated['per_page'] ?? 10;
         $page = $validated['page'] ?? 1;
 
         $objective_success_indicator = Objective::with(['typeOfFunction', 'successIndicators'])
@@ -243,18 +243,15 @@ class ObjectiveController extends Controller
 
     protected function singleRecordUpdate(Request $request, $start): JsonResource|ObjectiveResource|JsonResponse
     {
-        $objectives = $request->query('id') ?? null;
-
-        // Convert single ID to array for consistent processing
-        $objectives = is_array($objectives) ? $objectives : [$objectives];
+        $id = $request->id;
 
         // Handle bulk update
-        if ($request->has('objectives')) {
-            $this->bulkUpdate($request, $start);
-        }
+        // if ($request->has('objectives')) {
+        //     $this->bulkUpdate($request, $start);
+        // }
 
         // Handle single update
-        $objective = Objective::find($objectives[0]);
+        $objective = Objective::find($id);
 
         if (!$objective) {
             return response()->json([
@@ -262,8 +259,37 @@ class ObjectiveController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $cleanData = $this->cleanObjectivesData($request->all());
-        $objective->update($cleanData);
+        // $cleanData = $this->cleanObjectivesData($request->all());
+        // $objective->update($cleanData);
+
+        $function = json_decode($request->input('function'), true);
+        $indicators = json_decode($request->input('indicators'), true);
+
+        $objective->update([
+            'type_of_function_id' => $function['id'],
+            'description' => strip_tags($request->input('objective')),
+        ]);
+
+        // Add new indicators
+        foreach ($indicators as $indicator) {
+            if ($indicator['code'] !== null) {
+                $success_indicator = SuccessIndicator::where('objective_id', $objective->id)
+                    ->where('code', $indicator['code'])
+                    ->first();
+
+                if ($success_indicator) {
+                    $success_indicator->update([
+                        'description' => $indicator['description'],
+                    ]);
+                }
+            } else {
+                SuccessIndicator::create([
+                    'objective_id' => $objective->id,
+                    'code' => 'SI-' . str_pad(mt_rand(1, 99999), 5, '0', STR_PAD_LEFT),
+                    'description' => $indicator['description']
+                ]);
+            }
+        }
 
         return (new ObjectiveResource($objective))
             ->additional([
@@ -345,13 +371,13 @@ class ObjectiveController extends Controller
             ])->response();
     }
 
-    public function update(Request $request): AnonymousResourceCollection|JsonResource|JsonResponse
+    public function update(Request $request): JsonResource|JsonResponse
     {
         $start = microtime(true);
-        $objectives = $request->query('id') ?? null;
+        $id = $request->input('id');
 
         // Validate ID parameter exists
-        if (!$objectives) {
+        if (!$id) {
             $response = ["message" => "ID parameter is required."];
 
             if ($this->is_development) {
@@ -362,9 +388,9 @@ class ObjectiveController extends Controller
         }
 
         // Bulk Insert
-        if ($request->objectives !== null || $request->objectives > 1) {
-            return $this->bulkUpdate($request, $start);
-        }
+        // if ($request->objectives !== null || $request->objectives > 1) {
+        //     return $this->bulkUpdate($request, $start);
+        // }
 
         return $this->singleRecordUpdate($request, $start);
     }

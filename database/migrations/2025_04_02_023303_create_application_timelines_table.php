@@ -17,8 +17,10 @@ return new class extends Migration
             $table->foreign('aop_application_id')->references('id')->on('aop_applications');
             $table->unsignedBigInteger('ppmp_application_id')->nullable();
             $table->foreign('ppmp_application_id')->references('id')->on('ppmp_applications');
-            $table->unsignedBigInteger('user_id')->comment('Approve by user');
+            $table->unsignedBigInteger('user_id')->comment('User who submitted the application (AOP or PPMP)')->nullable();
             $table->foreign('user_id')->references('id')->on('users');
+            $table->unsignedBigInteger('approver_user_id')->comment('User who approved or processed the application')->nullable();
+            $table->foreign('approver_user_id')->references('id')->on('users');
             $table->unsignedBigInteger('current_area_id')->nullable();
             $table->foreign('current_area_id')->references('id')->on('assigned_areas');
             $table->unsignedBigInteger('next_area_id')->nullable();

@@ -21,6 +21,7 @@ return new class extends Migration
             $table->foreign('division_id')->references('id')->on('divisions');
             $table->unsignedBigInteger('section_id')->nullable();
             $table->foreign('section_id')->references('id')->on('sections');
+            $table->string('area_id', 50)->nullable();
             $table->string('name');
             $table->string('code');
             $table->timestamps();
