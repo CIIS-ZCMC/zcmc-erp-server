@@ -65,7 +65,8 @@ class AuthController extends Controller
 
         return $resource
             ->additional([
-                'message' => "Successfully signin."
+                'message' => "Successfully signin.",
+                'meta' => ['redirect_to' => '/dashboard']
             ])
             ->response()
             ->setStatusCode(Response::HTTP_OK)
@@ -82,9 +83,13 @@ class AuthController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        return response()->json([
-            'data' => $user,
-            'message' => "Success"
-        ], Response::HTTP_OK);
+
+        $resource = new UserAuthResource($user);
+
+        return $resource
+            ->additional([
+                'message' => "Successfully signin.",
+                'meta' => ['redirect_to' => '/dashboard']
+            ]);
     }
 }
