@@ -72,7 +72,7 @@ class AopApplicationController extends Controller
     public function index()
     {
 
-        return $aopApplications = AopApplication::query()
+        $aopApplications = AopApplication::query()
             ->with([
                 'applicationObjectives.objective',
                 'applicationObjectives.otherObjective',
