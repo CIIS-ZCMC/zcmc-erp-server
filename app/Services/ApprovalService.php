@@ -34,7 +34,7 @@ class ApprovalService
      * @return ApplicationTimeline|array
      * @throws \Exception
      */
-    public function createApplicationTimeline(object $aop_application, $current_user, $aop_user, string $status, string $remarks = null)
+    public function createApplicationTimeline(object $aop_application, object $current_user, object $aop_user, string $status, string $remarks = null)
     {
         try {
             // Validate essential inputs
@@ -83,6 +83,7 @@ class ApprovalService
                         $unit = $aop_user_assigned_area->unit()->first();
                         $section = $aop_user_assigned_area->section()->first();
                         $department = $aop_user_assigned_area->department()->first();
+                        $division = $aop_user_assigned_area->division()->first();
 
                         if ($unit) {
                             $division_chief = $unit->getDivisionChief();
@@ -91,32 +92,50 @@ class ApprovalService
                         } elseif ($department) {
                             $division_chief = $department->getDivisionChief();
                         }
+                        Log::info('Division chief for the current area', [
+                            'division_chief_id' => $division_chief
+
+                        ]);
 
                         // Get the assigned area for the division chief
                         if ($division_chief) {
                             $division_chief_area = AssignedArea::where('user_id', $division_chief->id)->first();
+                            if ($division_chief_area) {
+                                $next_area_id = $division_chief_area->id;
+
+                            } else {
+                                Log::warning('No assigned area found for division chief', [
+                                    'division_chief_id' => $division_chief->id
+                                ]);
+                                // Fallback: Use the AOP user's assigned area as the next area
+                                $next_area_id = $aop_user_assigned_area->id;
+                                Log::info('Fallback: Routing to AOP user area', [
+                                    'aop_user_id' => $aop_user->id,
+                                    'area_id' => $aop_user_assigned_area->id
+                                ]);
+                            }
                         } else {
                             Log::warning('No division chief found for area', [
                                 'unit_id' => $unit ? $unit->id : null,
                                 'section_id' => $section ? $section->id : null,
-                                'department_id' => $department ? $department->id : null
+                                'department_id' => $department ? $department->id : null,
+                                'division_id' => $division ? $division->id : null
                             ]);
-                        }
 
-                        if ($division_chief_area) {
-                            $next_area_id = $division_chief_area->id;
-                        } else {
-                            Log::warning('No assigned area found for division chief', [
-                                'division_chief_id' => $division_chief ? $division_chief->id : null
+                            // If no division chief is found, use the AOP user's assigned area as the next area
+                            $next_area_id = $aop_user_assigned_area->id;
+                            Log::info('Fallback: No division chief found, routing to AOP user area', [
+                                'aop_user_id' => $aop_user->id,
+                                'area_id' => $aop_user_assigned_area->id
                             ]);
                         }
                     } else {
                         // Get the division for this area
-                        $division = $current_user_assigned_area->division()->first();
+                        $division = $aop_user_assigned_area->division()->first();
 
                         if (!$division) {
                             Log::warning('No division found for current user assigned area', [
-                                'assigned_area_id' => $current_user_assigned_area->id
+                                'assigned_area_id' => $aop_user_assigned_area->id
                             ]);
                         }
 
@@ -144,7 +163,7 @@ class ApprovalService
                                     'omcc_head_id' => $omcc_division ? $omcc_division->head_id : null
                                 ]);
                             }
-                        } elseif ($division && $division->id == 1 && $current_user_assigned_area->user_id == $division->head_id) {
+                        } elseif ($division && $division->id == 1 && $aop_user_assigned_area->user_id == $division->head_id) {
                             // This is the final approval stage
                             $stage = 'final';
                             $next_area_id = null; // No next area as this is the final stage
@@ -211,14 +230,11 @@ class ApprovalService
                     if ($planningFallback) {
                         $next_area_id = $planningFallback->id;
                         Log::info('Using fallback Planning area', ['area_id' => $next_area_id]);
-                    } else {
-                        throw new \RuntimeException('Unable to determine next approval area - no planning unit fallback found');
                     }
-                } else {
-                    throw new \RuntimeException('Unable to determine next approval area for stage: ' . $stage);
                 }
             }
 
+            // Create the timeline entry
             $timeline = new ApplicationTimeline([
                 'aop_application_id' => $aop_application->id,
                 'user_id' => $aop_user->id,
