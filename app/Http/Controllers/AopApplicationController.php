@@ -643,6 +643,13 @@ class AopApplicationController extends Controller
         $user = User::find($request->user()->id);
         $user_assigned_area = $user->assignedArea;
         $user_assigned_area_id= $user->assignedArea->id;
+        $user_authorization_pin = $user->authorization_pin;
+
+        if ($user_authorization_pin !== $request->authorization_pin) {
+            return response()->json([
+                'message' => 'Invalid Authorization Pin'
+            ], Response::HTTP_BAD_REQUEST);
+        }
 
         // Use ApprovalService to process the request
         $approval_service = new ApprovalService();

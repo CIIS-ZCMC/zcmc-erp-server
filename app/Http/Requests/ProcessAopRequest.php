@@ -26,7 +26,7 @@ class ProcessAopRequest extends FormRequest
             'aop_application_id' => 'required|integer',
             'status' => 'required|string',
             'remarks' => 'nullable|string|max:500',
-            'auth_pin' => 'required|integer|digits:6',
+            'authorization_pin' => 'required|integer|digits:6',
         ];
     }
 }
