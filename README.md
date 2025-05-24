@@ -25,9 +25,15 @@ Built for Zamboanga City Medical Center, it ensures efficient budget allocation,
 - Compare quotations  
 
 ✅ **Approval Workflows**  
-- Department heads → Budget officers → Procurement
-- Real-time notifications for status changes
-- Application timeline tracking
+- Structured three-tier approval process:
+  - Department/Section/Unit Head creates and submits AOP
+  - Planning Division provides initial review and validation
+  - Division Chief conducts secondary review
+  - Medical Center Chief gives final approval
+- Real-time notifications for both application owners and approvers
+- Interactive decision points with feedback loops for rejected applications
+- Comprehensive application timeline tracking
+- Automated status updates with proper error handling
 
 ✅ **Reporting Dashboard**  
 - Annual spending analytics  
