@@ -689,7 +689,7 @@ class AopApplicationController extends Controller
         }
 
         // Get the current user information
-        $user_info = $user_assigned_area->user;
+        $user_info = $curr_user_assigned_area->user;
 
         // Get the next office information based on the updated application's current area
         // This is set in the workflow service during timeline creation
@@ -707,7 +707,7 @@ class AopApplicationController extends Controller
         }
 
         // Build detailed success response
-        $current_area_info = new AssignedAreaResource($user_assigned_area);
+        $current_area_info = new AssignedAreaResource($curr_user_assigned_area);
 
         $status_text = ucfirst($request->status);
 
