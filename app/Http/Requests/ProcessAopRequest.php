@@ -4,6 +4,9 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Contracts\Validation\Validator;
+use Symfony\Component\HttpFoundation\Response as ResponseAlias;
 
 class ProcessAopRequest extends FormRequest
 {
@@ -17,7 +20,7 @@ class ProcessAopRequest extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
-     *F
+     *
      * @return array<string, ValidationRule|array|string>
      */
     public function rules(): array
@@ -26,7 +29,24 @@ class ProcessAopRequest extends FormRequest
             'aop_application_id' => 'required|integer',
             'status' => 'required|string',
             'remarks' => 'nullable|string|max:500',
-            'auth_pin' => 'required|integer|digits:6',
+            'authorization_pin' => 'required|string|size:6',
         ];
+    }
+
+    /**
+     * Handle a failed validation attempt.
+     *
+     * @param Validator $validator
+     * @return void
+     *
+     * @throws HttpResponseException
+     */
+    protected function failedValidation(Validator $validator): void
+    {
+        throw new HttpResponseException(response()->json([
+            'success' => false,
+            'message' => 'Validation errors',
+            'errors' => $validator->errors()
+        ], ResponseAlias::HTTP_UNPROCESSABLE_ENTITY));
     }
 }

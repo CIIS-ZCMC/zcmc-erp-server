@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Log;
 use Illuminate\Console\Command;
 use App\Services\UMISService;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +46,7 @@ class ImportUsersFromUMIS extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $this->info('Starting import of users from UMIS...');
 
@@ -58,7 +59,7 @@ class ImportUsersFromUMIS extends Command
 
         // extract data from the response
         $usersData = isset($response['data']) ? $response['data'] : null;
-        
+
         if (!$usersData || !is_array($usersData)) {
             $this->error('Invalid data format received from UMIS.');
             return Command::FAILURE;
@@ -84,9 +85,10 @@ class ImportUsersFromUMIS extends Command
                         ['umis_employee_profile_id' => $user['employee_profile_id']],
                         [
                             'id' => $user['employee_profile_id'],
+                            'authorization_pin' => $user['authorization_pin'],
                             'name' => trim($user['name']),
                             'email' => $user['email'],
-                            'profile_url' => isset($user['profile_url']) ? $user['profile_url'] : null,
+                            'profile_url' => $user['profile_url'] ?? null,
                             'is_active' => true,
                         ]
                     );

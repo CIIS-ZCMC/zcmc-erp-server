@@ -16,7 +16,6 @@ use App\Models\AssignedArea;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Division;
-use App\Models\Log;
 use App\Models\PpmpItem;
 use App\Models\PurchaseType;
 use App\Models\Section;
@@ -24,6 +23,7 @@ use App\Models\SuccessIndicator;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\ApplicationTimeline;
+use App\Services\ApprovalService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -35,7 +35,7 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Support\Facades\File;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-use App\Services\ApprovalService;
+
 use App\Services\AopVisibilityService;
 
 class AopApplicationController extends Controller
@@ -79,7 +79,9 @@ class AopApplicationController extends Controller
                 'applicationObjectives.otherSuccessIndicator',
                 'applicationObjectives.activities.target',
                 'applicationObjectives.activities.resources',
+                'applicationObjectives.activities.resources.item',
                 'applicationObjectives.activities.responsiblePeople.user',
+                'applicationObjectives.activities.comments',
             ])
             ->get();
 
@@ -431,8 +433,6 @@ class AopApplicationController extends Controller
 
 
             foreach ($validatedData['application_objectives'] as $objectiveData) {
-
-
                 // $functionObjective = FunctionObjective::where('objective_id', $objectiveData['objective_id'])
                 //     ->where('function_id', $objectiveData['function'])
                 //     ->first();
@@ -733,6 +733,7 @@ class AopApplicationController extends Controller
      *
      * @param ProcessAopRequest $request The incoming request
      * @return \Illuminate\Http\JsonResponse JSON response
+     * @throws \Exception
      */
     public function processAopRequest(ProcessAopRequest $request)
     {
@@ -751,18 +752,30 @@ class AopApplicationController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        $user = User::find($request->user()->id);
-        $user_assigned_area = $user->assignedArea;
-        $user_assigned_area_id = $user->assignedArea->id;
+        // Get the current user and its area
+        $curr_user = User::find($request->user()->id);
+        $curr_user_assigned_area = $curr_user->assignedArea;
+        $curr_user_authorization_pin = $curr_user->authorization_pin;
+
+        // Get the aop user and its area
+        $aop_user = User::find($aop_application->user_id);
+        $aop_user_assigned_area = $aop_user->assignedArea;
+
+
+        if ($curr_user_authorization_pin !== $request->authorization_pin) {
+            return response()->json([
+                'message' => 'Invalid Authorization Pin'
+            ], Response::HTTP_BAD_REQUEST);
+        }
 
         // Use ApprovalService to process the request
-        $approval_service = new ApprovalService();
+        $approval_service = app(ApprovalService::class);
 
         // Create a timeline entry using the service
         $aop_application_timeline = $approval_service->createApplicationTimeline(
-            $aop_application->id,
-            $request->user()->id,
-            $user_assigned_area_id,
+            $aop_application,
+            $curr_user,
+            $aop_user,
             $request->status,
             $request->remarks
         );
@@ -786,7 +799,7 @@ class AopApplicationController extends Controller
         }
 
         // Get the current user information
-        $user_info = $user_assigned_area->user;
+        $user_info = $curr_user_assigned_area->user;
 
         // Get the next office information based on the updated application's current area
         // This is set in the workflow service during timeline creation
@@ -794,17 +807,10 @@ class AopApplicationController extends Controller
 
         $application_timeline = ApplicationTimeline::where('aop_application_id', $aop_application->id)->latest()->first();
 
-
-        if ($application_timeline) {
-            $next_area = AssignedArea::with(['department', 'section', 'unit', 'division'])
-                ->find($application_timeline->next_area_id);
-            if ($next_area) {
-                $next_area_info = new AssignedAreaResource($next_area);
-            }
-        }
+        // Notifications are now handled in ApprovalService
 
         // Build detailed success response
-        $current_area_info = new AssignedAreaResource($user_assigned_area);
+        $current_area_info = new AssignedAreaResource($curr_user_assigned_area);
 
         $status_text = ucfirst($request->status);
 
@@ -840,6 +846,7 @@ class AopApplicationController extends Controller
             'applicationObjectives.otherSuccessIndicator',
             'applicationObjectives.activities.target',
             'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.resources.item',
             'applicationObjectives.activities.responsiblePeople.user',
         ])->findOrFail($id);
 
