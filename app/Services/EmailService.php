@@ -3,7 +3,9 @@
 namespace App\Services;
 
 use App\Jobs\SendEmailJob;
+use App\Models\EmailLog;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Collection;
 
 class EmailService
 {
@@ -102,7 +104,6 @@ class EmailService
         } catch (\Exception $e) {
             Log::error('Failed to queue transaction update email', [
                 'recipient' => $recipient,
-                'context' => $context,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -110,38 +111,141 @@ class EmailService
     }
 
     /**
-     * Validate that the required fields are present in the email data
+     * Send an Annual Operation Plan (AOP) status update email
      *
-     * @param array $data The email data to validate
-     * @throws \InvalidArgumentException If required fields are missing
+     * @param string $recipient The email address of the recipient
+     * @param string $context The context of the email (update_user, update_next_approver)
+     * @param array $aopData AOP application data for the email
      * @return void
+     */
+    public function sendAopStatusUpdate(string $recipient, string $context, array $aopData): void
+    {
+        try {
+            // Prepare email data with context
+            $emailData = array_merge($aopData, ['context' => $context]);
+
+            // Ensure required fields are present
+            $this->validateEmailData($emailData);
+
+            // Add default subject if not provided
+            if (!isset($emailData['subject'])) {
+                $status = $emailData['status'] ?? 'Updated';
+                $emailData['subject'] = "ZCMC Annual Operation Plan: $status";
+            }
+
+            // Make sure we have a status message
+            if (!isset($emailData['status_message'])) {
+                $status = $emailData['status'] ?? 'updated';
+                $emailData['status_message'] = "Your Annual Operation Plan has been $status.";
+            }
+
+            // Add AOP-specific template variables
+            $emailData['email_title'] = 'Annual Operation Plan Status Update';
+            $emailData['email_heading'] = 'ZCMC Annual Operation Plan System';
+            $emailData['email_preheader'] = 'Important update regarding your Annual Operation Plan';
+
+            // Add application ID if present for tracking purposes
+            if (isset($aopData['aop_application_id'])) {
+                $emailData['aop_application_id'] = $aopData['aop_application_id'];
+            }
+
+            // Dispatch the email job to the queue
+            SendEmailJob::dispatch($recipient, $emailData)->onQueue('email');
+
+            Log::info('AOP status update email queued', [
+                'recipient' => $recipient,
+                'subject' => $emailData['subject'],
+                'context' => $context,
+                'aop_application_id' => $aopData['aop_application_id'] ?? null
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to queue AOP status update email', [
+                'recipient' => $recipient,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    /**
+     * Check if emails have been sent to a specific recipient
+     *
+     * @param string $recipient Email address to check
+     * @param string|null $subject Optional subject line to filter by
+     * @param string|null $status Optional status to filter by (Sent, Failed)
+     * @return Collection Collection of email logs
+     */
+    public function checkRecipientEmails(string $recipient, ?string $subject = null, ?string $status = null): Collection
+    {
+        $query = EmailLog::where('recipient_email', $recipient);
+
+        if ($subject) {
+            $query->where('subject', 'like', "%$subject%");
+        }
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        return $query->orderBy('created_at', 'desc')->get();
+    }
+
+    /**
+     * Check if emails have been sent related to a specific AOP application
+     *
+     * @param int $aopApplicationId The AOP application ID
+     * @param string|null $status Optional status to filter by (Sent, Failed)
+     * @return Collection Collection of email logs
+     */
+    public function checkApplicationEmails(int $aopApplicationId, ?string $status = null): Collection
+    {
+        $query = EmailLog::where('body', 'like', "%\"aop_application_id\":$aopApplicationId%");
+
+        if ($status) {
+            $query->where('status', $status);
+        }
+
+        return $query->orderBy('created_at', 'desc')->get();
+    }
+
+    /**
+     * Get summary of email delivery status
+     *
+     * @param int|null $days Number of days to look back, null for all time
+     * @return array Summary statistics of email delivery
+     */
+    public function getEmailDeliveryStats(?int $days = 7): array
+    {
+        $query = EmailLog::query();
+
+        if ($days) {
+            $query->where('created_at', '>=', now()->subDays($days));
+        }
+
+        $total = $query->count();
+        $sent = $query->where('status', 'Sent')->count();
+        $failed = $query->where('status', 'Failed')->count();
+
+        return [
+            'period' => $days ? "Last $days days" : 'All time',
+            'total' => $total,
+            'sent' => $sent,
+            'failed' => $failed,
+            'success_rate' => $total > 0 ? round(($sent / $total) * 100, 2) : 0,
+        ];
+    }
+
+    /**
+     * Ensure email data contains required fields
+     *
+     * @param array $data Email data to validate
+     * @throws \InvalidArgumentException
      */
     private function validateEmailData(array $data): void
     {
-        $requiredFields = ['subject'];
-
-        foreach ($requiredFields as $field) {
-            if (!isset($data[$field]) || empty($data[$field])) {
-                throw new \InvalidArgumentException("Required field '$field' is missing in email data");
-            }
-        }
-
-        // Additional context-specific validation
-        if (isset($data['context'])) {
-            switch ($data['context']) {
-                case 'request':
-                case 'update_user':
-                    if (!isset($data['requester_name'])) {
-                        throw new \InvalidArgumentException("Requester name is required for context '{$data['context']}'");
-                    }
-                    break;
-
-                case 'update_next_user':
-                    if (!isset($data['next_office_employee_name'])) {
-                        throw new \InvalidArgumentException("Next office employee name is required for context 'update_next_user'");
-                    }
-                    break;
-            }
+        // Check for subject
+        if (empty($data['subject'])) {
+            throw new \InvalidArgumentException('Email subject is required');
         }
     }
 }

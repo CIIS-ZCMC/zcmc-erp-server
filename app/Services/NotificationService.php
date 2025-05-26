@@ -36,8 +36,8 @@ class NotificationService
                 'seen' => false
             ]);
 
-            // Load the user_notification relationship
-            $notification->load('user_notification');
+            // Load the userNotification relationship (camelCase to match the model method)
+            $notification->load('userNotification');
 
             // Use NotificationResource to format data consistently
             $notification_data = (new NotificationResource($notification))->toArray(request());
@@ -110,6 +110,9 @@ class NotificationService
                 ]);
 
                 $userIds[] = $user->id;
+
+                // Load the userNotification relationship for consistent resource creation
+                $notification->load('userNotification');
 
                 // Dispatch individual notification jobs for each user
                 $userData = (new NotificationResource($notification))->toArray(request());
