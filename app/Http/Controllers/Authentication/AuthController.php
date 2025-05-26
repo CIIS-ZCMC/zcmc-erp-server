@@ -65,7 +65,8 @@ class AuthController extends Controller
 
         return $resource
             ->additional([
-                'message' => "Successfully signin."
+                'message' => "Successfully signin.",
+                'meta'=> ['redirect_to' => '/dashboard']
             ])
             ->response()
             ->setStatusCode(Response::HTTP_OK)
