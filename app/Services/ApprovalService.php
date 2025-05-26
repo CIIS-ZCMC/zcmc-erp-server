@@ -12,17 +12,21 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Resources\AssignedAreaResource;
 use App\Helpers\TransactionLogHelper;
 use App\Services\NotificationService;
+use App\Services\EmailService;
 
 class ApprovalService
 {
 
     protected NotificationService $notificationService;
+    protected EmailService $emailService;
+
     /**
      * Create a new class instance.
      */
-    public function __construct(NotificationService $notificationService)
+    public function __construct(NotificationService $notificationService, EmailService $emailService)
     {
         $this->notificationService = $notificationService;
+        $this->emailService = $emailService;
     }
 
     /**
@@ -250,12 +254,31 @@ class ApprovalService
 
             $timeline->save();
 
+            // Prepare common transaction data for notifications and emails
+            $transactionData = [
+                'transaction_type' => 'AOP Application',
+                'transaction_code' => $aop_application->application_code ?? "AOP-{$aop_application->id}",
+                'status' => $status,
+                'remarks' => $remarks ?? 'No remarks provided',
+                'requested_at' => $aop_application->created_at->format('Y-m-d H:i:s'),
+                'requester_employee_id' => $aop_user->employee_id ?? 'N/A',
+                'requester_name' => $aop_user->name,
+                'requester_area' => $aop_user_assigned_area->name ?? 'N/A',
+                'requester_area_code' => $aop_user_assigned_area->area_code ?? 'N/A',
+                'current_office_area' => $current_user_assigned_area->name ?? 'N/A',
+                'current_office_area_code' => $current_user_assigned_area->area_code ?? 'N/A',
+                'current_office_employee_name' => $current_user->name,
+                'updated_by' => $current_user->name,
+                'aop_application_id' => $aop_application->id
+            ];
+
             // Send notifications to the next area user if there is a next area
             if ($next_area_id) {
                 $nextArea = AssignedArea::find($next_area_id);
                 if ($nextArea && $nextArea->user_id) {
                     $nextUser = User::find($nextArea->user_id);
                     if ($nextUser) {
+                        // In-app notification
                         $this->notificationService->notify($nextUser, [
                             'title' => 'AOP Application Requires Your Action',
                             'description' => "An AOP application has been routed to you for review.",
@@ -263,19 +286,51 @@ class ApprovalService
                             'aop_application_id' => $aop_application->id,
                             'status' => $status
                         ]);
+
+                        // Email notification if user has email
+                        if ($nextUser->email) {
+                            $nextUserEmailData = array_merge($transactionData, [
+                                'subject' => 'AOP Application Requires Your Action',
+                                'next_office_employee_name' => $nextUser->name,
+                                'next_office_area_code' => $nextArea->area_code ?? 'N/A',
+                                'next_office_area' => $nextArea->name ?? 'N/A',
+                            ]);
+
+                            $this->emailService->sendTransactionUpdate(
+                                $nextUser->email,
+                                'update_next_user',
+                                $nextUserEmailData
+                            );
+                        }
                     }
                 }
             }
 
             // Notify the AOP application owner about the status change
+            // In-app notification
             $this->notificationService->notify($aop_user, [
                 'title' => 'AOP Application Status Update',
-                'description' => "Your AOP application has been {$status}." . 
+                'description' => "Your AOP application has been {$status}." .
                                 ($remarks ? " Remarks: {$remarks}" : ""),
                 'module_path' => "/aop-application/{$aop_application->id}",
                 'aop_application_id' => $aop_application->id,
                 'status' => $status
             ]);
+
+            // Email notification if user has email
+            if ($aop_user->email) {
+                $ownerEmailData = array_merge($transactionData, [
+                    'subject' => "AOP Application Status: {$status}",
+                    'next_office_area_code' => $nextArea->area_code ?? 'N/A',
+                    'next_office_area' => $nextArea->name ?? 'N/A',
+                ]);
+
+                $this->emailService->sendTransactionUpdate(
+                    $aop_user->email,
+                    'update_user',
+                    $ownerEmailData
+                );
+            }
 
             // Log successful creation
             Log::info('Application timeline created successfully', [
