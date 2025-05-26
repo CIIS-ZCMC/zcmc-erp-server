@@ -18,9 +18,10 @@ return new class extends Migration
             $table->string('description')->nullable();
             $table->unsignedBigInteger('item_category_id')->nullable();
             $table->foreign('item_category_id')->references('id')->on('item_categories')->onDelete('set null');
+            $table->unsignedBigInteger('reference_terminology_id')->nullable();
+            $table->foreign('reference_terminology_id')->references('id')->on('reference_terminologies');
             $table->softDeletes();
             $table->timestamps();
-
             
             $table->fullText(['name', 'code', 'description']);
         });

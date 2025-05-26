@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Libraries;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\VariantRequest;
-use App\Http\Resources\VariantResource;
-use App\Models\Variant;
+use App\Http\Requests\ItemReferenceTerminologyRequest;
+use App\Http\Resources\ItemReferenceTerminologyResource;
+use App\Models\ItemReferenceTerminology;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class VariantController extends Controller
+class ItemReferenceTerminologyController extends Controller
 {
     protected $methods = ['GET', 'POST', 'PUT', 'DELETE'];
 
@@ -18,7 +18,7 @@ class VariantController extends Controller
      */
     public function index(Request $request)
     {
-        return VariantResource::collection(Variant::all())
+        return ItemReferenceTerminologyResource::collection(ItemReferenceTerminology::all())
             ->additional([
                 'meta' => [
                     'methods' => $this->methods
@@ -30,17 +30,17 @@ class VariantController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(VariantRequest $request)
+    public function store(ItemReferenceTerminologyRequest $request)
     {
         $name =strip_tags( $request->name);
         $code = strip_tags($request->code);
 
-        $new_variant = Variant::create([
+        $new_variant = ItemReferenceTerminology::create([
             'name' => $name,
             'code' => $code
         ]);
 
-        return (new VariantResource($new_variant))
+        return (new ItemReferenceTerminologyResource($new_variant))
             ->additional([
                 'meta' => [
                     'methods' => $this->methods
@@ -53,11 +53,11 @@ class VariantController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(VariantRequest $request, Variant $variant)
+    public function update(ItemReferenceTerminologyRequest $request, ItemReferenceTerminology $variant)
     {
         $variant->update($request->all());
 
-        return (new VariantResource($variant))
+        return (new ItemReferenceTerminologyResource($variant))
             ->additional([
                 'meta' => [
                     'methods' => $this->methods
@@ -70,14 +70,14 @@ class VariantController extends Controller
     {
         $search = $request->query('search');
 
-        $query = Variant::onlyTrashed();
+        $query = ItemReferenceTerminology::onlyTrashed();
 
         if ($search) {
             $query->where('name', 'like', '%' . $search . '%')
                     ->orWhere('code', 'like', "%{$search}%");
         }
         
-        return VariantResource::collection($query->get())
+        return ItemReferenceTerminologyResource::collection($query->get())
             ->additional([
                 "meta" => [
                     "methods" => $this->methods
@@ -88,9 +88,9 @@ class VariantController extends Controller
 
     public function restore($id, Request $request)
     {
-        Variant::withTrashed()->where('id', $id)->restore();
+        ItemReferenceTerminology::withTrashed()->where('id', $id)->restore();
 
-        return (new VariantResource(Variant::find($id)))
+        return (new ItemReferenceTerminologyResource(ItemReferenceTerminology::find($id)))
             ->additional([
                 "meta" => [
                     "methods" => $this->methods
@@ -102,7 +102,7 @@ class VariantController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Variant $variant)
+    public function destroy(ItemReferenceTerminology $variant)
     {
         $variant->delete();
 

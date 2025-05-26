@@ -1,8 +1,33 @@
 <?php
 
+use App\Http\Controllers\ActivityCommentController;
+use App\Http\Controllers\ActivityController;
+use App\Http\Controllers\ApplicationObjectiveController;
+use App\Http\Controllers\ApplicationTimelineController;
+use App\Http\Controllers\Areas\DepartmentController;
+use App\Http\Controllers\Areas\DivisionController;
+use App\Http\Controllers\Areas\SectionController;
+use App\Http\Controllers\Areas\UnitController;
+use App\Http\Controllers\AssignedAreaController;
 use App\Http\Controllers\Authentication\AuthController;
 use App\Http\Controllers\AopApplicationController;
-use Illuminate\Http\Request;
+use App\Http\Controllers\DeadlineController;
+use App\Http\Controllers\ItemImportController;
+use App\Http\Controllers\Libraries\ItemCategoryController;
+use App\Http\Controllers\Libraries\ItemClassificationController;
+use App\Http\Controllers\Libraries\ItemController;
+use App\Http\Controllers\Libraries\ItemReferenceTerminologyController;
+use App\Http\Controllers\Libraries\ItemRequestController;
+use App\Http\Controllers\Libraries\ItemUnitController;
+use App\Http\Controllers\LogDescriptionController;
+use App\Http\Controllers\ObjectiveController;
+use App\Http\Controllers\PpmpApplicationController;
+use App\Http\Controllers\PpmpItemController;
+use App\Http\Controllers\PpmpItemRequestController;
+use App\Http\Controllers\ProcurementModesController;
+use App\Http\Controllers\PurchaseTypeController;
+use App\Http\Controllers\SuccessIndicatorController;
+use App\Http\Controllers\TypeOfFunctionController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes - no authentication required
@@ -28,96 +53,88 @@ Route::
 
             Route::namespace('Libraries')->group(function () {
                 // Item routes
-                Route::get('items', "ItemController@index");
-                Route::post('items', "ItemController@store");
-                Route::put('items', "ItemController@update");
-                Route::delete('items', "ItemController@destroy");
+                Route::get('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'index']);
+                Route::post('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'store']);
+                Route::get('item-reference-terminologies/trashbin', [ItemReferenceTerminologyController::class, 'trash']);
+                Route::put('item-reference-terminologies/{id}/restore', [ItemReferenceTerminologyController::class, 'restore']);
+                Route::put('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'update']);
+                Route::delete('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'destroy']);
+
+                // Item routes
+                Route::get('items', [ItemController::class, "index"]);
+                Route::post('items', [ItemController::class, "store"]);
+                Route::put('items', [ItemController::class, "update"]);
+                Route::delete('items', [ItemController::class, "destroy"]);
 
                 // Item Request routes
-                Route::post('item-requests/{id}/update-status', "ItemRequestController@approve");
-                Route::get('item-requests', "ItemRequestController@index");
-                Route::post('item-requests', "ItemRequestController@store");
-                Route::put('item-requests/{id}', "ItemRequestController@update");
-                Route::delete('item-requests', "ItemRequestController@destroy");
+                Route::post('item-requests/{id}/update-status', [ItemRequestController::class, 'approve']);
+                Route::get('item-requests', [ItemRequestController::class, 'index']);
+                Route::post('item-requests', [ItemRequestController::class, 'store']);
+                Route::put('item-requests/{id}', [ItemRequestController::class, 'update']);
+                Route::delete('item-requests', [ItemRequestController::class, 'destroy']);
 
                 // Item Units routes
-                Route::post('item-units/import', "ItemUnitController@import");
-                Route::get('item-units/template', "ItemUnitController@downloadTemplate");
-                Route::get('item-units', "ItemUnitController@index");
-                Route::post('item-units', "ItemUnitController@store");
-                Route::put('item-units', "ItemUnitController@update");
-                Route::delete('item-units', "ItemUnitController@destroy");
-
-                // Variant routes
-                Route::get('variants', "VariantController@index");
-                Route::get('variants/trashbin', "VariantController@trash");
-                Route::post('variants', "VariantController@store");
-                Route::put('variants/{variant}', "VariantController@update");
-                Route::put('variants/{id}/restore', "VariantController@restore");
-                Route::delete('variants/{variant}', "VariantController@destroy");
-
-                // Snomed routes
-                Route::get('snomeds', "SnomedController@index");
-                Route::get('snomeds/trashbin', "SnomedController@trashbin");
-                Route::post('snomeds', "SnomedController@store");
-                Route::put('snomeds/{snomed}', "SnomedController@update");
-                Route::put('snomeds/{id}/restore', "SnomedController@restore");
-                Route::delete('snomeds/{snomed}', "SnomedController@destroy");
+                Route::post('item-units/import', [ItemUnitController::class, "import"]);
+                Route::get('item-units/template', [ItemUnitController::class, "downloadTemplate"]);
+                Route::get('item-units', [ItemUnitController::class, "index"]);
+                Route::post('item-units', [ItemUnitController::class, "store"]);
+                Route::put('item-units', [ItemUnitController::class, "update"]);
+                Route::delete('item-units', [ItemUnitController::class, "destroy"]);
 
                 // Item Categories routes
-                Route::post('item-categories/import', "ItemCategoryController@import");
-                Route::get('item-categories/template', "ItemCategoryController@downloadTemplate");
-                Route::get('item-categories', "ItemCategoryController@index");
-                Route::get('item-categories/trashbin', "ItemCategoryController@trash");
-                Route::post('item-categories', "ItemCategoryController@store");
-                Route::put('item-categories', "ItemCategoryController@update");
-                Route::put('item-categories/{id}/restore', "ItemCategoryController@restore");
-                Route::delete('item-categories', "ItemCategoryController@destroy");
+                Route::post('item-categories/import', [ItemCategoryController::class, "import"]);
+                Route::get('item-categories/template', [ItemCategoryController::class, "downloadTemplate"]);
+                Route::get('item-categories', [ItemCategoryController::class, "index"]);
+                Route::get('item-categories/trashbin', [ItemCategoryController::class, "trash"]);
+                Route::post('item-categories', [ItemCategoryController::class . "store"]);
+                Route::put('item-categories', [ItemCategoryController::class, "update"]);
+                Route::put('item-categories/{id}/restore', [ItemCategoryController::class, "restore"]);
+                Route::delete('item-categories', [ItemCategoryController::class, "destroy"]);
 
                 // Item Classifications routes
-                Route::post('item-classifications/import', "itemClassificationController@import");
-                Route::get('item-classifications/template', "itemClassificationController@downloadTemplate");
-                Route::get('item-classifications', "itemClassificationController@index");
-                Route::get('item-classifications/trashbin', "itemClassificationController@trash");
-                Route::post('item-classifications', "itemClassificationController@store");
-                Route::put('item-classifications', "itemClassificationController@update");
-                Route::put('item-classifications/{id}/restore', "itemClassificationController@restore");
-                Route::delete('item-classifications', "itemClassificationController@destroy");
+                Route::post('item-classifications/import', [ItemClassificationController::class, "import"]);
+                Route::get('item-classifications/template', [itemClassificationController::class, "downloadTemplate"]);
+                Route::get('item-classifications', [itemClassificationController::class, "index"]);
+                Route::get('item-classifications/trashbin', [itemClassificationController::class, "trash"]);
+                Route::post('item-classifications', [itemClassificationController::class, "store"]);
+                Route::put('item-classifications', [itemClassificationController::class, "update"]);
+                Route::put('item-classifications/{id}/restore', [itemClassificationController::class, "restore"]);
+                Route::delete('item-classifications', [itemClassificationController::class, 'destroy']);
             });
 
             // Success Indicators routes
-            Route::get('success-indicators', "SuccessIndicatorController@index");
-            Route::post('success-indicators', "SuccessIndicatorController@store");
-            Route::put('success-indicators', "SuccessIndicatorController@update");
-            Route::delete('success-indicators', "SuccessIndicatorController@destroy");
+            Route::get('success-indicators', [SuccessIndicatorController::class, "index"]);
+            Route::post('success-indicators', [SuccessIndicatorController::class, "store"]);
+            Route::put('success-indicators', [SuccessIndicatorController::class, "update"]);
+            Route::delete('success-indicators', [SuccessIndicatorController::class, "destroy"]);
 
             // Type of Functions routes
-            Route::get('type-of-functions', "TypeOfFunctionController@index");
-            Route::get('type-of-functions/trashbin', "TypeOfFunctionController@trash");
-            Route::post('type-of-functions', "TypeOfFunctionController@store");
-            Route::put('type-of-functions', "TypeOfFunctionController@update");
-            Route::put('type-of-functions/{id}/restore', "TypeOfFunctionController@restore");
-            Route::delete('type-of-functions', "TypeOfFunctionController@destroy");
+            Route::get('type-of-functions', [TypeOfFunctionController::class, "index"]);
+            Route::get('type-of-functions/trashbin', [TypeOfFunctionController::class, "trash"]);
+            Route::post('type-of-functions', [TypeOfFunctionController::class, "store"]);
+            Route::put('type-of-functions', [TypeOfFunctionController::class, "update"]);
+            Route::put('type-of-functions/{id}/restore', [TypeOfFunctionController::class, "restore"]);
+            Route::delete('type-of-functions', [TypeOfFunctionController::class, "destroy"]);
 
             // Purchase Types routes
-            Route::get('purchase-types', "PurchaseTypeController@index");
-            Route::get('purchase-types/trashbin', "PurchaseTypeController@trash");
-            Route::post('purchase-types', "PurchaseTypeController@store");
-            Route::put('purchase-types', "PurchaseTypeController@update");
-            Route::put('purchase-types/{id}/restore', "PurchaseTypeController@restore");
-            Route::delete('purchase-types', "PurchaseTypeController@destroy");
+            Route::get('purchase-types', [PurchaseTypeController::class, "index"]);
+            Route::get('purchase-types/trashbin', [PurchaseTypeController::class, "trash"]);
+            Route::post('purchase-types', [PurchaseTypeController::class, "store"]);
+            Route::put('purchase-types', [PurchaseTypeController::class, "update"]);
+            Route::put('purchase-types/{id}/restore', [PurchaseTypeController::class, "restore"]);
+            Route::delete('purchase-types', [PurchaseTypeController::class, "destroy"]);
 
             // Objectives routes
-            Route::get('objectives', "ObjectiveController@index");
-            Route::post('objectives', "ObjectiveController@store");
-            Route::put('objectives', "ObjectiveController@update");
-            Route::delete('objectives', "ObjectiveController@destroy");
+            Route::get('objectives', [ObjectiveController::class, "index"]);
+            Route::post('objectives', [ObjectiveController::class, "store"]);
+            Route::put('objectives', [ObjectiveController::class, "update"]);
+            Route::delete('objectives', [ObjectiveController::class, "destroy"]);
 
             // Procurement Modes routes
-            Route::get('procurement-modes', "ProcurementModesController@index");
-            Route::post('procurement-modes', "ProcurementModesController@store");
-            Route::put('procurement-modes/{id}', "ProcurementModesController@update");
-            Route::delete('procurement-modes', "ProcurementModesController@destroy");
+            Route::get('procurement-modes', [ProcurementModesController::class, "index"]);
+            Route::post('procurement-modes', [ProcurementModesController::class, "store"]);
+            Route::put('procurement-modes/{id}', [ProcurementModesController::class, "update"]);
+            Route::delete('procurement-modes', [ProcurementModesController::class, "destroy"]);
 
             Route::namespace('Areas')->group(function () {
 
@@ -147,20 +164,20 @@ Route::
             });
 
             // Log Descriptions routes
-            Route::post('log-descriptions/template', "LogDescriptionController@import");
-            Route::post('log-descriptions/import', "LogDescriptionController@downloadTemplate");
-            Route::get('log-descriptions', "LogDescriptionController@index");
-            Route::post('log-descriptions', "LogDescriptionController@store");
-            Route::put('log-descriptions', "LogDescriptionController@update");
-            Route::delete('log-descriptions', "LogDescriptionController@destroy");
+            Route::post('log-descriptions/template', [LogDescriptionController::class, "import"]);
+            Route::post('log-descriptions/import', [LogDescriptionController::class, "downloadTemplate"]);
+            Route::get('log-descriptions', [LogDescriptionController::class, "index"]);
+            Route::post('log-descriptions', [LogDescriptionController::class, "store"]);
+            Route::put('log-descriptions', [LogDescriptionController::class, "update"]);
+            Route::delete('log-descriptions', [LogDescriptionController::class, "destroy"]);
 
             // AssignedArea Routes - UMIS Integration
-            Route::get('assigned-areas', "AssignedAreaController@index");
-            Route::get('assigned-areas/{id}', "AssignedAreaController@show");
-            Route::post('umis/areas/update', "AssignedAreaController@processUMISUpdate");
+            Route::get('assigned-areas', [AssignedAreaController::class, "index"]);
+            Route::get('assigned-areas/{id}', [AssignedAreaController::class, "show"]);
+            Route::post('umis/areas/update', [AssignedAreaController::class, "processUMISUpdate"]);
 
             // Ppmp Application Module
-            Route::apiResource('ppmp-applications', 'PpmpApplicationController');
+            Route::apiResource('ppmp-applications', PpmpApplicationController::class);
 
             // Ppmp Item Module
             Route::get('ppmp-item-search', 'PpmpItemController@search');
@@ -169,34 +186,34 @@ Route::
             Route::apiResource('ppmp-item-requests', 'PpmpItemRequestControlller');
 
             // Activity Module
-            Route::apiResource('activities', 'ActivityController');
-            Route::apiResource('activity-comments', 'ActivityCommentController');
-            Route::get('comments-per-activity', 'ActivityController@commentsPerActivity');
-            Route::post('activities/{id}/mark-reviewed', 'ActivityController@markAsReviewed');
+            Route::apiResource('activities', ActivityController::class);
+            Route::apiResource('activity-comments', ActivityCommentController::class);
+            Route::get('comments-per-activity', [ActivityController::class, "commentsPerActivity"]);
+            Route::post('activities/{id}/mark-reviewed', [ActivityController::class, "markAsReviewed"]);
 
             // Approver Module
-            Route::get('manage-aop-request/{id}', 'ApplicationObjectiveController@manageAopRequest');
-            Route::get('application-timeline/{id}', 'ApplicationTimelineController@show');
-            Route::get('application-timelines', 'ApplicationTimelineController@index');
-            Route::apiResource('application-timelines', 'ApplicationTimelineController');
-            Route::get('show-objective-activity/{id}', 'ApplicationObjectiveController@showObjectiveActivity');
-            Route::put('edit-objective-and-success-indicator', 'ApplicationObjectiveController@editObjectiveAndSuccessIndicator');
-            Route::post('process-aop-request', 'AopApplicationController@processAopRequest');
+            Route::get('manage-aop-request/{id}', [ApplicationObjectiveController::class, "manageAopRequest"]);
+            Route::get('application-timeline/{id}', [ApplicationTimelineController::class, "show"]);
+            Route::get('application-timelines', [ApplicationTimelineController::class, "index"]);
+            Route::apiResource('application-timelines', ApplicationTimelineController::class);
+            Route::get('show-objective-activity/{id}', [ApplicationObjectiveController::class, "showObjectiveActivity"]);
+            Route::put('edit-objective-and-success-indicator', [ApplicationObjectiveController::class, "editObjectiveAndSuccessIndicator"]);
+            Route::post('process-aop-request', [AopApplicationController::class, "processAopRequest"]);
 
             // Aop Application Module
-            Route::get('aop-applications', 'AopApplicationController@index');
-            Route::post('aop-application-store', 'AopApplicationController@store');
-            Route::post('aop-application-update/{id}', 'AopApplicationController@update');
-            Route::get('aop-application-show/{id}', 'AopApplicationController@show');
-            Route::get('aop-application-summary', 'AopApplicationController@getUserAopSummary');
-            Route::get('aop-application-timeline', 'AopApplicationController@showUserTimeline');
-            Route::get('aop-remarks/{id}', 'AopApplicationController@aopRemarks');
-            Route::get('get-areas', 'AopApplicationController@getAllArea');
-            Route::get('get-designations', 'AopApplicationController@getAllDesignations');
-            Route::get('get-users', 'AopApplicationController@getUsersWithDesignation');
-            Route::post('export-aop/{id}', 'AopApplicationController@export');
-            Route::get('preview-aop/{id}', 'AopApplicationController@preview');
-            Route::post('import/items', 'ItemImportController@import');
+            Route::get('aop-applications', [AopApplicationController::class, "index"]);
+            Route::post('aop-application-store', [AopApplicationController::class, "store"]);
+            Route::post('aop-application-update/{id}', [AopApplicationController::class, "update"]);
+            Route::get('aop-application-show/{id}', [AopApplicationController::class, "show"]);
+            Route::get('aop-application-summary', [AopApplicationController::class, "getUserAopSummary"]);
+            Route::get('aop-application-timeline', [AopApplicationController::class, "showUserTimeline"]);
+            Route::get('aop-remarks/{id}', [AopApplicationController::class, "aopRemarks"]);
+            Route::get('get-areas', [AopApplicationController::class, "getAllArea"]);
+            Route::get('get-designations', [AopApplicationController::class, "getAllDesignations"]);
+            Route::get('get-users', [AopApplicationController::class, "getUsersWithDesignation"]);
+            Route::post('export-aop/{id}', [AopApplicationController::class, "export"]);
+            Route::get('preview-aop/{id}', [AopApplicationController::class, "preview"]);
+            Route::post('import/items', [ItemImportController::class, "import"]);
 
             // Variant Dummy
             Route::get('variant', function () {
@@ -221,10 +238,10 @@ Route::
                 ], 200);
             });
 
-            // Deadline routes
-            Route::get('deadlines', 'DeadlineController@index');
-            Route::post('aop-deadline-store', 'DeadlineController@storeAopDeadline');
-            Route::post('ppmp-deadline-store', 'DeadlineController@storePpmpDeadline');
-            Route::post('aop-deadline-update/{id}', 'DeadlineController@updateAopDeadline');
-            Route::post('ppmp-deadline-update/{id}', 'DeadlineController@updatePpmpDeadline');
+            // Deadlines
+            Route::get('deadlines', [DeadlineController::class, 'index']);
+            Route::post('aop-deadline-store', [DeadlineController::class, 'storeAopDeadline']);
+            Route::post('ppmp-deadline-store', [DeadlineController::class, 'storePpmpDeadline']);
+            Route::post('aop-deadline-update/{id}', [DeadlineController::class, 'updateAopDeadline']);
+            Route::post('ppmp-deadline-update/{id}', [DeadlineController::class, 'updatePpmpDeadline']);
         });
