@@ -159,6 +159,7 @@ class AopApplicationController extends Controller
         $totalUsers = $totalResponsiblePeople->pluck('user_id')->filter()->unique()->count();
 
         return response()->json([
+            'aop_application_id' => $aopApplication->id,
             'total_objectives' => $totalObjectives,
             'total_success_indicators' => $totalSuccessIndicators,
             'total_activities' => $totalActivities,
@@ -891,6 +892,54 @@ class AopApplicationController extends Controller
     }
     public function export($id)
     {
+
+        $user_id = 2;
+        $assignedArea = AssignedArea::where('user_id', $user_id)->first();
+        $area = $assignedArea->findDetails();
+        switch ($area['sector']) {
+            case 'Division':
+                $division = Division::where('name', $area['details']['name'])->first();
+                $divisionChiefId = $division->head_id;
+                $headId = $division->head_id;
+                break;
+            case 'Department':
+                $department = Department::where('name', $area['details']['name'])->first();
+                $headId = $department->head_id;
+                $division = Division::where('id', $department->division_id)->first();
+                $divisionChiefId = $division->head_id;
+                break;
+            case 'Section':
+                $section = Section::where('name', $area['details']['name'])->first();
+                $headId = $section->head_id;
+                if ($section?->department_id) {
+                    $department = Department::find($section->department_id);
+                    $division = Division::find($department?->division_id);
+                } else {
+                    $division = Division::find($section?->division_id);
+                }
+
+                $divisionChiefId = $division?->head_id ?? null;
+
+                break;
+            case 'Unit':
+                $unit = Unit::where('name', $area['details']['name'])->first();
+                $headId = $unit->head_id;
+                $section = Section::where('id', $unit->section_id)->first();
+
+                if ($section?->department_id) {
+                    $department = Department::find($section->department_id);
+                    $division = Division::find($department?->division_id);
+                } else {
+
+                    $division = Division::find($section?->division_id);
+                }
+                $divisionChiefId = $division?->head_id ?? null;
+                break;
+        }
+
+        $head = \App\Models\User::find($headId);
+        $preparedByName = $head?->name ?? 'N/A';
+
         $aopApplication = AopApplication::with([
             'applicationObjectives.objective',
             'applicationObjectives.objective.typeOfFunction',
@@ -904,7 +953,7 @@ class AopApplicationController extends Controller
 
         $getResponsiblePersonName = function ($responsiblePerson) {
             if ($responsiblePerson->user_id) {
-                return $responsiblePerson->user->name;  // Assuming you have a 'user' relationship in the model
+                return $responsiblePerson->user->name;
             }
 
             if ($responsiblePerson->division_id) {
@@ -999,6 +1048,14 @@ class AopApplicationController extends Controller
                 $sheet->setCellValue("N{$row}", $item['responsible_people']);
                 $sheet->setCellValue("O{$row}", $item['is_gad_related']);
                 $row++;
+            }
+        }
+
+        for ($i = 1; $i <= $sheet->getHighestRow(); $i++) {
+            $cellValue = $sheet->getCell("B{$i}")->getValue();
+            if (stripos($cellValue, 'Prepared by') !== false) {
+                $sheet->setCellValue("B" . ($i + 2), $preparedByName);
+                break;
             }
         }
 
