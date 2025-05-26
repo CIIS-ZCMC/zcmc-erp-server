@@ -23,6 +23,7 @@ use App\Models\SuccessIndicator;
 use App\Models\Unit;
 use App\Models\User;
 use App\Models\ApplicationTimeline;
+use App\Models\Log;
 use App\Services\ApprovalService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
@@ -229,6 +230,7 @@ class AopApplicationController extends Controller
             ])->findOrFail($id);
 
             $user_id = 2;
+            $curr_user = User::find($request->user()->id);
             $user = User::where('id', $user_id)->first();
             $user_assigned_area_id = $user->assignedArea->id;
 
@@ -364,7 +366,7 @@ class AopApplicationController extends Controller
             // Create a timeline entry using the service
             $aop_application_timeline = $approval_service->createApplicationTimeline(
                 $aopApplication->id,
-                $user_id,
+                $curr_user,
                 $user_assigned_area_id,
                 $request->status,
                 $request->remarks
@@ -399,7 +401,7 @@ class AopApplicationController extends Controller
         DB::beginTransaction();
 
         try {
-            // $user_id = $request->user()->id;
+            //  $user_id = $request->user()->id;
             $user_id = 2;
             $assignedArea = AssignedArea::where('user_id', $user_id)->first();
             $area = $assignedArea->findDetails();
