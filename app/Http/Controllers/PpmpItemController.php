@@ -254,7 +254,7 @@ class PpmpItemController extends Controller
     public function destroy(Request $request)
     {
         // Get the current user and its area
-        return $curr_user = User::find($request->user()->id);
+        $curr_user = User::find($request->user()->id);
         $curr_user_assigned_area = $curr_user->assignedArea;
         $curr_user_authorization_pin = $curr_user->authorization_pin;
 
@@ -264,31 +264,9 @@ class PpmpItemController extends Controller
             ], Response::HTTP_BAD_REQUEST);
         }
 
-        $validate_pin = User::where('pin', $request->pin)->first();
-
-        // $ppmpItem = PpmpItem::where('item_id', $id)->first();
-
-        // // Check if the PPMP Item exists
-        // if (!$ppmpItem) {
-        //     return response()->json([
-        //         'message' => "PPMP Item not found."
-        //     ], Response::HTTP_NOT_FOUND);
-        // }
-
-        // // Soft delete pivot records (activity_ppmp_item)
-        // foreach ($ppmpItem->activities as $activity) {
-        //     ActivityPpmpItem::where('activity_id', $activity->id)
-        //         ->where('ppmp_item_id', $ppmpItem->id)
-        //         ->first()?->delete();
-        // }
-
-        // // Soft delete the PPMP Item
-        // $ppmpItem->delete();
-
-        // return response()->json([
-        //     'data' => $ppmpItem,
-        //     'message' => "PPMP Item deleted successfully."
-        // ], Response::HTTP_OK);
+        return response()->json([
+            'message' => "PPMP Item deleted successfully."
+        ], Response::HTTP_OK);
     }
 
     public function import(Request $request)
