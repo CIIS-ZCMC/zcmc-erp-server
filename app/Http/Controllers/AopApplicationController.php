@@ -896,6 +896,7 @@ class AopApplicationController extends Controller
         $user_id = 2;
         $assignedArea = AssignedArea::where('user_id', $user_id)->first();
         $area = $assignedArea->findDetails();
+        $userArea = $area['details']['name'];
         switch ($area['sector']) {
             case 'Division':
                 $division = Division::where('name', $area['details']['name'])->first();
@@ -937,8 +938,20 @@ class AopApplicationController extends Controller
                 break;
         }
 
+        $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
+        $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
+
+        $planningOfficer = Section::where('name', 'Planning Unit')->first();
+        $planningOfficerId = optional($planningOfficer)->head_id;
+
         $head = \App\Models\User::find($headId);
         $preparedByName = $head?->name ?? 'N/A';
+        $divisionHead = \App\Models\User::find($divisionChiefId);
+        $notedBy = $divisionHead?->name ?? 'N/A';
+        $mccChief = \App\Models\User::find($mccChiefId);
+        $ApprovedBy = $mccChief?->name ?? 'N/A';
+        $planning = \App\Models\User::find($planningOfficerId);
+        $ReviewedBy = $planning?->name ?? 'N/A';
 
         $aopApplication = AopApplication::with([
             'applicationObjectives.objective',
@@ -1025,6 +1038,32 @@ class AopApplicationController extends Controller
         $sheet = $spreadsheet->getActiveSheet();
 
         $sheet->setCellValue('B8', $aopApplication->mission);
+        $sheet->setCellValue('D7', $area['details']['name']);
+
+        $defaultTableStart = 14; // Starting row of the table
+        $defaultTableRows = 30;
+        $totalDataRows = $objectives->flatten(1)->count();
+
+        if ($totalDataRows > $defaultTableRows) {
+            $rowsToAdd = $totalDataRows - $defaultTableRows;
+
+            // Insert new rows after the last default row (row 14 + 30 = 44)
+            $insertPosition = $defaultTableStart + $defaultTableRows;
+
+            $sheet->insertNewRowBefore($insertPosition + 1, $rowsToAdd);
+
+            // Optional: Copy style from the last default row to new rows
+            $templateRow = $insertPosition;
+            for ($i = 1; $i <= $rowsToAdd; $i++) {
+                $sourceRow = $templateRow;
+                $targetRow = $templateRow + $i;
+
+                for ($col = 'A'; $col <= 'O'; $col++) {
+                    $style = $sheet->getStyle("{$col}{$sourceRow}");
+                    $sheet->duplicateStyle($style, "{$col}{$targetRow}");
+                }
+            }
+        }
 
         // Start populating from row 14
         $row = 14;
@@ -1051,10 +1090,64 @@ class AopApplicationController extends Controller
             }
         }
 
+        $lastDataRow = $row - 1; // Last populated row with actual data
+
+        // Find the start of the footer/signature section
+        $footerStartRow = null;
+        $maxScanRow = $sheet->getHighestRow();
+
+        for ($i = $lastDataRow + 1; $i <= $maxScanRow; $i++) {
+            $cellB = $sheet->getCell("B{$i}")->getValue();
+            $cellD = $sheet->getCell("D{$i}")->getValue();
+            $cellK = $sheet->getCell("K{$i}")->getValue();
+            $cellM = $sheet->getCell("M{$i}")->getValue();
+
+            if (
+                stripos($cellB, 'Prepared by') !== false ||
+                stripos($cellD, 'Noted by') !== false ||
+                stripos($cellK, 'Reviewed by') !== false ||
+                stripos($cellM, 'Approved by') !== false
+            ) {
+                $footerStartRow = $i;
+                break;
+            }
+        }
+
+        // Delete empty rows between data and footer, but keep 4 clean rows
+        $rowsToKeep = 4;
+        if ($footerStartRow && $footerStartRow > $lastDataRow + $rowsToKeep) {
+            $numRowsToDelete = $footerStartRow - $lastDataRow - $rowsToKeep;
+            $sheet->removeRow($lastDataRow + 1, $numRowsToDelete);
+        }
+
         for ($i = 1; $i <= $sheet->getHighestRow(); $i++) {
             $cellValue = $sheet->getCell("B{$i}")->getValue();
             if (stripos($cellValue, 'Prepared by') !== false) {
                 $sheet->setCellValue("B" . ($i + 2), $preparedByName);
+                break;
+            }
+        }
+
+        for ($i = 1; $i <= $sheet->getHighestRow(); $i++) {
+            $cellValue = $sheet->getCell("D{$i}")->getValue();
+            if (stripos($cellValue, 'Noted by:') !== false) {
+                $sheet->setCellValue("D" . ($i + 2), $notedBy);
+                break;
+            }
+        }
+
+        for ($i = 1; $i <= $sheet->getHighestRow(); $i++) {
+            $cellValue = $sheet->getCell("K{$i}")->getValue();
+            if (stripos($cellValue, 'Reviewed by:') !== false) {
+                $sheet->setCellValue("K" . ($i + 2), $ReviewedBy);
+                break;
+            }
+        }
+
+        for ($i = 1; $i <= $sheet->getHighestRow(); $i++) {
+            $cellValue = $sheet->getCell("M{$i}")->getValue();
+            if (stripos($cellValue, 'Approved by:') !== false) {
+                $sheet->setCellValue("M" . ($i + 2), $ApprovedBy);
                 break;
             }
         }
