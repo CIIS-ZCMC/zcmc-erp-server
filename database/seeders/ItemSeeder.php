@@ -4,10 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Item;
 use App\Models\ItemCategory;
-use App\Models\ItemReferenceTerminology;
 use App\Models\ItemUnit;
-use App\Models\Variant;
-use App\Models\Snomed;
 use App\Models\ItemClassification;
 use Illuminate\Database\Seeder;
 
