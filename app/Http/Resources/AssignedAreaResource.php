@@ -7,6 +7,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class AssignedAreaResource extends JsonResource
 {
+
     /**
      * Transform the resource into an array.
      *
@@ -17,33 +18,39 @@ class AssignedAreaResource extends JsonResource
 
         $name = null;
         $type = null;
+        $id = null;
         $area_id = null;
         $is_head = null;
 
         if ($this->division_id && $this->whenLoaded('division') && $this->division) {
             $name = $this->division->name;
             $type = 'division';
-            $area_id = $this->division_id;
+            $id = $this->division_id;
+            $area_id = $this->division->area_id;
             $is_head = isset($this->division->head_id) && $this->division->head_id == $this->user_id;
         } elseif ($this->department_id && $this->whenLoaded('department') && $this->department) {
             $name = $this->department->name;
             $type = 'department';
-            $area_id = $this->department_id;
+            $id = $this->department_id;
+            $area_id = $this->department->area_id;
             $is_head = isset($this->department->head_id) && $this->department->head_id == $this->user_id;
         } elseif ($this->section_id && $this->whenLoaded('section') && $this->section) {
             $name = $this->section->name;
             $type = 'section';
-            $area_id = $this->section_id;
+            $id = $this->section_id;
+            $area_id = $this->section->area_id;
             $is_head = isset($this->section->head_id) && $this->section->head_id == $this->user_id;
         } elseif ($this->unit_id && $this->whenLoaded('unit') && $this->unit) {
             $name = $this->unit->name;
             $type = 'unit';
-            $area_id = $this->unit_id;
+            $id = $this->unit_id;
+            $area_id = $this->unit->area_id;
             $is_head = isset($this->unit->head_id) && $this->unit->head_id == $this->user_id;
         }
 
         return [
-            'id' => $area_id,
+            'id' => $id,
+            'area_id' => $area_id,
             'name' => $name,
             'type' => $type,
             'is_head' => $is_head

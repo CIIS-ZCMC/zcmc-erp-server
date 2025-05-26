@@ -80,14 +80,26 @@ class Department extends Model
     }
 
     /**
+     * Get the division ID for this section
+     *
+     * @return int|null
+     */
+    public function getDivisionId(): ?int
+    {
+        // Return the division_id directly from the section model
+        return $this->division_id;
+    }
+
+
+    /**
      * Get the division chief for this department
      *
      * @return User|null
      */
-    public function getDivisionChief(): ?User
+    public function getDivisionChief(): ?\App\Models\User
     {
-        // Get the division this department belongs to - use the method explicitly
-        $division = $this->division()->first();
+        // Get the division this section belongs to - use the method explicitly
+        $division = $this->division()->where('id', $this->getDivisionId())->first();
 
         if (!$division) {
             return null;
