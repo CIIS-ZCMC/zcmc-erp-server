@@ -5,15 +5,16 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Variant extends Model
+class ItemReferenceTerminology extends Model
 {
     use SoftDeletes;
 
-    protected $table = 'variants';
+    protected $table = 'reference_terminologies';
 
     public $fillable = [
-        'name',
-        'code'
+        'code',
+        'system',
+        'description'
     ];
 
     public $timestamps = TRUE;
@@ -30,5 +31,10 @@ class Variant extends Model
     public function itemRequests()
     {
         return $this->hasMany(ItemRequest::class);
+    }
+
+    public function itemCategory()
+    {
+        return $this->hasMany(ItemCategory::class);
     }
 }

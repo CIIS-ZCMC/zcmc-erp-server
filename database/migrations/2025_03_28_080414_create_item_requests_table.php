@@ -28,8 +28,6 @@ return new class extends Migration {
             $table->foreign('requested_by')->references('id')->on('users');
             $table->unsignedBigInteger('action_by')->nullable();
             $table->foreign('action_by')->references('id')->on('users');
-            $table->unsignedBigInteger('variant_id');
-            $table->foreign('variant_id')->references('id')->on('variants');
             $table->softDeletes();
             $table->timestamps();
         });

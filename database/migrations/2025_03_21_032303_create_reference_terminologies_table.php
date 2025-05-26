@@ -11,13 +11,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('snomeds', function (Blueprint $table) {
+        Schema::create('reference_terminologies', function (Blueprint $table) {
             $table->id();
             $table->string('code');
+            $table->string('system'); // Variant, Snomed, etc..
+            $table->text('description')->nullable();
             $table->softDeletes();
             $table->timestamps();
-
-            $table->fullText(['code']);
+            
+            $table->fullText([ 'code', 'system',  'description']);
         });
     }
 
@@ -26,10 +28,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('snomeds', function(Blueprint $table){
+        Schema::table('reference_terminologies', function(Blueprint $table){
             $table->dropSoftDeletes();
         });
 
-        Schema::dropIfExists('snomeds');
+        Schema::dropIfExists('reference_terminologies');
     }
 };
