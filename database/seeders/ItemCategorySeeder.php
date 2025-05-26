@@ -74,7 +74,7 @@ class ItemCategorySeeder extends Seeder
             // Maintenance sub-categories
             ['parent' => 'Maintenance', 'name' => 'Medical Equipment', 'code' => 'MNT-MED', 'reference_terminology_id' => 1],
             ['parent' => 'Maintenance', 'name' => 'Other Equipment', 'code' => 'MNT-OEQ', 'reference_terminology_id' => 1],
-            ['parent' => 'Maintenance', 'name' => 'ICT', 'code' => 'MNT-ICT'],
+            ['parent' => 'Maintenance', 'name' => 'ICT', 'code' => 'MNT-ICT', 'reference_terminology_id' => 1],
         ];
 
         // Create all sub-categories
