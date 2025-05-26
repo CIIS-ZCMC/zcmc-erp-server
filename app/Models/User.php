@@ -20,6 +20,7 @@ class User extends Authenticatable
     protected $fillable = [
         'id',
         'umis_employee_profile_id',
+        'authorization_pin',
         'name',
         'email',
         'is_active',
@@ -94,8 +95,8 @@ class User extends Authenticatable
      * @return \App\Models\AccessToken|null
      */
     public function currentAccessToken()
-    {   
+    {
         return $this->session;
     }
-    
+
 }

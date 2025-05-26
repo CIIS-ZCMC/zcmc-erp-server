@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Auth\Middleware\Authenticate as Middleware;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -12,19 +13,15 @@ class AuthenticateApi extends Middleware
     /**
      * Handle an incoming request.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \Closure  $next
-     * @param  string[]  ...$guards
-     * @return mixed
+     * @param Request $request
+     * @return JsonResponse
      *
-     * @throws \Illuminate\Auth\AuthenticationException
      */
-    protected function redirectTo($request)
+    protected function redirectTo(Request $request): JsonResponse
     {
-        if (!$request->expectsJson()) {
-            return response()->json([
-                'message' => 'Unauthorized',
-            ], Response::HTTP_UNAUTHORIZED);
-        }
+        return response()->json([
+            'message' => 'Unauthorized',
+        ], Response::HTTP_UNAUTHORIZED);
+
     }
 }

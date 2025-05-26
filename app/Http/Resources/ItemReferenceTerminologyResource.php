@@ -5,7 +5,7 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class VariantResource extends JsonResource
+class ItemReferenceTerminologyResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -16,8 +16,9 @@ class VariantResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
             'code' => $this->code,
+            'system' => $this->system,
+            'description' => $this->description,
             'meta' => [
                 'created_at' => $this->created_at,
                 'updated_at' => $this->updated_at
