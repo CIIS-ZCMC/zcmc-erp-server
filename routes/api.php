@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Authentication\AuthController;
 use App\Http\Controllers\AopApplicationController;
+use App\Http\Controllers\Libraries\ItemReferenceTerminologyController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes - no authentication required
@@ -26,10 +27,12 @@ Route::
 
             Route::namespace('Libraries')->group(function () {
                 // Item routes
-                Route::get('item-reference-terminologies', "ItemReferenceTerminologyController@index");
-                Route::post('item-reference-terminologies', "ItemReferenceTerminologyController@store");
-                Route::put('item-reference-terminologies', "ItemReferenceTerminologyController@update");
-                Route::delete('item-reference-terminologies', "ItemReferenceTerminologyController@destroy");
+                Route::get('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'index']);
+                Route::post('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'store']);
+                Route::get('item-reference-terminologies/trashbin', [ItemReferenceTerminologyController::class, 'trash']);
+                Route::put('item-reference-terminologies/{id}/restore', [ItemReferenceTerminologyController::class, 'restore']);
+                Route::put('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'update']);
+                Route::delete('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'destroy']);
 
                 // Item routes
                 Route::get('items', "ItemController@index");
