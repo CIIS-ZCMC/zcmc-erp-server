@@ -11,6 +11,7 @@ use App\Models\FileRecord;
 use App\Models\ItemCategory;
 use App\Models\Item;
 use App\Models\ItemClassification;
+use App\Models\ItemSpecification;
 use App\Models\ItemUnit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -234,6 +235,7 @@ class ItemController extends Controller
 
         // Bulk Insert
         if ($request->items !== null || $request->items > 1) {
+            $new_items = [];
             $existing_items = [];
             $existing_items = Item::whereIn('name', collect($request->items)->pluck('name'))
                 ->whereIn('estimated_budget', collect($request->items)->pluck('estimated_budget'))
@@ -270,16 +272,25 @@ class ItemController extends Controller
                         && !in_array($item['item_unit_id'], $existing_item_unit_id) && !in_array($item['item_category_id'], $existing_item_category_id)
                         && !in_array($item['item_classification_id'], $existing_item_classification_id)
                     ) {
-                        $cleanData[] = [
+                        $cleanData = [
                             "name" => strip_tags($item['name']),
                             "code" => strip_tags($item['code']),
                             "estimated_budget" => strip_tags($item['estimated_budget']),
                             "item_unit_id" => strip_tags($item['item_unit_id']),
                             "item_category_id" => strip_tags($item['item_category_id']),
-                            "item_classification_id" => strip_tags($item['item_classification_id']),
-                            "created_at" => now(),
-                            "updated_at" => now()
+                            "item_classification_id" => strip_tags($item['item_classification_id'])
                         ];
+
+                        $new_item = Item::create($cleanData);
+
+                        foreach($item['specifications'] as $specification){
+                            ItemSpecification::create([
+                                'description'=> $specification['description'],
+                                'item_id'=> $new_item->id
+                            ]);
+                        }
+
+                        $new_items[] = $new_item;
                     }
                     continue;
                 }
@@ -299,16 +310,10 @@ class ItemController extends Controller
                 ], Response::HTTP_UNPROCESSABLE_ENTITY);
             }
 
-            Item::insert($cleanData);
-
-            $latest_items = Item::orderBy('id', 'desc')
-                ->limit(count($cleanData))->get()
-                ->sortBy('id')->values();
-
-            $message = count($latest_items) > 1 ? $base_message . "s record" : $base_message . " record.";
+            $message = count($new_items) > 1 ? $base_message . "s record" : $base_message . " record.";
 
             return response()->json([
-                "data" => ItemResource::collection($latest_items),
+                "data" => ItemResource::collection($new_items),
                 "message" => $message,
                 "metadata" => [
                     "methods" => "[GET, POST, PUT ,DELETE]",
@@ -341,6 +346,13 @@ class ItemController extends Controller
 
         $new_item = Item::create($cleanData);
 
+        foreach($request->input('specifications') as $specification){
+            ItemSpecification::create([
+                'description'=> $specification['description'],
+                'item_id'=> $new_item->id
+            ]);
+        }
+        
         if($request->hasFile('file'))
         {
             try{
