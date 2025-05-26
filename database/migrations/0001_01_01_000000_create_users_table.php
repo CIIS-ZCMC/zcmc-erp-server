@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('users', function (Blueprint $table) {
             $table->id();
             $table->string('umis_employee_profile_id')->nullable();
+            $table->string('authorization_pin', 10)->nullable();
             $table->string('name');
             $table->string('email')->nullable();
             $table->string('profile_url')->nullable();
