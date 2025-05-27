@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PpmpApplicationRequest;
 use App\Http\Resources\PpmpApplicationReceivingListResource;
+use App\Http\Resources\PpmpApplicationReceivingViewResource;
 use App\Http\Resources\PpmpApplicationResource;
 use App\Models\AopApplication;
 use App\Models\PpmpApplication;
@@ -119,7 +120,26 @@ class PpmpApplicationController extends Controller
             'message' => 'PPMP Applications retrieved successfully.'
         ], Response::HTTP_OK);
     }
+    public function receivingListView($id): JsonResponse
+    {
+        $ppmp_application = PpmpApplication::with([
+            'user',
+            'ppmpItems.item.itemClassification',
+            'ppmpItems.item.itemCategory',
+            'ppmpItems.item.itemUnit'
+        ])->find($id);
 
+        if (!$ppmp_application) {
+            return response()->json([
+                'message' => 'PPMP Application not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json([
+            'data' => new PpmpApplicationReceivingViewResource($ppmp_application),
+            'message' => 'PPMP Application retrieved successfully'
+        ], Response::HTTP_OK);
+    }
 
     public function store(PpmpApplicationRequest $request)
     {
