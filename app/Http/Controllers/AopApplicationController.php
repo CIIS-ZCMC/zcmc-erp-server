@@ -112,7 +112,7 @@ class AopApplicationController extends Controller
             ->first();
 
         if (!$userAopApplication) {
-            return response()->json(['message' => 'No AOP application found for this user\'s assigned area.'], 404);
+            return response()->json(['data' => []]);
         }
 
         return $this->getAopApplicationSummary($userAopApplication->id);
