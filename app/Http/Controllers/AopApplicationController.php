@@ -361,7 +361,8 @@ class AopApplicationController extends Controller
 
 
             // Use ApprovalService to process the request
-            $approval_service = new ApprovalService();
+            $approval_service = app(ApprovalService::class);
+
 
             // Create a timeline entry using the service
             $aop_application_timeline = $approval_service->createApplicationTimeline(
@@ -593,17 +594,18 @@ class AopApplicationController extends Controller
                 'action' => "Create Ppmp",
                 'action_by' => $user_id,
             ]);
+            $curr_user = User::find($request->user()->id);
 
             $user = User::where('id', $user_id)->first();
             $user_assigned_area_id = $user->assignedArea->id;
 
             // Use ApprovalService to process the request
-            $approval_service = new ApprovalService();
+            $approval_service = app(ApprovalService::class);
 
             // Create a timeline entry using the service
             $aop_application_timeline = $approval_service->createApplicationTimeline(
                 $aopApplication->id,
-                $user_id,
+                $curr_user,
                 $user_assigned_area_id,
                 $request->status,
                 $request->remarks
