@@ -16,7 +16,7 @@ return new class extends Migration {
             $table->foreign('ppmp_application_id')->references('id')->on('ppmp_applications');
             $table->unsignedBigInteger('item_id');
             $table->foreign('item_id')->references('id')->on('items');
-            $table->unsignedBigInteger('procurement_mode_id');
+            $table->unsignedBigInteger('procurement_mode_id')->nullable();
             $table->foreign('procurement_mode_id')->references('id')->on('procurement_modes');
             $table->unsignedBigInteger('item_request_id')->nullable();
             $table->foreign('item_request_id')->references('id')->on('item_requests');
