@@ -9,9 +9,20 @@ use App\Helpers\RealtimeCommunicationHelper;
 use App\Http\Resources\NotificationResource;
 use App\Jobs\EmitNewDataToSocketConnectionJob;
 use Illuminate\Support\Facades\Log;
+use App\Services\EmailService;
 
 class NotificationService
 {
+    protected EmailService $emailService;
+
+    /**
+     * Create a new service instance.
+     */
+    public function __construct(EmailService $emailService)
+    {
+        $this->emailService = $emailService;
+    }
+
     /**
      * Send a notification to a single user
      *
@@ -49,7 +60,35 @@ class NotificationService
             EmitNewDataToSocketConnectionJob::dispatch(
                 RealtimeCommunicationHelper::$NOTIFICATION_EVENT . '-' . $user->id,
                 $notification_data
-            )->onQueue('socket');
+            );
+
+            // Send email notification if user has an email
+            if ($user->email) {
+                // Prepare email data
+                $emailData = [
+                    'subject' => $notif_details['title'],
+                    'message' => $notif_details['description'],
+                    'status' => $notif_details['status'] ?? 'updated',
+                    'module_path' => $notif_details['module_path'] ?? null,
+                ];
+
+                // Add AOP application ID if present
+                if (isset($notif_details['aop_application_id'])) {
+                    $emailData['aop_application_id'] = $notif_details['aop_application_id'];
+
+                    // Determine context based on notification purpose
+                    $context = 'update_user';
+                    if (str_contains($notif_details['title'], 'Requires Your Action')) {
+                        $context = 'update_next_approver';
+                    }
+
+                    // Send AOP-specific email notification
+                    $this->emailService->sendAopStatusUpdate($user->email, $context, $emailData);
+                } else {
+                    // Send general notification email
+                    $this->emailService->sendNotification($user->email, $emailData);
+                }
+            }
 
             // If this is an AOP application notification, also emit an AOP update if applicable
             if (isset($notif_details['aop_application_id'])) {
@@ -64,13 +103,14 @@ class NotificationService
                 EmitNewDataToSocketConnectionJob::dispatch(
                     RealtimeCommunicationHelper::$AOP_UPDATE_EVENT . '-' . $notif_details['aop_application_id'],
                     $aopUpdateData
-                )->onQueue('socket');
+                );
             }
 
             Log::info('Notification sent to user', [
                 'user_id' => $user->id,
                 'notification_id' => $notification->id,
-                'title' => $notif_details['title']
+                'title' => $notif_details['title'],
+                'email_sent' => !empty($user->email)
             ]);
         } catch (\Exception $e) {
             Log::error('Failed to send notification', [
@@ -100,6 +140,7 @@ class NotificationService
 
             // Collect user IDs for multi-user socket emission
             $userIds = [];
+            $emailRecipients = [];
 
             // Create user-specific notification links for each user
             foreach ($users as $user) {
@@ -111,6 +152,11 @@ class NotificationService
 
                 $userIds[] = $user->id;
 
+                // Collect email addresses for bulk email
+                if ($user->email) {
+                    $emailRecipients[] = $user->email;
+                }
+
                 // Load the userNotification relationship for consistent resource creation
                 $notification->load('userNotification');
 
@@ -121,7 +167,34 @@ class NotificationService
                 EmitNewDataToSocketConnectionJob::dispatch(
                     RealtimeCommunicationHelper::$NOTIFICATION_EVENT . '-' . $user->id,
                     $userData
-                )->onQueue('socket');
+                );
+            }
+
+            // Send email notifications if we have recipients
+            if (!empty($emailRecipients)) {
+                // Prepare email data
+                $emailData = [
+                    'subject' => $notif_details['title'],
+                    'message' => $notif_details['description'],
+                    'status' => $notif_details['status'] ?? 'updated',
+                    'module_path' => $notif_details['module_path'] ?? null,
+                ];
+
+                // Add AOP application ID if present
+                if (isset($notif_details['aop_application_id'])) {
+                    $emailData['aop_application_id'] = $notif_details['aop_application_id'];
+
+                    // For bulk notifications, use general update context
+                    $context = 'update_all';
+
+                    // Send individual AOP-specific emails to maintain personalization
+                    foreach ($emailRecipients as $recipient) {
+                        $this->emailService->sendAopStatusUpdate($recipient, $context, $emailData);
+                    }
+                } else {
+                    // Send general bulk notification email
+                    $this->emailService->sendBulkNotification($emailRecipients, $emailData);
+                }
             }
 
             // If this is an AOP application notification, also emit an AOP update if applicable
@@ -137,11 +210,12 @@ class NotificationService
                 EmitNewDataToSocketConnectionJob::dispatch(
                     RealtimeCommunicationHelper::$AOP_UPDATE_EVENT . '-' . $notif_details['aop_application_id'],
                     $aopUpdateData
-                )->onQueue('socket');
+                );
             }
 
             Log::info('Notification sent to multiple users', [
                 'user_count' => count($users),
+                'email_recipient_count' => count($emailRecipients),
                 'notification_id' => $notification->id,
                 'title' => $notif_details['title']
             ]);
