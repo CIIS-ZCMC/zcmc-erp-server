@@ -3,9 +3,11 @@
 namespace App\Services;
 
 use App\Jobs\SendEmailJob;
+use App\Mail\ApprovalNotification;
 use App\Models\EmailLog;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Mail;
 
 class EmailService
 {
@@ -23,7 +25,7 @@ class EmailService
             $this->validateEmailData($data);
 
             // Dispatch the email job to the queue
-            SendEmailJob::dispatch($recipient, $data)->onQueue('email');
+            SendEmailJob::dispatch($recipient, $data);
 
             Log::info('Email notification queued', [
                 'recipient' => $recipient,
@@ -53,7 +55,7 @@ class EmailService
 
             foreach ($recipients as $recipient) {
                 // Dispatch an email job for each recipient
-                SendEmailJob::dispatch($recipient, $data)->onQueue('email');
+                SendEmailJob::dispatch($recipient, $data);
             }
 
             Log::info('Bulk email notifications queued', [
@@ -94,7 +96,7 @@ class EmailService
             }
 
             // Dispatch the email job to the queue
-            SendEmailJob::dispatch($recipient, $emailData)->onQueue('email');
+            SendEmailJob::dispatch($recipient, $emailData);
 
             Log::info('Transaction update email queued', [
                 'recipient' => $recipient,
@@ -150,7 +152,7 @@ class EmailService
             }
 
             // Dispatch the email job to the queue
-            SendEmailJob::dispatch($recipient, $emailData)->onQueue('email');
+            SendEmailJob::dispatch($recipient, $emailData);
 
             Log::info('AOP status update email queued', [
                 'recipient' => $recipient,
