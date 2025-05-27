@@ -268,6 +268,7 @@ class PpmpApplicationController extends Controller
             'applicationObjectives.objective',
             'applicationObjectives.objective.typeOfFunction',
             'applicationObjectives.successIndicator',
+            'applicationObjectives.activities'
             // 'applicationObjectives.otherObjective'   ,
             // 'applicationObjectives.otherSuccessIndicator',
             // 'applicationObjectives.activities.target',

@@ -14,7 +14,9 @@ class AopResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $type_of_functions = $this->applicationObjectives
+        $applicationObjectives = $this->applicationObjectives;
+
+        $type_of_function = $applicationObjectives
             ->groupBy(fn($item) => $item->objective->type_of_function_id)
             ->map(function ($items) {
                 $typeOfFunction = $items->first()->objective->typeOfFunction;
@@ -47,15 +49,25 @@ class AopResource extends JsonResource
             })->values();
 
 
+        $application_objective = $applicationObjectives->map(function ($appObj) use ($type_of_function) {
+            return [
+                'id' => $appObj->id,
+                'aop_application_id' => $appObj->aop_application_id,
+                'objective_id' => $appObj->objective_id,
+                'success_indicator_id' => $appObj->success_indicator_id,
+                'deleted_at' => $appObj->deleted_at,
+                'created_at' => $appObj->created_at,
+                'updated_at' => $appObj->updated_at,
+                'function' => $type_of_function->filter(function ($function) use ($appObj) {
+                    return $function['id'] === $appObj->objective->type_of_function_id;
+                })->values(),
+                'activities' => ActivityResource::collection($appObj->activities),
+            ];
+        });
+
         return [
             'id' => $this->id,
-            // 'sector_id' => $this->sector_id,
-            // 'sector' => $this->sector,
-            // // 'year' => $this->year,
-            // 'status' => $this->status,
-            // 'created_at' => $this->created_at,
-            // 'updated_at' => $this->updated_at,
-            'type_of_functions' => $type_of_functions,
+            'application_objectives' => $application_objective,
         ];
     }
 }
