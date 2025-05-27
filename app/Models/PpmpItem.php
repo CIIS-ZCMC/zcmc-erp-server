@@ -20,6 +20,7 @@ class PpmpItem extends Model
         'total_quantity',
         'estimated_budget',
         'total_amount',
+        'expense_class',
         'remarks',
     ];
 
