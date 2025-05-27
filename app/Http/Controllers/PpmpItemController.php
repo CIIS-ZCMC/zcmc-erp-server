@@ -85,177 +85,166 @@ class PpmpItemController extends Controller
 
     public function store(PpmpItemRequest $request)
     {
-        try {
-            DB::beginTransaction();
 
-            $createdItems = [];
+        DB::beginTransaction();
 
-            $ppmp_application = PpmpApplication::latest()->first();
+        $ppmp_application = PpmpApplication::latest()->first();
 
-            if (!$ppmp_application) {
+        if (!$ppmp_application) {
+            return response()->json([
+                'message' => "No record found.",
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $monthMap = [
+            'jan' => 1,
+            'feb' => 2,
+            'mar' => 3,
+            'apr' => 4,
+            'may' => 5,
+            'jun' => 6,
+            'jul' => 7,
+            'aug' => 8,
+            'sep' => 9,
+            'oct' => 10,
+            'nov' => 11,
+            'dec' => 12,
+        ];
+
+        $ppmpItems = json_decode($request['PPMP_Items'], true);
+
+        foreach ($ppmpItems as $item) {
+            $procurement_mode = null;
+            if ($item['procurement_mode'] !== "") {
+                $procurement_mode = ProcurementModes::where('name', $item['procurement_mode']['name'])->first()->id;
+
+                if (!$procurement_mode) {
+                    return response()->json([
+                        'message' => 'Procurement mode not found.',
+                    ], Response::HTTP_NOT_FOUND);
+                }
+            }
+
+            $items = Item::where('code', $item['item_code'])->first();
+            if (!$items) {
                 return response()->json([
-                    'message' => "No record found.",
+                    'message' => 'Item not found.',
                 ], Response::HTTP_NOT_FOUND);
             }
 
-            $monthMap = [
-                'jan' => 1,
-                'feb' => 2,
-                'mar' => 3,
-                'apr' => 4,
-                'may' => 5,
-                'jun' => 6,
-                'jul' => 7,
-                'aug' => 8,
-                'sep' => 9,
-                'oct' => 10,
-                'nov' => 11,
-                'dec' => 12,
+            $find_ppmp_item = PpmpItem::where('item_id', $items->id)->first();
+            $ppmp_data = [
+                'ppmp_application_id' => 1,
+                'item_id' => $items->id,
+                'procurement_mode_id' => $procurement_mode,
+                'item_request_id' => $item['item_request_id'] ?? null,
+                'remarks' => $item['remarks'] ?? null,
+                'estimated_budget' => $item['estimated_budget'] ?? 0,
+                'total_quantity' => $item['quantity'] ?? 0,
+                'total_amount' => $item['total_amount'] ?? 0,
             ];
 
-            $ppmpItems = json_decode($request['PPMP_Items'], true);
+            if (!$find_ppmp_item) {
+                $ppmpItem = PpmpItem::create($ppmp_data); // Create PPMP item
+            } else {
+                $ppmpItem = $find_ppmp_item;
+                $ppmpItem->update($ppmp_data); // Update PPMP item
+            }
 
-            foreach ($ppmpItems as $item) {
-                $procurement_mode = null;
-                if ($item['procurement_mode'] !== "") {
-                    $procurement_mode = ProcurementModes::where('name', $item['procurement_mode']['name'])->first()->id;
+            foreach ($item['activities'] as $activity) {
+                $activities = Activity::find($activity['activity_id'] ?? $activity['id'] ?? null);
 
-                    if (!$procurement_mode) {
-                        return response()->json([
-                            'message' => 'Procurement mode not found.',
-                        ], 404);
-                    }
-                }
+                if ($activities) {
+                    $activity_ppmp_item = $activities->ppmpItems()
+                        ->where('activity_id', $activities->id)
+                        ->where('ppmp_item_id', $ppmpItem->id)
+                        ->first();
 
-                $items = Item::where('code', $item['item_code'])->first();
-                if (!$items) {
-                    return response()->json([
-                        'message' => 'Item not found.',
-                    ], 404);
-                }
+                    if (!$activity_ppmp_item) {
+                        $activities->ppmpItems()->attach($ppmpItem->id, [
+                            'remarks' => $ppmpItem['remarks'] ?? null,
+                            'is_draft' => $request->is_draft ?? 0,
+                        ]);
 
-                $find_ppmp_item = PpmpItem::where('item_id', $items->id)->first();
-                $ppmp_data = [
-                    'ppmp_application_id' => 1,
-                    'item_id' => $items->id,
-                    'procurement_mode_id' => $procurement_mode,
-                    'item_request_id' => $item['item_request_id'] ?? null,
-                    'remarks' => $item['remarks'] ?? null,
-                    'estimated_budget' => $item['estimated_budget'] ?? 0,
-                    'total_quantity' => $item['quantity'] ?? 0,
-                    'total_amount' => $item['total_amount'] ?? 0,
-                ];
-
-                if (!$find_ppmp_item) {
-                    // Create PPMP item
-                    $ppmpItem = PpmpItem::create($ppmp_data);
-                } else {
-                    // Update PPMP item
-                    $ppmpItem = $find_ppmp_item;
-                    $ppmpItem->update($ppmp_data);
-                }
-
-                foreach ($item['activities'] as $activity) {
-                    $activities = Activity::find($activity['activity_id'] ?? $activity['id'] ?? null);
-
-                    if ($activities) {
-                        $activity_ppmp_item = $activities->ppmpItems()
-                            ->where('activity_id', $activities->id)
-                            ->where('ppmp_item_id', $ppmpItem->id)
-                            ->first();
-
-                        if (!$activity_ppmp_item) {
-                            $activities->ppmpItems()->attach($ppmpItem->id, [
-                                'remarks' => $ppmpItem['remarks'] ?? null,
-                                'is_draft' => $request->is_draft ?? 0,
-                            ]);
-
-                            $resource_request = [
-                                'activity_id' => $activities->id,
-                                'item_id' => $items->id,
-                                'purchase_type_id' => $item['purchase_type_id'] ?? 1,
-                                'quantity' => $item['aop_quantity'] ?? 0,
-                                'expense_class' => $item['expense_class'],
-                            ];
-
-                            $resource = Resource::where('activity_id', $activities->id)
-                                ->where('item_id', $items->id)
-                                ->first();
-
-                            if ($resource) {
-                                $resource->update($resource_request);
-                            } else {
-                                Resource::create($resource_request);
-                            }
-                        } else {
-                            $activity_ppmp_item->pivot->remarks = $item['remarks'];
-                            $activity_ppmp_item->pivot->is_draft = $request->is_draft ?? 0;
-                            $activity_ppmp_item->pivot->save();
-
-                            $resource_request = [
-                                'activity_id' => $activities->id,
-                                'item_id' => $items->id,
-                                'purchase_type_id' => $item['purchase_type_id'] ?? 1,
-                                'quantity' => $item['aop_quantity'] ?? 0,
-                                'expense_class' => $item['expense_class'],
-                            ];
-
-                            $resource = Resource::where('activity_id', $activities->id)
-                                ->where('item_id', $items->id)
-                                ->first();
-
-                            if ($resource) {
-                                $resource->update($resource_request);
-                            } else {
-                                Resource::create($resource_request);
-                            }
-                        }
-                    }
-                }
-
-                foreach ($item['target_by_quarter'] as $monthly => $quantity) {
-                    if ($quantity >= 0 && isset($monthMap[$monthly])) {
-                        $target_request = [
-                            'ppmp_item_id' => $ppmpItem->id,
-                            'month' => $monthMap[$monthly],
-                            'year' => now()->addYear()->year,
-                            'quantity' => $quantity,
+                        $resource_request = [
+                            'activity_id' => $activities->id,
+                            'item_id' => $items->id,
+                            'purchase_type_id' => $item['purchase_type_id'] ?? 1,
+                            'quantity' => $item['aop_quantity'] ?? 0,
+                            'expense_class' => $item['expense_class'],
                         ];
 
-                        $ppmp_schedule = PpmpSchedule::where('ppmp_item_id', $ppmpItem->id)
-                            ->where('month', $monthMap[$monthly])
-                            ->where('year', now()->addYear()->year)
+                        $resource = Resource::where('activity_id', $activities->id)
+                            ->where('item_id', $items->id)
                             ->first();
 
-                        if ($ppmp_schedule) {
-                            $ppmp_schedule->update($target_request);
+                        if ($resource) {
+                            $resource->update($resource_request);
                         } else {
-                            PpmpSchedule::create($target_request);
+                            Resource::create($resource_request);
+                        }
+
+                    } else {
+                        $activity_ppmp_item->pivot->remarks = $item['remarks'];
+                        $activity_ppmp_item->pivot->is_draft = $request->is_draft ?? 0;
+                        $activity_ppmp_item->pivot->save();
+
+                        $resource_request = [
+                            'activity_id' => $activities->id,
+                            'item_id' => $items->id,
+                            'purchase_type_id' => $item['purchase_type_id'] ?? 1,
+                            'quantity' => $item['aop_quantity'] ?? 0,
+                            'expense_class' => $item['expense_class'],
+                        ];
+
+                        $resource = Resource::where('activity_id', $activities->id)
+                            ->where('item_id', $items->id)
+                            ->first();
+
+                        if ($resource) {
+                            $resource->update($resource_request);
+                        } else {
+                            Resource::create($resource_request);
                         }
                     }
                 }
             }
 
-            DB::commit();
+            foreach ($item['target_by_quarter'] as $monthly => $quantity) {
+                if ($quantity >= 0 && isset($monthMap[$monthly])) {
+                    $target_request = [
+                        'ppmp_item_id' => $ppmpItem->id,
+                        'month' => $monthMap[$monthly],
+                        'year' => now()->addYear()->year,
+                        'quantity' => $quantity,
+                    ];
 
-            return response()->json([
-                'data' => new PpmpApplicationResource($ppmp_application),
-                'message' => 'PPMP Items created successfully.',
-            ], Response::HTTP_CREATED);
-        } catch (\Exception $e) {
-            DB::rollBack();
+                    $ppmp_schedule = PpmpSchedule::where('ppmp_item_id', $ppmpItem->id)
+                        ->where('month', $monthMap[$monthly])
+                        ->where('year', now()->addYear()->year)
+                        ->first();
 
-            return response()->json([
-                'message' => 'Error creating PPMP Items: ' . $e->getMessage()
-            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+                    if ($ppmp_schedule) {
+                        $ppmp_schedule->update($target_request);
+                    } else {
+                        PpmpSchedule::create($target_request);
+                    }
+                }
+            }
         }
+
+        DB::commit();
+
+        return response()->json([
+            'data' => new PpmpApplicationResource($ppmp_application),
+            'message' => 'PPMP Items created successfully.',
+        ], Response::HTTP_CREATED);
     }
 
     public function destroy(Request $request)
     {
         // Get the current user and its area
         $curr_user = User::find($request->user()->id);
-        $curr_user_assigned_area = $curr_user->assignedArea;
         $curr_user_authorization_pin = $curr_user->authorization_pin;
 
         if ($curr_user_authorization_pin !== $request->authorization_pin) {
