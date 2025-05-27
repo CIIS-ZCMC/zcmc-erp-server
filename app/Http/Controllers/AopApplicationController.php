@@ -231,7 +231,7 @@ class AopApplicationController extends Controller
 
             //  $user_id = $request->user()->id;
             $user_id = 2;
-            $curr_user = User::find($request->user()->id);
+
             $user = User::where('id', $user_id)->first();
             $user_assigned_area_id = $user->assignedArea->id;
 
@@ -360,25 +360,25 @@ class AopApplicationController extends Controller
             ]);
 
 
+            // $curr_user = User::find($request->user()->id);
+            // // Use ApprovalService to process the request
+            // $approval_service = app(ApprovalService::class);
 
-            // Use ApprovalService to process the request
-            $approval_service = app(ApprovalService::class);
 
+            // // Create a timeline entry using the service
+            // $aop_application_timeline = $approval_service->createApplicationTimeline(
+            //     $aopApplication->id,
+            //     $curr_user,
+            //     $user_assigned_area_id,
+            //     $request->status,
+            //     $request->remarks
+            // );
 
-            // Create a timeline entry using the service
-            $aop_application_timeline = $approval_service->createApplicationTimeline(
-                $aopApplication->id,
-                $curr_user,
-                $user_assigned_area_id,
-                $request->status,
-                $request->remarks
-            );
-
-            if (!$aop_application_timeline) {
-                return response()->json([
-                    'message' => 'AOP application timeline not created',
-                ], Response::HTTP_BAD_REQUEST);
-            }
+            // if (!$aop_application_timeline) {
+            //     return response()->json([
+            //         'message' => 'AOP application timeline not created',
+            //     ], Response::HTTP_BAD_REQUEST);
+            // }
         });
 
 
@@ -472,6 +472,7 @@ class AopApplicationController extends Controller
                 'sector_id' => $area['details']['id'],
                 'has_discussed' => $validatedData['has_discussed'],
                 'remarks' => $validatedData['remarks'] ?? null,
+                'year' => now()->year,
             ]);
 
 
@@ -595,28 +596,30 @@ class AopApplicationController extends Controller
                 'action' => "Create Ppmp",
                 'action_by' => $user_id,
             ]);
-            $curr_user = User::find($request->user()->id);
 
-            $user = User::where('id', $user_id)->first();
-            $user_assigned_area_id = $user->assignedArea->id;
 
-            // Use ApprovalService to process the request
-            $approval_service = app(ApprovalService::class);
+            // $curr_user = User::find($request->user()->id);
 
-            // Create a timeline entry using the service
-            $aop_application_timeline = $approval_service->createApplicationTimeline(
-                $aopApplication->id,
-                $curr_user,
-                $user_assigned_area_id,
-                $request->status,
-                $request->remarks
-            );
+            // $user = User::where('id', $user_id)->first();
+            // $user_assigned_area_id = $user->assignedArea->id;
 
-            if (!$aop_application_timeline) {
-                return response()->json([
-                    'message' => 'AOP application timeline not created',
-                ], Response::HTTP_BAD_REQUEST);
-            }
+            // // Use ApprovalService to process the request
+            // $approval_service = app(ApprovalService::class);
+
+            // // Create a timeline entry using the service
+            // $aop_application_timeline = $approval_service->createApplicationTimeline(
+            //     $aopApplication->id,
+            //     $user,
+            //     $user_assigned_area_id,
+            //     $request->status,
+            //     $request->remarks
+            // );
+
+            // if (!$aop_application_timeline) {
+            //     return response()->json([
+            //         'message' => 'AOP application timeline not created',
+            //     ], Response::HTTP_BAD_REQUEST);
+            // }
 
             // $aopApplicationTimeline = $aopApplication->applicationTimelines()->create([
             //     'aop_application_id' => $aopApplication->id,
@@ -626,7 +629,7 @@ class AopApplicationController extends Controller
             //     'status' => $validatedData['status'],
             //     'date_created' => now(),
             // ]);
-            DB::commit();
+            // DB::commit();
 
             return response()->json(['message' => 'AOP Application created successfully'], Response::HTTP_OK);
         } catch (\Exception $e) {
