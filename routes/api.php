@@ -180,6 +180,7 @@ Route::
             Route::apiResource('ppmp-applications', PpmpApplicationController::class);
             Route::get('ppmp-receiving-list', [PpmpApplicationController::class, "receivingList"]);
             Route::get('ppmp-receiving-list-view/{id}', [PpmpApplicationController::class, "receivingListView"]);
+            Route::post('ppmp-applications/{id}/receive', [PpmpApplicationController::class, "receivePpmpApplication"]);
 
 
             // Ppmp Item Module
