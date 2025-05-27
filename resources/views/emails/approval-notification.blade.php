@@ -5,6 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $data['subject'] }}</title>
+    {{--
+    CSS Styling for Email Template
+
+    This styling is inline to ensure maximum compatibility with email clients.
+    The design follows ZCMC branding guidelines and is structured to be
+    responsive and accessible across different devices and email clients.
+    --}}
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -96,8 +103,14 @@
 
 <body>
 
+    {{--
+    Main Email Container
 
+    This container holds the entire email content with a max-width of 600px
+    to ensure good readability across devices.
+    --}}
     <div class="container">
+        {{-- Header Section with ZCMC and DOH Logos --}}
         <header>
             <div class="header-container">
                 <div class="header-item logo-container">
@@ -116,8 +129,11 @@
             </div>
         </header>
 
+        {{-- Email Subject Line --}}
         <h2 style="text-align: center; margin: 10px 0 10px 0">{{ $data['subject'] }}</h2>
         <hr>
+
+        {{-- Personalized Greeting - Dynamic based on context --}}
         <p>
             @if ($data['context'] === 'request' || $data['context'] === 'update_user')
                 Dear <strong>{{ $data['requester_name'] }}</strong>,
@@ -126,6 +142,13 @@
             @endif
         </p>
 
+        {{--
+        Notification Content
+        This section dynamically displays different messages based on the context of the notification:
+        - request: Initial request submission
+        - update_user: Status update notification for the requester
+        - update_next_user: Notification for the next person in the workflow
+        --}}
         <p>
             @if ($data['context'] === 'request')
                 This is to notify you that your request has been submitted successfully and is now
@@ -141,10 +164,14 @@
             @endif
         </p>
 
+        {{--
+        Transaction Details Section
+
+        This section displays key details about the transaction, including type, code, status, and requested date.
+        --}}
         <div class="details">
             <h3>Transaction Details</h3>
             <table>
-                <tr></tr>
                 <tr>
                     <th>Transaction Type</th>
                     <td>{{ $data['transaction_type'] }}</td>
@@ -186,6 +213,11 @@
             </table>
         </div>
 
+        {{--
+        Requester Details Section
+
+        This section provides information about the person who made the request, including their employee ID, name, area, and area code.
+        --}}
         <div class="details">
             <h3>Requester Details</h3>
             <table>
@@ -212,8 +244,15 @@
             </table>
         </div>
 
+        {{-- Remarks Section --}}
         <p><strong>Remarks:</strong> {{ $data['remarks'] }}</p>
 
+        {{--
+        Current Location Information Box
+
+        This section displays the current location of the request in the workflow.
+        It dynamically shows different information based on where the request is currently being processed.
+        --}}
         <div style="margin-bottom: 15px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #007bff;">
             <p style="margin: 0;"><strong>Current Location:</strong>
                 @if (isset($data['current_office_area_code']) && $data['current_office_area_code'] != 'N/A')
@@ -232,6 +271,13 @@
             </p>
         </div>
 
+        {{--
+        Status-specific Messages
+
+        This section provides additional context and instructions based on the current
+        status of the request. Each status has specific information relevant to that stage
+        in the workflow.
+        --}}
         <p>
             @switch($data['status'] ?? 'Pending')
                 @case('Pending')
@@ -279,6 +325,7 @@
                 href="mailto:ciis.zcmc@gmail.com">ciis.zcmc@gmail.com</a>.
         </p>
 
+        {{-- Footer Section with Sender Information --}}
         <div class="footer">
             <p style="margin: 0;">Best regards,</p>
             <p style="margin: 0;">IISU</p>

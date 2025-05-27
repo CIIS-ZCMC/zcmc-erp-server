@@ -11,9 +11,7 @@ class Notification extends Model
     protected $fillable = [
         'title',
         'description',
-        'module_path',
-        'seen',
-        'user_id'
+        'module_path'
     ];
 
     public function user(): BelongsTo
