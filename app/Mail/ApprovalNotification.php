@@ -12,7 +12,7 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Mail\Mailables\Address;
 
-class ApprovalNotification extends Mailable implements ShouldQueue
+class ApprovalNotification extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -32,7 +32,7 @@ class ApprovalNotification extends Mailable implements ShouldQueue
     public function envelope(): Envelope
     {
         return new Envelope(
-            from: new Address('zcmcprtracking@gmail.com', 'ZCMC PR Tracking System'),
+            from: new Address('mustaham.zcmc@gmail.com', 'ERP System'),
             subject: $this->data['subject']
         );
     }
@@ -48,14 +48,4 @@ class ApprovalNotification extends Mailable implements ShouldQueue
         );
     }
 
-
-    /**
-     * Get the attachments for the message.
-     *
-     * @return array<int, \Illuminate\Mail\Mailables\Attachment>
-     */
-    public function attachments(): array
-    {
-        return [];
-    }
 }
