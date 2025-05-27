@@ -363,7 +363,6 @@ class AopApplicationSeeder extends Seeder
                     'item_unit_id' => $unitId,
                     'name' => 'Sample Item',
                     'estimated_budget' => $activity->cost,
-                    'variant_id' => 1,
                     'created_at' => now(),
                     'updated_at' => now()
                 ]);

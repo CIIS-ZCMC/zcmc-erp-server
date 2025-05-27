@@ -24,6 +24,8 @@ class PpmpApplicationController extends Controller
     public function index(Request $request)
     {
         $year = $request->query('year', now()->year + 1);
+        $user = User::find($request->user()->id);
+        $sector = $user->assignedArea->findDetails();
 
         $ppmp_application = PpmpApplication::with([
             'ppmpItems' => function ($query) {
@@ -34,10 +36,11 @@ class PpmpApplicationController extends Controller
                     'activities'
                 ]);
             },
-            'aopApplication' => function ($query) {
-                $query->where('sector_id', 33);
+            'aopApplication' => function ($query) use ($sector) {
+                $query->where('sector_id', $sector['details']['id'])
+                    ->where('sector', $sector['details']['name']);
             }
-        ])->first();
+        ])->whereYear('created_at', $year)->first();
 
         if (!$ppmp_application) {
             return response()->json([
