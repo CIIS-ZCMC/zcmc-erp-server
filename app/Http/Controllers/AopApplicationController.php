@@ -229,6 +229,7 @@ class AopApplicationController extends Controller
                 'ppmpApplication',
             ])->findOrFail($id);
 
+            //  $user_id = $request->user()->id;
             $user_id = 2;
             $curr_user = User::find($request->user()->id);
             $user = User::where('id', $user_id)->first();
