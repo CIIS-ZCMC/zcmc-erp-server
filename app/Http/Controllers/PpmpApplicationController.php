@@ -209,4 +209,54 @@ class PpmpApplicationController extends Controller
             'message' => 'PPMP Application retrieved successfully'
         ], Response::HTTP_OK);
     }
+
+    public function receivePpmpApplication(Request $request, PpmpApplication $ppmp_application): JsonResponse
+    {
+        // Validate request
+        $request->validate([
+            'authorization_pin' => 'required|string'
+        ]);
+
+        // Get current user
+        $user = User::find($request->user()->id);
+
+        // Verify authorization PIN
+        if ($user->authorization_pin !== $request->authorization_pin) {
+            return response()->json([
+                'message' => 'Invalid authorization PIN'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Check if PPMP application can be received (only if not already received)
+        if ($ppmp_application->status === 'received') {
+            return response()->json([
+                'message' => 'PPMP Application already received'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            // Update PPMP application status to received
+            $ppmp_application->status = 'received';
+            $ppmp_application->received_on = now();
+            $ppmp_application->save();
+
+            // Log the transaction
+            $ppmp_application->logs()->create([
+                'action' => 'PPMP Application Received',
+                'description' => 'PPMP Application #' . $ppmp_application->ppmp_application_uuid . ' was received',
+                'user_id' => $user->id
+            ]);
+
+            return response()->json([
+                'message' => 'PPMP Application received successfully',
+                'data' => $ppmp_application
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to receive PPMP Application',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
+    }
 }
