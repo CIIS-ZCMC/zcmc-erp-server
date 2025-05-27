@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PpmpApplicationRequest;
+use App\Http\Resources\AopResource;
 use App\Http\Resources\PpmpApplicationReceivingListResource;
 use App\Http\Resources\PpmpApplicationReceivingViewResource;
 use App\Http\Resources\PpmpApplicationResource;
@@ -173,9 +174,9 @@ class PpmpApplicationController extends Controller
         }
 
         if ($request->has('search')) {
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('ppmp_application_uuid', 'like', "%{$search}%")
-                    ->orWhereHas('user', function($q) use ($search) {
+                    ->orWhereHas('user', function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%");
                     });
             });
@@ -258,5 +259,31 @@ class PpmpApplicationController extends Controller
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
+    }
+
+    public function editAop(Request $request)
+    {
+
+        $aop_application = AopApplication::with([
+            'applicationObjectives.objective',
+            'applicationObjectives.objective.typeOfFunction',
+            'applicationObjectives.successIndicator',
+            // 'applicationObjectives.otherObjective'   ,
+            // 'applicationObjectives.otherSuccessIndicator',
+            // 'applicationObjectives.activities.target',
+            // 'applicationObjectives.activities.resources',
+            // 'applicationObjectives.activities.responsiblePeople.user',
+            // 'applicationObjectives.activities.comments',
+        ])->where('id', 1)->first();
+
+        if (!$aop_application) {
+            return response()->json([
+                'message' => 'AOP Application not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+        return response()->json([
+            'data' => new AopResource($aop_application),
+            'message' => 'AOP Application retrieved successfully'
+        ], Response::HTTP_OK);
     }
 }

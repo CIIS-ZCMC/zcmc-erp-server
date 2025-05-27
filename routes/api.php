@@ -182,6 +182,8 @@ Route::
             Route::get('ppmp-receiving-list-view/{id}', [PpmpApplicationController::class, "receivingListView"]);
             Route::post('ppmp-applications/{id}/receive', [PpmpApplicationController::class, "receivePpmpApplication"]);
 
+            Route::get('aop-application-edit', [PpmpApplicationController::class, "editAop"]);
+
 
             // Ppmp Item Module
             Route::get('ppmp-item-search', 'PpmpItemController@search');
