@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PpmpApplicationRequest;
+use App\Http\Resources\PpmpApplicationReceivingListResource;
 use App\Http\Resources\PpmpApplicationResource;
 use App\Models\AopApplication;
 use App\Models\PpmpApplication;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -24,10 +26,21 @@ class PpmpApplicationController extends Controller
     public function index(Request $request)
     {
         $year = $request->query('year', now()->year + 1);
+        $status = $request->query('status', null);
         $user = User::find($request->user()->id);
         $sector = $user->assignedArea->findDetails();
 
-        $ppmp_application = PpmpApplication::with([
+        $query = PpmpApplication::query();
+
+        if ($request->has('year')) {
+            $query->whereYear('created_at', $year);
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $status);
+        }
+
+        $ppmp_application = $query->with([
             'ppmpItems' => function ($query) {
                 $query->with([
                     'item',
@@ -71,6 +84,42 @@ class PpmpApplicationController extends Controller
             'message' => 'PPMP Application retrieved successfully.'
         ], Response::HTTP_OK);
     }
+
+    public function receivingList(Request $request): JsonResponse
+    {
+        $search = $request->query('search', null);
+        $status = $request->query('status', null);
+        $year = $request->query('year', now()->year + 1);
+
+        $query = PpmpApplication::query();
+
+        // Apply filters
+        if ($request->has('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($request->has('year')) {
+            $query->whereYear('created_at', $year);
+        }
+
+        if ($request->has('search')) {
+            $query->where(function($q) use ($search) {
+                $q->where('ppmp_application_uuid', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        // Load necessary relationships for the resource
+        $ppmp_applications = $query->with(['user', 'ppmpItems'])->get();
+
+        return response()->json([
+            'data' => PpmpApplicationReceivingListResource::collection($ppmp_applications),
+            'message' => 'PPMP Applications retrieved successfully.'
+        ], Response::HTTP_OK);
+    }
+
 
     public function store(PpmpApplicationRequest $request)
     {

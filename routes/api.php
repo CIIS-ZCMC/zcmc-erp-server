@@ -178,6 +178,7 @@ Route::
 
             // Ppmp Application Module
             Route::apiResource('ppmp-applications', PpmpApplicationController::class);
+            Route::get('ppmp-receiving-list', [PpmpApplicationController::class, "receivingList"]);
 
             // Ppmp Item Module
             Route::get('ppmp-item-search', 'PpmpItemController@search');
