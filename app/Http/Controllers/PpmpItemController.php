@@ -6,7 +6,6 @@ use App\Http\Requests\PpmpItemRequest;
 use App\Http\Resources\PpmpApplicationResource;
 use App\Http\Resources\PpmpItemResource;
 use App\Models\Activity;
-use App\Models\ActivityPpmpItem;
 use App\Models\Item;
 use App\Models\PpmpApplication;
 use App\Models\PpmpItem;
@@ -14,7 +13,6 @@ use App\Models\PpmpSchedule;
 use App\Models\ProcurementModes;
 use App\Models\Resource;
 use App\Models\User;
-use Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -32,41 +30,56 @@ class PpmpItemController extends Controller
 
     public function index(Request $request)
     {
-        $ppmp_application = PpmpApplication::with([
-            'user',
-            'divisionChief',
-            'budgetOfficer',
-            'aopApplication',
-            'ppmpItems' => function ($query) {
-                $query->with([
-                    'item' => function ($query) {
-                        $query->with([
-                            'itemUnit',
-                            'itemCategory',
-                            'itemClassification',
-                            'itemSpecifications',
-                        ]);
-                    },
-                    'procurementMode',
-                    'itemRequest',
-                    'activities',
-                    'comments',
-                    'ppmpSchedule',
-                ]);
-            },
-        ])
-            ->where('id', 1)
-            ->whereNull('deleted_at')->latest()->first();
+        $year = $request->query('year', now()->year + 1);
+        $user = User::find($request->user()->id);
+        $sector = $user->assignedArea->findDetails();
 
-        if (!$ppmp_application) {
+        $ppmp_item = PpmpItem::with([
+            'ppmpApplication.user',
+            'ppmpApplication.divisionChief',
+            'ppmpApplication.budgetOfficer',
+            'ppmpApplication.aopApplication',
+            'item.itemUnit',
+            'item.itemCategory',
+            'item.itemClassification',
+            'item.itemSpecifications',
+            'procurementMode',
+            'itemRequest',
+            'activities',
+            'comments',
+            'ppmpSchedule',
+        ])
+            ->whereHas('ppmpApplication', function ($query) use ($year, $sector) {
+                $query->where('year', $year)
+                    ->with([
+                        'aopApplication' => function ($query) use ($sector) {
+                            $query->where('sector_id', $sector['details']['id'])
+                                ->where('sector', $sector['details']['name']);
+                        }
+                    ]);
+            })
+            ->whereNull('deleted_at')
+            ->get()
+            ->groupBy(function ($item) {
+                $app = $item->ppmpApplication;
+                return $app ? "{$app->year}_{$app->aopApplication->sector_id}" : 'undefined';
+            })
+            ->map(function ($items) {
+                return [
+                    'ppmp_application' => $items->first()->ppmpApplication,
+                    'ppmp_items' => $items
+                ];
+            })->first();
+
+        if (!$ppmp_item) {
             return response()->json([
                 'message' => "No record found.",
             ], Response::HTTP_NOT_FOUND);
         }
 
         return response()->json([
-            'data' => new PpmpApplicationResource($ppmp_application),
-            'message' => 'PPMP Application retrieved successfully.',
+            'data' => new PpmpItemResource($ppmp_item),
+            'message' => 'PPMP Items retrieved successfully.',
         ], Response::HTTP_OK);
     }
 
@@ -106,6 +119,12 @@ class PpmpItemController extends Controller
                 $procurement_mode = null;
                 if ($item['procurement_mode'] !== "") {
                     $procurement_mode = ProcurementModes::where('name', $item['procurement_mode']['name'])->first()->id;
+
+                    if (!$procurement_mode) {
+                        return response()->json([
+                            'message' => 'Procurement mode not found.',
+                        ], 404);
+                    }
                 }
 
                 $items = Item::where('code', $item['item_code'])->first();
@@ -232,25 +251,6 @@ class PpmpItemController extends Controller
         }
     }
 
-    public function show(PpmpItem $ppmpItem)
-    {
-        return response()->json([
-            'data' => new PpmpItemResource($ppmpItem),
-            'message' => "PPMP Item retrieved successfully."
-        ], Response::HTTP_OK);
-    }
-
-    public function update(PpmpItemRequest $request, PpmpItem $ppmpItem)
-    {
-        $data = $request->all();
-        $ppmpItem->update($data);
-
-        return response()->json([
-            'data' => new PpmpItemResource($ppmpItem),
-            'message' => "PPMP Item updated successfully."
-        ], Response::HTTP_OK);
-    }
-
     public function destroy(Request $request)
     {
         // Get the current user and its area
@@ -285,32 +285,50 @@ class PpmpItemController extends Controller
         $term = $request->input('search');
         $terms = $term ? explode(' ', $term) : [];
 
-        $query = PpmpApplication::with([
-            'user',
-            'divisionChief',
-            'budgetOfficer',
-            'aopApplication',
-            'ppmpItems' => function ($query) use ($terms) {
-                $query->with([
-                    'item' => function ($query) {
-                        $query->with([
-                            'itemUnit',
-                            'itemCategory',
-                            'itemClassification',
-                            'itemSpecifications',
-                        ]);
-                    },
-                    'procurementMode',
-                    'itemRequest',
-                    'activities',
-                    'comments',
-                    'ppmpSchedule',
-                ])->search($terms);
-            },
-        ])->whereNull('deleted_at')->latest()->first();
+        $year = $request->query('year', now()->year + 1);
+        $user = User::find($request->user()->id);
+        $sector = $user->assignedArea->findDetails();
+
+        $ppmp_item = PpmpItem::with([
+            'ppmpApplication.user',
+            'ppmpApplication.divisionChief',
+            'ppmpApplication.budgetOfficer',
+            'ppmpApplication.aopApplication',
+            'item.itemUnit',
+            'item.itemCategory',
+            'item.itemClassification',
+            'item.itemSpecifications',
+            'procurementMode',
+            'itemRequest',
+            'activities',
+            'comments',
+            'ppmpSchedule',
+        ])
+            ->whereHas('ppmpApplication', function ($query) use ($year, $sector) {
+                $query->where('year', $year)
+                    ->with([
+                        'aopApplication' => function ($query) use ($sector) {
+                            $query->where('sector_id', $sector['details']['id'])
+                                ->where('sector', $sector['details']['name']);
+                        }
+                    ]);
+            })
+            ->whereNull('deleted_at')
+            ->search($terms)
+            ->get()
+            ->groupBy(function ($item) {
+                $app = $item->ppmpApplication;
+                return $app ? "{$app->year}_{$app->aopApplication->sector_id}" : 'undefined';
+            })
+            ->map(function ($items) {
+                return [
+                    'ppmp_application' => $items->first()->ppmpApplication,
+                    'ppmp_items' => $items
+                ];
+            })->first();
 
         return response()->json([
-            'data' => new PpmpApplicationResource($query),
+            'data' => new PpmpItemResource($ppmp_item),
             'message' => "PPMP Items retrieved successfully."
         ], Response::HTTP_OK);
     }

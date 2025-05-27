@@ -12,6 +12,7 @@ use App\Models\PpmpSchedule;
 use App\Models\ProcurementModes;
 use App\Models\Section;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Str;
@@ -27,6 +28,8 @@ class PpmpItemSeeder extends Seeder
         $randomUser = User::inRandomOrder()->first();
         $DivisionChief = Division::where('name', 'Hospital Operations & Patient Support Service')->first();
         $BudgetOfficer = Section::where('name', 'FS: Budget Section')->first();
+        $expenseClasses = ['MOOE', 'CO', 'PS'];
+
 
         $ppmp_application = PpmpApplication::create([
             'aop_application_id' => $AopApplication->id,
@@ -36,7 +39,8 @@ class PpmpItemSeeder extends Seeder
             'ppmp_application_uuid' => Str::uuid(),
             'ppmp_total' => 0,
             'status' => 'submitted',
-            'remarks' => ""
+            'remarks' => "",
+            'year' => Carbon::now()->format('Y'),
         ]);
 
         $items = Item::all();
@@ -50,6 +54,7 @@ class PpmpItemSeeder extends Seeder
                 'total_quantity' => 0,
                 'estimated_budget' => rand(10000, 100000),
                 'total_amount' => 0,
+                'expense_class' => $expenseClasses[array_rand($expenseClasses)],
                 'remarks' => ""
             ]);
 
