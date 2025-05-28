@@ -20,21 +20,14 @@ class NotificationController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $user = Auth::user();
-
         // Get user notifications
-        $query = Notification::whereHas('userNotification', function($query) use ($user) {
-            $query->where('user_id', $user->id);
-        })->with(['userNotification' => function($query) use ($user) {
-            $query->where('user_id', $user->id);
-        }]);
+        $query = Notification::with(['userNotification']);
 
         // Filter by seen status if specified
         if ($request->has('seen') && $request->seen !== null) {
             $seen = filter_var($request->seen, FILTER_VALIDATE_BOOLEAN);
-            $query->whereHas('userNotification', function($subquery) use ($user, $seen) {
-                $subquery->where('user_id', $user->id)
-                         ->where('seen', $seen);
+            $query->whereHas('userNotification', function($subquery) use ($seen) {
+                $subquery->where('seen', $seen);
             });
         }
 
@@ -47,152 +40,120 @@ class NotificationController extends Controller
         ], Response::HTTP_OK);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     *
-     * Note: This is typically handled by the NotificationService
-     * and not directly by the controller in most cases.
-     */
-    public function store(Request $request): JsonResponse
+    public function getNotificationByStatus(bool $seen): JsonResponse
     {
-        // Validate the request
-        $validated = $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
-            'module_path' => 'nullable|string',
-            'user_ids' => 'required|array',
-            'user_ids.*' => 'exists:users,id'
-        ]);
+        $notifications = Notification::with('user_notification')
+            ->whereHas('user_notification', function ($query) use ($seen) {
+                $query->where('seen', $seen);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
 
-        // Create the notification
-        $notification = Notification::create([
-            'title' => $validated['title'],
-            'description' => $validated['description'],
-            'module_path' => $validated['module_path'] ?? null,
-        ]);
-
-        // Create user notifications for each specified user
-        foreach ($validated['user_ids'] as $userId) {
-            UserNotification::create([
-                'user_id' => $userId,
-                'notification_id' => $notification->id,
-                'seen' => false
-            ]);
-        }
-
-        // Load the userNotification relationship
-        $notification->load('userNotification');
 
         return response()->json([
+            'message' => 'Notifications retrieved successfully',
+            'data' => NotificationResource::collection($notifications),
+        ]);
+    }
 
-        ], Response::HTTP_OK);
+    public function employeeNotifications(Request $request): JsonResponse
+    {
+        $notifications = Notification::with('user_notification')
+            ->whereHas('user_notification', function ($query) use ($profile_id) {
+                $query->where('employee_profile_id', $profile_id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+
+        $data = NotificationResource::collection($notifications);
+
+        return response()->json([
+            'message' => 'Notifications retrieved successfully',
+            'data' => $data,
+        ]);
+    }
+
+    public function markAsSeen(string $id): JsonResponse
+    {
+        $notifications = Notification::with('user_notification')->whereHas('user_notification', function ($query) {
+            $query->where('seen', false);
+        })->where('id', $id)->first();
+
+        $notifications->user_notification->seen = true;
+        $notifications->user_notification->save();
+
+        $data = NotificationResource::make($notifications);
+
+        return response()->json([
+            'message' => 'Notification marked as seen successfully',
+            'data' => $data,
+        ]);
+    }
+
+    public function markAllAsSeen($profile_id): JsonResponse
+    {
+        // Fetch all notifications with unseen user notifications for the given profile
+        $notifications = Notification::with('user_notification')
+            ->whereHas('user_notification', function ($query) use ($profile_id) {
+                $query->where('seen', false)
+                    ->where('employee_profile_id', $profile_id);
+            })
+            ->get();
+
+        // Check if there are any notifications to update
+        if ($notifications->isEmpty()) {
+            return response()->json([
+                'message' => 'No unseen notifications found',
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        // Collect IDs of related user_notification records
+        $userNotificationIds = $notifications->pluck('user_notification.id')->filter();
+
+        // Bulk update user_notifications to mark them as seen
+        UserNotification::whereIn('id', $userNotificationIds)
+            ->update(['seen' => true]);
+
+        // Transform the updated notifications
+        $data = NotificationResource::collection($notifications);
+
+        // Return success response
+        return response()->json([
+            'message' => 'All notifications marked as seen successfully',
+            'data' => $data,
+        ]);
     }
 
     /**
      * Display the specified resource.
-     *
-     * @param string $id
-     * @return NotificationResource|JsonResponse
      */
-    public function show(string $id): NotificationResource|JsonResponse
+    public function show(Notification $notification): JsonResponse
     {
-        $user = Auth::user();
-
-        $notification = Notification::with(['userNotification' => function($query) use ($user) {
-            $query->where('user_id', $user->id);
-        }])->whereHas('userNotification', function($query) use ($user) {
-            $query->where('user_id', $user->id);
-        })->find($id);
-
-        if (!$notification) {
-            return response()->json(['message' => 'Notification not found'], 404);
-        }
-
+        $data = NotificationResource::make($notification);
         return response()->json([
-            'message' => 'Notification retrieved successfully',
-            'data' => new NotificationResource($notification)
-        ], Response::HTTP_OK);
+            'message' => 'Data retrieved successfully',
+            'data' => $data,
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param \Illuminate\Http\Request $request
-     * @param string $id
-     * @return NotificationResource|JsonResponse
-     */
-    public function update(Request $request, string $id): NotificationResource|JsonResponse
-    {
-        $user = Auth::user();
-
-        // Find the notification
-        $notification = Notification::whereHas('userNotification', function($query) use ($user) {
-            $query->where('user_id', $user->id);
-        })->find($id);
-
-        if (!$notification) {
-            return response()->json(['message' => 'Notification not found'], 404);
-        }
-
-        // Update the seen status
-        if ($request->has('seen')) {
-            $seen = filter_var($request->seen, FILTER_VALIDATE_BOOLEAN);
-
-            UserNotification::where('notification_id', $notification->id)
-                            ->where('user_id', $user->id)
-                            ->update(['seen' => $seen]);
-
-            // Reload the relation to reflect changes
-            $notification->load(['userNotification' => function($query) use ($user) {
-                $query->where('user_id', $user->id);
-            }]);
-        }
-
-        return response()->json([
-            'message' => 'Notification updated successfully',
-            'data' => new NotificationResource($notification)
-        ], Response::HTTP_OK);
-    }
 
     /**
      * Remove the specified resource from storage.
-     *
-     * @param string $id
-     * @return JsonResponse
      */
-    public function destroy(string $id): JsonResponse
+    public function destroy(Notification $notification): JsonResponse
     {
-        $user = Auth::user();
 
-        // Find the user notification record
-        $userNotification = UserNotification::where('notification_id', $id)
-                                           ->where('user_id', $user->id)
-                                           ->first();
-
-        if (!$userNotification) {
-            return response()->json(['message' => 'Notification not found'], 404);
+        try {
+            $notification->delete();
+            return response()->json([
+                'message' => 'Notification deleted successfully',
+            ], Response::HTTP_OK);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'error' => $th->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-
-        // Delete the user notification (not the base notification)
-        $userNotification->delete();
-
-        return response()->json(['message' => 'Notification removed successfully']);
-    }
-
-    /**
-     * Mark all notifications as seen for the authenticated user.
-     *
-     * @return JsonResponse
-     */
-    public function markAllAsSeen(): JsonResponse
-    {
-        $user = Auth::user();
-
-        UserNotification::where('user_id', $user->id)
-                        ->where('seen', false)
-                        ->update(['seen' => true]);
-
-        return response()->json(['message' => 'All notifications marked as seen']);
     }
 
     /**
