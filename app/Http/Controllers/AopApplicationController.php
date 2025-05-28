@@ -385,21 +385,21 @@ class AopApplicationController extends Controller
                 ], Response::HTTP_BAD_REQUEST);
             }
 
-            $recipient = User::find($aopApplication->planningOfficerId);
+            // $recipient = User::find($aopApplication->planningOfficerId);
 
-            if ($recipient) {
-                $areaType = $area['sector'];
-                $areaName = $area['details']['name'];
-                $notifDetails = [
-                    'title' => "AOP Application from {$areaType}: {$areaName} Updated and Requires Your Action",
-                    'description' => 'An AOP application has been updated and needs your review.',
-                    'module_path' => '/aop-applications/' . $aopApplication->id,
-                    'status' => $aopApplication->status,
-                    'aop_application_id' => $aopApplication->id,
-                ];
+            // if ($recipient) {
+            //     $areaType = $area['sector'];
+            //     $areaName = $area['details']['name'];
+            //     $notifDetails = [
+            //         'title' => "AOP Application from {$areaType}: {$areaName} Updated and Requires Your Action",
+            //         'description' => 'An AOP application has been updated and needs your review.',
+            //         'module_path' => '/aop-applications/' . $aopApplication->id,
+            //         'status' => $aopApplication->status,
+            //         'aop_application_id' => $aopApplication->id,
+            //     ];
 
-                $this->notificationService->notify($recipient, $notifDetails);
-            }
+            //     $this->notificationService->notify($recipient, $notifDetails);
+            // }
         });
         return response()->json(['message' => 'AOP Application updated successfully.']);
     }
@@ -625,47 +625,48 @@ class AopApplicationController extends Controller
                 'action_by' => $user_id,
             ]);
 
+            if ($request->status !== 'draft') {
+
+                // Get the aop user and its area
+                $aop_user = User::find($aopApplication->user_id);
+                $aop_user_assigned_area = $aop_user->assignedArea;
 
 
-            // Get the aop user and its area
-            $aop_user = User::find($aopApplication->user_id);
-            $aop_user_assigned_area = $aop_user->assignedArea;
+                // Use ApprovalService to process the request
+                $approval_service = new ApprovalService($this->notificationService);
 
+                // Create a timeline entry using the service
+                $aop_application_timeline = $approval_service->createApplicationTimeline(
+                    $aopApplication,
+                    $curr_user,
+                    $aop_user,
+                    $request->status,
+                    $request->remarks
+                );
 
-            // Use ApprovalService to process the request
-            $approval_service = new ApprovalService($this->notificationService);
+                if (!$aop_application_timeline) {
+                    return response()->json([
+                        'message' => 'AOP application timeline not created',
+                    ], Response::HTTP_BAD_REQUEST);
+                }
 
-            // Create a timeline entry using the service
-            $aop_application_timeline = $approval_service->createApplicationTimeline(
-                $aopApplication,
-                $curr_user,
-                $aop_user,
-                $request->status,
-                $request->remarks
-            );
+                // Notify division chief
+                // $recipient = User::find($planningOfficerId);
 
-            if (!$aop_application_timeline) {
-                return response()->json([
-                    'message' => 'AOP application timeline not created',
-                ], Response::HTTP_BAD_REQUEST);
-            }
+                // if ($recipient) {
+                //     $areaType = $area['sector'];
+                //     $areaName = $area['details']['name'];
 
-            // Notify division chief
-            $recipient = User::find($planningOfficerId);
+                //     $notifDetails = [
+                //         'title' => "AOP Application from {$areaType}: {$areaName} Requires Your Action",
+                //         'description' => 'A new AOP Application has been submitted and requires your review.',
+                //         'module_path' => '/aop-applications/' . $aopApplication->id,
+                //         'status' => $aopApplication->status,
+                //         'aop_application_id' => $aopApplication->id,
+                //     ];
 
-            if ($recipient) {
-                $areaType = $area['sector'];
-                $areaName = $area['details']['name'];
-
-                $notifDetails = [
-                    'title' => "AOP Application from {$areaType}: {$areaName} Requires Your Action",
-                    'description' => 'A new AOP Application has been submitted and requires your review.',
-                    'module_path' => '/aop-applications/' . $aopApplication->id,
-                    'status' => $aopApplication->status,
-                    'aop_application_id' => $aopApplication->id,
-                ];
-
-                $this->notificationService->notify($recipient, $notifDetails);
+                //     $this->notificationService->notify($recipient, $notifDetails);
+                // }
             }
             DB::commit();
 
