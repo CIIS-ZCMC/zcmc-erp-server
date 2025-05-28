@@ -21,9 +21,12 @@ return new class extends Migration {
             $table->foreign('division_chief_id')->references('id')->on('users');
             $table->unsignedBigInteger('budget_officer_id');
             $table->foreign('budget_officer_id')->references('id')->on('users');
+            $table->unsignedBigInteger('planning_officer_id');
+            $table->foreign('planning_officer_id')->references('id')->on('users');
             $table->uuid('ppmp_application_uuid');
             $table->float('ppmp_total')->default(0);
             $table->string('status')->default("pending");
+            $table->boolean('is_draft')->default(false);
             $table->string('remarks')->nullable();
             $table->year('year')->default(Carbon::now()->year);
             $table->softDeletes();
