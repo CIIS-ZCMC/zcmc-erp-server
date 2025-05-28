@@ -226,6 +226,10 @@ class AopApplicationController extends Controller
             ])->findOrFail($id);
 
             $user_id = $request->user()->id;
+            $assignedArea = AssignedArea::where('user_id', $user_id)->first();
+            $area = $assignedArea->findDetails();
+            $planningOfficer = Section::where('name', 'Planning Unit')->first();
+            $planningOfficerId = optional($planningOfficer)->head_id;
             $curr_user = User::find($request->user()->id);
             $curr_user_authorization_pin = $curr_user->authorization_pin;
 
@@ -380,6 +384,22 @@ class AopApplicationController extends Controller
                     'message' => 'AOP application timeline not created',
                 ], Response::HTTP_BAD_REQUEST);
             }
+
+            $recipient = User::find($aopApplication->planningOfficerId);
+
+            if ($recipient) {
+                $areaType = $area['sector'];
+                $areaName = $area['details']['name'];
+                $notifDetails = [
+                    'title' => "AOP Application from {$areaType}: {$areaName} Updated and Requires Your Action",
+                    'description' => 'An AOP application has been updated and needs your review.',
+                    'module_path' => '/aop-applications/' . $aopApplication->id,
+                    'status' => $aopApplication->status,
+                    'aop_application_id' => $aopApplication->id,
+                ];
+
+                $this->notificationService->notify($recipient, $notifDetails);
+            }
         });
         return response()->json(['message' => 'AOP Application updated successfully.']);
     }
@@ -403,7 +423,6 @@ class AopApplicationController extends Controller
         try {
 
             $curr_user = User::find($request->user()->id);
-            $curr_user_assigned_area = $curr_user->assignedArea;
             $curr_user_authorization_pin = $curr_user->authorization_pin;
 
             if ($curr_user_authorization_pin !== $request->authorization_pin) {
@@ -629,6 +648,24 @@ class AopApplicationController extends Controller
                 return response()->json([
                     'message' => 'AOP application timeline not created',
                 ], Response::HTTP_BAD_REQUEST);
+            }
+
+            // Notify division chief
+            $recipient = User::find($planningOfficerId);
+
+            if ($recipient) {
+                $areaType = $area['sector'];
+                $areaName = $area['details']['name'];
+
+                $notifDetails = [
+                    'title' => "AOP Application from {$areaType}: {$areaName} Requires Your Action",
+                    'description' => 'A new AOP Application has been submitted and requires your review.',
+                    'module_path' => '/aop-applications/' . $aopApplication->id,
+                    'status' => $aopApplication->status,
+                    'aop_application_id' => $aopApplication->id,
+                ];
+
+                $this->notificationService->notify($recipient, $notifDetails);
             }
             DB::commit();
 
