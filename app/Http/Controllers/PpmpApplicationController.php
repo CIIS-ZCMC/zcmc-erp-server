@@ -284,6 +284,7 @@ class PpmpApplicationController extends Controller
                 'message' => 'AOP Application not found'
             ], Response::HTTP_NOT_FOUND);
         }
+
         return response()->json([
             'data' => new AopResource($aop_application),
             'message' => 'AOP Application retrieved successfully'
