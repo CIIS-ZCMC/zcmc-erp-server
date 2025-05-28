@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\Carbon;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -24,6 +25,7 @@ return new class extends Migration {
             $table->float('ppmp_total')->default(0);
             $table->string('status')->default("pending");
             $table->string('remarks')->nullable();
+            $table->year('year')->default(Carbon::now()->year);
             $table->softDeletes();
             $table->timestamps();
         });

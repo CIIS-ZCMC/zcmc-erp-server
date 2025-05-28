@@ -840,7 +840,7 @@ class AopApplicationController extends Controller
         }
 
         // Use ApprovalService to process the request
-        $approval_service = app(ApprovalService::class);
+        $approval_service = new ApprovalService($this->notificationService);
 
         // Create a timeline entry using the service
         $aop_application_timeline = $approval_service->createApplicationTimeline(
@@ -1246,7 +1246,7 @@ class AopApplicationController extends Controller
      *
      * Last edited by: Micah Mustaham, Updated by: Cascade
      */
-    public function aopRemarks($id)
+    public function aopRemarks($id): JsonResponse
     {
         if (!$id) {
             return response()->json([

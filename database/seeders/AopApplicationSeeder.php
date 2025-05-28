@@ -319,7 +319,6 @@ class AopApplicationSeeder extends Seeder
                 'cost' => rand(10000, 100000) / 100,
                 'start_month' => $startMonth,
                 'end_month' => $endMonth,
-                'expense_class' => $expenseClasses[array_rand($expenseClasses)], //added by kim
             ]);
 
             // Create target by Quarter (including unit of target)

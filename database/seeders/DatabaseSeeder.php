@@ -29,8 +29,9 @@ class DatabaseSeeder extends Seeder
             SuccessIndicatorSeeder::class,
             ItemSpecificationSeeder::class,
             ItemSeeder::class,
-            // PpmpItemSeeder::class,
-            // ApplicationTimelineSeeder::class,
+            PpmpItemSeeder::class,
+            PpmpApplicationSeeder::class,
+            ApplicationTimelineSeeder::class,
         ]);
     }
 }
