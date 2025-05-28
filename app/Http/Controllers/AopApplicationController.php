@@ -1328,6 +1328,7 @@ class AopApplicationController extends Controller
                     'activities.comments',
                     'objective',
                     'otherObjective',
+                    'objective.successIndicators',
                     'objective.typeOfFunction',
                     'objective.typeOfFunction.objectives',
                     'objective.typeOfFunction.objectives.successIndicators',
