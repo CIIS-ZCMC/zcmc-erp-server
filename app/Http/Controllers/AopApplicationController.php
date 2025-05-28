@@ -1329,6 +1329,8 @@ class AopApplicationController extends Controller
                     'objective',
                     'otherObjective',
                     'objective.typeOfFunction',
+                    'objective.typeOfFunction.objectives',
+                    'objective.typeOfFunction.objectives.successIndicators',
                     'successIndicator',
                     'otherSuccessIndicator',
                 ]);

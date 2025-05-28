@@ -51,7 +51,7 @@ class PpmpItem extends Model
         // return $this->belongsToMany(Activity::class);
         return $this->belongsToMany(Activity::class, 'activity_ppmp_item')
             ->using(ActivityPpmpItem::class)
-            ->withPivot('remarks', 'is_draft', 'deleted_at')
+            ->withPivot('remarks', 'deleted_at')
             ->withTimestamps()
             ->wherePivotNull('deleted_at');
     }

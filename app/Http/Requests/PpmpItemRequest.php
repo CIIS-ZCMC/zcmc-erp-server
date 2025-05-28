@@ -23,7 +23,7 @@ class PpmpItemRequest extends FormRequest
     {
         return [
             'PPMP_Items' => 'required|string',
-            'is_draft' => 'nullabe|number',
+            'is_draft' => 'nullable|integer',
         ];
     }
 }

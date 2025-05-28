@@ -85,10 +85,26 @@ class PpmpItemController extends Controller
 
     public function store(PpmpItemRequest $request)
     {
-
         DB::beginTransaction();
 
-        $ppmp_application = PpmpApplication::latest()->first();
+        $year = $request->query('year', now()->year + 1);
+        $user = User::find($request->user()->id);
+        $sector = $user->assignedArea->findDetails();
+
+        $ppmp_application = PpmpApplication::with([
+            'ppmpItems' => function ($query) {
+                $query->with([
+                    'item',
+                    'procurementMode',
+                    'itemRequest',
+                    'activities'
+                ]);
+            },
+            'aopApplication' => function ($query) use ($sector) {
+                $query->where('sector_id', $sector['details']['id'])
+                    ->where('sector', $sector['details']['name']);
+            }
+        ])->whereYear('year', $year)->first();
 
         if (!$ppmp_application) {
             return response()->json([
@@ -134,7 +150,7 @@ class PpmpItemController extends Controller
 
             $find_ppmp_item = PpmpItem::where('item_id', $items->id)->first();
             $ppmp_data = [
-                'ppmp_application_id' => 1,
+                'ppmp_application_id' => $ppmp_application->id,
                 'item_id' => $items->id,
                 'procurement_mode_id' => $procurement_mode,
                 'item_request_id' => $item['item_request_id'] ?? null,
@@ -163,7 +179,6 @@ class PpmpItemController extends Controller
                     if (!$activity_ppmp_item) {
                         $activities->ppmpItems()->attach($ppmpItem->id, [
                             'remarks' => $ppmpItem['remarks'] ?? null,
-                            'is_draft' => $request->is_draft ?? 0,
                         ]);
 
                         $resource_request = [
@@ -186,7 +201,6 @@ class PpmpItemController extends Controller
 
                     } else {
                         $activity_ppmp_item->pivot->remarks = $item['remarks'];
-                        $activity_ppmp_item->pivot->is_draft = $request->is_draft ?? 0;
                         $activity_ppmp_item->pivot->save();
 
                         $resource_request = [
@@ -231,6 +245,10 @@ class PpmpItemController extends Controller
                     }
                 }
             }
+        }
+
+        if ($request->is_draft === true) {
+            $ppmp_application->update(['status' => 'draft', 'is_draft' => true]);
         }
 
         DB::commit();
