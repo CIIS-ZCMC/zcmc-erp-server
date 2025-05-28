@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PpmpApplicationRequest;
 use App\Http\Resources\AopResource;
+use App\Http\Resources\ManageAopRequestResource;
 use App\Http\Resources\PpmpApplicationReceivingListResource;
 use App\Http\Resources\PpmpApplicationReceivingViewResource;
 use App\Http\Resources\PpmpApplicationResource;
 use App\Models\AopApplication;
+use App\Models\ApplicationObjective;
 use App\Models\PpmpApplication;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -263,19 +265,19 @@ class PpmpApplicationController extends Controller
 
     public function editAop(Request $request)
     {
-
         $aop_application = AopApplication::with([
-            'applicationObjectives.objective',
-            'applicationObjectives.objective.typeOfFunction',
-            'applicationObjectives.successIndicator',
-            'applicationObjectives.activities'
-            // 'applicationObjectives.otherObjective'   ,
-            // 'applicationObjectives.otherSuccessIndicator',
-            // 'applicationObjectives.activities.target',
-            // 'applicationObjectives.activities.resources',
-            // 'applicationObjectives.activities.responsiblePeople.user',
-            // 'applicationObjectives.activities.comments',
-        ])->where('id', 1)->first();
+            'applicationObjectives' => function ($query) {
+                $query->with([
+                    'activities',
+                    'activities.comments',
+                    'objective',
+                    'otherObjective',
+                    'objective.typeOfFunction',
+                    'successIndicator',
+                    'otherSuccessIndicator',
+                ]);
+            }
+        ])->latest()->first();
 
         if (!$aop_application) {
             return response()->json([
