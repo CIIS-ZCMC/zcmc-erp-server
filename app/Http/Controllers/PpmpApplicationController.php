@@ -34,7 +34,7 @@ class PpmpApplicationController extends Controller
         $query = PpmpApplication::query();
 
         if ($request->has('year')) {
-            $query->whereYear('created_at', $year);
+            $query->whereYear('year', $year);
         }
 
         if ($request->has('status')) {
@@ -54,7 +54,7 @@ class PpmpApplicationController extends Controller
                 $query->where('sector_id', $sector['details']['id'])
                     ->where('sector', $sector['details']['name']);
             }
-        ])->whereYear('created_at', $year)->first();
+        ])->whereYear('year', $year)->first();
 
         if (!$ppmp_application) {
             return response()->json([
