@@ -36,7 +36,7 @@ class ApprovalService
      * @return ApplicationTimeline|array
      * @throws \Exception
      */
-    public function createApplicationTimeline(object $aop_application, object $current_user, object $aop_user, string $status, string $remarks = null)
+    public function createApplicationTimeline(object $aop_application, object $current_user, object $aop_user, string $status, string $remarks = null): ApplicationTimeline|array
     {
         try {
             // Validate essential inputs
@@ -236,6 +236,10 @@ class ApprovalService
                 }
             }
 
+            // Update the AOP application status
+            $aop_application->status = $status;
+            $aop_application->save();
+
             // Create the timeline entry
             $timeline = new ApplicationTimeline([
                 'aop_application_id' => $aop_application->id,
@@ -245,7 +249,7 @@ class ApprovalService
                 'next_area_id' => $next_area_id,
                 'status' => $status,
                 'remarks' => $remarks,
-                'action_date' => now(),
+                'date_approved' => now(),
             ]);
 
             $timeline->save();
@@ -270,7 +274,7 @@ class ApprovalService
             // Notify the AOP application owner about the status change
             $this->notificationService->notify($aop_user, [
                 'title' => 'AOP Application Status Update',
-                'description' => "Your AOP application has been {$status}." . 
+                'description' => "Your AOP application has been {$status}." .
                                 ($remarks ? " Remarks: {$remarks}" : ""),
                 'module_path' => "/aop-application/{$aop_application->id}",
                 'aop_application_id' => $aop_application->id,

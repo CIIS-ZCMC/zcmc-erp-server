@@ -83,10 +83,11 @@ class NotificationService
                     }
 
                     // Send AOP-specific email notification
-                    $this->emailService->sendAopStatusUpdate($user->email, $context, $emailData);
+                    // $this->emailService->sendAopStatusUpdate($user->email, $context, $emailData);
+                    $this->emailService->sendNotification('mustahammicah@gmail.com', $emailData);
                 } else {
                     // Send general notification email
-                    $this->emailService->sendNotification($user->email, $emailData);
+                     $this->emailService->sendNotification('micahmustaham@gmail.com', $emailData);
                 }
             }
 
