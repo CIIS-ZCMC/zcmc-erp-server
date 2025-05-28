@@ -20,6 +20,7 @@ use App\Http\Controllers\Libraries\ItemReferenceTerminologyController;
 use App\Http\Controllers\Libraries\ItemRequestController;
 use App\Http\Controllers\Libraries\ItemUnitController;
 use App\Http\Controllers\LogDescriptionController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ObjectiveController;
 use App\Http\Controllers\PpmpApplicationController;
 use App\Http\Controllers\PpmpItemController;
@@ -248,4 +249,9 @@ Route::
             Route::post('ppmp-deadline-store', [DeadlineController::class, 'storePpmpDeadline']);
             Route::post('aop-deadline-update/{id}', [DeadlineController::class, 'updateAopDeadline']);
             Route::post('ppmp-deadline-update/{id}', [DeadlineController::class, 'updatePpmpDeadline']);
+
+            // Notification Module
+            Route::apiResource('notifications', NotificationController::class);
+            Route::post('notifications/mark-all-as-seen', [NotificationController::class, 'markAllAsSeen']);
+            Route::get('notifications/unseen-count', [NotificationController::class, 'getUnseenCount']);
         });
