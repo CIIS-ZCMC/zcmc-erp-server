@@ -40,7 +40,7 @@ class AopResource extends JsonResource
                                 'code' => $option_obj->code ?? null,
                                 'description' => $option_obj->description ?? null,
                                 'type_function_id' => $option_obj->type_of_function_id ?? null,
-                                'success_indicator' => $option_obj->successIndicators->map(function ($option_si) {
+                                'success_indicators' => $option_obj->successIndicators->map(function ($option_si) {
                                     return [
                                         'id' => $option_si->id ?? null,
                                         'name' => $option_si->code ?? null,
