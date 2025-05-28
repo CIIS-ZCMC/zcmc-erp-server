@@ -63,7 +63,6 @@ class AopResource extends JsonResource
                     'activity' => $appObj->activities === null ? [] : ActivityResource::collection($appObj->activities),
                 ];
             }),
-            'application_objective' => ApplicationObjectiveResource::collection($applicationObjectives),
         ];
     }
 }
