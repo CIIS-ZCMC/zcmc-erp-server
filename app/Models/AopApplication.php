@@ -27,6 +27,7 @@ class AopApplication extends Model
         'remarks',
         'sector',
         'sector_id',
+        'year',
     ];
 
     protected $casts = [

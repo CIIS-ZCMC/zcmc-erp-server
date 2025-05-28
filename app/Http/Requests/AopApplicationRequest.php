@@ -24,7 +24,7 @@ class AopApplicationRequest extends FormRequest
         return [
             // 'user_id' => 'required|exists:users,id',
             'mission' => 'required|string',
-            'status' => 'required|string',
+            'status' => 'nullable|string', 
             'has_discussed' => 'required|boolean',
             'remarks' => 'nullable|string',
 
