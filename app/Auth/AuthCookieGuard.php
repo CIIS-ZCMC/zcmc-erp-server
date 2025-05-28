@@ -9,12 +9,8 @@ use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Symfony\Component\HttpFoundation\Request;
 use Illuminate\Support\Facades\Log;
-use OpenApi\Attributes as OA;
 
-#[OA\Schema(
-    schema: "AuthCookieGuard",
-    description: "Custom authentication guard using cookies"
-)]
+
 class AuthCookieGuard implements Guard
 {
     protected $provider;
@@ -208,5 +204,56 @@ class AuthCookieGuard implements Guard
         
         json_decode($string);
         return (json_last_error() === JSON_ERROR_NONE);
+    }
+    
+    public function logout()
+    {
+        try {
+            // Get the current user
+            $user = $this->user();
+            
+            if (!$user) {
+                Log::debug('No user to logout');
+                return false;
+            }
+
+            // Get the auth cookie
+            $cookie = $this->request->cookies->get(env('COOKIE_NAME'));
+            
+            if ($cookie) {
+                // Process the token from cookie
+                $token = $cookie;
+                
+                // If it's a JSON string, decode it
+                if (is_string($token) && $this->isValidJson($token)) {
+                    $token = json_decode($token, true);
+                }
+                
+                // If it's an array after decoding, convert to string for DB comparison
+                if (is_array($token)) {
+                    $token = json_encode($token);
+                }
+                
+                // Sanitize token
+                $token = is_string($token) ? str_replace(["\r", "\n"], '', $token) : $token;
+                
+                // Delete the access token from database
+                AccessToken::where('token', $token)->delete();
+            }
+
+            // Clear the current user
+            $this->user = null;
+
+            // Invalidate the session if you're using session alongside cookies
+            if ($this->request->hasSession()) {
+                $this->request->session()->invalidate();
+            }
+
+            Log::debug('User logged out successfully', ['user_id' => $user->id]);
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error during logout: ' . $e->getMessage());
+            return false;
+        }
     }
 }
