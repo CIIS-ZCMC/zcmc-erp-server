@@ -599,24 +599,24 @@ class AopApplicationController extends Controller
             ]);
 
 
-            // $curr_user = User::find($request->user()->id);
+            // // $curr_user = User::find($request->user()->id);
 
-            $user = User::where('id', $user_id)->first();
-            $user_assigned_area_id = $user->assignedArea->id;
+            // $user = User::where('id', $user_id)->first();
+            // $user_assigned_area_id = $user->assignedArea->id;
 
-            $aop_user = User::find($aopApplication->user_id);
+            // $aop_user = User::find($aopApplication->user_id);
 
-            // Use ApprovalService to process the request
-            $approval_service = new ApprovalService($this->notificationService);
+            // // Use ApprovalService to process the request
+            // $approval_service = new ApprovalService($this->notificationService);
 
-            // Create a timeline entry using the service
-            $aop_application_timeline = $approval_service->createApplicationTimeline(
-                $aopApplication,
-                $curr_user,
-                $aop_user,
-                $request->status,
-                $request->remarks
-            );
+            // // Create a timeline entry using the service
+            // $aop_application_timeline = $approval_service->createApplicationTimeline(
+            //     $aopApplication,
+            //     $curr_user,
+            //     $aop_user,
+            //     $request->status,
+            //     $request->remarks
+            // );
 
             // if (!$aop_application_timeline) {
             //     return response()->json([
