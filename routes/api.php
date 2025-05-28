@@ -251,7 +251,13 @@ Route::
             Route::post('ppmp-deadline-update/{id}', [DeadlineController::class, 'updatePpmpDeadline']);
 
             // Notification Module
-            Route::apiResource('notifications', NotificationController::class);
-            Route::post('notifications/mark-all-as-seen', [NotificationController::class, 'markAllAsSeen']);
-            Route::get('notifications/unseen-count', [NotificationController::class, 'getUnseenCount']);
+            // FOR CRUD
+            Route::apiResource('notifications', 'NotificationController');
+            Route::apiResource('user-notifications', 'UserNotificationController');
+
+            // GET ROUTES
+            Route::get('notifications/seen/{id}', 'NotificationController@markAsSeen');
+            Route::get('notifications/all-seen/{id}', 'NotificationController@markAllAsSeen');
+            Route::get('notifications/employee-notifs/{profile_id}', 'NotificationController@employeeNotifications');
+            Route::get('notifications/get-notifs-by-status/{seen}', 'NotificationController@getNotificationsByStatus');
         });
