@@ -22,7 +22,7 @@ class NotificationController extends Controller
     {
         $user = Auth::user();
 
-        // Get user notifications with pagination
+        // Get user notifications
         $query = Notification::whereHas('userNotification', function($query) use ($user) {
             $query->where('user_id', $user->id);
         })->with(['userNotification' => function($query) use ($user) {
@@ -43,13 +43,7 @@ class NotificationController extends Controller
                                ->get();
 
         return response()->json([
-            'data' => NotificationResource::collection($notifications),
-            'meta' => [
-                'total' => $notifications->total(),
-                'per_page' => $notifications->perPage(),
-                'current_page' => $notifications->currentPage(),
-                'last_page' => $notifications->lastPage()
-            ]
+            'data' => NotificationResource::collection($notifications)
         ], Response::HTTP_OK);
     }
 
