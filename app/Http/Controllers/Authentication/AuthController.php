@@ -50,7 +50,7 @@ class AuthController extends Controller
         $cookie = cookie()->make(
             env('COOKIE_NAME'),
             $token,
-            30,
+            1440,
             '/',
             env('SESSION_DOMAIN'),
             env('APP_ENV') !== 'local', // Secure in production
