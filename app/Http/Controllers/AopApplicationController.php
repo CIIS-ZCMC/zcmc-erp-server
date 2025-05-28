@@ -8,6 +8,7 @@ use App\Http\Requests\ProcessAopRequest;
 use App\Http\Resources\AopApplicationResource;
 use App\Http\Resources\AopRemarksResource;
 use App\Http\Resources\AopRequestResource;
+use App\Http\Resources\AopResource;
 use App\Http\Resources\ApplicationTimelineResource;
 use App\Http\Resources\DesignationResource;
 use App\Http\Resources\AssignedAreaResource;
@@ -1270,6 +1271,37 @@ class AopApplicationController extends Controller
             "message" => "Remarks retrieved successfully",
             "data" => new AopRemarksResource($aopApplication),
             "metadata" => $this->getMetadata('get')
+        ], Response::HTTP_OK);
+    }
+
+    public function edit()
+    {
+        $aop_application = AopApplication::with([
+            'applicationObjectives' => function ($query) {
+                $query->with([
+                    'activities',
+                    'activities.target',
+                    'activities.resources',
+                    'activities.responsiblePeople',
+                    'activities.comments',
+                    'objective',
+                    'otherObjective',
+                    'objective.typeOfFunction',
+                    'successIndicator',
+                    'otherSuccessIndicator',
+                ]);
+            }
+        ])->latest()->first();
+
+        if (!$aop_application) {
+            return response()->json([
+                'message' => 'AOP Application not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json([
+            'data' => new AopResource($aop_application),
+            'message' => 'AOP Application retrieved successfully'
         ], Response::HTTP_OK);
     }
 }

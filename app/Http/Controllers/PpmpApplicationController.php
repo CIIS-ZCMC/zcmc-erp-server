@@ -3,13 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PpmpApplicationRequest;
-use App\Http\Resources\AopResource;
-use App\Http\Resources\ManageAopRequestResource;
 use App\Http\Resources\PpmpApplicationReceivingListResource;
 use App\Http\Resources\PpmpApplicationReceivingViewResource;
 use App\Http\Resources\PpmpApplicationResource;
 use App\Models\AopApplication;
-use App\Models\ApplicationObjective;
 use App\Models\PpmpApplication;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -261,36 +258,5 @@ class PpmpApplicationController extends Controller
                 'error' => $e->getMessage()
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-    }
-
-    public function editAop(Request $request)
-    {
-        $aop_application = AopApplication::with([
-            'applicationObjectives' => function ($query) {
-                $query->with([
-                    'activities',
-                    'activities.target',
-                    'activities.resources',
-                    'activities.responsiblePeople',
-                    'activities.comments',
-                    'objective',
-                    'otherObjective',
-                    'objective.typeOfFunction',
-                    'successIndicator',
-                    'otherSuccessIndicator',
-                ]);
-            }
-        ])->latest()->first();
-
-        if (!$aop_application) {
-            return response()->json([
-                'message' => 'AOP Application not found'
-            ], Response::HTTP_NOT_FOUND);
-        }
-
-        return response()->json([
-            'data' => new AopResource($aop_application),
-            'message' => 'AOP Application retrieved successfully'
-        ], Response::HTTP_OK);
     }
 }

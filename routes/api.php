@@ -182,9 +182,6 @@ Route::
             Route::get('ppmp-receiving-list-view/{id}', [PpmpApplicationController::class, "receivingListView"]);
             Route::post('ppmp-applications/{id}/receive', [PpmpApplicationController::class, "receivePpmpApplication"]);
 
-            Route::get('aop-application-edit', [PpmpApplicationController::class, "editAop"]);
-
-
             // Ppmp Item Module
             Route::get('ppmp-item-search', 'PpmpItemController@search');
             Route::apiResource('ppmp-items', 'PpmpItemController')->only(['index', 'store', 'update']);
@@ -220,29 +217,7 @@ Route::
             Route::post('export-aop/{id}', [AopApplicationController::class, "export"]);
             Route::get('preview-aop/{id}', [AopApplicationController::class, "preview"]);
             Route::post('import/items', [ItemImportController::class, "import"]);
-
-            // Variant Dummy
-            Route::get('variant', function () {
-                return response()->json([
-                    'data' => [
-                        [
-                            'id' => 1,
-                            'name' => 'High',
-                            'description' => 'Description for Variant 1',
-                        ],
-                        [
-                            'id' => 2,
-                            'name' => 'Low',
-                            'description' => 'Description for Variant 2',
-                        ],
-                        [
-                            'id' => 3,
-                            'name' => 'Mid',
-                            'description' => 'Description for Variant 3',
-                        ],
-                    ]
-                ], 200);
-            });
+            Route::get('aop-application-edit', [AopApplicationController::class, "edit"]);
 
             // Deadlines
             Route::get('deadlines', [DeadlineController::class, 'index']);
