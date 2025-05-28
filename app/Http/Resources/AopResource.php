@@ -14,8 +14,6 @@ class AopResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $applicationObjectives = $this->applicationObjectives;
-
         return [
             'id' => $this->id,
             'application_objectives' => $this->applicationObjectives->map(function ($appObj) {
@@ -29,8 +27,8 @@ class AopResource extends JsonResource
                     'id' => $appObj->id,
                     'function_type' => $type_of_function === null ? [] : [
                         'id' => $type_of_function->id ?? null,
-                        'name' => $type_of_function->type ?? null,
-                        'label' => $type_of_function->type ?? null,
+                        'name' => ucfirst($type_of_function->type) ?? null,
+                        'label' => ucfirst($type_of_function->type) ?? null,
                         'code' => $type_of_function->code ?? null,
                     ],
                     'objective' => $objective === null ? [] : [
