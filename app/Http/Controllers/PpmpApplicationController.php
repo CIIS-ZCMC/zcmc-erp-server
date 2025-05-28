@@ -269,6 +269,9 @@ class PpmpApplicationController extends Controller
             'applicationObjectives' => function ($query) {
                 $query->with([
                     'activities',
+                    'activities.target',
+                    'activities.resources',
+                    'activities.responsiblePeople',
                     'activities.comments',
                     'objective',
                     'otherObjective',
