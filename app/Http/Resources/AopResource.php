@@ -29,10 +29,9 @@ class AopResource extends JsonResource
                     'id' => $appObj->id,
                     'function_type' => $type_of_function === null ? [] : [
                         'id' => $type_of_function->id ?? null,
-                        'name' => $type_of_function->code ?? null,
-                        'label' => $type_of_function->code ?? null,
+                        'name' => $type_of_function->type ?? null,
+                        'label' => $type_of_function->type ?? null,
                         'code' => $type_of_function->code ?? null,
-                        'type' => $type_of_function->type ?? null,
                     ],
                     'objective' => $objective === null ? [] : [
                         'id' => $objective->id ?? null,
