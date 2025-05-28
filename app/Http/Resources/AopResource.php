@@ -32,28 +32,26 @@ class AopResource extends JsonResource
                         'name' => ucfirst($type_of_function->type) ?? null,
                         'label' => ucfirst($type_of_function->type) ?? null,
                         'code' => $type_of_function->code ?? null,
-                        'options' => [
-                            'objectives' => $option_objectives->map(function ($option_obj) {
-                                return [
-                                    'id' => $option_obj->id ?? null,
-                                    'name' => $option_obj->code ?? null,
-                                    'label' => $option_obj->code ?? null,
-                                    'code' => $option_obj->code ?? null,
-                                    'description' => $option_obj->description ?? null,
-                                    'type_function_id' => $option_obj->type_of_function_id ?? null,
-                                    'success_indicator' => $option_obj->successIndicators->map(function ($option_si) {
-                                        return [
-                                            'id' => $option_si->id ?? null,
-                                            'name' => $option_si->code ?? null,
-                                            'label' => $option_si->code ?? null,
-                                            'code' => $option_si->code ?? null,
-                                            'description' => $option_si->description ?? null,
-                                            'objective_id' => $option_si->objective_id ?? null,
-                                        ];
-                                    })
-                                ];
-                            })
-                        ]
+                        'objectives' => $option_objectives->map(function ($option_obj) {
+                            return [
+                                'id' => $option_obj->id ?? null,
+                                'name' => $option_obj->code ?? null,
+                                'label' => $option_obj->code ?? null,
+                                'code' => $option_obj->code ?? null,
+                                'description' => $option_obj->description ?? null,
+                                'type_function_id' => $option_obj->type_of_function_id ?? null,
+                                'success_indicator' => $option_obj->successIndicators->map(function ($option_si) {
+                                    return [
+                                        'id' => $option_si->id ?? null,
+                                        'name' => $option_si->code ?? null,
+                                        'label' => $option_si->code ?? null,
+                                        'code' => $option_si->code ?? null,
+                                        'description' => $option_si->description ?? null,
+                                        'objective_id' => $option_si->objective_id ?? null,
+                                    ];
+                                })
+                            ];
+                        })
                     ],
                     'objective' => $objective === null ? [] : [
                         'id' => $objective->id ?? null,
