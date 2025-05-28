@@ -173,9 +173,9 @@ class PpmpApplicationController extends Controller
         }
 
         if ($request->has('search')) {
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('ppmp_application_uuid', 'like', "%{$search}%")
-                    ->orWhereHas('user', function($q) use ($search) {
+                    ->orWhereHas('user', function ($q) use ($search) {
                         $q->where('name', 'like', "%{$search}%");
                     });
             });

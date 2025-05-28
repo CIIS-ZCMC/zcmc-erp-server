@@ -45,6 +45,12 @@ class PpmpApplicationSeeder extends Seeder
             return;
         }
 
+        $planningOfficer = Section::where('name', 'Planning Unit')->first();
+        if (!$planningOfficer || !$planningOfficer->head_id) {
+            $this->command->error('Planning officer not found or has no head assigned.');
+            return;
+        }
+
         // Get procurement modes for items
         $procurementModes = ProcurementModes::all();
         if ($procurementModes->isEmpty()) {
@@ -98,6 +104,7 @@ class PpmpApplicationSeeder extends Seeder
                 'user_id' => $aopApplication->user_id,
                 'division_chief_id' => $divisionChief->head_id,
                 'budget_officer_id' => $budgetOfficer->head_id,
+                'planning_officer_id' => $planningOfficer->head_id,
                 'ppmp_application_uuid' => substr(Str::uuid(), 0, 8),
                 'ppmp_total' => 0, // Will calculate after adding items
                 'status' => $data['status'],
@@ -128,6 +135,7 @@ class PpmpApplicationSeeder extends Seeder
 
                 // Add to total budget
                 $totalBudget += $totalAmount;
+                $expenseClasses = ['MOOE', 'CO', 'PS'];
 
                 // Create PPMP Item with realistic data
                 $ppmpItem = PpmpItem::create([
@@ -138,6 +146,7 @@ class PpmpApplicationSeeder extends Seeder
                     'total_quantity' => $quantity,
                     'estimated_budget' => $estimatedBudget,
                     'total_amount' => $totalAmount,
+                    'expense_class' => $expenseClasses[array_rand($expenseClasses)],
                     'remarks' => $this->getDetailedItemRemark($item, $data['title'])
                 ]);
 
@@ -147,7 +156,6 @@ class PpmpApplicationSeeder extends Seeder
                 foreach ($activities as $activity) {
                     $activity->ppmpItems()->attach($ppmpItem->id, [
                         'remarks' => $this->getContextualActivityRemark($activity, $data['title']),
-                        'is_draft' => $data['status'] === 'draft' ? 1 : 0,
                     ]);
                 }
 
@@ -193,9 +201,11 @@ class PpmpApplicationSeeder extends Seeder
     private function selectAppropriateMode($modes, $item, $status)
     {
         // For high-value medical items in approved applications, prefer public bidding
-        if ($status === 'approved' && $item->itemCategory &&
+        if (
+            $status === 'approved' && $item->itemCategory &&
             strpos(strtolower($item->itemCategory->name), 'medical') !== false &&
-            ($item->estimated_budget > 50000)) {
+            ($item->estimated_budget > 50000)
+        ) {
 
             $publicBidding = $modes->first(function ($mode) {
                 return strpos(strtolower($mode->name), 'public') !== false;
@@ -238,8 +248,10 @@ class PpmpApplicationSeeder extends Seeder
         }
 
         // Consumables ordered in larger quantities
-        if (strpos($categoryName, 'supplies') !== false ||
-            strpos($categoryName, 'consumable') !== false) {
+        if (
+            strpos($categoryName, 'supplies') !== false ||
+            strpos($categoryName, 'consumable') !== false
+        ) {
             return rand(100, 500);
         }
 
@@ -259,20 +271,26 @@ class PpmpApplicationSeeder extends Seeder
         $categoryName = strtolower($item->itemCategory->name);
 
         // Medical equipment typically more expensive
-        if (strpos($categoryName, 'equipment') !== false ||
-            strpos($categoryName, 'medical') !== false) {
+        if (
+            strpos($categoryName, 'equipment') !== false ||
+            strpos($categoryName, 'medical') !== false
+        ) {
             return rand(10000, 100000);
         }
 
         // IT equipment moderately expensive
-        if (strpos($categoryName, 'it') !== false ||
-            strpos($categoryName, 'computer') !== false) {
+        if (
+            strpos($categoryName, 'it') !== false ||
+            strpos($categoryName, 'computer') !== false
+        ) {
             return rand(5000, 30000);
         }
 
         // Office supplies typically less expensive
-        if (strpos($categoryName, 'office') !== false ||
-            strpos($categoryName, 'supplies') !== false) {
+        if (
+            strpos($categoryName, 'office') !== false ||
+            strpos($categoryName, 'supplies') !== false
+        ) {
             return rand(500, 3000);
         }
 
@@ -464,15 +482,15 @@ class PpmpApplicationSeeder extends Seeder
                     if ($patternType === 'frontloaded') {
                         // More in earlier months
                         $maxForThisMonth = min($remainingQuantity, ceil($totalQuantity / $numMonths) * 1.8);
-                        $quantity = rand(ceil($maxForThisMonth/2), $maxForThisMonth);
+                        $quantity = rand(ceil($maxForThisMonth / 2), $maxForThisMonth);
                     } elseif ($patternType === 'backloaded') {
                         // Less in earlier months
                         $maxForThisMonth = min($remainingQuantity, ceil($totalQuantity / $numMonths) * 0.7);
-                        $quantity = rand(ceil($maxForThisMonth/3), $maxForThisMonth);
+                        $quantity = rand(ceil($maxForThisMonth / 3), $maxForThisMonth);
                     } else {
                         // Balanced distribution
                         $maxForThisMonth = min($remainingQuantity, ceil($totalQuantity / $numMonths) * 1.3);
-                        $quantity = rand(ceil($maxForThisMonth/2), $maxForThisMonth);
+                        $quantity = rand(ceil($maxForThisMonth / 2), $maxForThisMonth);
                     }
 
                     $distributedQuantities[$month] = $quantity;

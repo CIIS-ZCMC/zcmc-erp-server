@@ -20,6 +20,7 @@ use App\Http\Controllers\Libraries\ItemReferenceTerminologyController;
 use App\Http\Controllers\Libraries\ItemRequestController;
 use App\Http\Controllers\Libraries\ItemUnitController;
 use App\Http\Controllers\LogDescriptionController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ObjectiveController;
 use App\Http\Controllers\PpmpApplicationController;
 use App\Http\Controllers\PpmpItemController;
@@ -182,7 +183,6 @@ Route::
             Route::get('ppmp-receiving-list-view/{id}', [PpmpApplicationController::class, "receivingListView"]);
             Route::post('ppmp-applications/{id}/receive', [PpmpApplicationController::class, "receivePpmpApplication"]);
 
-
             // Ppmp Item Module
             Route::get('ppmp-item-search', 'PpmpItemController@search');
             Route::apiResource('ppmp-items', 'PpmpItemController')->only(['index', 'store', 'update']);
@@ -218,29 +218,7 @@ Route::
             Route::post('export-aop/{id}', [AopApplicationController::class, "export"]);
             Route::get('preview-aop/{id}', [AopApplicationController::class, "preview"]);
             Route::post('import/items', [ItemImportController::class, "import"]);
-
-            // Variant Dummy
-            Route::get('variant', function () {
-                return response()->json([
-                    'data' => [
-                        [
-                            'id' => 1,
-                            'name' => 'High',
-                            'description' => 'Description for Variant 1',
-                        ],
-                        [
-                            'id' => 2,
-                            'name' => 'Low',
-                            'description' => 'Description for Variant 2',
-                        ],
-                        [
-                            'id' => 3,
-                            'name' => 'Mid',
-                            'description' => 'Description for Variant 3',
-                        ],
-                    ]
-                ], 200);
-            });
+            Route::get('aop-application-edit', [AopApplicationController::class, "edit"]);
 
             // Deadlines
             Route::get('deadlines', [DeadlineController::class, 'index']);
@@ -248,4 +226,16 @@ Route::
             Route::post('ppmp-deadline-store', [DeadlineController::class, 'storePpmpDeadline']);
             Route::post('aop-deadline-update/{id}', [DeadlineController::class, 'updateAopDeadline']);
             Route::post('ppmp-deadline-update/{id}', [DeadlineController::class, 'updatePpmpDeadline']);
+
+            // Notification Module
+            // FOR CRUD
+            Route::apiResource('notifications', 'NotificationController');
+            Route::apiResource('user-notifications', 'UserNotificationController');
+
+            // GET ROUTES
+            Route::get('notifications/seen/{id}', [NotificationController::class, 'markAsSeen']);
+            Route::get('notifications/all-seen/{id}', [NotificationController::class, 'markAllAsSeen']);
+            Route::get('notifications/employee-notifs/{profile_id}', [NotificationController::class, 'employeeNotifications']);
+            Route::get('notifications/get-notifs-by-status/{seen}', [NotificationController::class, 'getNotificationByStatus']);
+            Route::get('notifications/unseen-count', [NotificationController::class, 'getUnseenCount']);
         });

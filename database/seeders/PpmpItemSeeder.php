@@ -24,18 +24,19 @@ class PpmpItemSeeder extends Seeder
      */
     public function run(): void
     {
-        $AopApplication = AopApplication::inRandomOrder()->first();
-        $randomUser = User::inRandomOrder()->first();
-        $DivisionChief = Division::where('name', 'Hospital Operations & Patient Support Service')->first();
-        $BudgetOfficer = Section::where('name', 'FS: Budget Section')->first();
+        $aop_application = AopApplication::inRandomOrder()->first();
+        $random_user = User::inRandomOrder()->first();
+        $division_chief = Division::where('name', 'Hospital Operations & Patient Support Service')->first();
+        $budget_officer = Section::where('name', 'FS: Budget Section')->first();
+        $planning_officer = Section::where('name', 'Planning Unit')->first();
         $expenseClasses = ['MOOE', 'CO', 'PS'];
 
-
         $ppmp_application = PpmpApplication::create([
-            'aop_application_id' => $AopApplication->id,
-            'user_id' => $randomUser->id,
-            'division_chief_id' => $DivisionChief->head_id,
-            'budget_officer_id' => $BudgetOfficer->head_id,
+            'aop_application_id' => $aop_application->id,
+            'user_id' => $random_user->id,
+            'division_chief_id' => $division_chief->head_id,
+            'budget_officer_id' => $budget_officer->head_id,
+            'planning_officer_id' => $planning_officer->head_id,
             'ppmp_application_uuid' => Str::uuid(),
             'ppmp_total' => 0,
             'status' => 'submitted',
@@ -62,7 +63,6 @@ class PpmpItemSeeder extends Seeder
             foreach ($activities as $activity) {
                 $activity->ppmpItems()->attach($ppmpItem->id, [
                     'remarks' => "",
-                    'is_draft' => rand(0, 1),
                 ]);
             }
 
