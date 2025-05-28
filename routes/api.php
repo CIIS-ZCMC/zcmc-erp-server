@@ -256,8 +256,9 @@ Route::
             Route::apiResource('user-notifications', 'UserNotificationController');
 
             // GET ROUTES
-            Route::get('notifications/seen/{id}', 'NotificationController@markAsSeen');
-            Route::get('notifications/all-seen/{id}', 'NotificationController@markAllAsSeen');
-            Route::get('notifications/employee-notifs/{profile_id}', 'NotificationController@employeeNotifications');
-            Route::get('notifications/get-notifs-by-status/{seen}', 'NotificationController@getNotificationsByStatus');
+            Route::get('notifications/seen/{id}', [NotificationController::class, 'markAsSeen']);
+            Route::get('notifications/all-seen/{id}', [NotificationController::class, 'markAllAsSeen']);
+            Route::get('notifications/employee-notifs/{profile_id}', [NotificationController::class, 'employeeNotifications']);
+            Route::get('notifications/get-notifs-by-status/{seen}', [NotificationController::class, 'getNotificationByStatus']);
+            Route::get('notifications/unseen-count', [NotificationController::class, 'getUnseenCount']);
         });
