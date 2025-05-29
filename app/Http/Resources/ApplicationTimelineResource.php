@@ -32,6 +32,8 @@ class ApplicationTimelineResource extends JsonResource
 
                     return [
                         "id" => $timeline->id,
+                        "approver_user_id" => $timeline->approverUser->id ?? null,
+                        "approver_user" => $timeline->approverUser->name ?? null,
                         "user_id" => $timeline->user->id,
                         "user" => $timeline->user->name,
                         "user_position" => $timeline->user->assignedArea->designation->name ?? null,
