@@ -102,7 +102,7 @@ class NotificationService
 
                 // Dispatch job for AOP update
                 EmitNewDataToSocketConnectionJob::dispatch(
-                    RealtimeCommunicationHelper::$AOP_UPDATE_EVENT . '-' . $notif_details['aop_application_id'],
+                    RealtimeCommunicationHelper::$AOP_UPDATE_EVENT . '-' . $notif_details['user_id'],
                     $aopUpdateData
                 );
             }

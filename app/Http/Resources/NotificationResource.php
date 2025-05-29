@@ -19,8 +19,12 @@ class NotificationResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'module_path' => $this->module_path,
-            'employee_profile_id' => $this->user_notification?->employee_profile_id,
-            'seen' => $this->user_notification?->seen,
+            'employee_profile_id' => $this->whenLoaded('userNotification', function() {
+                return $this->userNotification->isNotEmpty() ? $this->userNotification->first()->user_id : null;
+            }),
+            'seen' => $this->whenLoaded('userNotification', function() {
+                return $this->userNotification->isNotEmpty() ? $this->userNotification->first()->seen : false;
+            }),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

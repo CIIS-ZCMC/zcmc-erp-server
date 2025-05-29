@@ -231,7 +231,6 @@ Route::
             // Notification Module
             // FOR CRUD
             Route::apiResource('notifications', 'NotificationController');
-            Route::apiResource('user-notifications', 'UserNotificationController');
 
             // GET ROUTES
             Route::get('notifications/seen/{id}', [NotificationController::class, 'markAsSeen']);
