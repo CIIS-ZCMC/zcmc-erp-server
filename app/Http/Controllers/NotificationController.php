@@ -58,9 +58,10 @@ class NotificationController extends Controller
 
     public function employeeNotifications(Request $request): JsonResponse
     {
+        $profile_id = $request->input('user_id');
         $notifications = Notification::with('userNotification')
             ->whereHas('userNotification', function ($query) use ($profile_id) {
-                $query->where('employee_profile_id', $profile_id);
+                $query->where('user_id', $profile_id);
             })
             ->orderBy('created_at', 'desc')
             ->get();
@@ -97,7 +98,7 @@ class NotificationController extends Controller
         $notifications = Notification::with('userNotification')
             ->whereHas('userNotification', function ($query) use ($profile_id) {
                 $query->where('seen', false)
-                    ->where('employee_profile_id', $profile_id);
+                    ->where('user_id', $profile_id);
             })
             ->get();
 
