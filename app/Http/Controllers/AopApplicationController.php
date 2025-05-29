@@ -497,6 +497,15 @@ class AopApplicationController extends Controller
                 return response()->json(['message' => 'Planning Officer not found.'], 404);
             }
 
+            $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
+            $budgetOfficerId = optional($budgetOfficer)->head_id;
+
+
+            if (is_null($budgetOfficerId)) {
+                return response()->json(['message' => 'Budget Officer not found.'], 404);
+            }
+
+
 
             // Create AOP Application
             $aopApplication = AopApplication::create([
@@ -599,7 +608,7 @@ class AopApplicationController extends Controller
             $ppmpApplication = $aopApplication->ppmpApplication()->create([
                 'user_id' => $user_id,
                 'division_chief_id' => $divisionChiefId,
-                'budget_officer_id' => 1,
+                'budget_officer_id' => $budgetOfficerId,
                 'planning_officer_id' => $planningOfficerId,
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => $ppmpTotal,
