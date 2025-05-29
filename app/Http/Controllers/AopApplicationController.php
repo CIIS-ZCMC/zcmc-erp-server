@@ -484,8 +484,18 @@ class AopApplicationController extends Controller
             $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
             $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
 
+            if (is_null($mccChiefId)) {
+                return response()->json(['message' => 'Medical Center Chief not found.'], 404);
+            }
+
+
             $planningOfficer = Section::where('name', 'Planning Unit')->first();
             $planningOfficerId = optional($planningOfficer)->head_id;
+
+
+            if (is_null($planningOfficerId)) {
+                return response()->json(['message' => 'Planning Officer not found.'], 404);
+            }
 
 
             // Create AOP Application
