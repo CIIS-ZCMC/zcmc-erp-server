@@ -17,6 +17,7 @@ class PpmpApplication extends Model
         'user_id',
         'division_chief_id',
         'budget_officer_id',
+        'planning_officer_id',
         'ppmp_application_uuid',
         'ppmp_total',
         'status',

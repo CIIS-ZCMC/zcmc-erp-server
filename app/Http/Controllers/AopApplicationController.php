@@ -600,10 +600,10 @@ class AopApplicationController extends Controller
                 'user_id' => $user_id,
                 'division_chief_id' => $divisionChiefId,
                 'budget_officer_id' => 1,
+                'planning_officer_id' => $planningOfficerId,
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => $ppmpTotal,
                 'status' => $validatedData['status'],
-
             ]);
 
             foreach ($aopApplication->applicationObjectives as $objective) {
