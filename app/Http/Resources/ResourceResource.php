@@ -18,7 +18,9 @@ class ResourceResource extends JsonResource
             'id' => $this->id,
             'quantity' => $this->quantity,
             'expense_class' => $this->expense_class,
-            'item' => new ItemResource($this->whenLoaded('item')),
+            'item' => $this->relationLoaded('item') && $this->item
+                ? new ItemResource($this->item, $this->activity_uuid, $this->quantity)
+                : null,
             'purchase_type' => new PurchaseTypeResource($this->whenLoaded('purchaseType')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

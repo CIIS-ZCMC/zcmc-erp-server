@@ -12,9 +12,20 @@ class ItemResource extends JsonResource
      *
      * @return array<string, mixed>
      */
+    protected $activityUuid;
+    protected $quantity;
+
+    public function __construct($resource, $activityUuid = null, $quantity = null)
+    {
+        parent::__construct($resource);
+        $this->activityUuid = $activityUuid;
+        $this->quantity = $quantity;
+    }
     public function toArray(Request $request): array
     {
         return [
+            "parentId" => $this->activityUuid,
+            "aop_quantity" => $this->quantity,
             "id" => $this->id,
             "label" => $this->name,
             "name" => $this->name,
