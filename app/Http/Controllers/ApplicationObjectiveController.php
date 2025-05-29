@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use App\Models\Activity;
@@ -48,9 +49,9 @@ class ApplicationObjectiveController extends Controller
      * parent objective, and success indicators for a given AOP application ID.
      *
      * @param int $id The AOP application ID
-     * @return \Illuminate\Http\JsonResponse Collection of application objectives with related data
+     * @return JsonResponse Collection of application objectives with related data
      */
-    public function manageAopRequest($id)
+    public function manageAopRequest(int $id): JsonResponse
     {
         $applicationObjectives = ApplicationObjective::with([
             'activities',
@@ -82,7 +83,7 @@ class ApplicationObjectiveController extends Controller
     }
 
 
-    public function showObjectiveActivity($id)
+    public function showObjectiveActivity(int $id): JsonResponse
     {
         $activity = Activity::with([
             'comments',
