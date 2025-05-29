@@ -121,7 +121,8 @@ class AopApplicationSeeder extends Seeder
                 'has_discussed' => (bool) rand(0, 1),
                 'remarks' => $remarkOptions[array_rand($remarkOptions)],
                 'sector' => $sector['sector'],
-                'sector_id' => $sector['details']['id']
+                'sector_id' => $sector['details']['id'],
+                'year' => now()->addYear()->year
             ]);
 
             $aopApplications[] = $aopApplication;
