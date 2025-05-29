@@ -426,11 +426,11 @@ class AopApplicationController extends Controller
             $curr_user = User::find($request->user()->id);
             $curr_user_authorization_pin = $curr_user->authorization_pin;
 
-            if ($curr_user_authorization_pin !== $request->authorization_pin) {
-                return response()->json([
-                    'message' => 'Invalid Authorization Pin'
-                ], Response::HTTP_BAD_REQUEST);
-            }
+//            if ($curr_user_authorization_pin !== $request->authorization_pin) {
+//                return response()->json([
+//                    'message' => 'Invalid Authorization Pin'
+//                ], Response::HTTP_BAD_REQUEST);
+//            }
 
             $user_id = $request->user()->id;
             $assignedArea = AssignedArea::where('user_id', $user_id)->first();
@@ -590,11 +590,12 @@ class AopApplicationController extends Controller
                 'user_id' => $user_id,
                 'division_chief_id' => $divisionChiefId,
                 'budget_officer_id' => 1,
+                'planning_officer_id' => $planningOfficerId,
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => $ppmpTotal,
                 'status' => $validatedData['status'],
-
             ]);
+
 
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
