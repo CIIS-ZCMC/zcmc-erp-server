@@ -132,7 +132,44 @@ class ShowObjectiveResource extends JsonResource
 
         // Add resources if they exist and not empty
         if ($this->resources && $this->resources->isNotEmpty()) {
-            $data['resources'] = $this->resources;
+            $data['resources'] = $this->resources->map(function ($resource) {
+                $resourceData = [];
+
+                // Item name from the related item
+                if ($resource->item && isset($resource->item->id)) {
+                    $resourceData['id'] = $resource->id;
+                }
+
+                // Quantity
+                if ($resource->quantity !== null) {
+                    $resourceData['quantity'] = $resource->quantity;
+                }
+
+                // Type of resource (from item category/classification)
+                if ($resource->item && $resource->item->itemCategory) {
+                    $resourceData['type_of_resource'] = $resource->item->itemCategory->name;
+                }
+
+                // Expense class
+                if ($resource->expense_class !== null) {
+                    $resourceData['expense_class'] = $resource->expense_class;
+                }
+
+                // Mode of procurement (from purchase type)
+                if ($resource->purchaseType) {
+                    $resourceData['mode_of_procurement'] = $resource->purchaseType->description;
+                }
+
+                return $resourceData;
+            })->filter(function ($resource) {
+                // Remove any empty entries
+                return !empty($resource);
+            });
+
+            // Only include resources if there's at least one valid entry
+            if ($data['resources']->isEmpty()) {
+                unset($data['resources']);
+            }
         }
 
         // Add comments if they exist and not empty
