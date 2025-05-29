@@ -13,6 +13,8 @@ use App\Models\PpmpSchedule;
 use App\Models\ProcurementModes;
 use App\Models\Resource;
 use App\Models\User;
+use App\Services\ApprovalService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,8 +25,11 @@ class PpmpItemController extends Controller
 
     private $module = 'ppmp_items';
 
-    public function __construct()
+    protected NotificationService $notificationService;
+
+    public function __construct(NotificationService $notificationService)
     {
+        $this->notificationService = $notificationService;
         $this->is_development = env("APP_DEBUG", true);
     }
 
@@ -250,6 +255,18 @@ class PpmpItemController extends Controller
         if ($request->is_draft === true) {
             $ppmp_application->update(['status' => 'draft', 'is_draft' => true]);
         }
+
+        $planning_officer = User::find($ppmp_application->planning_officer_id);
+        $status = $ppmp_application->status;
+        $description = [
+            'title' => 'PPMP Application Requires Your Action',
+            'description' => "An Pmpp application has been routed to you for review.",
+            'module_path' => "/ppmp-application",
+            'pmpp_application_id' => $ppmp_application->id,
+            'status' => $status
+        ];
+
+        $this->notificationService->notify($planning_officer, $description);
 
         DB::commit();
 
