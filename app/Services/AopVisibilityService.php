@@ -83,8 +83,8 @@ class AopVisibilityService
                     // OR requests waiting for their action (based on latest timeline)
                     ->orWhereHas('applicationTimelines', function ($q2) use ($user) {
                         $q2->whereRaw('id IN (
-                          SELECT MAX(id) 
-                          FROM application_timelines 
+                          SELECT MAX(id)
+                          FROM application_timelines
                           WHERE aop_application_id = aop_applications.id
                           GROUP BY aop_application_id
                       )')->where('next_area_id', function ($q3) use ($user) {
@@ -112,8 +112,8 @@ class AopVisibilityService
                 // OR requests waiting for their action
                 ->orWhereHas('applicationTimelines', function ($q2) use ($user) {
                     $q2->whereRaw('id IN (
-                        SELECT MAX(id) 
-                        FROM application_timelines 
+                        SELECT MAX(id)
+                        FROM application_timelines
                         WHERE aop_application_id = aop_applications.id
                         GROUP BY aop_application_id
                     )')->where('next_area_id', function ($q3) use ($user) {
@@ -255,5 +255,75 @@ class AopVisibilityService
 
         $division = Division::find($assignedArea->division_id);
         return $division && $division->head_id === $user->id;
+    }
+
+    /**
+     * Get approved AOP applications that the approver has approved
+     *
+     * @param User $user The approver (authenticated user)
+     * @param array $filters Optional filters for the query
+     * @return Builder Query builder for approved AOP applications
+     */
+    public function getAopApplications(User $user, array $filters = []): Builder
+    {
+        $query = AopApplication::with(['user', 'applicationTimelines'])
+            ->where('status', 'approved');
+
+        $assignedArea = $user->assignedArea;
+
+        // If user is OMCC Chief or in Planning Unit, they can see all approved applications
+        if ($this->isOmccChief($user) || ($assignedArea && $this->isUserInPlanningUnit($assignedArea))) {
+            Log::info('User is OMCC Chief or Planning Unit member, showing all approved AOP applications', [
+                'user_id' => $user->id
+            ]);
+            return $this->applyFilters($query, $filters);
+        }
+
+        // If user is a Division Head, they can see approved applications from their division
+        if ($assignedArea && $this->isUserDivisionHead($user, $assignedArea)) {
+            Log::info('User is Division Head, showing division approved applications', [
+                'user_id' => $user->id,
+                'division_id' => $assignedArea->division_id
+            ]);
+
+            // Get all users under this division
+            $areasUnderDivision = AssignedArea::where('division_id', $assignedArea->division_id)
+                ->pluck('user_id')
+                ->toArray();
+
+            // Division Head can see approved requests from users in their division
+            // and requests they personally approved
+            return $query->where(function ($q) use ($areasUnderDivision, $user) {
+                // Approved requests from users in their division
+                $q->whereIn('user_id', $areasUnderDivision)
+                  // OR requests they participated in approving
+                  ->orWhereHas('applicationTimelines', function ($q2) use ($user) {
+                      $q2->where('actor_id', $user->id)
+                         ->whereIn('action', ['approved', 'endorsed']);
+                  });
+            })
+            ->when($filters, function ($q) use ($filters) {
+                return $this->applyFilters($q, $filters);
+            });
+        }
+
+        // Regular users can see their own approved applications and those they approved
+        Log::info('User is regular staff, showing only their approved applications', [
+            'user_id' => $user->id
+        ]);
+
+//        return $query->where(function ($q) use ($user) {
+//            // Their own approved applications
+//            $q->where('user_id', $user->id);
+//              // OR applications they participated in approving
+//              ->orWhereHas('applicationTimelines', function ($q2) use ($user) {
+//                  $q2->where('user_id', $user->id)
+//                     ->whereIn('action', ['approved', 'endorsed']);
+//              });
+//        })
+        return $query
+        ->when($filters, function ($q) use ($filters) {
+            return $this->applyFilters($q, $filters);
+        });
     }
 }
