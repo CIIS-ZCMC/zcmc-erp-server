@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\PpmpExport;
+use App\Exports\PpmpItemExport;
 use App\Http\Requests\PpmpItemRequest;
 use App\Http\Resources\PpmpApplicationResource;
 use App\Http\Resources\PpmpItemResource;
@@ -17,6 +19,7 @@ use App\Services\ApprovalService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\Response;
 
 class PpmpItemController extends Controller
@@ -33,7 +36,7 @@ class PpmpItemController extends Controller
         $this->is_development = env("APP_DEBUG", true);
     }
 
-    public function index(Request $request)
+    private function getPpmpItems(Request $request)
     {
         $year = $request->query('year', now()->year + 1);
         $user = User::find($request->user()->id);
@@ -75,6 +78,13 @@ class PpmpItemController extends Controller
                     'ppmp_items' => $items
                 ];
             })->first();
+
+        return $ppmp_item;
+    }
+
+    public function index(Request $request)
+    {
+        $ppmp_item = $this->getPpmpItems($request);
 
         if (!$ppmp_item) {
             return response()->json([
@@ -293,15 +303,16 @@ class PpmpItemController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function import(Request $request)
+    public function export(Request $request)
     {
-        // Handle the import logic here
-        // You can use a package like Maatwebsite Excel for importing Excel files
-        // or handle CSV files directly using PHP's built-in functions.
+        $data = $this->getPpmpItems($request);
 
-        return response()->json([
-            'message' => "Import functionality is not implemented yet."
-        ], Response::HTTP_NOT_IMPLEMENTED);
+        if (!$data) {
+            abort(404, 'No record found.');
+        }
+
+        return Excel::download(new PpmpItemExport($data), 'ppmp_item.xlsx');
+        // return view('ppmp-item.ppmp-item', ['data' => $data]);
     }
 
     public function search(Request $request)
