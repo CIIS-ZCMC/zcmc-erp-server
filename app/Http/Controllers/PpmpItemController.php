@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\PpmpExport;
 use App\Exports\PpmpItemExport;
 use App\Http\Requests\PpmpItemRequest;
 use App\Http\Resources\PpmpApplicationResource;
@@ -15,7 +14,6 @@ use App\Models\PpmpSchedule;
 use App\Models\ProcurementModes;
 use App\Models\Resource;
 use App\Models\User;
-use App\Services\ApprovalService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -128,12 +126,21 @@ class PpmpItemController extends Controller
                 $query->where('sector_id', $sector['details']['id'])
                     ->where('sector', $sector['details']['name']);
             }
-        ])->whereYear('year', $year)->first();
+        ])->where('year', $year)->first();
 
         if (!$ppmp_application) {
             return response()->json([
                 'message' => "No record found.",
             ], Response::HTTP_NOT_FOUND);
+        } else {
+            $draft = false;
+
+            if ($request->is_draft === true) {
+                $draft = true;
+                $ppmp_application->update(['status' => 'draft', 'is_draft' => $draft]);
+            } else {
+                $ppmp_application->update(['status' => 'pending']);
+            }
         }
 
         $monthMap = [
