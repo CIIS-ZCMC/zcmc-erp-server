@@ -426,11 +426,11 @@ class AopApplicationController extends Controller
             $curr_user = User::find($request->user()->id);
             $curr_user_authorization_pin = $curr_user->authorization_pin;
 
-            if ($curr_user_authorization_pin !== $request->authorization_pin) {
-                return response()->json([
-                    'message' => 'Invalid Authorization Pin'
-                ], Response::HTTP_BAD_REQUEST);
-            }
+//            if ($curr_user_authorization_pin !== $request->authorization_pin) {
+//                return response()->json([
+//                    'message' => 'Invalid Authorization Pin'
+//                ], Response::HTTP_BAD_REQUEST);
+//            }
 
             $user_id = $request->user()->id;
             $assignedArea = AssignedArea::where('user_id', $user_id)->first();
@@ -615,6 +615,7 @@ class AopApplicationController extends Controller
                 'status' => $validatedData['status'],
             ]);
 
+
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     foreach ($activity->resources as $resource) {
@@ -650,43 +651,25 @@ class AopApplicationController extends Controller
                 // Get the aop user and its area
                 $aop_user = User::find($aopApplication->user_id);
                 $aop_user_assigned_area = $aop_user->assignedArea;
+                $aop_user_authorization_pin = $aop_user->authorization_pin;
 
-
-                // Use ApprovalService to process the request
+                // Get the approval service
                 $approval_service = new ApprovalService($this->notificationService);
 
-                // Create a timeline entry using the service
-                $aop_application_timeline = $approval_service->createApplicationTimeline(
+                // Create an initial timeline entry using the specialized method
+                $aop_application_timeline = $approval_service->createInitialApplicationTimeline(
                     $aopApplication,
                     $curr_user,
-                    $aop_user,
-                    $request->status,
                     $request->remarks
                 );
 
-                if (!$aop_application_timeline) {
+                if (!$aop_application_timeline || (is_array($aop_application_timeline) && !($aop_application_timeline['success'] ?? true))) {
+                    DB::rollBack();
                     return response()->json([
-                        'message' => 'AOP application timeline not created',
-                    ], Response::HTTP_BAD_REQUEST);
+                        'message' => 'Failed to create AOP application timeline',
+                        'details' => is_array($aop_application_timeline) ? ($aop_application_timeline['error'] ?? 'Unknown error') : 'Unknown error'
+                    ], Response::HTTP_INTERNAL_SERVER_ERROR);
                 }
-
-                // Notify division chief
-                // $recipient = User::find($planningOfficerId);
-
-                // if ($recipient) {
-                //     $areaType = $area['sector'];
-                //     $areaName = $area['details']['name'];
-
-                //     $notifDetails = [
-                //         'title' => "AOP Application from {$areaType}: {$areaName} Requires Your Action",
-                //         'description' => 'A new AOP Application has been submitted and requires your review.',
-                //         'module_path' => '/aop-applications/' . $aopApplication->id,
-                //         'status' => $aopApplication->status,
-                //         'aop_application_id' => $aopApplication->id,
-                //     ];
-
-                //     $this->notificationService->notify($recipient, $notifDetails);
-                // }
             }
             DB::commit();
 
@@ -734,6 +717,7 @@ class AopApplicationController extends Controller
             'applicationObjectives.otherSuccessIndicator',
             'applicationObjectives.activities.target',
             'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.resources.item',
             'applicationObjectives.activities.responsiblePeople.user',
             'applicationObjectives.activities.comments', // Include activity comments
         ])->findOrFail($id);
@@ -804,54 +788,19 @@ class AopApplicationController extends Controller
         //
     }
 
-    public function aopRequests(Request $request)
+    public function aopRequests(Request $request): JsonResponse
     {
-        $page = $request->query('page') > 0 ? $request->query('page') : 1;
-        $per_page = $request->query('per_page') ?? 15;
+        $visibilityService = new AopVisibilityService();
+        $filters = $request->only(['status', 'year', 'search']);
 
-        // Get current authenticated user
-        $user = User::find($request->user()->id);
-        $assignedArea = $user->assignedArea;
+        $aopApplications = $visibilityService->getAopApplications($request->user(), $filters)->get();
 
-        if (!$assignedArea) {
-            return response()->json([
-                'message' => 'User does not have an assigned area',
-                'data' => [],
-                'pagination' => [
-                    'total' => 0,
-                    'per_page' => $per_page,
-                    'current_page' => $page,
-                    'last_page' => 1,
-                ],
-                'metadata' => $this->getMetadata('getAopApplications')
-            ], Response::HTTP_OK);
-        }
-
-        // Use the AOP visibility service to get applications user can see
-        $aopVisibilityService = new AopVisibilityService();
-
-        $filters = [
-            'status' => $request->has('status') ? $request->status : null,
-            'year' => $request->has('year') ? $request->year : null,
-            'search' => $request->has('search') ? $request->search : null,
-        ];
-
-        // Get query from visibility service with proper permissions and filters already applied
-        $query = $aopVisibilityService->getVisibleAopApplications($user, $filters);
-
-        // Paginate the results
-        $aopApplications = $query->paginate($per_page, ['*'], 'page', $page);
+        $metadata = $this->getMetadata('getAopApplications');
 
         return response()->json([
+            'metadata' => $metadata,
             'data' => AopRequestResource::collection($aopApplications),
-            'pagination' => [
-                'total' => $aopApplications->total(),
-                'per_page' => $aopApplications->perPage(),
-                'current_page' => $aopApplications->currentPage(),
-                'last_page' => $aopApplications->lastPage(),
-            ],
-            'metadata' => $this->getMetadata('getAopApplications')
-        ], Response::HTTP_OK);
+        ]);
     }
 
 
@@ -862,7 +811,7 @@ class AopApplicationController extends Controller
      * @return \Illuminate\Http\JsonResponse JSON response
      * @throws \Exception
      */
-    public function processAopRequest(ProcessAopRequest $request)
+    public function processAopRequest(ProcessAopRequest $request): JsonResponse
     {
         $aop_application = AopApplication::with([
             'applicationObjectives',

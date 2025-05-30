@@ -188,6 +188,7 @@ Route::
             Route::apiResource('ppmp-items', 'PpmpItemController')->only(['index', 'store', 'update']);
             Route::delete('ppmp-items', 'PpmpItemController@destroy');
             Route::apiResource('ppmp-item-requests', 'PpmpItemRequestControlller');
+            Route::get('ppmp-item-export', 'PpmpItemController@export');
 
             // Activity Module
             Route::apiResource('activities', ActivityController::class);
@@ -230,7 +231,6 @@ Route::
             // Notification Module
             // FOR CRUD
             Route::apiResource('notifications', 'NotificationController');
-            Route::apiResource('user-notifications', 'UserNotificationController');
 
             // GET ROUTES
             Route::get('notifications/seen/{id}', [NotificationController::class, 'markAsSeen']);

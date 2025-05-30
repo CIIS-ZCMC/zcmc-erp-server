@@ -338,4 +338,154 @@ class ApprovalService
             ];
         }
     }
+
+    /**
+     * Create an initial timeline entry for a newly created AOP application
+     *
+     * @param object $aop_application The newly created AOP application
+     * @param object $current_user The user creating the application
+     * @param string|null $remarks Optional remarks for the initial submission
+     * @return ApplicationTimeline|array
+     * @throws \Exception
+     */
+    public function createInitialApplicationTimeline(object $aop_application, object $current_user, string $remarks = null): ApplicationTimeline|array
+    {
+        try {
+            // Validate essential inputs
+            if (!$aop_application || !isset($aop_application->id)) {
+                throw new \InvalidArgumentException('Invalid AOP application object provided');
+            }
+
+            if (!$current_user || !isset($current_user->id) || !$current_user->assignedArea) {
+                throw new \InvalidArgumentException('Invalid current user or missing assigned area');
+            }
+
+            // For new applications, the current user is also the AOP user
+            $aop_user = $current_user;
+            $current_user_assigned_area = $current_user->assignedArea;
+
+            // Initial submission - route to Planning Unit (section id = 53)
+            $next_area_id = null;
+            $planning_unit_area = null;
+
+            // Get the Planning section (id = 53)
+            $planningSection = Section::find(53);
+
+            if ($planningSection) {
+                Log::info('Found Planning section', ['section_id' => $planningSection->id, 'name' => $planningSection->name]);
+
+                // Get the head of the Planning section if available
+                if ($planningSection->head_id) {
+                    $planning_unit_area = AssignedArea::where('section_id', 53)
+                        ->where('user_id', $planningSection->head_id)
+                        ->first();
+
+                    Log::info('Looking for Planning head area', [
+                        'head_id' => $planningSection->head_id,
+                        'found' => $planning_unit_area ? 'yes' : 'no'
+                    ]);
+                }
+
+                // If no specific head found, get any assigned area in this section
+                if (!$planning_unit_area) {
+                    $planning_unit_area = AssignedArea::where('section_id', 53)->first();
+                    Log::info('Using any Planning section area', ['found' => $planning_unit_area ? 'yes' : 'no']);
+                }
+            } else {
+                Log::error('Planning section not found', ['section_id' => 53]);
+                throw new \RuntimeException('Planning section (ID: 53) not found in the system');
+            }
+
+            if ($planning_unit_area) {
+                $next_area_id = $planning_unit_area->id;
+            } else {
+                Log::error('No planning unit area found', ['section_id' => 53]);
+                throw new \RuntimeException('No planning unit area found for routing');
+            }
+
+            // Create the timeline entry
+            $timeline = new ApplicationTimeline([
+                'aop_application_id' => $aop_application->id,
+                'user_id' => $aop_user->id,
+                'approver_user_id' => $current_user->id,
+                'current_area_id' => $current_user_assigned_area->id,
+                'next_area_id' => $next_area_id,
+                'status' => 'pending', // Initial status must be 'pending' based on the database schema
+                'remarks' => $remarks,
+                'date_approved' => now(),
+            ]);
+
+            $timeline->save();
+
+            // Send notification to the Planning Unit user
+            if ($next_area_id) {
+                $nextArea = AssignedArea::find($next_area_id);
+                if ($nextArea && $nextArea->user_id) {
+                    $nextUser = User::find($nextArea->user_id);
+                    if ($nextUser) {
+                        $this->notificationService->notify($nextUser, [
+                            'title' => 'New AOP Application Submitted',
+                            'description' => "A new AOP application has been submitted and requires your review.",
+                            'module_path' => "/aop-application/{$aop_application->id}",
+                            'aop_application_id' => $aop_application->id,
+                            'status' => 'pending'
+                        ]);
+                    }
+                }
+            }
+
+            // Log successful creation
+            Log::info('Initial application timeline created successfully', [
+                'timeline_id' => $timeline->id,
+                'application_id' => $aop_application->id,
+                'status' => 'pending'
+            ]);
+
+            return $timeline;
+        } catch (\InvalidArgumentException $e) {
+            // Handle validation errors
+            Log::error('Validation error in createInitialApplicationTimeline: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'application_id' => $aop_application->id ?? null
+            ]);
+
+            // Re-throw with more context for API response
+            throw new \InvalidArgumentException('Failed to create initial application timeline: ' . $e->getMessage(), 0, $e);
+        } catch (\RuntimeException $e) {
+            // Handle runtime errors
+            Log::error('Runtime error in createInitialApplicationTimeline: ' . $e->getMessage(), [
+                'exception' => get_class($e),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'application_id' => $aop_application->id ?? null
+            ]);
+
+            // Re-throw with more context for API response
+            throw new \RuntimeException('Failed to process initial application timeline: ' . $e->getMessage(), 0, $e);
+        } catch (\Exception $e) {
+            // Handle all other errors
+            $errorDetails = [
+                'exception' => get_class($e),
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'application_id' => $aop_application->id ?? null,
+                'current_user_id' => $current_user->id ?? null
+            ];
+
+            Log::error('Error creating initial application timeline: ', $errorDetails);
+
+            // Return detailed error information instead of null
+            return [
+                'success' => false,
+                'error' => 'An error occurred while creating the initial application timeline',
+                'details' => $errorDetails,
+            ];
+        }
+    }
 }

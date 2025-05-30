@@ -21,7 +21,7 @@ class NotificationController extends Controller
     public function index(Request $request): JsonResponse
     {
         // Get user notifications
-        $query = Notification::with(['userNotification']);
+        $query = Notification::with('userNotification');
 
         // Filter by seen status if specified
         if ($request->has('seen') && $request->seen !== null) {
@@ -42,8 +42,8 @@ class NotificationController extends Controller
 
     public function getNotificationByStatus(bool $seen): JsonResponse
     {
-        $notifications = Notification::with('user_notification')
-            ->whereHas('user_notification', function ($query) use ($seen) {
+        $notifications = Notification::with('userNotification')
+            ->whereHas('userNotification', function ($query) use ($seen) {
                 $query->where('seen', $seen);
             })
             ->orderBy('created_at', 'desc')
@@ -58,9 +58,10 @@ class NotificationController extends Controller
 
     public function employeeNotifications(Request $request): JsonResponse
     {
-        $notifications = Notification::with('user_notification')
-            ->whereHas('user_notification', function ($query) use ($profile_id) {
-                $query->where('employee_profile_id', $profile_id);
+        $profile_id = $request->input('user_id');
+        $notifications = Notification::with('userNotification')
+            ->whereHas('userNotification', function ($query) use ($profile_id) {
+                $query->where('user_id', $profile_id);
             })
             ->orderBy('created_at', 'desc')
             ->get();
@@ -76,12 +77,12 @@ class NotificationController extends Controller
 
     public function markAsSeen(string $id): JsonResponse
     {
-        $notifications = Notification::with('user_notification')->whereHas('user_notification', function ($query) {
+        $notifications = Notification::with('userNotification')->whereHas('userNotification', function ($query) {
             $query->where('seen', false);
         })->where('id', $id)->first();
 
-        $notifications->user_notification->seen = true;
-        $notifications->user_notification->save();
+        $notifications->userNotification->seen = true;
+        $notifications->userNotification->save();
 
         $data = NotificationResource::make($notifications);
 
@@ -94,10 +95,10 @@ class NotificationController extends Controller
     public function markAllAsSeen($profile_id): JsonResponse
     {
         // Fetch all notifications with unseen user notifications for the given profile
-        $notifications = Notification::with('user_notification')
-            ->whereHas('user_notification', function ($query) use ($profile_id) {
+        $notifications = Notification::with('userNotification')
+            ->whereHas('userNotification', function ($query) use ($profile_id) {
                 $query->where('seen', false)
-                    ->where('employee_profile_id', $profile_id);
+                    ->where('user_id', $profile_id);
             })
             ->get();
 
@@ -108,10 +109,10 @@ class NotificationController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Collect IDs of related user_notification records
-        $userNotificationIds = $notifications->pluck('user_notification.id')->filter();
+        // Collect IDs of related userNotification records
+        $userNotificationIds = $notifications->pluck('userNotification.id')->filter();
 
-        // Bulk update user_notifications to mark them as seen
+        // Bulk update userNotifications to mark them as seen
         UserNotification::whereIn('id', $userNotificationIds)
             ->update(['seen' => true]);
 
