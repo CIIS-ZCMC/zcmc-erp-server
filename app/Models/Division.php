@@ -2,10 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use App\Models\User;
-use App\Models\TransactionLog;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
@@ -58,5 +57,34 @@ class Division extends Model
     public function logs(): MorphMany
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
+    }
+
+    /**
+     * Get the division ID for this section
+     *
+     * @return int|null
+     */
+    public function getDivisionId(): ?int
+    {
+        // Return the division_id directly from the section model
+        return $this->division_id;
+    }
+
+    /**
+     * Get the division chief for this section
+     *
+     * @return User|null
+     */
+    public function getDivisionChief(): ?\App\Models\User
+    {
+        // Get the division this section belongs to - use the method explicitly
+        $division = $this->where('id', $this->getDivisionId())->first();
+
+        if (!$division) {
+            return null;
+        }
+
+        // The division chief is the head of the division - use method explicitly
+        return $division->head()->first();
     }
 }
