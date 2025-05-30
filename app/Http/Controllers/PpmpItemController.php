@@ -316,12 +316,22 @@ class PpmpItemController extends Controller
     {
         $data = $this->getPpmpItems($request);
 
+        $user_id = $data['ppmp_application']->user_id;
+        $user = User::find($user_id);
+
+        $area = $user->assignedArea->findDetails();
+        $year = $data['ppmp_application']->year;
+
         if (!$data) {
             abort(404, 'No record found.');
         }
 
-        return Excel::download(new PpmpItemExport($data), 'ppmp_item.xlsx');
-        // return view('ppmp-item.ppmp-item', ['data' => $data]);
+        return Excel::download(
+            new PpmpItemExport($data),
+            'ppmp_' . $area['details']['code'] . '_' . $year . '.xlsx',
+            \Maatwebsite\Excel\Excel::XLSX,
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        );
     }
 
     public function search(Request $request)
