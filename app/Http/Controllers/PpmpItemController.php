@@ -67,6 +67,7 @@ class PpmpItemController extends Controller
                     ]);
             })
             ->whereNull('deleted_at')
+            ->orderBy('id')
             ->get()
             ->groupBy(function ($item) {
                 $app = $item->ppmpApplication;
@@ -84,6 +85,14 @@ class PpmpItemController extends Controller
 
     public function index(Request $request)
     {
+        if ($request->search !== null) {
+            return $this->search($request);
+        }
+
+        if ($request->export) {
+            return $this->export($request);
+        }
+
         $ppmp_item = $this->getPpmpItems($request);
 
         if (!$ppmp_item) {
