@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             ItemReferenceTerminologiesSeeder::class,
             ItemClassificationSeeder::class,
             ItemCategorySeeder::class,
+            PurchaseTypeSeeder::class,
             TypeOfFunctionSeeder::class,
             ProcurementModeSeeder::class,
             AopApplicationSeeder::class,
@@ -32,6 +33,8 @@ class DatabaseSeeder extends Seeder
             PpmpItemSeeder::class,
             PpmpApplicationSeeder::class,
             ApplicationTimelineSeeder::class,
+
+
         ]);
     }
 }
