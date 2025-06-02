@@ -122,11 +122,6 @@ class PpmpApplicationController extends Controller
 
     }
 
-    public function show(PpmpApplication $ppmpApplication)
-    {
-        return response()->json(new PpmpApplicationResource($ppmpApplication), Response::HTTP_OK);
-    }
-
     public function update(PpmpApplicationRequest $request, PpmpApplication $ppmpApplication)
     {
         $data = $request->all();

@@ -25,10 +25,10 @@ return new class extends Migration {
             $table->foreign('planning_officer_id')->references('id')->on('users');
             $table->uuid('ppmp_application_uuid');
             $table->float('ppmp_total')->default(0);
-            $table->string('status')->default("pending");
-            $table->boolean('is_draft')->default(false);
+            $table->string('status')->default("draft");
+            $table->boolean('is_draft')->default(true);
             $table->string('remarks')->nullable();
-            $table->year('year')->default(Carbon::now()->year);
+            $table->year('year')->default(date('Y') + 1);
             $table->softDeletes();
             $table->timestamps();
         });
