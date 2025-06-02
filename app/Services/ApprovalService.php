@@ -255,20 +255,16 @@ class ApprovalService
             $timeline->save();
 
             // Send notifications to the next area user if there is a next area
-            if ($next_area_id) {
-                $nextArea = AssignedArea::find($next_area_id);
-                if ($nextArea && $nextArea->user_id) {
-                    $nextUser = User::find($nextArea->user_id);
-                    if ($nextUser) {
-                        $this->notificationService->notify($nextUser, [
-                            'title' => 'AOP Application Requires Your Action',
-                            'description' => "An AOP application has been routed to you for review.",
-                            'module_path' => "/aop-application/{$aop_application->id}",
-                            'aop_application_id' => $aop_application->id,
-                            'status' => $status
-                        ]);
-                    }
-                }
+            $nextArea = AssignedArea::find($next_area_id);
+            $nextUser = $nextArea ? User::find($nextArea->user_id) : null;
+            if ($nextUser) {
+                $this->notificationService->notify($nextUser, [
+                    'title' => 'AOP Application Requires Your Action',
+                    'description' => "An AOP application has been routed to you for review.",
+                    'module_path' => "/aop-application/{$aop_application->id}",
+                    'aop_application_id' => $aop_application->id,
+                    'status' => $status
+                ]);
             }
 
             // Notify the AOP application owner about the status change
