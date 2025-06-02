@@ -108,7 +108,32 @@ class AopApplicationSeeder extends Seeder
         // Create 5 sample AOP Applications with corresponding PPMP Applications
         for ($i = 0; $i < 5; $i++) {
             // Get random user for each application
+            // Create a regular random user AOP
             $randomUser = User::inRandomOrder()->first() ?? $user;
+
+            // Additionally, create an AOP for user id 2384 if it exists (only on first iteration)
+            if ($i === 0) {
+                $user2384 = User::find(2384);
+                if ($user2384) {
+                    $sector2384 = $user2384->assignedArea->findDetails();
+
+                    $aop2384 = AopApplication::create([
+                        'user_id' => $user2384->id,
+                        'division_chief_id' => $divisionChief->head_id,
+                        'mcc_chief_id' => $mccChief->head_id,
+                        'planning_officer_id' => $planningOfficer->head_id ?? 494,
+                        'mission' => $missionStatements[$i] ?? 'Default mission statement',
+                        'status' => $statusOptions[array_rand($statusOptions)],
+                        'has_discussed' => (bool) rand(0, 1),
+                        'remarks' => $remarkOptions[array_rand($remarkOptions)],
+                        'sector' => $sector2384['sector'],
+                        'sector_id' => $sector2384['details']['id'],
+                        'year' => now()->addYear()->year
+                    ]);
+                    $aopApplications[] = $aop2384;
+                }
+            }
+
             $sector = $randomUser->assignedArea->findDetails();
 
             $aopApplication = AopApplication::create([

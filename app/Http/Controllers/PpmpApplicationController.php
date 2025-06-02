@@ -54,7 +54,7 @@ class PpmpApplicationController extends Controller
                 $query->where('sector_id', $sector['details']['id'])
                     ->where('sector', $sector['details']['name']);
             }
-        ])->whereYear('year', $year)->first();
+        ])->where('year', $year)->first();
 
         if (!$ppmp_application) {
             return response()->json([
