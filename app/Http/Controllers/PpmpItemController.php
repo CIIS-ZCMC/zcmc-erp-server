@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Exports\PpmpExport;
 use App\Exports\PpmpItemExport;
 use App\Http\Requests\PpmpItemRequest;
 use App\Http\Resources\PpmpApplicationResource;
@@ -15,7 +14,6 @@ use App\Models\PpmpSchedule;
 use App\Models\ProcurementModes;
 use App\Models\Resource;
 use App\Models\User;
-use App\Services\ApprovalService;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -67,6 +65,7 @@ class PpmpItemController extends Controller
                     ]);
             })
             ->whereNull('deleted_at')
+            ->orderBy('id')
             ->get()
             ->groupBy(function ($item) {
                 $app = $item->ppmpApplication;
@@ -84,6 +83,14 @@ class PpmpItemController extends Controller
 
     public function index(Request $request)
     {
+        if ($request->search !== null) {
+            return $this->search($request);
+        }
+
+        if ($request->export) {
+            return $this->export($request);
+        }
+
         $ppmp_item = $this->getPpmpItems($request);
 
         if (!$ppmp_item) {
@@ -119,12 +126,21 @@ class PpmpItemController extends Controller
                 $query->where('sector_id', $sector['details']['id'])
                     ->where('sector', $sector['details']['name']);
             }
-        ])->whereYear('year', $year)->first();
+        ])->where('year', $year)->first();
 
         if (!$ppmp_application) {
             return response()->json([
                 'message' => "No record found.",
             ], Response::HTTP_NOT_FOUND);
+        } else {
+            $draft = false;
+
+            if ($request->is_draft === true) {
+                $draft = true;
+                $ppmp_application->update(['status' => 'draft', 'is_draft' => $draft]);
+            } else {
+                $ppmp_application->update(['status' => 'pending']);
+            }
         }
 
         $monthMap = [
@@ -307,12 +323,22 @@ class PpmpItemController extends Controller
     {
         $data = $this->getPpmpItems($request);
 
+        $user_id = $data['ppmp_application']->user_id;
+        $user = User::find($user_id);
+
+        $area = $user->assignedArea->findDetails();
+        $year = $data['ppmp_application']->year;
+
         if (!$data) {
             abort(404, 'No record found.');
         }
 
-        return Excel::download(new PpmpItemExport($data), 'ppmp_item.xlsx');
-        // return view('ppmp-item.ppmp-item', ['data' => $data]);
+        return Excel::download(
+            new PpmpItemExport($data),
+            'ppmp_' . $area['details']['code'] . '_' . $year . '.xlsx',
+            \Maatwebsite\Excel\Excel::XLSX,
+            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+        );
     }
 
     public function search(Request $request)

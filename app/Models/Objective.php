@@ -40,4 +40,21 @@ class Objective extends Model
     {
         return $this->morphMany(TransactionLog::class, 'referrence');
     }
+
+    public function scopeSearch($query, array $terms)
+    {
+        return $query->where(function ($q) use ($terms) {
+            foreach ($terms as $term) {
+                $q->where('code', 'like', "%{$term}%")
+                    ->orWhere('description', 'like', "%{$term}%")
+                    ->orWhereHas('typeOfFunction', function ($q) use ($term) {
+                        $q->where('code', 'like', "%{$term}%")
+                            ->orWhere('type', 'like', "%{$term}%");
+                    })->orWhereHas('successIndicators', function ($q) use ($term) {
+                        $q->where('code', 'like', "%{$term}%")
+                            ->orWhere('description', 'like', "%{$term}%");
+                    });
+            }
+        });
+    }
 }
