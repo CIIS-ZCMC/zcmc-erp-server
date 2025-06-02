@@ -484,8 +484,27 @@ class AopApplicationController extends Controller
             $medicalCenterChiefDivision = Division::where('name', 'Office of Medical Center Chief')->first();
             $mccChiefId = optional($medicalCenterChiefDivision)->head_id;
 
+            if (is_null($mccChiefId)) {
+                return response()->json(['message' => 'Medical Center Chief not found.'], 404);
+            }
+
+
             $planningOfficer = Section::where('name', 'Planning Unit')->first();
             $planningOfficerId = optional($planningOfficer)->head_id;
+
+
+            if (is_null($planningOfficerId)) {
+                return response()->json(['message' => 'Planning Officer not found.'], 404);
+            }
+
+            $budgetOfficer = Section::where('name', 'FS: Budget Section')->first();
+            $budgetOfficerId = optional($budgetOfficer)->head_id;
+
+
+            if (is_null($budgetOfficerId)) {
+                return response()->json(['message' => 'Budget Officer not found.'], 404);
+            }
+
 
 
             // Create AOP Application
@@ -589,7 +608,7 @@ class AopApplicationController extends Controller
             $ppmpApplication = $aopApplication->ppmpApplication()->create([
                 'user_id' => $user_id,
                 'division_chief_id' => $divisionChiefId,
-                'budget_officer_id' => 1,
+                'budget_officer_id' => $budgetOfficerId,
                 'planning_officer_id' => $planningOfficerId,
                 'ppmp_application_uuid' => Str::uuid(),
                 'ppmp_total' => $ppmpTotal,
@@ -1273,7 +1292,15 @@ class AopApplicationController extends Controller
                     'activities',
                     'activities.target',
                     'activities.resources',
+                    'activities.resources.item',
+                    'activities.resources.purchaseType',
                     'activities.responsiblePeople',
+                    'activities.responsiblePeople.user',
+                    'activities.responsiblePeople.division',
+                    'activities.responsiblePeople.department',
+                    'activities.responsiblePeople.section',
+                    'activities.responsiblePeople.unit',
+                    'activities.responsiblePeople.designation',
                     'activities.comments',
                     'objective',
                     'otherObjective',
