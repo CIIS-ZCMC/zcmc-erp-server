@@ -39,6 +39,7 @@ class PpmpItemController extends Controller
         $year = $request->query('year', now()->year + 1);
         $user = User::find($request->user()->id);
         $sector = $user->assignedArea->findDetails();
+        $ppmp_application_id = $request->ppmp_application_id;
 
         $ppmp_item = PpmpItem::with([
             'ppmpApplication.user',
@@ -54,8 +55,11 @@ class PpmpItemController extends Controller
             'activities',
             'comments',
             'ppmpSchedule',
-        ])
-            ->whereHas('ppmpApplication', function ($query) use ($year, $sector) {
+        ]);
+        if ($ppmp_application_id !== null) {
+            $ppmp_item->where('ppmp_application_id', $ppmp_application_id);
+        } else {
+            $ppmp_item->whereHas('ppmpApplication', function ($query) use ($year, $sector) {
                 $query->where('year', $year)
                     ->with([
                         'aopApplication' => function ($query) use ($sector) {
@@ -63,8 +67,10 @@ class PpmpItemController extends Controller
                                 ->where('sector', $sector['details']['name']);
                         }
                     ]);
-            })
-            ->whereNull('deleted_at')
+            });
+        }
+
+        $result = $ppmp_item->whereNull('deleted_at')
             ->orderBy('id')
             ->get()
             ->groupBy(function ($item) {
@@ -78,7 +84,7 @@ class PpmpItemController extends Controller
                 ];
             })->first();
 
-        return $ppmp_item;
+        return $result;
     }
 
     public function index(Request $request)
