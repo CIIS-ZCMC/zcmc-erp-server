@@ -32,7 +32,14 @@ class ActivityResource extends JsonResource
                     return new ResourceResource($resource);
                 });
             }),
-            'responsible_people' => ResponsiblePersonResource::collection($this->whenLoaded('responsiblePeople')),
+
+            'responsible_people' => $this->whenLoaded('responsiblePeople', function () {
+                return $this->responsiblePeople->map(function ($person) {
+                    $person->activity_id = $this->id;
+                    $person->activity_uuid = $this->activity_uuid;
+                    return new ResponsiblePersonResource($person);
+                });
+            }),
             'comments' => ActivityCommentResource::collection($this->whenLoaded('comments')) ?? [],
 
         ];
