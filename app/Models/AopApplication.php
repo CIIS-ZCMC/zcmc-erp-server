@@ -15,6 +15,10 @@ class AopApplication extends Model
 
     use HasFactory, SoftDeletes;
 
+    const STATUS_PENDING = 'Pending';
+    const STATUS_APPROVED = 'Approved';
+    const STATUS_RETURNED = 'Returned';
+
     protected $fillable = [
         'user_id',
         'division_chief_id',
