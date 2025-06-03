@@ -108,7 +108,7 @@ class AopApplicationController extends Controller
 
         $userAopApplication = AopApplication::where('sector', $area['sector'])
             ->where('sector_id', $area['details']['id'])
-            ->whereYear('created_at', now()->year)
+            ->orderByDesc('year')
             ->first();
 
         if (!$userAopApplication) {
@@ -197,7 +197,7 @@ class AopApplicationController extends Controller
         $aopApplication = AopApplication::with('applicationTimelines')
             ->where('sector', $area['sector'])
             ->where('sector_id', $area['details']['id'])
-            ->whereYear('created_at', now()->year)
+            ->orderByDesc('year') 
             ->first();
 
         if (!$aopApplication) {
@@ -426,11 +426,11 @@ class AopApplicationController extends Controller
             $curr_user = User::find($request->user()->id);
             $curr_user_authorization_pin = $curr_user->authorization_pin;
 
-//            if ($curr_user_authorization_pin !== $request->authorization_pin) {
-//                return response()->json([
-//                    'message' => 'Invalid Authorization Pin'
-//                ], Response::HTTP_BAD_REQUEST);
-//            }
+            //            if ($curr_user_authorization_pin !== $request->authorization_pin) {
+            //                return response()->json([
+            //                    'message' => 'Invalid Authorization Pin'
+            //                ], Response::HTTP_BAD_REQUEST);
+            //            }
 
             $user_id = $request->user()->id;
             $assignedArea = AssignedArea::where('user_id', $user_id)->first();
@@ -675,6 +675,7 @@ class AopApplicationController extends Controller
 
             return response()->json(['message' => 'AOP Application created successfully'], Response::HTTP_OK);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'error' => $e->getMessage(),
                 'trace' => $e->getTrace(), // optional: useful for debugging
