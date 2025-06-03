@@ -87,6 +87,13 @@ class ApprovalService
                         $department = $aop_user_assigned_area->department()->first();
                         $division = $aop_user_assigned_area->division()->first();
 
+                        Log::info('Relationship method calls', [
+                            'unit' => $unit,
+                            'section' => $section,
+                            'department' => $department,
+                            'division' => $division
+                        ]);
+
                         if ($unit) {
                             $division_chief = $unit->getDivisionChief();
                         } elseif ($section) {
