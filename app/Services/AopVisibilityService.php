@@ -258,84 +258,92 @@ class AopVisibilityService
     }
 
     /**
-     * Get approved AOP applications that the approver has approved
+     * Get AOP applications that the user is allowed to see based on their role,
+     * approval flow position, and application status
      *
      * @param User $user The approver (authenticated user)
      * @param array $filters Optional filters for the query
-     * @return Builder Query builder for approved AOP applications
+     * @return Builder Query builder for AOP applications
      */
     public function getAopApplications(User $user, array $filters = []): Builder
     {
+        // Ensure user has an assigned area
+        if (!$user->assignedArea) {
+            Log::info('User does not have an assigned area, showing no applications', [
+                'user_id' => $user->id
+            ]);
+            return AopApplication::whereRaw('1 = 0');
+        }
+
         $query = AopApplication::with([
             'user',
             'applicationTimelines'
-        ])->where(function ($query)  use ($user) {
-            $query->whereHas('applicationTimelines', function ($subQuery) use ($user) {
-                $subQuery->where('next_area_id', $user->assignedArea->id)
-                    ->orderByDesc('created_at')
-                    ->latest();
-            });
-        });
+        ]);
 
-
-        Log::info('Querying approved AOP applications', [
-            'query' => $query->toSql(),
-            'bindings' => $query->getBindings()
+        // Start with base query including relationship eager loading
+        Log::info('Building query for AOP applications', [
+            'user_id' => $user->id,
+            'area_id' => $user->assignedArea->id
         ]);
 
         $assignedArea = $user->assignedArea;
 
-        // If user is OMCC Chief or in Planning Unit, they can see all approved applications
-        if ($this->isOmccChief($user) || ($assignedArea && $this->isUserInPlanningUnit($assignedArea))) {
-            Log::info('User is OMCC Chief or Planning Unit member, showing all approved AOP applications', [
+        // If user is OMCC Chief or in Planning Unit, they can see all applications
+        if ($this->isOmccChief($user) || $this->isUserInPlanningUnit($assignedArea)) {
+            Log::info('User is OMCC Chief or Planning Unit member, showing all AOP applications', [
                 'user_id' => $user->id
             ]);
             return $this->applyFilters($query, $filters);
         }
-//
-//        // If user is a Division Head, they can see approved applications from their division
-//        if ($assignedArea && $this->isUserDivisionHead($user, $assignedArea)) {
-//            Log::info('User is Division Head, showing division approved applications', [
-//                'user_id' => $user->id,
-//                'division_id' => $assignedArea->division_id
-//            ]);
-//
-//            // Get all users under this division
-//            $areasUnderDivision = AssignedArea::where('division_id', $assignedArea->division_id)
-//                ->pluck('user_id')
-//                ->toArray();
-//
-//            // Division Head can see approved requests from users in their division
-//            // and requests they personally approved
-//            return $query->where(function ($q) use ($areasUnderDivision, $user) {
-//                // Approved requests from users in their division
-//                $q->whereIn('user_id', $areasUnderDivision)
-//                  // OR requests they participated in approving
-//                  ->orWhereHas('applicationTimelines', function ($q2) use ($user) {
-//                      $q2->where('user_id', $user->id);
-////                         ->whereIn('action', ['approved', 'endorsed']);
-//                  });
-//            })
-//            ->when($filters, function ($q) use ($filters) {
-//                return $this->applyFilters($q, $filters);
-//            });
-//        }
-//
-//        // Regular users can see their own approved applications and those they approved
-//        Log::info('User is regular staff, showing only their approved applications', [
-//            'user_id' => $user->id
-//        ]);
 
-//        return $query->where(function ($q) use ($user) {
-//            // Their own approved applications
-//            $q->where('user_id', $user->id);
-//              // OR applications they participated in approving
-//              ->orWhereHas('applicationTimelines', function ($q2) use ($user) {
-//                  $q2->where('user_id', $user->id)
-//                     ->whereIn('action', ['approved', 'endorsed']);
-//              });
-//        })
-        return $query
+        // If user is a Division Head, they can see applications from their division
+        if ($this->isUserDivisionHead($user, $assignedArea)) {
+            Log::info('User is Division Head, showing division applications', [
+                'user_id' => $user->id,
+                'division_id' => $assignedArea->division_id
+            ]);
+
+            // Get all users under this division
+            $areasUnderDivision = AssignedArea::where('division_id', $assignedArea->division_id)
+                ->pluck('user_id')
+                ->toArray();
+
+            // Division Head can see requests from users in their division
+            // and requests they personally approved or are waiting for their action
+            return $query->where(function ($q) use ($areasUnderDivision, $user, $assignedArea) {
+                // Requests from users in their division
+                $q->whereIn('user_id', $areasUnderDivision)
+                  // OR requests where they are the current approver (next_area_id)
+                  ->orWhereHas('applicationTimelines', function ($q2) use ($assignedArea) {
+                      $q2->where('next_area_id', $assignedArea->id);
+                  })
+                  // OR requests where they were the previous approver (current_area_id)
+                  ->orWhereHas('applicationTimelines', function ($q2) use ($assignedArea) {
+                      $q2->where('current_area_id', $assignedArea->id);
+                  });
+            })
+            ->when($filters, function ($q) use ($filters) {
+                return $this->applyFilters($q, $filters);
+            });
+        }
+
+        // Regular users can see their own applications and those relevant to their approval role
+        Log::info('User is regular staff, showing relevant applications', [
+            'user_id' => $user->id
+        ]);
+
+        return $query->where(function ($q) use ($user, $assignedArea) {
+            // Their own applications
+            $q->where('user_id', $user->id)
+              // OR applications where they are the current approver (next_area_id)
+              ->orWhereHas('applicationTimelines', function ($q2) use ($assignedArea) {
+                  $q2->where('next_area_id', $assignedArea->id);
+              })
+              // OR applications they previously handled (current_area_id)
+              ->orWhereHas('applicationTimelines', function ($q2) use ($assignedArea) {
+                  $q2->where('current_area_id', $assignedArea->id);
+              });
+        })
         ->when($filters, function ($q) use ($filters) {
             return $this->applyFilters($q, $filters);
         });
