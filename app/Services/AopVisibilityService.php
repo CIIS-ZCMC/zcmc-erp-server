@@ -298,7 +298,7 @@ class AopVisibilityService
                 $q->whereIn('user_id', $areasUnderDivision)
                   // OR requests they participated in approving
                   ->orWhereHas('applicationTimelines', function ($q2) use ($user) {
-                      $q2->where('actor_id', $user->id)
+                      $q2->where('user_id', $user->id)
                          ->whereIn('action', ['approved', 'endorsed']);
                   });
             })

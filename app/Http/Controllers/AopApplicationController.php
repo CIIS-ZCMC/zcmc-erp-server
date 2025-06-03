@@ -197,7 +197,7 @@ class AopApplicationController extends Controller
         $aopApplication = AopApplication::with('applicationTimelines')
             ->where('sector', $area['sector'])
             ->where('sector_id', $area['details']['id'])
-            ->orderByDesc('year') 
+            ->orderByDesc('year')
             ->first();
 
         if (!$aopApplication) {
