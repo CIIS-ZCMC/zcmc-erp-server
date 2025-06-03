@@ -197,7 +197,7 @@ class AopApplicationController extends Controller
         $aopApplication = AopApplication::with('applicationTimelines')
             ->where('sector', $area['sector'])
             ->where('sector_id', $area['details']['id'])
-            ->orderByDesc('year') 
+            ->orderByDesc('year')
             ->first();
 
         if (!$aopApplication) {
@@ -631,6 +631,7 @@ class AopApplicationController extends Controller
                                 'item_id' => $resource->item_id,
                                 'total_quantity' => $resource->quantity,
                                 'estimated_budget' => $estimatedBudget,
+                                'expense_class' => $validatedData['expense_class'],
                                 'total_amount' => $totalAmount,
                                 'remarks' => null,
                             ]);
