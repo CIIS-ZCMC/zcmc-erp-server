@@ -271,7 +271,9 @@ class AopVisibilityService
             'applicationTimelines'
         ])->where(function ($query)  use ($user) {
             $query->whereHas('applicationTimelines', function ($subQuery) use ($user) {
-                $subQuery->where('next_area_id', $user->assignedArea->id);
+                $subQuery->where('next_area_id', $user->assignedArea->id)
+                    ->orderByDesc('created_at')
+                    ->latest();
             });
         });
 
