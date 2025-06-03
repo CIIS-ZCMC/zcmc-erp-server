@@ -266,8 +266,20 @@ class AopVisibilityService
      */
     public function getAopApplications(User $user, array $filters = []): Builder
     {
-        $query = AopApplication::with(['user', 'applicationTimelines'])
-            ->where('status', 'approved');
+        $query = AopApplication::with([
+            'user',
+            'applicationTimelines'
+        ])->where(function ($query)  use ($user) {
+            $query->whereHas('applicationTimelines', function ($subQuery) use ($user) {
+                $subQuery->where('next_area_id', $user->assignedArea->id);
+            });
+        });
+
+
+        Log::info('Querying approved AOP applications', [
+            'query' => $query->toSql(),
+            'bindings' => $query->getBindings()
+        ]);
 
         $assignedArea = $user->assignedArea;
 
@@ -278,39 +290,39 @@ class AopVisibilityService
             ]);
             return $this->applyFilters($query, $filters);
         }
-
-        // If user is a Division Head, they can see approved applications from their division
-        if ($assignedArea && $this->isUserDivisionHead($user, $assignedArea)) {
-            Log::info('User is Division Head, showing division approved applications', [
-                'user_id' => $user->id,
-                'division_id' => $assignedArea->division_id
-            ]);
-
-            // Get all users under this division
-            $areasUnderDivision = AssignedArea::where('division_id', $assignedArea->division_id)
-                ->pluck('user_id')
-                ->toArray();
-
-            // Division Head can see approved requests from users in their division
-            // and requests they personally approved
-            return $query->where(function ($q) use ($areasUnderDivision, $user) {
-                // Approved requests from users in their division
-                $q->whereIn('user_id', $areasUnderDivision)
-                  // OR requests they participated in approving
-                  ->orWhereHas('applicationTimelines', function ($q2) use ($user) {
-                      $q2->where('user_id', $user->id)
-                         ->whereIn('action', ['approved', 'endorsed']);
-                  });
-            })
-            ->when($filters, function ($q) use ($filters) {
-                return $this->applyFilters($q, $filters);
-            });
-        }
-
-        // Regular users can see their own approved applications and those they approved
-        Log::info('User is regular staff, showing only their approved applications', [
-            'user_id' => $user->id
-        ]);
+//
+//        // If user is a Division Head, they can see approved applications from their division
+//        if ($assignedArea && $this->isUserDivisionHead($user, $assignedArea)) {
+//            Log::info('User is Division Head, showing division approved applications', [
+//                'user_id' => $user->id,
+//                'division_id' => $assignedArea->division_id
+//            ]);
+//
+//            // Get all users under this division
+//            $areasUnderDivision = AssignedArea::where('division_id', $assignedArea->division_id)
+//                ->pluck('user_id')
+//                ->toArray();
+//
+//            // Division Head can see approved requests from users in their division
+//            // and requests they personally approved
+//            return $query->where(function ($q) use ($areasUnderDivision, $user) {
+//                // Approved requests from users in their division
+//                $q->whereIn('user_id', $areasUnderDivision)
+//                  // OR requests they participated in approving
+//                  ->orWhereHas('applicationTimelines', function ($q2) use ($user) {
+//                      $q2->where('user_id', $user->id);
+////                         ->whereIn('action', ['approved', 'endorsed']);
+//                  });
+//            })
+//            ->when($filters, function ($q) use ($filters) {
+//                return $this->applyFilters($q, $filters);
+//            });
+//        }
+//
+//        // Regular users can see their own approved applications and those they approved
+//        Log::info('User is regular staff, showing only their approved applications', [
+//            'user_id' => $user->id
+//        ]);
 
 //        return $query->where(function ($q) use ($user) {
 //            // Their own approved applications
