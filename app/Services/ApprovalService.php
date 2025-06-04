@@ -87,6 +87,13 @@ class ApprovalService
                         $department = $aop_user_assigned_area->department()->first();
                         $division = $aop_user_assigned_area->division()->first();
 
+                        Log::info('Relationship method calls', [
+                            'unit' => $unit,
+                            'section' => $section,
+                            'department' => $department,
+                            'division' => $division
+                        ]);
+
                         if ($unit) {
                             $division_chief = $unit->getDivisionChief();
                         } elseif ($section) {
@@ -172,8 +179,10 @@ class ApprovalService
                         }
                     }
                 } elseif ($status === 'returned') {
+
+                    $applicationTimeline = $aop_application->applicationTimelines()->where('aop_application_id', $aop_application->id)->first();
                     // If returned, send back to the original requestor
-                    $next_area_id = $aop_application->user_id;
+                    $next_area_id = $applicationTimeline->current_area_id;
                 }
             } else {
                 // If this is the first timeline entry (no existing timeline)
@@ -254,17 +263,45 @@ class ApprovalService
 
             $timeline->save();
 
-            // Send notifications to the next area user if there is a next area
-            $nextArea = AssignedArea::find($next_area_id);
-            $nextUser = $nextArea ? User::find($nextArea->user_id) : null;
-            if ($nextUser) {
-                $this->notificationService->notify($nextUser, [
-                    'title' => 'AOP Application Requires Your Action',
-                    'description' => "An AOP application has been routed to you for review.",
+            // Send notifications based on status
+            if ($status === 'returned') {
+                // Notify the application owner about the returned application
+                $this->notificationService->notify($aop_user, [
+                    'title' => 'AOP Application Returned',
+                    'description' => "Your AOP application has been returned." . ($remarks ? " Remarks: $remarks" : ""),
                     'module_path' => "/aop-application/{$aop_application->id}",
                     'aop_application_id' => $aop_application->id,
-                    'status' => $status
+                    'status' => $status,
+                    'remarks' => $remarks,
+                    'user_id' => $aop_user->id
                 ]);
+
+                // If there's a next area (to be returned to), notify that area's user too
+                $nextArea = $next_area_id ? AssignedArea::find($next_area_id) : null;
+                $nextUser = $nextArea ? User::find($nextArea->user_id) : null;
+                if ($nextUser) {
+                    $this->notificationService->notify($nextUser, [
+                        'title' => 'AOP Application Requires Your Action',
+                        'description' => "An AOP application has been returned to you for revision." . ($remarks ? " Remarks: $remarks" : ""),
+                        'module_path' => "/aop-application/{$aop_application->id}",
+                        'aop_application_id' => $aop_application->id,
+                        'status' => $status,
+                        'remarks' => $remarks
+                    ]);
+                }
+            } else {
+                // Send notifications to the next area user if there is a next area
+                $nextArea = AssignedArea::find($next_area_id);
+                $nextUser = $nextArea ? User::find($nextArea->user_id) : null;
+                if ($nextUser) {
+                    $this->notificationService->notify($nextUser, [
+                        'title' => 'AOP Application Requires Your Action',
+                        'description' => "An AOP application has been routed to you for review.",
+                        'module_path' => "/aop-application/{$aop_application->id}",
+                        'aop_application_id' => $aop_application->id,
+                        'status' => $status
+                    ]);
+                }
             }
 
             // Notify the AOP application owner about the status change

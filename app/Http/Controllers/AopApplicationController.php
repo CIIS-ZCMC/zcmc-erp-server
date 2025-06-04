@@ -772,7 +772,9 @@ class AopApplicationController extends Controller
         $visibilityService = new AopVisibilityService();
         $filters = $request->only(['status', 'year', 'search']);
 
-        $aopApplications = $visibilityService->getAopApplications($request->user(), $filters)->get();
+        $aopApplications = $visibilityService->getAopApplications($request->user(), $filters)
+            ->orderBy('updated_at', 'desc')
+            ->get();
 
         $metadata = $this->getMetadata('getAopApplications');
 
@@ -814,6 +816,7 @@ class AopApplicationController extends Controller
 
         // Get the aop user and its area
         $aop_user = User::find($aop_application->user_id);
+
         $aop_user_assigned_area = $aop_user->assignedArea;
 
 
