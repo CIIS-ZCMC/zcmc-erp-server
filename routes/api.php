@@ -3,6 +3,7 @@
 use App\Http\Controllers\Authentication\AuthController;
 use App\Http\Controllers\AopApplicationController;
 use App\Http\Controllers\Libraries\ItemReferenceTerminologyController;
+use App\Http\Controllers\Libraries\TerminologyController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes - no authentication required
@@ -26,6 +27,9 @@ Route::
         namespace('App\Http\Controllers')->group(function () {
 
             Route::namespace('Libraries')->group(function () {
+                // Terminologies routes
+                Route::get('terminologies', [TerminologyController::class, 'index']);
+
                 // Item routes
                 Route::get('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'index']);
                 Route::post('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'store']);
