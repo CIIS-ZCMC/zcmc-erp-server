@@ -161,6 +161,8 @@ class AopApplicationController extends Controller
 
         return response()->json([
             'aop_application_id' => $aopApplication->id,
+            'mission' => $aopApplication->mission,
+            'year' => $aopApplication->year,
             'total_objectives' => $totalObjectives,
             'total_success_indicators' => $totalSuccessIndicators,
             'total_activities' => $totalActivities,
@@ -497,7 +499,7 @@ class AopApplicationController extends Controller
                 'sector_id' => $area['details']['id'],
                 'has_discussed' => $validatedData['has_discussed'],
                 'remarks' => $validatedData['remarks'] ?? null,
-                'year' => now()->year,
+                'year' => now()->year + 1,
             ]);
 
 
