@@ -20,6 +20,7 @@ class ItemRequest extends Model
         "item_unit_id",
         "item_category_id",
         "item_classification_id",
+        "reference_terminology_id",
         "status",
         "reason",
         "requested_by",
@@ -45,9 +46,9 @@ class ItemRequest extends Model
         return $this->belongsTo(ItemClassification::class);
     }
 
-    public function variant()
+    public function itemReferrenceTerminology()
     {
-        return $this->belongsTo(Variant::class);
+        return $this->belongsTo(ItemReferenceTerminology::class);
     }
 
     public function itemSpecifications()

@@ -14,7 +14,8 @@ class ItemReferenceTerminology extends Model
     public $fillable = [
         'code',
         'system',
-        'description'
+        'description',
+        'category_id'
     ];
 
     public $timestamps = TRUE;
@@ -35,6 +36,6 @@ class ItemReferenceTerminology extends Model
 
     public function itemCategory()
     {
-        return $this->hasMany(ItemCategory::class);
+        return $this->belongsTo(ItemCategory::class);
     }
 }

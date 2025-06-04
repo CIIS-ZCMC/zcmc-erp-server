@@ -354,7 +354,7 @@ class ItemRequestController extends Controller
     public function index(Request $request): AnonymousResourceCollection|JsonResponse
     {
         $start = microtime(true);
-        $item_unit_id = $request->query('id');
+        $item_unit_id = $request->query(key: 'id');
         $search = $request->search;
         $mode = $request->mode;
 

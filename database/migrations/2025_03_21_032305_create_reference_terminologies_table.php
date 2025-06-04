@@ -16,6 +16,8 @@ return new class extends Migration
             $table->string('code');
             $table->string('system'); // Variant, Snomed, etc..
             $table->text('description')->nullable();
+            $table->unsignedBigInteger('category_id')->nullable();
+            $table->foreign('category_id')->references('id')->on('categories');
             $table->softDeletes();
             $table->timestamps();
             

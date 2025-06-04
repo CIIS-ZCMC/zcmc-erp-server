@@ -16,8 +16,7 @@ class ItemCategory extends Model
         "name",
         "code",
         "description",
-        "item_category_id",
-        "reference_terminology_id"
+        "item_category_id"
     ];
 
     public $timestamps = true;
