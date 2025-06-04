@@ -608,7 +608,7 @@ class AopApplicationController extends Controller
                                 'item_id' => $resource->item_id,
                                 'total_quantity' => $resource->quantity,
                                 'estimated_budget' => $estimatedBudget,
-                                'expense_class' => $resource->expense_class,
+                                'expense_class' => $resource->expense_class, //by ricah
                                 'total_amount' => $totalAmount,
                                 'remarks' => null,
                             ]);
