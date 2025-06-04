@@ -7,6 +7,7 @@ use App\Helpers\FileUploadCheckForMalwareAttack;
 use App\Http\Requests\ItemRequest;
 use App\Http\Resources\ItemDuplicateResource;
 use App\Http\Resources\ItemResource;
+use App\Imports\ItemsImport;
 use App\Models\FileRecord;
 use App\Models\ItemCategory;
 use App\Models\Item;
@@ -16,6 +17,8 @@ use App\Models\ItemUnit;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Validation\ValidationException;
+use Maatwebsite\Excel\Excel;
 use Symfony\Component\HttpFoundation\Response;
 
 class ItemController extends Controller
@@ -202,9 +205,26 @@ class ItemController extends Controller
     }
     public function import(Request $request)
     {
-        return response()->json([
-            'message' => "Succesfully imported record"
-        ], Response::HTTP_OK);
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:2048'
+        ]);
+
+        try {
+            $import = new ItemsImport();
+            Excel::import($import, $request->file('file'));
+
+            return response()->json([
+                'success' => true,
+                'data' => $import->getResult(),
+                'message' => 'Import completed successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Import failed: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function index(Request $request)
