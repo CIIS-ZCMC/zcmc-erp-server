@@ -47,14 +47,13 @@ Route::middleware('auth.api')->group(function () {
     });
 });
 
-
-
 Route::
         namespace('App\Http\Controllers')->group(function () {
 
             Route::namespace('Libraries')->group(function () {
                 // Terminologies routes
                 Route::get('terminologies', [TerminologyController::class, 'index']);
+                Route::post('terminologies', [TerminologyController::class, 'store']);
 
                 // Item routes
                 Route::get('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'index']);
