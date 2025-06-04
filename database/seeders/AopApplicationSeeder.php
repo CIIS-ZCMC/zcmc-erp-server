@@ -2,12 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\AssignedArea;
-use App\Models\PpmpApplication;
-use App\Models\PpmpItem;
-use App\Models\ProcurementModes;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use App\Models\AopApplication;
 use App\Models\ApplicationObjective;
@@ -18,8 +13,6 @@ use App\Models\Objective;
 use App\Models\Target;
 use App\Models\Resource;
 use App\Models\ResponsiblePerson;
-use App\Models\OtherObjective;
-use App\Models\OtherSuccessIndicator;
 use App\Models\User;
 use App\Models\Designation;
 use App\Models\Division;
