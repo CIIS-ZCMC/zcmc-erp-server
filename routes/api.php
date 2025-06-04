@@ -17,18 +17,16 @@ use App\Http\Controllers\Libraries\ItemCategoryController;
 use App\Http\Controllers\Libraries\ItemClassificationController;
 use App\Http\Controllers\Libraries\ItemController;
 use App\Http\Controllers\Libraries\ItemReferenceTerminologyController;
-use App\Http\Controllers\Libraries\ItemRequestController;
 use App\Http\Controllers\Libraries\ItemUnitController;
 use App\Http\Controllers\LogDescriptionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ObjectiveController;
 use App\Http\Controllers\PpmpApplicationController;
-use App\Http\Controllers\PpmpItemController;
-use App\Http\Controllers\PpmpItemRequestController;
 use App\Http\Controllers\ProcurementModesController;
 use App\Http\Controllers\PurchaseTypeController;
 use App\Http\Controllers\SuccessIndicatorController;
 use App\Http\Controllers\TypeOfFunctionController;
+use App\Http\Controllers\Libraries\TerminologyController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes - no authentication required
@@ -54,6 +52,9 @@ Route::
         namespace('App\Http\Controllers')->group(function () {
 
             Route::namespace('Libraries')->group(function () {
+                // Terminologies routes
+                Route::get('terminologies', [TerminologyController::class, 'index']);
+
                 // Item routes
                 Route::get('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'index']);
                 Route::post('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'store']);

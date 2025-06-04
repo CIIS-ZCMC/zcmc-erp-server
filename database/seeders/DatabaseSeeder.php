@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             ItemClassificationSeeder::class,
             ItemCategorySeeder::class,
             PurchaseTypeSeeder::class,
+            TerminologyCategorySeeder::class,
             TypeOfFunctionSeeder::class,
             ProcurementModeSeeder::class,
             AopApplicationSeeder::class,
