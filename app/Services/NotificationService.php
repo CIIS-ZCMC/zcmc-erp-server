@@ -76,10 +76,17 @@ class NotificationService
                 if (isset($notif_details['aop_application_id'])) {
                     $emailData['aop_application_id'] = $notif_details['aop_application_id'];
 
+                    // Include remarks in email data if present (for returned applications)
+                    if (isset($notif_details['remarks']) && !empty($notif_details['remarks'])) {
+                        $emailData['remarks'] = $notif_details['remarks'];
+                    }
+
                     // Determine context based on notification purpose
                     $context = 'update_user';
                     if (str_contains($notif_details['title'], 'Requires Your Action')) {
                         $context = 'update_next_approver';
+                    } else if ($notif_details['status'] === 'returned') {
+                        $context = 'returned_application';
                     }
 
                     // Send AOP-specific email notification

@@ -126,10 +126,8 @@
                 $statusColors = [
                     'Pending' => '#FFC107',
                     'Received' => '#4CAF50',
-                    'Released' => '#2196F3',
                     'Approved' => '#8BC34A',
                     'Returned' => '#F44336',
-                    'On Hold' => '#9C27B0',
                     'Completed' => '#009688',
                     'default' => '#757575',
                 ];
@@ -168,6 +166,22 @@
                         <p>A transaction requires your attention. Please log in to the system to review and take appropriate action.</p>
                         @break
 
+                    @case('returned_application')
+                        <div style="border-left: 4px solid #F44336; padding: 10px; margin: 10px 0; background-color: #FFEBEE;">
+                            <h3 style="color: #D32F2F; margin-top: 0;">Your AOP application has been returned</h3>
+                            <p>Please review the feedback below and make the necessary revisions to your application.</p>
+
+                            @if(isset($data['remarks']) && !empty($data['remarks']))
+                            <div style="margin-top: 10px;">
+                                <strong>Return Reason:</strong>
+                                <p style="margin-top: 5px; padding: 8px; background-color: #FFF; border-radius: 4px;">{{ $data['remarks'] }}</p>
+                            </div>
+                            @endif
+
+                            <p style="margin-top: 15px;">Please log in to the system to make the required changes and resubmit your application.</p>
+                        </div>
+                        @break
+
                     @case('update_all')
                         <p>This is a system-wide notification. No further action may be required from you at this time.</p>
                         @break
@@ -176,6 +190,14 @@
                         <p>Thank you for using the ZCMC System.</p>
                 @endswitch
             </div>
+        @endif
+
+        {{-- Show Remarks if present (for all contexts) --}}
+        @if(isset($data['remarks']) && !empty($data['remarks']) && (!isset($data['context']) || $data['context'] !== 'returned_application'))
+        <div style="margin: 20px 0; padding: 10px; border: 1px solid #ddd; border-radius: 5px; background-color: #f5f5f5;">
+            <h3 style="margin-top: 0; color: #555;">Remarks:</h3>
+            <p style="margin-bottom: 0;">{{ $data['remarks'] }}</p>
+        </div>
         @endif
 
         {{-- Footer --}}
