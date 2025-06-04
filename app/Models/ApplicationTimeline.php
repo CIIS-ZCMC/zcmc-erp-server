@@ -8,6 +8,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ApplicationTimeline extends Model
 {
+
+    const STATUS_PENDING = 'Pending';
+    const STATUS_APPROVED = 'Approved';
+    const STATUS_RETURNED = 'Returned';
+
     protected $fillable = [
         'aop_application_id',
         'ppmp_application_id',
@@ -21,7 +26,7 @@ class ApplicationTimeline extends Model
         'date_returned',
     ];
 
-    protected $dates = [
+    protected array $dates = [
         'date_approved',
         'date_returned',
     ];

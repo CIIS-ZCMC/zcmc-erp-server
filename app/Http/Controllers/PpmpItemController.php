@@ -138,6 +138,11 @@ class PpmpItemController extends Controller
             return response()->json([
                 'message' => "No record found.",
             ], Response::HTTP_NOT_FOUND);
+        } elseif ($ppmp_application->status === 'submitted') {
+            return response()->json(
+                ['message' => "Looks like you've already submitted this application. You can't submit it again."],
+                Response::HTTP_FOUND
+            );
         } else {
             $draft = false;
 

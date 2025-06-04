@@ -132,43 +132,76 @@ class ShowObjectiveResource extends JsonResource
 
         // Add resources if they exist and not empty
         if ($this->resources && $this->resources->isNotEmpty()) {
-            $data['resources'] = $this->resources->map(function ($resource) {
-                $resourceData = [];
+            // Create a flat array of resources
+            $resourcesList = [];
 
-                // Item name from the related item
-                if ($resource->item && isset($resource->item->id)) {
-                    $resourceData['id'] = $resource->id;
+            foreach ($this->resources as $resource) {
+                // Skip if resource has no valid data
+                if (!$resource->item || !isset($resource->item->id)) {
+                    continue;
                 }
 
-                // Quantity
+                $resourceItem = [
+                    'id' => $resource->id,
+                ];
+
+                // Resource requirements as an object (not an array)
+                $requirements = [];
+
+                // Add item name if available
+                if (isset($resource->item->name)) {
+                    $requirements['item_name'] = $resource->item->name;
+                }
+
+                // Add quantity if available
                 if ($resource->quantity !== null) {
-                    $resourceData['quantity'] = $resource->quantity;
+                    $requirements['quantity'] = $resource->quantity;
                 }
 
-                // Type of resource (from item category/classification)
-                if ($resource->item && $resource->item->itemCategory) {
-                    $resourceData['type_of_resource'] = $resource->item->itemCategory->name;
+                // Add cost information from item's estimated budget
+                if (isset($resource->item->estimated_budget)) {
+                    $requirements['unit_cost'] = $resource->item->estimated_budget;
+
+                    // Calculate and add total cost if quantity is available
+                    if ($resource->quantity !== null) {
+                        $requirements['total_cost'] = $resource->item->estimated_budget * $resource->quantity;
+                    }
                 }
 
-                // Expense class
+                // Only add resource_requirements if it has data
+                if (!empty($requirements)) {
+                    $resourceItem['resource_requirements'] = $requirements;
+                }
+
+                // Add expense class
                 if ($resource->expense_class !== null) {
-                    $resourceData['expense_class'] = $resource->expense_class;
+                    $resourceItem['expense_class'] = $resource->expense_class;
                 }
 
-                // Mode of procurement (from purchase type)
+                // Add type of resource at the top level
+                if ($resource->item && $resource->item->itemCategory) {
+                    $resourceItem['type_of_resource'] = $resource->item->itemCategory->name;
+                }
+
+                // Add mode of procurement
                 if ($resource->purchaseType) {
-                    $resourceData['mode_of_procurement'] = $resource->purchaseType->description;
+                    $resourceItem['mode_of_procurement'] = $resource->purchaseType->description;
                 }
 
-                return $resourceData;
-            })->filter(function ($resource) {
-                // Remove any empty entries
-                return !empty($resource);
-            });
+                // Add is_gad field if it exists
+                if (isset($resource->is_gad)) {
+                    $resourceItem['is_gad'] = (bool)$resource->is_gad;
+                }
 
-            // Only include resources if there's at least one valid entry
-            if ($data['resources']->isEmpty()) {
-                unset($data['resources']);
+                // Only add resource if it has meaningful data
+                if (isset($resourceItem['resource_requirements'])) {
+                    $resourcesList[] = $resourceItem;
+                }
+            }
+
+            // Add to data
+            if (!empty($resourcesList)) {
+                $data['resources'] = $resourcesList;
             }
         }
 
