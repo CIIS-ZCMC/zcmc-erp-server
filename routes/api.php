@@ -17,6 +17,7 @@ use App\Http\Controllers\Libraries\ItemCategoryController;
 use App\Http\Controllers\Libraries\ItemClassificationController;
 use App\Http\Controllers\Libraries\ItemController;
 use App\Http\Controllers\Libraries\ItemReferenceTerminologyController;
+use App\Http\Controllers\Libraries\ItemRequestController;
 use App\Http\Controllers\Libraries\ItemUnitController;
 use App\Http\Controllers\LogDescriptionController;
 use App\Http\Controllers\NotificationController;
