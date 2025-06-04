@@ -34,7 +34,7 @@ class TerminologyCategorySeeder extends Seeder
             $item_referrence_terminology = ItemReferenceTerminology::where('code', $item['code'])->first();
 
             $ict[] = [
-                'name' => $item_referrence_terminology['code'].'-'.$item_referrence_terminology['system'],
+                'name' => $item_referrence_terminology['system'].'-'.$item_referrence_terminology['code'],
                 'reference_terminology_id' => $item_referrence_terminology->id,
                 'category_id' => $category->id,
                 'created_at' => now(),
@@ -55,7 +55,7 @@ class TerminologyCategorySeeder extends Seeder
             $item_referrence_terminology = ItemReferenceTerminology::where('code', $item['code'])->first();
 
             $furnitures[] = [
-                'name' => $item_referrence_terminology['code'].'-'.$item_referrence_terminology['system'],
+                'name' => $item_referrence_terminology['system'].'-'.$item_referrence_terminology['code'],
                 'reference_terminology_id' => $item_referrence_terminology->id,
                 'category_id' => $category->id,
                 'created_at' => now(),
@@ -76,7 +76,7 @@ class TerminologyCategorySeeder extends Seeder
             $item_referrence_terminology = ItemReferenceTerminology::where('code', $item['code'])->first();
 
             $office_supplies[] = [
-                'name' => $item_referrence_terminology['code'].'-'.$item_referrence_terminology['system'],
+                'name' => $item_referrence_terminology['system'].'-'.$item_referrence_terminology['code'],
                 'reference_terminology_id' => $item_referrence_terminology->id,
                 'category_id' => $category->id,
                 'created_at' => now(),
@@ -110,7 +110,7 @@ class TerminologyCategorySeeder extends Seeder
             $item_referrence_terminology = ItemReferenceTerminology::where('code', $item)->first();
 
             $snomed_cts[] = [
-                'name' => $item.'-'.$item_referrence_terminology['system'],
+                'name' => $item_referrence_terminology['system'].'-'.$item,
                 'reference_terminology_id' => $item_referrence_terminology->id,
                 'category_id' => $category->id,
                 'created_at' => now(),
@@ -141,10 +141,8 @@ class TerminologyCategorySeeder extends Seeder
             $category = ItemCategory::where('name', $loinc_codes['category'])->first();
             $item_referrence_terminology = ItemReferenceTerminology::where('code', $item)->first();
 
-            \Illuminate\Support\Facades\Log::info(json_encode($item));
-
             $loinc[] = [
-                'name' => $item.'-'.$item_referrence_terminology['system'],
+                'name' => $item_referrence_terminology['system'].'-'.$item,
                 'reference_terminology_id' => $item_referrence_terminology->id,
                 'category_id' => $category->id,
                 'created_at' => now(),
@@ -167,7 +165,7 @@ class TerminologyCategorySeeder extends Seeder
             $item_referrence_terminology = ItemReferenceTerminology::where('code', $item)->first();
 
             $gmdn[] = [
-                'name' => $item.'-'.$item_referrence_terminology['system'],
+                'name' => $item_referrence_terminology['system'].'-'.$item,
                 'reference_terminology_id' => $item_referrence_terminology->id,
                 'category_id' => $category->id,
                 'created_at' => now(),

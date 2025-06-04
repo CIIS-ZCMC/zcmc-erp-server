@@ -16,7 +16,7 @@ class Item extends Model
         "item_unit_id",
         "item_category_id",
         "item_classification_id",
-        "reference_terminology_id",
+        "terminologies_category_id",
         "name",
         "code",
         "image",
@@ -35,9 +35,9 @@ class Item extends Model
         ];
     }
 
-    public function itemReferrenceTerminology()
+    public function terminologyCategory()
     {
-        return $this->belongsTo(ItemReferenceTerminology::class);
+        return $this->belongsTo(TerminologyCategory::class);
     }
 
     public function itemUnit()

@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Libraries;
 use App\Http\Controllers\Controller;
 use App\Helpers\FileUploadCheckForMalwareAttack;
 use App\Helpers\MetadataComposerHelper;
-use App\Helpers\PaginationHelper;
 use App\Http\Requests\ItemRequestRequest;
 use App\Http\Resources\ItemRequestDuplicateResource;
 use App\Http\Resources\ItemRequestResource;
@@ -211,6 +210,7 @@ class ItemRequestController extends Controller
                     "item_unit_id" => $item['item_unit_id'] !== null ?  strip_tags($item['item_unit_id']): null,
                     "item_category_id" => $item['item_category_id'] !== null ? strip_tags($item['item_category_id']): null,
                     "item_classification_id" => $item['item_classification_id'] !== null ? strip_tags($item['item_classification_id']) : null,
+                    "terminology_category_id" => strip_tags($item['terminology_category_id']),
                     "requested_by" => $user,
                     'reason' => strip_tags($item['reason']),
                     "created_at" => now(),
@@ -395,6 +395,7 @@ class ItemRequestController extends Controller
             "item_unit_id" => !$is_valid_unit_id? null:  strip_tags($request->input('item_unit_id')),
             "item_category_id" => !$is_valid_category_id? null:  strip_tags($request->input('item_category_id')),
             "item_classification_id" => !$is_valid_classification_id? null: strip_tags($request->input('item_classification_id')),
+            "terminology_category_id" => strip_tags($request->input('terminology_category_id')),
             "requested_by" => $user,
             "reason" => strip_tags($request->input('reason'))
         ];

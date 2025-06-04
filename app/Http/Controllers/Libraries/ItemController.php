@@ -275,6 +275,7 @@ class ItemController extends Controller
                             "code" => strip_tags($item['code']),
                             "estimated_budget" => strip_tags($item['estimated_budget']),
                             "item_unit_id" => strip_tags($item['item_unit_id']),
+                            "terminology_category_id" => strip_tags($item['terminology_category_id']),
                             "item_category_id" => strip_tags($item['item_category_id']),
                             "item_classification_id" => strip_tags($item['item_classification_id']),
                             "created_at" => now(),
@@ -335,6 +336,7 @@ class ItemController extends Controller
             "code" => strip_tags($request->input('code')),
             "estimated_budget" => strip_tags($request->input('estimated_budget')),
             "item_unit_id" => strip_tags($request->input('item_unit_id')),
+            "terminology_category_id" => strip_tags($request->input('terminology_category_id')),
             "item_category_id" => strip_tags($request->input('item_category_id')),
             "item_classification_id" => strip_tags($request->input('item_classification_id')),
         ];
