@@ -10,17 +10,18 @@ use Illuminate\Http\Client\Response;
 
 class RealtimeCommunicationHelper
 {
-    private static string $SOCKET_PRODUCTION_URL;
-    private static string $SOCKET_DEVELOPMENT_URL;
-    private static string $BASE_PATH = "erp-notifications";
-    private static string $NOTIFICATION_EVENT = "erp-notification";
-    private static string $EMAIL_EVENT = "erp-email";
-    private static string $AOP_EVENT = "aop-notification";
+    public static string $SOCKET_PRODUCTION_URL;
+    public static string $SOCKET_DEVELOPMENT_URL;
+    public static string $BASE_PATH = "erp-notifications";
+    public static string $NOTIFICATION_EVENT = "erp-notification";
+    public static string $EMAIL_EVENT = "erp-email";
+    public static string $AOP_EVENT = "aop-notification";
+    public static string $AOP_UPDATE_EVENT = "aop-update-notification";
 
     /**
      * Initialize the socket URLs from environment variables
      */
-    private static function initializeConfig()
+    private static function initializeConfig(): void
     {
         // Use environment variables with fallbacks
         self::$SOCKET_PRODUCTION_URL = env('SOCKET_PRODUCTION_URL', 'https://socket.zcmc.online/');
@@ -60,7 +61,7 @@ class RealtimeCommunicationHelper
             ]);
 
             // Return a fake response to prevent app disruption
-            return new Response(new \GuzzleHttp\Psr7\Response(503));
+            return new Response(response: new \GuzzleHttp\Psr7\Response(503));
         } catch (\Exception $e) {
             Log::error('Socket emit error: ' . $e->getMessage(), [
                 'endpoint' => $targetSocketEndpoint,
@@ -68,7 +69,7 @@ class RealtimeCommunicationHelper
             ]);
 
             // Return a fake response to prevent app disruption
-            return new Response(new \GuzzleHttp\Psr7\Response(500));
+            return new Response(response: new \GuzzleHttp\Psr7\Response(500));
         }
     }
 
@@ -83,7 +84,7 @@ class RealtimeCommunicationHelper
     {
         return self::emit(self::$BASE_PATH, [
             "data" => $notificationData,
-            "event" => self::$NOTIFICATION_EVENT,
+            "event" => self::$NOTIFICATION_EVENT . '-' . $userId,
             "userId" => $userId
         ]);
     }
@@ -99,7 +100,7 @@ class RealtimeCommunicationHelper
     {
         return self::emit(self::$BASE_PATH, [
             "data" => $aopData,
-            "event" => self::$AOP_EVENT,
+            "event" => self::$AOP_UPDATE_EVENT,
             "aopId" => $aopId
         ]);
     }
@@ -133,6 +134,21 @@ class RealtimeCommunicationHelper
             "data" => $emailData,
             "event" => self::$EMAIL_EVENT,
             "email" => $email
+        ]);
+    }
+
+    /**
+     * Emit a generic transaction record to the socket server
+     *
+     * @param string $event The event name
+     * @param array $data The data to emit
+     * @return Response
+     */
+    public static function emitNewTransactionRecord(string $event, array $data): Response
+    {
+        return self::emit(self::$BASE_PATH, [
+            "data" => $data,
+            "event" => $event
         ]);
     }
 }

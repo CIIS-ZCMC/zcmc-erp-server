@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\Carbon;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -20,10 +21,14 @@ return new class extends Migration {
             $table->foreign('division_chief_id')->references('id')->on('users');
             $table->unsignedBigInteger('budget_officer_id');
             $table->foreign('budget_officer_id')->references('id')->on('users');
+            $table->unsignedBigInteger('planning_officer_id');
+            $table->foreign('planning_officer_id')->references('id')->on('users');
             $table->uuid('ppmp_application_uuid');
             $table->float('ppmp_total')->default(0);
-            $table->string('status')->default("pending");
+            $table->string('status')->default("draft");
+            $table->boolean('is_draft')->default(true);
             $table->string('remarks')->nullable();
+            $table->year('year')->default(date('Y') + 1);
             $table->softDeletes();
             $table->timestamps();
         });

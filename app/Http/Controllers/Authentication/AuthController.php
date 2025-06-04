@@ -50,7 +50,7 @@ class AuthController extends Controller
         $cookie = cookie()->make(
             env('COOKIE_NAME'),
             $token,
-            30,
+            1440,
             '/',
             env('SESSION_DOMAIN'),
             env('APP_ENV') !== 'local', // Secure in production
@@ -65,7 +65,8 @@ class AuthController extends Controller
 
         return $resource
             ->additional([
-                'message' => "Successfully signin."
+                'message' => "Successfully signin.",
+                'meta' => ['redirect_to' => '/dashboard']
             ])
             ->response()
             ->setStatusCode(Response::HTTP_OK)
@@ -82,10 +83,14 @@ class AuthController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        return response()->json([
-            'data' => $user,
-            'message' => "Success"
-        ], Response::HTTP_OK);
+
+        $resource = new UserAuthResource($user);
+
+        return $resource
+            ->additional([
+                'message' => "Successfully signin.",
+                'meta' => ['redirect_to' => '/dashboard']
+            ]);
     }
     
     public function logout(Request $request)

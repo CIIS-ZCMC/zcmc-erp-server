@@ -43,6 +43,11 @@ class ApplicationTimeline extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function approverUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approver_user_id');
+    }
+
     public function currentArea(): BelongsTo
     {
         return $this->belongsTo(AssignedArea::class, 'current_area_id');

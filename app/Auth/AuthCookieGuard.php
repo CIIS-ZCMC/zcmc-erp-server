@@ -32,8 +32,8 @@ class AuthCookieGuard implements Guard
     {
         return !$this->check();
     }
-    
-    
+
+
     public function attempt(array $credentials = [], $remember = false)
     {
         try {
@@ -50,7 +50,7 @@ class AuthCookieGuard implements Guard
             }
 
             $responseData = $response->json();
-            
+
             // Validate response data
             if (!isset($responseData['user_details']) || !isset($responseData['user_details']['employee_profile_id'])) {
                 Log::error('Missing user_details or employee_profile_id in UMIS response: ' . json_encode($responseData));
@@ -89,7 +89,7 @@ class AuthCookieGuard implements Guard
                 'token' => $responseData['session']['token'] ?? '',
                 'abilities' => $abilities
             ]);
-            
+
             $this->setUser($user);
 
             return true;
@@ -104,11 +104,11 @@ class AuthCookieGuard implements Guard
         if (!is_null($this->user)) {
             return $this->user;
         }
-    
+
         try {
             // 1. Check for the auth cookie
             $cookie = $this->request->cookies->get(env('COOKIE_NAME'));
-            
+
             if (!$cookie) {
                 Log::debug('No auth cookie found in request');
                 return null; // No cookie found
@@ -116,40 +116,40 @@ class AuthCookieGuard implements Guard
 
             // 2. Process the token from cookie
             $token = $cookie;
-            
+
             // If it's a JSON string, decode it
             if (is_string($token) && $this->isValidJson($token)) {
                 $token = json_decode($token, true);
             }
-            
+
             // If it's an array after decoding, convert to string for DB comparison
             if (is_array($token)) {
                 $token = json_encode($token);
             }
-            
+
             // 3. Sanitize token
             $token = is_string($token) ? str_replace(["\r", "\n"], '', $token) : $token;
-        
+
             // 4. Validate the token against your database
             $accessToken = AccessToken::where('token', $token)
                 ->where('expire_at', '>', now())
                 ->first();
-        
+
             if (!$accessToken) {
                 Log::debug('No valid access token found in database');
                 return null;
             }
-        
+
             // 5. Return the authenticated user
             $this->user = $this->provider->retrieveById($accessToken->user_id);
-            
+
             // Make sure we have a user
             if ($this->user) {
                 // Re-associate the access token with the user for easy access
                 $accessToken->user_id = $this->user->id;
                 $accessToken->save();
             }
-            
+
             return $this->user;
         } catch (\Exception $e) {
             Log::error('Error in AuthCookieGuard->user(): ' . $e->getMessage());
@@ -162,7 +162,7 @@ class AuthCookieGuard implements Guard
         return $this->user() ? $this->user()->getAuthIdentifier() : null;
     }
 
-    public function validate(array $credentials = [])
+    public function validate(array $credentials = []): bool
     {
         // This method is not needed for your use case
         return false;
@@ -173,35 +173,35 @@ class AuthCookieGuard implements Guard
         $this->user = $user;
     }
 
-    protected function createRememberToken($user)
+    protected function createRememberToken($user): string
     {
         // Generate a secure remember token
         $token = hash('sha256', random_bytes(32));
-        
+
         // Store the token in the user model
         $this->provider->updateRememberToken($user, $token);
-        
+
         // Return the token for cookie storage
         return $token;
     }
 
-    public function hasUser()
+    public function hasUser(): bool
     {
         return !is_null($this->user);
     }
-    
+
     /**
      * Helper method to check if a string is valid JSON
-     * 
+     *
      * @param string $string The string to check
      * @return bool Whether the string is valid JSON
      */
-    protected function isValidJson($string) 
+    protected function isValidJson($string): bool
     {
         if (!is_string($string)) {
             return false;
         }
-        
+
         json_decode($string);
         return (json_last_error() === JSON_ERROR_NONE);
     }

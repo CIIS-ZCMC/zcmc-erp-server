@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\PpmpApplicationRequest;
+use App\Http\Resources\PpmpApplicationReceivingListResource;
+use App\Http\Resources\PpmpApplicationReceivingViewResource;
 use App\Http\Resources\PpmpApplicationResource;
 use App\Models\AopApplication;
 use App\Models\PpmpApplication;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -24,8 +27,21 @@ class PpmpApplicationController extends Controller
     public function index(Request $request)
     {
         $year = $request->query('year', now()->year + 1);
+        $status = $request->query('status', null);
+        $user = User::find($request->user()->id);
+        $sector = $user->assignedArea->findDetails();
 
-        $ppmp_application = PpmpApplication::with([
+        $query = PpmpApplication::query();
+
+        if ($request->has('year')) {
+            $query->whereYear('year', $year);
+        }
+
+        if ($request->has('status')) {
+            $query->where('status', $status);
+        }
+
+        $ppmp_application = $query->with([
             'ppmpItems' => function ($query) {
                 $query->with([
                     'item',
@@ -34,10 +50,11 @@ class PpmpApplicationController extends Controller
                     'activities'
                 ]);
             },
-            'aopApplication' => function ($query) {
-                $query->where('sector_id', 33);
+            'aopApplication' => function ($query) use ($sector) {
+                $query->where('sector_id', $sector['details']['id'])
+                    ->where('sector', $sector['details']['name']);
             }
-        ])->first();
+        ])->where('year', $year)->first();
 
         if (!$ppmp_application) {
             return response()->json([
@@ -105,11 +122,6 @@ class PpmpApplicationController extends Controller
 
     }
 
-    public function show(PpmpApplication $ppmpApplication)
-    {
-        return response()->json(new PpmpApplicationResource($ppmpApplication), Response::HTTP_OK);
-    }
-
     public function update(PpmpApplicationRequest $request, PpmpApplication $ppmpApplication)
     {
         $data = $request->all();
@@ -136,5 +148,110 @@ class PpmpApplicationController extends Controller
         return response()->json([
             'message' => 'PPMP Application deleted successfully.',
         ], Response::HTTP_OK);
+    }
+
+    public function receivingList(Request $request): JsonResponse
+    {
+        $search = $request->query('search', null);
+        $status = $request->query('status', null);
+        $year = $request->query('year', now()->year + 1);
+
+        $query = PpmpApplication::query();
+
+        // Apply filters
+        if ($request->has('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($request->has('year')) {
+            $query->whereYear('created_at', $year);
+        }
+
+        if ($request->has('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('ppmp_application_uuid', 'like', "%{$search}%")
+                    ->orWhereHas('user', function ($q) use ($search) {
+                        $q->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        // Load necessary relationships for the resource
+        $ppmp_applications = $query->with(['user', 'ppmpItems'])->get();
+
+        return response()->json([
+            'data' => PpmpApplicationReceivingListResource::collection($ppmp_applications),
+            'message' => 'PPMP Applications retrieved successfully.'
+        ], Response::HTTP_OK);
+    }
+    public function receivingListView($id): JsonResponse
+    {
+        $ppmp_application = PpmpApplication::with([
+            'user',
+            'ppmpItems.item.itemClassification',
+            'ppmpItems.item.itemCategory',
+            'ppmpItems.item.itemUnit'
+        ])->find($id);
+
+        if (!$ppmp_application) {
+            return response()->json([
+                'message' => 'PPMP Application not found'
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        return response()->json([
+            'data' => new PpmpApplicationReceivingViewResource($ppmp_application),
+            'message' => 'PPMP Application retrieved successfully'
+        ], Response::HTTP_OK);
+    }
+
+    public function receivePpmpApplication(Request $request, PpmpApplication $ppmp_application): JsonResponse
+    {
+        // Validate request
+        $request->validate([
+            'authorization_pin' => 'required|string'
+        ]);
+
+        // Get current user
+        $user = User::find($request->user()->id);
+
+        // Verify authorization PIN
+        if ($user->authorization_pin !== $request->authorization_pin) {
+            return response()->json([
+                'message' => 'Invalid authorization PIN'
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Check if PPMP application can be received (only if not already received)
+        if ($ppmp_application->status === 'received') {
+            return response()->json([
+                'message' => 'PPMP Application already received'
+            ], Response::HTTP_BAD_REQUEST);
+        }
+
+        try {
+            // Update PPMP application status to received
+            $ppmp_application->status = 'received';
+            $ppmp_application->received_on = now();
+            $ppmp_application->save();
+
+            // Log the transaction
+            $ppmp_application->logs()->create([
+                'action' => 'PPMP Application Received',
+                'description' => 'PPMP Application #' . $ppmp_application->ppmp_application_uuid . ' was received',
+                'user_id' => $user->id
+            ]);
+
+            return response()->json([
+                'message' => 'PPMP Application received successfully',
+                'data' => $ppmp_application
+            ], Response::HTTP_OK);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Failed to receive PPMP Application',
+                'error' => $e->getMessage()
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

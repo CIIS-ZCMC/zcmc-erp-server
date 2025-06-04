@@ -20,6 +20,7 @@ use App\Http\Controllers\Libraries\ItemReferenceTerminologyController;
 use App\Http\Controllers\Libraries\ItemRequestController;
 use App\Http\Controllers\Libraries\ItemUnitController;
 use App\Http\Controllers\LogDescriptionController;
+use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ObjectiveController;
 use App\Http\Controllers\PpmpApplicationController;
 use App\Http\Controllers\PpmpItemController;
@@ -76,21 +77,21 @@ Route::
 
                 // Item Units routes
                 Route::post('item-units/import', [ItemUnitController::class, "import"]);
-                Route::get('item-units/template',[ItemUnitController::class, "downloadTemplate"]);
+                Route::get('item-units/template', [ItemUnitController::class, "downloadTemplate"]);
                 Route::get('item-units', [ItemUnitController::class, "index"]);
                 Route::post('item-units', [ItemUnitController::class, "store"]);
-                Route::put('item-units',  [ItemUnitController::class, "update"]);
-                Route::delete('item-units',  [ItemUnitController::class, "destroy"]);
+                Route::put('item-units', [ItemUnitController::class, "update"]);
+                Route::delete('item-units', [ItemUnitController::class, "destroy"]);
 
                 // Item Categories routes
                 Route::post('item-categories/import', [ItemCategoryController::class, "import"]);
                 Route::get('item-categories/template', [ItemCategoryController::class, "downloadTemplate"]);
                 Route::get('item-categories', [ItemCategoryController::class, "index"]);
                 Route::get('item-categories/trashbin', [ItemCategoryController::class, "trash"]);
-                Route::post('item-categories', [ItemCategoryController::class. "store"]);
+                Route::post('item-categories', [ItemCategoryController::class . "store"]);
                 Route::put('item-categories', [ItemCategoryController::class, "update"]);
                 Route::put('item-categories/{id}/restore', [ItemCategoryController::class, "restore"]);
-                Route::delete('item-categories', [ItemCategoryController::class,"destroy"]);
+                Route::delete('item-categories', [ItemCategoryController::class, "destroy"]);
 
                 // Item Classifications routes
                 Route::post('item-classifications/import', [ItemClassificationController::class, "import"]);
@@ -137,29 +138,32 @@ Route::
             Route::put('procurement-modes/{id}', [ProcurementModesController::class, "update"]);
             Route::delete('procurement-modes', [ProcurementModesController::class, "destroy"]);
 
-            // Divisions routes
-            Route::get('divisions/import', [DivisionController::class, "import"]);
-            Route::get('divisions', [DivisionController::class, "index"]);
-            Route::put('divisions', [DivisionController::class, "update"]);
-            Route::delete('divisions', [DivisionController::class, "destroy"]);
+            Route::namespace('Areas')->group(function () {
 
-            // Departments routes
-            Route::get('departments/import', [DepartmentController::class, "import"]);
-            Route::get('departments', [DepartmentController::class, "index"]);
-            Route::put('departments', [DepartmentController::class, "update"]);
-            Route::delete('departments', [DepartmentController::class, "destroy"]);
+                // Divisions routes
+                Route::get('divisions/import', "DivisionController@import");
+                Route::get('divisions', "DivisionController@index");
+                Route::put('divisions', "DivisionController@update");
+                Route::delete('divisions', "DivisionController@destroy");
 
-            // Sections routes
-            Route::get('sections/import', [SectionController::class, "import"]);
-            Route::get('sections', [SectionController::class, "index"]);
-            Route::put('sections', [SectionController::class, "update"]);
-            Route::delete('sections', [SectionController::class, "destroy"]);
+                // Departments routes
+                Route::get('departments/import', "DepartmentController@import");
+                Route::get('departments', "DepartmentController@index");
+                Route::put('departments', "DepartmentController@update");
+                Route::delete('departments', "DepartmentController@destroy");
 
-            // Units routes
-            Route::get('units/import', [UnitController::class, "import"]);
-            Route::get('units', [UnitController::class, "index"]);
-            Route::put('units', [UnitController::class, "update"]);
-            Route::delete('units', [UnitController::class, "destroy"]);
+                // Sections routes
+                Route::get('sections/import', "SectionController@import");
+                Route::get('sections', "SectionController@index");
+                Route::put('sections', "SectionController@update");
+                Route::delete('sections', "SectionController@destroy");
+
+                // Units routes
+                Route::get('units/import', "UnitController@import");
+                Route::get('units', "UnitController@index");
+                Route::put('units', "UnitController@update");
+                Route::delete('units', "UnitController@destroy");
+            });
 
             // Log Descriptions routes
             Route::post('log-descriptions/template', [LogDescriptionController::class, "import"]);
@@ -176,11 +180,16 @@ Route::
 
             // Ppmp Application Module
             Route::apiResource('ppmp-applications', PpmpApplicationController::class);
+            Route::get('ppmp-receiving-list', [PpmpApplicationController::class, "receivingList"]);
+            Route::get('ppmp-receiving-list-view/{id}', [PpmpApplicationController::class, "receivingListView"]);
+            Route::post('ppmp-applications/{id}/receive', [PpmpApplicationController::class, "receivePpmpApplication"]);
 
             // Ppmp Item Module
-            Route::get('ppmp-item-search', [PpmpItemController::class, "search"]);
-            Route::apiResource('ppmp-items', PpmpItemController::class);
-            Route::apiResource('ppmp-item-requests', PpmpItemRequestController::class);
+            Route::get('ppmp-item-search', 'PpmpItemController@search');
+            Route::apiResource('ppmp-items', 'PpmpItemController')->only(['index', 'store', 'update']);
+            Route::delete('ppmp-items', 'PpmpItemController@destroy');
+            Route::apiResource('ppmp-item-requests', 'PpmpItemRequestControlller');
+            Route::get('ppmp-item-export', 'PpmpItemController@export');
 
             // Activity Module
             Route::apiResource('activities', ActivityController::class);
@@ -211,29 +220,7 @@ Route::
             Route::post('export-aop/{id}', [AopApplicationController::class, "export"]);
             Route::get('preview-aop/{id}', [AopApplicationController::class, "preview"]);
             Route::post('import/items', [ItemImportController::class, "import"]);
-
-            // Variant Dummy
-            Route::get('variant', function () {
-                return response()->json([
-                    'data' => [
-                        [
-                            'id' => 1,
-                            'name' => 'High',
-                            'description' => 'Description for Variant 1',
-                        ],
-                        [
-                            'id' => 2,
-                            'name' => 'Low',
-                            'description' => 'Description for Variant 2',
-                        ],
-                        [
-                            'id' => 3,
-                            'name' => 'Mid',
-                            'description' => 'Description for Variant 3',
-                        ],
-                    ]
-                ], 200);
-            });
+            Route::get('aop-application-edit', [AopApplicationController::class, "edit"]);
 
             // Deadlines
             Route::get('deadlines', [DeadlineController::class, 'index']);
@@ -241,4 +228,15 @@ Route::
             Route::post('ppmp-deadline-store', [DeadlineController::class, 'storePpmpDeadline']);
             Route::post('aop-deadline-update/{id}', [DeadlineController::class, 'updateAopDeadline']);
             Route::post('ppmp-deadline-update/{id}', [DeadlineController::class, 'updatePpmpDeadline']);
+
+            // Notification Module
+            // FOR CRUD
+            Route::apiResource('notifications', 'NotificationController');
+
+            // GET ROUTES
+            Route::get('notifications/seen/{id}', [NotificationController::class, 'markAsSeen']);
+            Route::get('notifications/all-seen/{id}', [NotificationController::class, 'markAllAsSeen']);
+            Route::get('notifications/employee-notifs/{profile_id}', [NotificationController::class, 'employeeNotifications']);
+            Route::get('notifications/get-notifs-by-status/{seen}', [NotificationController::class, 'getNotificationByStatus']);
+            Route::get('notifications/unseen-count', [NotificationController::class, 'getUnseenCount']);
         });

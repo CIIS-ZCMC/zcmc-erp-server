@@ -22,7 +22,6 @@ return new class extends Migration {
             $table->float('cost')->default(0);
             $table->date('start_month');
             $table->date('end_month');
-            $table->string('expense_class');
             $table->softDeletes();
             $table->timestamps();
         });

@@ -53,12 +53,15 @@ class ObjectiveController extends Controller
             'page' => 'sometimes|integer|min:1|max:100'
         ]);
 
-        $searchTerm = '%' . trim($validated['search']) . '%';
+        $terms = explode(' ', trim($validated['search']));
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
 
-        $results = Objective::where('code', 'like', "%{$searchTerm}%")
-            ->orWhere('description', 'like', "%{$searchTerm}%")
+        $results = Objective::with([
+            'successIndicators',
+            'typeOfFunction'
+        ])->withoutTrashed()
+            ->search($terms)
             ->paginate(
                 perPage: $perPage,
                 page: $page

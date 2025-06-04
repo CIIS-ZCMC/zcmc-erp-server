@@ -20,6 +20,7 @@ class AopApplicationResource extends JsonResource
             // 'division_chief' => new UserResource($this->whenLoaded('divisionChief')),
             // 'mcc_chief' => new UserResource($this->whenLoaded('mccChief')),
             // 'planning_officer' => new UserResource($this->whenLoaded('planningOfficer')),
+            'aop_application_id' => $this->id,
             'aop_application_uuid' => $this->aop_application_uuid,
             'mission' => $this->mission,
             'status' => $this->status,
