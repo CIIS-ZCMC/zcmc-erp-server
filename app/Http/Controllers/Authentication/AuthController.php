@@ -92,4 +92,28 @@ class AuthController extends Controller
                 'meta' => ['redirect_to' => '/dashboard']
             ]);
     }
+    
+    public function logout(Request $request)
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'message' => "No authenticated user",
+            ], Response::HTTP_UNAUTHORIZED);
+        }
+
+        // Laravel's session-based logout
+        auth()->logout();
+
+        // Optional: Invalidate the session
+        $request->session()->invalidate();
+
+        // Optional: Regenerate CSRF token
+        $request->session()->regenerateToken();
+
+        return response()->json([
+            'message' => "Successfully logged out"
+        ], Response::HTTP_OK);
+    }
 }

@@ -30,6 +30,7 @@ class ItemRequest extends FormRequest
             'items.*.code' => 'required_with:items|string|max:255',
             'items.*.estimated_budget' => 'required|numeric',
             'items.*.item_unit_id' => 'required|int',
+            'items.*.terminology_category_id' => 'required|int',
             'items.*.item_category_id' => 'required|int',
             'items.*.item_classification_id' => 'nullable|int',
             'items.*.specifications' => [
@@ -42,6 +43,7 @@ class ItemRequest extends FormRequest
             'code' => 'required_without:items|string|max:255',
             'estimated_budget' => 'required|numeric',
             'item_unit_id' => 'required|int',   
+            'terminology_category_id' => 'required|int',   
             'item_category_id' => 'required|int',     
             'item_classification_id' => 'nullable|int',
             'specifications' => [

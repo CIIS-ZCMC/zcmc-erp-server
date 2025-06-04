@@ -23,6 +23,8 @@ return new class extends Migration {
             $table->foreign('item_category_id')->references('id')->on('item_categories');
             $table->unsignedBigInteger('item_classification_id')->nullable();
             $table->foreign('item_classification_id')->references('id')->on('item_classifications');
+            $table->unsignedBigInteger('terminologies_category_id')->nullable();
+            $table->foreign('terminologies_category_id')->references('id')->on('terminologies_categories');
             $table->text('reason')->nullable();
             $table->unsignedBigInteger('requested_by')->nullable();
             $table->foreign('requested_by')->references('id')->on('users');

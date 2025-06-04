@@ -16,8 +16,7 @@ class ItemCategory extends Model
         "name",
         "code",
         "description",
-        "item_category_id",
-        "reference_terminology_id"
+        "item_category_id"
     ];
 
     public $timestamps = true;
@@ -58,8 +57,8 @@ class ItemCategory extends Model
         return $this->hasMany(ItemCategory::class);
     }
 
-    public function itemReferenceTermonology()
+    public function terminologyCategories()
     {
-        return $this->hasMany(ItemReferenceTerminology::class);
+        return $this->hasMany(TerminologyCategory::class);
     }
 }
