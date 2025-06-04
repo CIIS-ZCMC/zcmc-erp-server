@@ -64,6 +64,7 @@ Route::
                 Route::delete('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'destroy']);
 
                 // Item routes
+                Route::get('items/imports', [ItemController::class, "import"]);
                 Route::get('items', [ItemController::class, "index"]);
                 Route::post('items', [ItemController::class, "store"]);
                 Route::put('items', [ItemController::class, "update"]);

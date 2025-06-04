@@ -58,8 +58,8 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
          * estimated_budget
          * unit
          * name
-         * spec1
-         * spec2
+         * specs1
+         * specs2
          * terminology
          */
 
@@ -78,27 +78,31 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
         
         $this->processed++;
         return DB::transaction(function() use ($row, $categoryId, $unitId, $terminology){
+
+            // Convert formatted string to float (e.g., "88,288.00" → 88288.00)
+            $estimatedBudget = $this->parseNumericValue($row['estimated_budget']);
+
             // Create Item
             $newItem = Item::create([
                 'name'        => $row['name'],
-                'estimated_budget' => $row['estimated_budget'] ?? null,
+                'estimated_budget' => $estimatedBudget,
                 'category_id' => $categoryId,
                 'unit' => $unitId,
                 'terminology_id' => $terminology->id
             ]);
 
-            if(!empty($row['spec1'])){
+            if(!empty($row['specs1'])){
                 // Register Item specification
                 ItemSpecification::create([
-                    'description' => $row['spec1'],
+                    'description' => $row['specs1'],
                     'item_id' => $newItem->id
                 ]);
             }
 
-            if(!empty($row['spec2'])){
+            if(!empty($row['specs2'])){
                 // Register Item specification
                 ItemSpecification::create([
-                    'description' => $row['spec2'],
+                    'description' => $row['specs2'],
                     'item_id' => $newItem->id
                 ]);
             }
@@ -118,6 +122,16 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
             'specs2' => 'nullable|string',
             'terminology' => 'nullable|string',
         ];
+    }
+
+    private function parseNumericValue($value)
+    {
+        if (is_null($value)) {
+            return 0;
+        }
+
+        // Remove thousands separators (commas) and convert to float
+        return floatval(str_replace(',', '', $value));
     }
 
     public function getProcessedCount(): int
