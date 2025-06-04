@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\ResponsiblePeopleCollection;
 
 class ActivityResource extends JsonResource
 {
@@ -34,11 +35,11 @@ class ActivityResource extends JsonResource
             }),
 
             'responsible_people' => $this->whenLoaded('responsiblePeople', function () {
-                return $this->responsiblePeople->map(function ($person) {
+                return new ResponsiblePeopleCollection($this->responsiblePeople->each(function ($person) {
+                    // Pass some activity info if you want
                     $person->activity_id = $this->id;
                     $person->activity_uuid = $this->activity_uuid;
-                    return new ResponsiblePersonResource($person);
-                });
+                }));
             }),
             'comments' => ActivityCommentResource::collection($this->whenLoaded('comments')) ?? [],
 
