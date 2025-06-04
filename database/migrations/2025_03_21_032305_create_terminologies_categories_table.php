@@ -13,8 +13,9 @@ return new class extends Migration
     {
         Schema::create('terminologies_categories', function (Blueprint $table) {
             $table->id();
+            $table->string('name');
             $table->unsignedBigInteger("category_id")->nullable();
-            $table->foreign('category_id')->references('id')->on('categories');
+            $table->foreign('category_id')->references('id')->on('item_categories');
             $table->unsignedBigInteger("reference_terminology_id")->nullable();
             $table->foreign('reference_terminology_id')->references('id')->on('reference_terminologies');
             $table->softDeletes();

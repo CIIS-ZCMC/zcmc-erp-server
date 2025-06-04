@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             ItemReferenceTerminologiesSeeder::class,
             ItemClassificationSeeder::class,
             ItemCategorySeeder::class,
+            TerminologyCategorySeeder::class,
             TypeOfFunctionSeeder::class,
             ProcurementModeSeeder::class,
             ItemUnitSeeder::class,

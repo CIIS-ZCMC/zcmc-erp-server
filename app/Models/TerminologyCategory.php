@@ -12,6 +12,7 @@ class TerminologyCategory extends Model
     protected $table = 'terminologies_categories';
 
     public $fillable = [
+        'name',
         'category_id',
         'reference_terminology_id'
     ];

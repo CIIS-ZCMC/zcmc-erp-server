@@ -18,6 +18,8 @@ class ItemReferenceTerminologiesSeeder extends Seeder
             [ "code" => "Regular", "system" => "Variant", "description" => null, "created_at" => now(), "updated_at" => now()],
             [ "code" => "Mid-Range", "system" => "Variant", "description" => null, "created_at" => now(), "updated_at" => now()],
             [ "code" => "High-end", "system" => "Variant", "description" => null, "created_at" => now(), "updated_at" => now()],
+            [ "code" => "Online", "system" => "Variant", "description" => null, "created_at" => now(), "updated_at" => now()],
+            [ "code" => "Enterprise", "system" => "Variant", "description" => null, "created_at" => now(), "updated_at" => now()],
         ];
 
         $snomed_codes = [
@@ -65,7 +67,7 @@ class ItemReferenceTerminologiesSeeder extends Seeder
         $loinc = [];
 
         foreach($loinc_codes as $code){
-            $loinc_codes[] = [
+            $loinc[] = [
                 'code' => $code,
                 'system' => "LOINC",
                 'description' => null,
