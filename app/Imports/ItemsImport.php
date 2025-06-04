@@ -9,7 +9,7 @@ use App\Models\ItemReferenceTerminology;
 use App\Models\ItemSpecification;
 use App\Models\ItemUnit;
 use App\Models\TerminologyCategory;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
