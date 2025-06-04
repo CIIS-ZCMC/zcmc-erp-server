@@ -57,8 +57,8 @@ class ItemCategory extends Model
         return $this->hasMany(ItemCategory::class);
     }
 
-    public function itemReferenceTermonology()
+    public function terminologyCategories()
     {
-        return $this->hasMany(ItemReferenceTerminology::class);
+        return $this->hasMany(TerminologyCategory::class);
     }
 }

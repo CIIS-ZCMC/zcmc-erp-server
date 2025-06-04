@@ -12,199 +12,84 @@ class ItemReferenceTerminologiesSeeder extends Seeder
      */
     public function run(): void
     {
+
+
         $variants = [
             [ "code" => "Regular", "system" => "Variant", "description" => null, "created_at" => now(), "updated_at" => now()],
             [ "code" => "Mid-Range", "system" => "Variant", "description" => null, "created_at" => now(), "updated_at" => now()],
             [ "code" => "High-end", "system" => "Variant", "description" => null, "created_at" => now(), "updated_at" => now()],
         ];
 
-        $snomed_ct = [
-            [ "code" => "103803003", "system" => "SNOMED-CT", "description" => "Patient encounter procedure", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "469600004", "system" => "SNOMED-CT", "description" => "Review of medication", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302385004", "system" => "SNOMED-CT", "description" => "Medication review done", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302373006", "system" => "SNOMED-CT", "description" => "Medication review", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302379005", "system" => "SNOMED-CT", "description" => "Medication review declined", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302378002", "system" => "SNOMED-CT", "description" => "Medication review not done", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302344000", "system" => "SNOMED-CT", "description" => "Review of care plan", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "705045009", "system" => "SNOMED-CT", "description" => "Medication review not required", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "706172001", "system" => "SNOMED-CT", "description" => "Medication review due", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "44858007", "system" => "SNOMED-CT", "description" => "Blood pressure (observable entity)", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "102442004", "system" => "SNOMED-CT", "description" => "General medical examination", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "314113002", "system" => "SNOMED-CT", "description" => "Cardiovascular system review", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "268400002", "system" => "SNOMED-CT", "description" => "Care plan review", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "468781000124100", "system" => "SNOMED-CT", "description" => "Medication review overdue", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302343006", "system" => "SNOMED-CT", "description" => "Review of systems", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "46874009", "system" => "SNOMED-CT", "description" => "Blood test", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "46947006", "system" => "SNOMED-CT", "description" => "Urinalysis", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "70513007", "system" => "SNOMED-CT", "description" => "Routine blood test", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302347007", "system" => "SNOMED-CT", "description" => "Review of problem list", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "45293002", "system" => "SNOMED-CT", "description" => "Physical examination procedure", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302358007", "system" => "SNOMED-CT", "description" => "Review of progress", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "433204007", "system" => "SNOMED-CT", "description" => "Problem list reviewed", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "705051002", "system" => "SNOMED-CT", "description" => "Medication review complete", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302366006", "system" => "SNOMED-CT", "description" => "Family history reviewed", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302368007", "system" => "SNOMED-CT", "description" => "Past medical history reviewed", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302370009", "system" => "SNOMED-CT", "description" => "Social history reviewed", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "44859002", "system" => "SNOMED-CT", "description" => "Heart rate (observable entity)", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "439939004", "system" => "SNOMED-CT", "description" => "Weight measured", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "46699007", "system" => "SNOMED-CT", "description" => "Height measurement", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "705048001", "system" => "SNOMED-CT", "description" => "Medication adherence discussed", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "44661000", "system" => "SNOMED-CT", "description" => "Examination of respiratory system", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "705037004", "system" => "SNOMED-CT", "description" => "Examination of cardiovascular system", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "44213003", "system" => "SNOMED-CT", "description" => "Electrocardiogram (ECG)", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302335005", "system" => "SNOMED-CT", "description" => "Consultation note", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "439987009", "system" => "SNOMED-CT", "description" => "Body temperature measured", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "46698003", "system" => "SNOMED-CT", "description" => "Pulse oximetry", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "44937001", "system" => "SNOMED-CT", "description" => "Blood glucose measurement", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "705127005", "system" => "SNOMED-CT", "description" => "Medication prescribed", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "442491009", "system" => "SNOMED-CT", "description" => "Smoking status documented", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "705049009", "system" => "SNOMED-CT", "description" => "Medication discussion", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "302386003", "system" => "SNOMED-CT", "description" => "Medication reconciliation done", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "3098000", "system" => "SNOMED-CT", "description" => "History taking", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "87271000119101", "system" => "SNOMED-CT", "description" => "Review of long-term condition (clinical finding)", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "4516008", "system" => "SNOMED-CT", "description" => "Blood test (procedure)", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "7083008", "system" => "SNOMED-CT", "description" => "Hemoglobin measurement", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "157810000000109", "system" => "SNOMED-CT", "description" => "Care plan discussed", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "229559001", "system" => "SNOMED-CT", "description" => "Review of immunization status", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "439794000", "system" => "SNOMED-CT", "description" => "Blood sugar measured", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "467981000124100", "system" => "SNOMED-CT", "description" => "Medication review pending", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "252466006", "system" => "SNOMED-CT", "description" => "Review of systems (clinical finding)", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "70304000", "system" => "SNOMED-CT", "description" => "Medical examination, general", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "129121000000109", "system" => "SNOMED-CT", "description" => "Care plan agreed", "created_at" => now(), "updated_at" => now() ],
-            [ "code" => "35311000146103", "system" => "SNOMED-CT", "description" => "Long-term condition review", "created_at" => now(), "updated_at" => now() ]
+        $snomed_codes = [
+            36806, 10834, 15064, 11218, 18567, 10475, 10260, 17357, 36625, 10323,
+            11099, 10668, 17094, 35649, 14960, 34842, 46797, 10648, 36830, 36829,
+            15993, 10705, 17359, 36834, 12108, 10398, 35140, 10996, 11096, 10826,
+            47120, 14197, 12845, 14457, 35249, 11598, 35282, 11624, 35327, 47101,
+            40026, 17537, 16335, 12843, 10729, 12693, 11762, 11843, 11853, 35439,
+            30880, 12053, 12163, 40046, 12224, 37172, 12984, 13247, 16733, 11462,
+            13264, 35201, 17145, 17377, 14421, 11090, 35003, 10072, 12759, 47183,
+            40019, 47102, 40030, 17399, 14227, 14407, 10793, 14415, 40029, 10586,
+            14389, 16910, 40700, 40755, 16730, 40023, 36814, 47121, 10722, 14217,
+            15222, 34840, 15516, 36835, 10769, 14949, 16609, 17360, 17565, 36873,
+            16361, 10404, 16388, 16345, 14959, 40017, 16828, 16834, 35431, 35914,
+            16790, 40040, 16732, 40048, 35913, 37170, 12739, 37176, 15477, 17462,
+            17540
+        ];
+        
+        $snomed_ct = [];
+
+        foreach($snomed_codes as $code){
+            $snomed_ct[] = [
+                "code" => $code,
+                "system" => "Snomed CT",
+                "description" => null,
+                "created_at" => now(),
+                "updated_at" => now()
+            ];
+        }
+
+        $loinc_codes = [
+            '17853-2', '1558-6', '2075-0', '2093-3', '1989-3', '883-9', '24336-0', '2143-6', '3184-9', '1834-1',
+            '1742-6', '1751-7', '2882-9', '6768-6', '19359-6', '17861-6', '16927-2', '22322-2', '38576-5', '30239-8',
+            '32018-8', '13950-1', '13949-3', '22318-0', '13955-0', '7918-6', '22420-4', '22418-8', '3024-7', '3056-9',
+            '24113-3', '5316-4', '5341-2', '1920-8', '14632-7', '21198-7', '3094-0', '3084-1', '30948-1', '11047-6',
+            '2339-0', '1988-5', '22688-8', '2271-4', '2276-0', '57021-8', '8126-1', '20395-0', '2157-6', '2158-4',
+            '21571-8', '21572-6', '1987-7', '2143-0', '2160-0', '48065-7', '2233-3', '2085-9', '18262-6', '32533-7',
+            '32532-9', '3030-2', '4537-7', '23310-4', '2276-4', '14979-1', '15074-8', '2857-1', '3036-8', '2324-2',
+            '2345-7', '1559-0', '56009-4', '19186-2', '4548-4', '5199-2', '51984-0', '32286-7', '51985-7', '718-7',
+            '5197-9', '5198-7', '54086-4', '6598-7', '64164-1', '1752-2', '12839-5', '15301-5', '6228-3', '2986-8',
+            '29594-8', '2498-4', '14804-9', '1744-7', '2951-2', '2041-4', '26456-1', '24320-4', '58410-2', '30341-2',
+            '58045-4'
         ];
 
-        $loinc = [
-            ["code" => "17853-2", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "1558-6", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2075-0", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2093-3", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "1989-3", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "883-9", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "24336-0", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2143-6", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "3184-9", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "1834-1", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "1742-6", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "1751-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2882-9", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "6768-6", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "19359-6", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "17861-6", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "16927-2", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "22322-2", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "38576-5", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "30239-8", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "32018-8", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "13950-1", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "13949-3", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "22318-0", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "13955-0", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "7918-6", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "22420-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "22418-8", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "3024-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "3056-9", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "24113-3", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "5316-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "5341-2", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "1920-8", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "14632-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "21198-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "3094-0", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "3084-1", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "30948-1", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "11047-6", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2339-0", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "1988-5", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "22688-8", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2271-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2276-0", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "57021-8", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "8126-1", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "20395-0", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2157-6", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2158-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "21571-8", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "21572-6", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "1987-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2143-0", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2160-0", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "48065-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2233-3", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2085-9", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "18262-6", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "32533-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "32532-9", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "3030-2", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "4537-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "23310-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2276-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "14979-1", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "15074-8", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2857-1", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "3036-8", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2324-2", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2345-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "1559-0", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "56009-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "19186-2", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "4548-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "5199-2", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "51984-0", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "32286-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "51985-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "718-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "5197-9", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "5198-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "54086-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "6598-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "64164-1", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "1752-2", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "12839-5", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "15301-5", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "6228-3", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2986-8", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "29594-8", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2498-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "14804-9", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "1744-7", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2951-2", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "2041-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "26456-1", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "24320-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "58410-2", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "30341-2", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "58045-4", "system" => "LOINC", "description" => null, "created_at" => now(), "updated_at" => now()],
+        $loinc = [];
+
+        foreach($loinc_codes as $code){
+            $loinc_codes[] = [
+                'code' => $code,
+                'system' => "LOINC",
+                'description' => null,
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+        }
+
+        $gmdn_codes = [
+            45792, 57839, 58034, 36223, 36224, 58064, 58065, 62020, 98765, 46413, 36248, 35138, 35385, 58193,
+            37277, 58284, 45212, 35882, 35883, 46874, 35988, 47998, 59288, 46983, 46114
         ];
 
-        $gmdn = [
-            ["code" => "45792", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "57839", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "58034", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "36223", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "36224", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "58064", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "58065", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "62020", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "98765", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "46413", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "36248", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "35138", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "35385", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "58193", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "37277", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "58284", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "45212", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "35882", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "35883", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "46874", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "35988", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "47998", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "59288", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "46983", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()],
-            ["code" => "46114", "system" => "GMDN", "description" => null, "created_at" => now(), "updated_at" => now()]
-        ];
+        $gmdn = [];
+
+        foreach($gmdn_codes as $code){
+            $gmdn[] = [
+                'code' => $code,
+                'system' => "GMDN",
+                'description' => null,
+                'created_at' => now(),
+                'updated_at' => now()
+            ];
+        }
         
         $terminologies = array_merge($variants, $snomed_ct, $loinc, $gmdn);
 
