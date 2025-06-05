@@ -15,7 +15,12 @@ class AopResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'aop_application_id' => $this->id,
+            'aop_application_uuid' => $this->aop_application_uuid,
+            'mission' => $this->mission,
+            'status' => $this->status,
+            'has_discussed' => $this->has_discussed,
+            'remarks' => $this->remarks,
             'application_objectives' => $this->applicationObjectives->map(function ($appObj) {
                 $objective = $appObj->objective;
                 $success_indicator = $appObj->successIndicator;

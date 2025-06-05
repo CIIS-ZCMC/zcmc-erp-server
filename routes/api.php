@@ -210,7 +210,7 @@ Route::
             // Aop Application Module
             Route::get('aop-applications', [AopApplicationController::class, "index"]);
             Route::post('aop-application-store', [AopApplicationController::class, "store"]);
-            Route::post('aop-application-update/{id}', [AopApplicationController::class, "update"]);
+            Route::put('aop-application-update/{id}', [AopApplicationController::class, "update"]);
             Route::get('aop-application-show/{id}', [AopApplicationController::class, "show"]);
             Route::get('aop-application-summary', [AopApplicationController::class, "getUserAopSummary"]);
             Route::get('aop-application-timeline', [AopApplicationController::class, "showUserTimeline"]);

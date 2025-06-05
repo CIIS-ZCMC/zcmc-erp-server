@@ -161,6 +161,8 @@ class AopApplicationController extends Controller
 
         return response()->json([
             'aop_application_id' => $aopApplication->id,
+            'mission' => $aopApplication->mission,
+            'year' => $aopApplication->year,
             'total_objectives' => $totalObjectives,
             'total_success_indicators' => $totalSuccessIndicators,
             'total_activities' => $totalActivities,
@@ -241,10 +243,6 @@ class AopApplicationController extends Controller
             }
 
             $aopApplication->update($request->only([
-                'user_id',
-                'division_chief_id',
-                'mcc_chief_id',
-                'planning_officer_id',
                 'mission',
                 'status',
                 'has_discussed',
@@ -350,6 +348,7 @@ class AopApplicationController extends Controller
                                 'total_quantity' => $resource->quantity,
                                 'estimated_budget' => $estimatedBudget,
                                 'total_amount' => $totalAmount,
+                                'expense_class' => $resource->expense_class,
                                 'remarks' => null,
                             ]);
                         }
@@ -367,16 +366,12 @@ class AopApplicationController extends Controller
             // Get the aop user and its area
             $aop_user = User::find($aopApplication->user_id);
 
-
-            // Use ApprovalService to process the request
             $approval_service = new ApprovalService($this->notificationService);
 
-            // Create a timeline entry using the service
-            $aop_application_timeline = $approval_service->createApplicationTimeline(
+            // Create an initial timeline entry using the specialized method
+            $aop_application_timeline = $approval_service->createInitialApplicationTimeline(
                 $aopApplication,
                 $curr_user,
-                $aop_user,
-                $request->status,
                 $request->remarks
             );
 
@@ -385,22 +380,6 @@ class AopApplicationController extends Controller
                     'message' => 'AOP application timeline not created',
                 ], Response::HTTP_BAD_REQUEST);
             }
-
-            // $recipient = User::find($aopApplication->planningOfficerId);
-
-            // if ($recipient) {
-            //     $areaType = $area['sector'];
-            //     $areaName = $area['details']['name'];
-            //     $notifDetails = [
-            //         'title' => "AOP Application from {$areaType}: {$areaName} Updated and Requires Your Action",
-            //         'description' => 'An AOP application has been updated and needs your review.',
-            //         'module_path' => '/aop-applications/' . $aopApplication->id,
-            //         'status' => $aopApplication->status,
-            //         'aop_application_id' => $aopApplication->id,
-            //     ];
-
-            //     $this->notificationService->notify($recipient, $notifDetails);
-            // }
         });
         return response()->json(['message' => 'AOP Application updated successfully.']);
     }
@@ -520,7 +499,7 @@ class AopApplicationController extends Controller
                 'sector_id' => $area['details']['id'],
                 'has_discussed' => $validatedData['has_discussed'],
                 'remarks' => $validatedData['remarks'] ?? null,
-                'year' => now()->year,
+                'year' => now()->year + 1,
             ]);
 
 
@@ -631,6 +610,7 @@ class AopApplicationController extends Controller
                                 'item_id' => $resource->item_id,
                                 'total_quantity' => $resource->quantity,
                                 'estimated_budget' => $estimatedBudget,
+                                'expense_class' => $resource->expense_class, //by ricah
                                 'total_amount' => $totalAmount,
                                 'remarks' => null,
                             ]);
