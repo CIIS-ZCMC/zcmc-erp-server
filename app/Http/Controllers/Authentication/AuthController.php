@@ -4,15 +4,10 @@ namespace App\Http\Controllers\Authentication;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\UserAuthResource;
-use App\Http\Resources\UserResource;
-use App\Models\AccessToken;
-use App\Models\User;
-use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cookie;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
@@ -98,7 +93,6 @@ class AuthController extends Controller
     
     public function logout(Request $request)
     {
-        Log::info("Test Here");
         $user = auth()->user();
 
         if (!$user) {
@@ -107,17 +101,21 @@ class AuthController extends Controller
             ], Response::HTTP_UNAUTHORIZED);
         }
 
-        // Laravel's session-based logout
-        auth()->logout();
+        // 1. Revoke the current token (if using tokens)
+        if (method_exists($user, 'currentAccessToken')) {
+            $user->currentAccessToken()->delete();
+        }
 
-        // Optional: Invalidate the session
-        $request->session()->invalidate();
+        // 2. Create an expired cookie to remove it from browser
+        $cookie = Cookie::forget(
+            env('COOKIE_NAME', 'auth_token'),  // Cookie name
+            '/',                               // Path
+            null                             // Domain (null for current)
+        );
 
-        // Optional: Regenerate CSRF token
-        $request->session()->regenerateToken();
-
+        // 3. Return response with cookie removal
         return response()->json([
             'message' => "Successfully logged out"
-        ], Response::HTTP_OK);
+        ], Response::HTTP_OK)->withCookie($cookie);
     }
 }
