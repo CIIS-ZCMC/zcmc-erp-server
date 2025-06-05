@@ -72,6 +72,7 @@ Route::
                 // Item Request routes
                 Route::post('item-requests/{id}/update-status', [ItemRequestController::class, 'approve']);
                 Route::get('item-requests', [ItemRequestController::class, 'index']);
+                Route::get('item-requests/my-requests', [ItemRequestController::class, 'myItemRequest']);
                 Route::post('item-requests', [ItemRequestController::class, 'store']);
                 Route::put('item-requests/{id}', [ItemRequestController::class, 'update']);
                 Route::delete('item-requests', [ItemRequestController::class, 'destroy']);
