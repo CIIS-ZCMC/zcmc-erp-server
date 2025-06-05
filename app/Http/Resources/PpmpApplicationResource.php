@@ -79,6 +79,7 @@ class PpmpApplicationResource extends JsonResource
                     'aop_quantity' => $first->total_quantity * count($first->activities) ?? 0,
                     'unit' => $item->itemUnit->code ?? null,
                     'total_amount' => $first->total_amount ?? 0,
+                    'total_quantity' => $first->total_quantity ?? 0,
                     'target_by_quarter' => $targetByQuarter ?? null,
                     'procurement_mode' => "" ?? $item->procurementMode->name ?? null,
                     'remarks' => $item->remarks ?? null,
