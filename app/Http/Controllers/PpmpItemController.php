@@ -50,6 +50,7 @@ class PpmpItemController extends Controller
             'item.itemCategory',
             'item.itemClassification',
             'item.itemSpecifications',
+            'item.terminologyCategory',
             'procurementMode',
             'itemRequest',
             'activities',
