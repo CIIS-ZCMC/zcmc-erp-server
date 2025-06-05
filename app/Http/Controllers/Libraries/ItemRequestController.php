@@ -8,16 +8,19 @@ use App\Helpers\MetadataComposerHelper;
 use App\Http\Requests\ItemRequestRequest;
 use App\Http\Resources\ItemRequestDuplicateResource;
 use App\Http\Resources\ItemRequestResource;
+use App\Http\Resources\ItemResource;
 use App\Models\FileRecord;
 use App\Models\ItemCategory;
 use App\Models\ItemRequest;
 use App\Models\ItemClassification;
 use App\Models\ItemSpecification;
 use App\Models\ItemUnit;
+use App\Models\Item;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\Response;
 
 class ItemRequestController extends Controller
@@ -83,6 +86,42 @@ class ItemRequestController extends Controller
         return $cleanData;
     }
     
+    public function approve(ItemRequest $itemRequest, Request $request)
+    {
+        // Check if user is consolidator
+    
+        DB::beginTransaction();
+
+        $cleanData = [
+            "name" => $itemRequest->name,
+            "code" => $itemRequest->code,
+            "estimated_budget" => $itemRequest->estimated_budget,
+            "item_unit_id" => $itemRequest->item_unit_id,
+            "terminology_category_id" => $itemRequest->terminology_category_id,
+            "item_category_id" => $itemRequest->item_category_id,
+            "item_classification_id" => $itemRequest->item_classification_id,
+            "image" => $itemRequest->image,
+        ];
+
+        $new_item = Item::create($cleanData);
+
+        $specifications = $itemRequest->itemSpecifications;
+
+        foreach($specifications as $specification){
+            $specification->update(['item_id' => $new_item->id, 'item_request_id' => null]);
+        }
+
+        DB::commit();
+    
+        return (new ItemResource($new_item))
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                ],
+                'message' => 'Item request successfully approved'
+            ]);
+    }
+
     protected function search(Request $request, $start): AnonymousResourceCollection
     {   
         $validated = $request->validate([
