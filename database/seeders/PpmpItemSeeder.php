@@ -25,7 +25,7 @@ class PpmpItemSeeder extends Seeder
     public function run(): void
     {
         $aop_application = AopApplication::inRandomOrder()->first();
-        $random_user = User::inRandomOrder()->first();
+        $random_user = User::find(2384) ?? User::inRandomOrder()->first();
         $division_chief = Division::where('name', 'Hospital Operations & Patient Support Service')->first();
         $budget_officer = Section::where('name', 'FS: Budget Section')->first();
         $planning_officer = Section::where('name', 'Planning Unit')->first();
@@ -35,20 +35,6 @@ class PpmpItemSeeder extends Seeder
         $ppmp_application = PpmpApplication::create([
             'aop_application_id' => $aop_application->id,
             'user_id' => $random_user->id,
-            'division_chief_id' => $division_chief->head_id,
-            'budget_officer_id' => $budget_officer->head_id,
-            'planning_officer_id' => $planning_officer->head_id,
-            'ppmp_application_uuid' => Str::uuid(),
-            'ppmp_total' => 0,
-            'status' => 'submitted',
-            'remarks' => "",
-            'year' => Carbon::now()->format('Y'),
-        ]);
-
-        // Create PPMP for user_id 2384
-        $ppmp_application_2384 = PpmpApplication::create([
-            'aop_application_id' => $aop_application->id,
-            'user_id' => 2384,
             'division_chief_id' => $division_chief->head_id,
             'budget_officer_id' => $budget_officer->head_id,
             'planning_officer_id' => $planning_officer->head_id,
@@ -85,34 +71,6 @@ class PpmpItemSeeder extends Seeder
             for ($j = 0; $j < 12; $j++) {
                 PpmpSchedule::create([
                     'ppmp_item_id' => $ppmpItem->id,
-                    'month' => rand(1, 12),
-                    'year' => rand(2025, 2026),
-                    'quantity' => 0
-                ]);
-            }
-
-            // For user_id 2384
-            $ppmpItem2384 = PpmpItem::create([
-                'ppmp_application_id' => $ppmp_application_2384->id,
-                'item_id' => $item->id,
-                'procurement_mode_id' => $procurement->id,
-                'item_request_id' => null,
-                'total_quantity' => 0,
-                'estimated_budget' => rand(10000, 100000),
-                'total_amount' => 0,
-                'expense_class' => $expenseClasses[array_rand($expenseClasses)],
-                'remarks' => ""
-            ]);
-
-            foreach ($activities as $activity) {
-                $activity->ppmpItems()->attach($ppmpItem2384->id, [
-                    'remarks' => "",
-                ]);
-            }
-
-            for ($j = 0; $j < 12; $j++) {
-                PpmpSchedule::create([
-                    'ppmp_item_id' => $ppmpItem2384->id,
                     'month' => rand(1, 12),
                     'year' => rand(2025, 2026),
                     'quantity' => 0

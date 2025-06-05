@@ -274,8 +274,11 @@ class PpmpItemController extends Controller
                 }
             }
 
+            $total_quantity = 0;
             foreach ($item['target_by_quarter'] as $monthly => $quantity) {
                 if ($quantity >= 0 && isset($monthMap[$monthly])) {
+                    $total_quantity += $quantity;
+
                     $target_request = [
                         'ppmp_item_id' => $ppmpItem->id,
                         'month' => $monthMap[$monthly],
@@ -295,6 +298,8 @@ class PpmpItemController extends Controller
                     }
                 }
             }
+
+            $ppmpItem->update(['total_quantity' => $total_quantity]);
         }
 
         if ($request->is_draft === true) {
