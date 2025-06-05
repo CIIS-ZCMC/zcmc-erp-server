@@ -18,6 +18,7 @@ class UnitResource extends JsonResource
             'id' => $this->id,
             'head' => $this->head,
             'name' => $this->name,
+            'label' => $this->name,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

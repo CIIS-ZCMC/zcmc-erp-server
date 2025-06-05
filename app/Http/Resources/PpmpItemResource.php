@@ -77,6 +77,7 @@ class PpmpItemResource extends JsonResource
                     'estimated_budget' => $item->estimated_budget ?? "",
                     'category' => $item->itemCategory->name ?? null,
                     'aop_quantity' => $first->total_quantity * count($first->activities) ?? 0,
+                    'quantity' => $first->total_quantity ?? 0,
                     'unit' => $item->itemUnit->code ?? null,
                     'total_amount' => $first->total_amount ?? 0,
                     'target_by_quarter' => $targetByQuarter ?? null,
