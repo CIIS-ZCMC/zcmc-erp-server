@@ -18,8 +18,6 @@ class AuthController extends Controller
 
         $attempt = Auth::attempt($credentials);
 
-        // \Log::info("ATTEMPT: ".json_encode($attempt));
-
         if (!$attempt) {
             return response()->json([
                 'message' => "Invalid credentials",
