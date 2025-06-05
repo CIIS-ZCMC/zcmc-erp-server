@@ -222,7 +222,9 @@ class AopApplicationController extends Controller
 
     public function update(AopApplicationRequest $request, $id)
     {
-        DB::transaction(function () use ($request, $id) {
+        DB::beginTransaction();
+
+        try {
             $aopApplication = AopApplication::with([
                 'applicationObjectives.activities.resources.item',
                 'ppmpApplication',
@@ -233,7 +235,7 @@ class AopApplicationController extends Controller
             $area = $assignedArea->findDetails();
             $planningOfficer = Section::where('name', 'Planning Unit')->first();
             $planningOfficerId = optional($planningOfficer)->head_id;
-            $curr_user = User::find($request->user()->id);
+            $curr_user = User::find($user_id);
             $curr_user_authorization_pin = $curr_user->authorization_pin;
 
             if ($curr_user_authorization_pin !== $request->authorization_pin) {
@@ -249,7 +251,6 @@ class AopApplicationController extends Controller
                 'remarks',
             ]));
 
-
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     $activity->target()->delete();
@@ -262,7 +263,6 @@ class AopApplicationController extends Controller
             }
 
             $aopApplication->applicationObjectives()->delete();
-
 
             foreach ($request->application_objectives as $objectiveData) {
                 $applicationObjective = $aopApplication->applicationObjectives()->create([
@@ -293,14 +293,11 @@ class AopApplicationController extends Controller
                         'end_month' => $activityData['end_month'],
                     ]);
 
-
                     $activity->target()->create($activityData['target']);
-
 
                     foreach ($activityData['resources'] as $resourceData) {
                         $activity->resources()->create($resourceData);
                     }
-
 
                     foreach ($activityData['responsible_people'] as $personData) {
                         $activity->responsiblePeople()->create($personData);
@@ -334,26 +331,47 @@ class AopApplicationController extends Controller
             ]);
 
             $ppmpApplication = $aopApplication->ppmpApplication;
-            $aopApplication->ppmpApplication->ppmpItems()->delete();
+            $ppmpApplication->ppmpItems()->delete();
+
+            $mergedItems = [];
 
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     foreach ($activity->resources as $resource) {
-                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                        if (
+                            $resource->purchase_type_id === $procurablePurchaseTypeId &&
+                            $resource->item
+                        ) {
+                            $itemId = $resource->item_id;
                             $estimatedBudget = $resource->item->estimated_budget;
-                            $totalAmount = $resource->quantity * $estimatedBudget;
+                            $quantity = $resource->quantity;
+                            $totalAmount = $quantity * $estimatedBudget;
+                            $expenseClass = $resource->expense_class;
 
-                            $aopApplication->ppmpApplication->ppmpItems()->create([
-                                'item_id' => $resource->item_id,
-                                'total_quantity' => $resource->quantity,
-                                'estimated_budget' => $estimatedBudget,
-                                'total_amount' => $totalAmount,
-                                'expense_class' => $resource->expense_class,
-                                'remarks' => null,
-                            ]);
+                            // Merge by item ID and expense class if needed
+                            $key = $itemId . '-' . $expenseClass;
+
+                            if (isset($mergedItems[$key])) {
+                                $mergedItems[$key]['total_quantity'] += $quantity;
+                                $mergedItems[$key]['total_amount'] += $totalAmount;
+                            } else {
+                                $mergedItems[$key] = [
+                                    'item_id' => $itemId,
+                                    'total_quantity' => $quantity,
+                                    'estimated_budget' => $estimatedBudget,
+                                    'total_amount' => $totalAmount,
+                                    'expense_class' => $expenseClass,
+                                    'remarks' => null,
+                                ];
+                            }
                         }
                     }
                 }
+            }
+
+            // Insert merged items
+            foreach ($mergedItems as $itemData) {
+                $ppmpApplication->ppmpItems()->create($itemData);
             }
 
             Log::create([
@@ -363,26 +381,33 @@ class AopApplicationController extends Controller
                 'action_by' => $user_id,
             ]);
 
-            // Get the aop user and its area
+            // Approval flow
             $aop_user = User::find($aopApplication->user_id);
-
             $approval_service = new ApprovalService($this->notificationService);
-
-            // Create an initial timeline entry using the specialized method
-            $aop_application_timeline = $approval_service->createInitialApplicationTimeline(
+            $timeline = $approval_service->createInitialApplicationTimeline(
                 $aopApplication,
                 $curr_user,
                 $request->remarks
             );
 
-            if (!$aop_application_timeline) {
+            if (!$timeline) {
+                DB::rollBack();
                 return response()->json([
                     'message' => 'AOP application timeline not created',
                 ], Response::HTTP_BAD_REQUEST);
             }
-        });
-        return response()->json(['message' => 'AOP Application updated successfully.']);
+
+            DB::commit();
+            return response()->json(['message' => 'AOP Application updated successfully.']);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Failed to update AOP Application.',
+                'error' => $e->getMessage(),
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
+
 
     protected function generateUniqueActivityCode(): string
     {
@@ -405,11 +430,11 @@ class AopApplicationController extends Controller
             $curr_user = User::find($request->user()->id);
             $curr_user_authorization_pin = $curr_user->authorization_pin;
 
-            //            if ($curr_user_authorization_pin !== $request->authorization_pin) {
-            //                return response()->json([
-            //                    'message' => 'Invalid Authorization Pin'
-            //                ], Response::HTTP_BAD_REQUEST);
-            //            }
+            if ($curr_user_authorization_pin !== $request->authorization_pin) {
+                return response()->json([
+                    'message' => 'Invalid Authorization Pin'
+                ], Response::HTTP_BAD_REQUEST);
+            }
 
             $user_id = $request->user()->id;
             $assignedArea = AssignedArea::where('user_id', $user_id)->first();
@@ -595,6 +620,8 @@ class AopApplicationController extends Controller
             ]);
 
 
+            $items = [];
+
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     foreach ($activity->resources as $resource) {
@@ -602,23 +629,36 @@ class AopApplicationController extends Controller
                             $resource->purchase_type_id === $procurablePurchaseTypeId &&
                             $resource->item // Check if item exists
                         ) {
+                            $itemId = $resource->item_id;
                             $estimatedBudget = $resource->item->estimated_budget;
-                            $totalAmount = $resource->quantity * $estimatedBudget;
+                            $quantity = $resource->quantity;
+                            $totalAmount = $quantity * $estimatedBudget;
+                            $expenseClass = $resource->expense_class;
 
-                            PpmpItem::create([
-                                'ppmp_application_id' => $ppmpApplication->id,
-                                'item_id' => $resource->item_id,
-                                'total_quantity' => $resource->quantity,
-                                'estimated_budget' => $estimatedBudget,
-                                'expense_class' => $resource->expense_class, //by ricah
-                                'total_amount' => $totalAmount,
-                                'remarks' => null,
-                            ]);
+                            // If the item already exists, add to its quantity and amount
+                            if (isset($items[$itemId])) {
+                                $items[$itemId]['total_quantity'] += $quantity;
+                                $items[$itemId]['total_amount'] += $totalAmount;
+                            } else {
+                                $items[$itemId] = [
+                                    'ppmp_application_id' => $ppmpApplication->id,
+                                    'item_id' => $itemId,
+                                    'total_quantity' => $quantity,
+                                    'estimated_budget' => $estimatedBudget,
+                                    'expense_class' => $expenseClass,
+                                    'total_amount' => $totalAmount,
+                                    'remarks' => null,
+                                ];
+                            }
                         }
                     }
                 }
             }
 
+            // Now insert the merged items
+            foreach ($items as $itemData) {
+                PpmpItem::create($itemData);
+            }
             Log::create([
                 'aop_application_id' => null,
                 'ppmp_application_id' => $ppmpApplication->id,
@@ -1268,8 +1308,9 @@ class AopApplicationController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function edit()
+    public function edit($id)
     {
+
         $aop_application = AopApplication::with([
             'applicationObjectives' => function ($query) {
                 $query->with([
@@ -1296,7 +1337,7 @@ class AopApplicationController extends Controller
                     'otherSuccessIndicator',
                 ]);
             }
-        ])->latest()->first();
+        ])->findOrFail($id);
 
         if (!$aop_application) {
             return response()->json([

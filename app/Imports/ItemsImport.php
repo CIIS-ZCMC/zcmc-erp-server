@@ -5,6 +5,7 @@ namespace App\Imports;
 use App\Models\CategoryConsolidator;
 use App\Models\Item;
 use App\Models\ItemCategory;
+use App\Models\ItemClassification;
 use App\Models\ItemReferenceTerminology;
 use App\Models\ItemSpecification;
 use App\Models\ItemUnit;
@@ -35,22 +36,22 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
 
     private function preloadData(): void
     {
-        \Log::warning("Import class instantiated"); // Add this
+        \Illuminate\Support\Facades\Log::warning("Import class instantiated"); // Add this
         $this->categories = ItemCategory::pluck('id', 'name')
-            ->mapWithKeys(fn ($id, $name) => [strtolower($name) => $id]);
+            ->mapWithKeys(fn($id, $name) => [strtolower($name) => $id]);
 
         $this->units = ItemUnit::pluck('id', 'name')
-            ->mapWithKeys(fn ($id, $name) => [strtolower($name) => $id]);
+            ->mapWithKeys(fn($id, $name) => [strtolower($name) => $id]);
 
         $this->refference = ItemReferenceTerminology::pluck('id', 'code')
-            ->mapWithKeys(fn ($id, int|string $name) => [strtolower($name) => $id]);
+            ->mapWithKeys(fn($id, int|string $name) => [strtolower($name) => $id]);
     }
-    
+
     /**
-    * @param array $row
-    *
-    * @return \Illuminate\Database\Eloquent\Model|null
-    */
+     * @param array $row
+     *
+     * @return \Illuminate\Database\Eloquent\Model|null
+     */
     public function model(array $row)
     {
         /**
@@ -68,15 +69,15 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
         $unitId = $this->units[strtolower($row['unit'])] ?? null;
         $referrenceId = $this->refference[strtolower($row['terminology'])] ?? null;
 
-        if(!$categoryId){
+        if (!$categoryId) {
             \Log::warning("Failed here category: {$row['category']}");
         }
 
-        if(!$unitId){
+        if (!$unitId) {
             \Log::warning("Failed here unit: {$row['unit']}");
         }
 
-        if(!$referrenceId){
+        if (!$referrenceId) {
             \Log::warning("Failed here referrence: {$row['terminology']}");
         }
 
@@ -86,11 +87,13 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
             return null;
         }
 
+
+
         $terminology = TerminologyCategory::where('category_id', $categoryId)->where('reference_terminology_id', $referrenceId)->first();
         $terminologyId = $terminology->id;
 
         $this->processed++;
-        return DB::transaction(function() use ($row, $categoryId, $unitId, $terminologyId){
+        return DB::transaction(function () use ($row, $categoryId, $unitId, $terminologyId) {
 
             // Convert formatted string to float (e.g., "88,288.00" → 88288.00)
             $estimatedBudget = $this->parseNumericValue($row['estimated_budget']);
@@ -104,7 +107,7 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
                 'terminologies_category_id' => $terminologyId
             ]);
 
-            if(!empty($row['specs1'])){
+            if (!empty($row['specs1'])) {
                 // Register Item specification
                 ItemSpecification::create([
                     'description' => $row['specs1'],
@@ -112,7 +115,7 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
                 ]);
             }
 
-            if(!empty($row['specs2'])){
+            if (!empty($row['specs2'])) {
                 // Register Item specification
                 ItemSpecification::create([
                     'description' => $row['specs2'],
@@ -156,7 +159,7 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
     {
         return $this->skipped;
     }
-    
+
     public function getResult(): array
     {
         return [
