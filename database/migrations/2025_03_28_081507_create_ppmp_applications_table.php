@@ -29,6 +29,7 @@ return new class extends Migration {
             $table->boolean('is_draft')->default(true);
             $table->string('remarks')->nullable();
             $table->year('year')->default(date('Y') + 1);
+            $table->datetime('received_on')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

@@ -68,12 +68,13 @@ Route::namespace('App\Http\Controllers')->group(function () {
         Route::put('items', [ItemController::class, "update"]);
         Route::delete('items', [ItemController::class, "destroy"]);
 
-        // Item Request routes
-        Route::post('item-requests/{id}/update-status', [ItemRequestController::class, 'approve']);
-        Route::get('item-requests', [ItemRequestController::class, 'index']);
-        Route::post('item-requests', [ItemRequestController::class, 'store']);
-        Route::put('item-requests/{id}', [ItemRequestController::class, 'update']);
-        Route::delete('item-requests', [ItemRequestController::class, 'destroy']);
+                // Item Request routes
+                Route::post('item-requests/{id}/update-status', [ItemRequestController::class, 'approve']);
+                Route::get('item-requests', [ItemRequestController::class, 'index']);
+                Route::get('item-requests/my-requests', [ItemRequestController::class, 'myItemRequest']);
+                Route::post('item-requests', [ItemRequestController::class, 'store']);
+                Route::put('item-requests/{id}', [ItemRequestController::class, 'update']);
+                Route::delete('item-requests', [ItemRequestController::class, 'destroy']);
 
         // Item Units routes
         Route::post('item-units/import', [ItemUnitController::class, "import"]);
@@ -178,11 +179,11 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::get('assigned-areas/{id}', [AssignedAreaController::class, "show"]);
     Route::post('umis/areas/update', [AssignedAreaController::class, "processUMISUpdate"]);
 
-    // Ppmp Application Module
-    Route::apiResource('ppmp-applications', PpmpApplicationController::class);
-    Route::get('ppmp-receiving-list', [PpmpApplicationController::class, "receivingList"]);
-    Route::get('ppmp-receiving-list-view/{id}', [PpmpApplicationController::class, "receivingListView"]);
-    Route::post('ppmp-applications/{id}/receive', [PpmpApplicationController::class, "receivePpmpApplication"]);
+            // Ppmp Application Module
+            Route::apiResource('ppmp-applications', PpmpApplicationController::class);
+            Route::get('ppmp-receiving-list', [PpmpApplicationController::class, "receivingList"]);
+            Route::get('ppmp-receiving-list-view/{id}', [PpmpApplicationController::class, "receivingListView"]);
+            Route::post('ppmp-receiving-list-receive', [PpmpApplicationController::class, "receivePpmpApplication"]);
 
     // Ppmp Item Module
     Route::get('ppmp-item-search', 'PpmpItemController@search');

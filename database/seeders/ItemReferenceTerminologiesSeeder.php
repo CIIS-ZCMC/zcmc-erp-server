@@ -92,8 +92,158 @@ class ItemReferenceTerminologiesSeeder extends Seeder
                 'updated_at' => now()
             ];
         }
+
+        $pnf_eml_codes = [
+            [
+                'code' => 1,
+                'system' => "PNF/EML",
+                'description' => 'Anaesthetic Drugs: Includes general and local anesthetics, and adjuncts.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 2,
+                'system' => "PNF/EML",
+                'description' => 'Cardiovascular Drugs: Covers various heart and blood vessel medications.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 3,
+                'system' => "PNF/EML",
+                'description' => 'Analgesics: Pain relievers.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 4,
+                'system' => "PNF/EML",
+                'description' => 'Anticonvulsants: For seizure disorders.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 5,
+                'system' => "PNF/EML",
+                'description' => 'Antihistamines: For allergies.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 6,
+                'system' => "PNF/EML",
+                'description' => 'Anti-infective Drugs: A broad category for antibiotics, antivirals, antifungals, anti-TB, etc.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 8,
+                'system' => "PNF/EML",
+                'description' => 'Antineoplastic Drugs: Cancer medications.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 10,
+                'system' => "PNF/EML",
+                'description' => 'Dermatological Drugs: Skin medications.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 11,
+                'system' => "PNF/EML",
+                'description' => 'Gastrointestinal Drugs: For digestive system conditions.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 13,
+                'system' => "PNF/EML",
+                'description' => 'Hypoglycemic Drugs: For diabetes.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 19,
+                'system' => "PNF/EML",
+                'description' => 'Immunologicals: Vaccines and sera.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 20,
+                'system' => "PNF/EML",
+                'description' => 'Oxytocics: For uterine contractions.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 21,
+                'system' => "PNF/EML",
+                'description' => 'Ophthalmic Drugs: Eye medications.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 23,
+                'system' => "PNF/EML",
+                'description' => 'Neurological Drugs: For nervous system conditions.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 24,
+                'system' => "PNF/EML",
+                'description' => 'Psychotherapeutic Drugs: Mental health medications.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 25,
+                'system' => "PNF/EML",
+                'description' => 'Antitoxic Agents: For poisonings and specific toxic effects.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 26,
+                'system' => "PNF/EML",
+                'description' => 'Respiratory Drugs: For lung conditions.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 27,
+                'system' => "PNF/EML",
+                'description' => 'Intravenous Solutions: IV fluids and electrolytes.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 28,
+                'system' => "PNF/EML",
+                'description' => 'Hormones: Endocrine medications.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => 29,
+                'system' => "PNF/EML",
+                'description' => 'Vitamins: Vitamin preparations.',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+            [
+                'code' => "N/A",
+                'system' => "PNF/EML",
+                'description' => ' For items that are not explicitly categorized as a drug (e.g., medical devices like cannulas, or where the PNF does not provide a specific numerical grouping for that exact item).',
+                'created_at' => now(),
+                'updated_at' => now()
+            ],
+        ];
         
-        $terminologies = array_merge($variants, $snomed_ct, $loinc, $gmdn);
+        $terminologies = array_merge($variants, $snomed_ct, $loinc, $gmdn, $pnf_eml_codes);
 
         ItemReferenceTerminology::insert($terminologies);
     }

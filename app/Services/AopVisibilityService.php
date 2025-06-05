@@ -288,12 +288,46 @@ class AopVisibilityService
 
         $assignedArea = $user->assignedArea;
 
-        // If user is OMCC Chief or in Planning Unit, they can see all applications
-        if ($this->isOmccChief($user) || $this->isUserInPlanningUnit($assignedArea)) {
-            Log::info('User is OMCC Chief or Planning Unit member, showing all AOP applications', [
+        // Check if user is in OMCC division (but not necessarily the Chief)
+        $isInOmccDivision = $assignedArea->division_id === self::OMCC_DIVISION_ID;
+
+        Log::info('Checking if user is in OMCC division', [
+            'user_id' => $user->id,
+            'is_in_omcc_division' => $isInOmccDivision
+        ]);
+
+        if ($isInOmccDivision) {
+            Log::info('User is in OMCC division, showing all applications plus approved from Planning', [
                 'user_id' => $user->id
             ]);
-            return $this->applyFilters($query, $filters);
+
+            // Get the Planning Unit section ID
+            $planningUnitSectionId = self::PLANNING_UNIT_SECTION_ID;
+
+            return $query->where(function ($q) use ($user, $assignedArea, $planningUnitSectionId) {
+                // Their own applications
+                $q->where('user_id', $user->id)
+                  // OR applications where they are the current approver (next_area_id)
+                  ->orWhereHas('applicationTimelines', function ($q2) use ($assignedArea) {
+                      $q2->where('next_area_id', $assignedArea->id);
+                  })
+                  // OR applications they previously handled (current_area_id)
+                  ->orWhereHas('applicationTimelines', function ($q2) use ($assignedArea) {
+                      $q2->where('current_area_id', $assignedArea->id);
+                  })
+                  // OR applications that are approved AND have a timeline entry from Planning Unit
+                  ->orWhere(function($q2) use ($planningUnitSectionId) {
+                      $q2->where('status', AopApplication::STATUS_APPROVED)
+                         ->whereHas('applicationTimelines', function($q3) use ($planningUnitSectionId) {
+                             $q3->whereHas('currentArea', function($q4) use ($planningUnitSectionId) {
+                                 $q4->where('section_id', $planningUnitSectionId);
+                             });
+                         });
+                  });
+            })
+            ->when($filters, function ($q) use ($filters) {
+                return $this->applyFilters($q, $filters);
+            });
         }
 
         // If user is a Division Head, they can see applications from their division
@@ -309,7 +343,7 @@ class AopVisibilityService
                 ->toArray();
 
             // Division Head can see requests from users in their division
-            // and requests they personally approved or are waiting for their action
+            // and requests they personally approved or are waiting for their   action
             return $query->where(function ($q) use ($areasUnderDivision, $user, $assignedArea) {
                 // Requests from users in their division
                 $q->whereIn('user_id', $areasUnderDivision)
