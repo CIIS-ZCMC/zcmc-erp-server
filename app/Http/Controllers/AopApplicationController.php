@@ -230,21 +230,19 @@ class AopApplicationController extends Controller
                 'ppmpApplication',
             ])->findOrFail($id);
 
-            // $user_id = $request->user()->id;3
-            $user_id = 2;
+            $user_id = $request->user()->id;
             $assignedArea = AssignedArea::where('user_id', $user_id)->first();
             $area = $assignedArea->findDetails();
             $planningOfficer = Section::where('name', 'Planning Unit')->first();
             $planningOfficerId = optional($planningOfficer)->head_id;
-            $curr_user = User::find(2);
-            // $curr_user = User::find($user_id);
-            // $curr_user_authorization_pin = $curr_user->authorization_pin;
+            $curr_user = User::find($user_id);
+            $curr_user_authorization_pin = $curr_user->authorization_pin;
 
-            // if ($curr_user_authorization_pin !== $request->authorization_pin) {
-            //     return response()->json([
-            //         'message' => 'Invalid Authorization Pin'
-            //     ], Response::HTTP_BAD_REQUEST);
-            // }
+            if ($curr_user_authorization_pin !== $request->authorization_pin) {
+                return response()->json([
+                    'message' => 'Invalid Authorization Pin'
+                ], Response::HTTP_BAD_REQUEST);
+            }
 
             $aopApplication->update($request->only([
                 'mission',
@@ -407,17 +405,15 @@ class AopApplicationController extends Controller
         DB::beginTransaction();
 
         try {
-            return $curr_user = User::find(2);
-            // $curr_user = User::find($request->user()->id);
-            // $curr_user_authorization_pin = $curr_user->authorization_pin;
+            $curr_user = User::find($request->user()->id);
+            $curr_user_authorization_pin = $curr_user->authorization_pin;
 
-            // if ($curr_user_authorization_pin !== $request->authorization_pin) {
-            //     return response()->json([
-            //         'message' => 'Invalid Authorization Pin'
-            //     ], Response::HTTP_BAD_REQUEST);
-            // }
-            $user_id = 2;
-            // $user_id = $request->user()->id;
+            if ($curr_user_authorization_pin !== $request->authorization_pin) {
+                return response()->json([
+                    'message' => 'Invalid Authorization Pin'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+            $user_id = $request->user()->id;
             $assignedArea = AssignedArea::where('user_id', $user_id)->first();
             $area = $assignedArea->findDetails();
             $existingAop = AopApplication::where('sector', $area['sector'])
