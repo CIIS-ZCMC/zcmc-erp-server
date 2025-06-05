@@ -320,6 +320,25 @@ class PpmpItemController extends Controller
 
         DB::commit();
 
+        $ppmp_application->load([
+            'ppmpItems' => function ($query) {
+                $query->with([
+                    'item',
+                    'item.itemUnit',
+                    'item.itemCategory',
+                    'item.itemClassification',
+                    'item.itemSpecifications',
+                    'item.terminologyCategory',
+                    'procurementMode',
+                    'itemRequest',
+                    'activities',
+                    'comments',
+                    'ppmpSchedule',
+                ]);
+            },
+            'aopApplication'
+        ]);
+
         return response()->json([
             'data' => new PpmpApplicationResource($ppmp_application),
             'message' => 'PPMP Items created successfully.',
