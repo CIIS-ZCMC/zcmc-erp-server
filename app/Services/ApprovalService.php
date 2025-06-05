@@ -445,7 +445,6 @@ class ApprovalService
                 'next_area_id' => $next_area_id,
                 'status' => 'pending', // Initial status must be 'pending' based on the database schema
                 'remarks' => $remarks,
-                'date_approved' => now(),
             ]);
 
             $timeline->save();
