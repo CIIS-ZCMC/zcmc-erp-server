@@ -24,7 +24,7 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
 
     private Collection $categories;
     private Collection $units;
-    private Collection $referrence_terminologies;
+    private Collection $terminology;
     private int $processed = 0;
     private int $skipped = 0;
 
@@ -35,13 +35,14 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
 
     private function preloadData(): void
     {
+        \Log::warning("Import class instantiated"); // Add this
         $this->categories = ItemCategory::pluck('id', 'name')
             ->mapWithKeys(fn ($id, $name) => [strtolower($name) => $id]);
 
         $this->units = ItemUnit::pluck('id', 'name')
             ->mapWithKeys(fn ($id, $name) => [strtolower($name) => $id]);
 
-        $this->referrence_terminologies = ItemReferenceTerminology::pluck('id', 'code')
+        $this->terminology = TerminologyCategory::pluck('id', 'name')
             ->mapWithKeys(fn ($id, $name) => [strtolower($name) => $id]);
     }
     
@@ -65,19 +66,16 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
 
         $categoryId = $this->categories[strtolower($row['category'])] ?? null;
         $unitId = $this->units[strtolower($row['unit'])] ?? null;
-        $referrenceTerminologyId = $this->referrence_terminologies[strtolower($row['terminology'])] ?? null;
+        $terminologyId = $this->terminology[strtolower($row['terminology'])] ?? null;
 
-        if (!$categoryId || !$unitId || !$referrenceTerminologyId) {
+        if (!$categoryId || !$unitId || !$terminologyId) {
             $this->skipped++;
-            \Log::warning("Skipped row {$this->processed}: Invalid data");
+            \Log::warning("Skipped row categoryID:{$this->processed} : Invalid data");
             return null;
-        }
-   
-        // Search terminology
-        $terminology = TerminologyCategory::where('category_id', $categoryId)->where('referrence_terminology_id', $referrenceTerminologyId)->first();        
+        }  
         
         $this->processed++;
-        return DB::transaction(function() use ($row, $categoryId, $unitId, $terminology){
+        return DB::transaction(function() use ($row, $categoryId, $unitId, $terminologyId){
 
             // Convert formatted string to float (e.g., "88,288.00" → 88288.00)
             $estimatedBudget = $this->parseNumericValue($row['estimated_budget']);
@@ -86,9 +84,9 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
             $newItem = Item::create([
                 'name'        => $row['name'],
                 'estimated_budget' => $estimatedBudget,
-                'category_id' => $categoryId,
-                'unit' => $unitId,
-                'terminology_id' => $terminology->id
+                'item_category_id' => $categoryId,
+                'item_unit_id' => $unitId,
+                'terminologies_category_id' => $terminologyId
             ]);
 
             if(!empty($row['specs1'])){
@@ -114,13 +112,13 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
     public function rules(): array
     {
         return [
-            'category' => 'required|string|max:255',
-            'estimated_budget' => 'required|string|max:50',
-            'unit' => 'required|string|min:0',
-            'name' => 'nullable|string|min:0',
-            'specs1' => 'nullable|string',
-            'specs2' => 'nullable|string',
-            'terminology' => 'nullable|string',
+            // 'category' => 'required|string|max:255',
+            // 'estimated_budget' => 'required|string|max:50',
+            // 'unit' => 'required|string|min:0',
+            // 'name' => 'nullable|string|min:0',
+            // 'specs1' => 'nullable|string',
+            // 'specs2' => 'nullable|string',
+            // 'terminology' => 'nullable|string',
         ];
     }
 
