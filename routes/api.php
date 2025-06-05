@@ -39,7 +39,6 @@ Route::post('authenticate', [AuthController::class, 'login'])->name('login');
 Route::middleware('auth.api')->group(function () {
     // User profile/data routes
     Route::get('user', [AuthController::class, 'index']);
-    Route::get('auth/user', [AuthController::class, 'index']);
     Route::delete('logout', [AuthController::class, 'logout']);
 
     // Routes with specific permissions

@@ -209,7 +209,7 @@ class AuthCookieGuard implements Guard
     public function logout()
     {
         try {
-            // Get the current user
+            Log::info("Test");
             $user = $this->user();
             
             if (!$user) {
@@ -217,43 +217,39 @@ class AuthCookieGuard implements Guard
                 return false;
             }
 
-            // Get the auth cookie
-            $cookie = $this->request->cookies->get(env('COOKIE_NAME'));
-            
-            if ($cookie) {
-                // Process the token from cookie
-                $token = $cookie;
-                
-                // If it's a JSON string, decode it
-                if (is_string($token) && $this->isValidJson($token)) {
-                    $token = json_decode($token, true);
-                }
-                
-                // If it's an array after decoding, convert to string for DB comparison
-                if (is_array($token)) {
-                    $token = json_encode($token);
-                }
-                
-                // Sanitize token
-                $token = is_string($token) ? str_replace(["\r", "\n"], '', $token) : $token;
-                
-                // Delete the access token from database
-                AccessToken::where('token', $token)->delete();
+            // Revoke token from database
+            if ($token = $this->getTokenFromRequest()) {
+                AccessToken::where('token', $this->normalizeToken($token))->delete();
             }
 
-            // Clear the current user
+            // Clear the authenticated user
             $this->user = null;
 
-            // Invalidate the session if you're using session alongside cookies
-            if ($this->request->hasSession()) {
-                $this->request->session()->invalidate();
-            }
-
-            Log::debug('User logged out successfully', ['user_id' => $user->id]);
+            Log::debug('User logged out successfully', ['user_id' => $user->id ?? null]);
             return true;
         } catch (\Exception $e) {
             Log::error('Error during logout: ' . $e->getMessage());
             return false;
         }
+    }
+
+    private function getTokenFromRequest()
+    {
+        return $this->request->cookies->get(env('COOKIE_NAME', 'ERP_API_2025'));
+    }
+
+    private function normalizeToken($token)
+    {
+        if (empty($token)) return null;
+        
+        if ($this->isValidJson($token)) {
+            $token = json_decode($token, true);
+        }
+        
+        if (is_array($token)) {
+            $token = json_encode($token);
+        }
+        
+        return is_string($token) ? str_replace(["\r", "\n"], '', $token) : $token;
     }
 }
