@@ -265,28 +265,35 @@ class ApprovalService
 
             // Send notifications based on status
             if ($status === 'returned') {
+                // Get current area name for the notification
+                $current_area_name = $this->getAreaNameFromAssignedArea($current_user_assigned_area);
+
                 // Notify the application owner about the returned application
                 $this->notificationService->notify($aop_user, [
                     'title' => 'AOP Application Returned',
-                    'description' => "Your AOP application has been returned." . ($remarks ? " Remarks: $remarks" : ""),
+                    'description' => "Your AOP application has been returned from {$current_area_name}." . ($remarks ? " Remarks: $remarks" : ""),
                     'module_path' => "/aop-application/{$aop_application->id}",
                     'aop_application_id' => $aop_application->id,
                     'status' => $status,
                     'remarks' => $remarks,
-                    'user_id' => $aop_user->id
+                    'user_id' => $aop_user->id,
+                    'current_area' => $current_area_name
                 ]);
 
                 // If there's a next area (to be returned to), notify that area's user too
                 $nextArea = $next_area_id ? AssignedArea::find($next_area_id) : null;
                 $nextUser = $nextArea ? User::find($nextArea->user_id) : null;
                 if ($nextUser) {
+                    $next_area_name = $this->getAreaNameFromAssignedArea($nextArea);
                     $this->notificationService->notify($nextUser, [
                         'title' => 'AOP Application Requires Your Action',
-                        'description' => "An AOP application has been returned to you for revision." . ($remarks ? " Remarks: $remarks" : ""),
+                        'description' => "An AOP application has been returned to you for revision from {$current_area_name}." . ($remarks ? " Remarks: $remarks" : ""),
                         'module_path' => "/aop-application/{$aop_application->id}",
                         'aop_application_id' => $aop_application->id,
                         'status' => $status,
-                        'remarks' => $remarks
+                        'remarks' => $remarks,
+                        'current_area' => $current_area_name,
+                        'next_area' => $next_area_name
                     ]);
                 }
             } else {
@@ -294,24 +301,57 @@ class ApprovalService
                 $nextArea = AssignedArea::find($next_area_id);
                 $nextUser = $nextArea ? User::find($nextArea->user_id) : null;
                 if ($nextUser) {
+                    $current_area_name = $this->getAreaNameFromAssignedArea($current_user_assigned_area);
+                    $next_area_name = $this->getAreaNameFromAssignedArea($nextArea);
+
+                    // Determine the stage name for better status clarity
+                    $stage_description = '';
+                    if ($stage === 'planning_unit') {
+                        $stage_description = 'Planning Unit';
+                    } elseif ($stage === 'division_chief') {
+                        $stage_description = 'Division Chief';
+                    } elseif ($stage === 'omcc') {
+                        $stage_description = 'Office of the Medical Center Chief';
+                    } elseif ($stage === 'final') {
+                        $stage_description = 'Final Approval';
+                    }
+
                     $this->notificationService->notify($nextUser, [
                         'title' => 'AOP Application Requires Your Action',
-                        'description' => "An AOP application has been routed to you for review.",
+                        'description' => "An AOP application has been routed to you for review. It was approved by {$current_area_name} and now requires your action.",
                         'module_path' => "/aop-application/{$aop_application->id}",
                         'aop_application_id' => $aop_application->id,
-                        'status' => $status
+                        'status' => $status,
+                        'current_area' => $current_area_name,
+                        'next_area' => $next_area_name,
+                        'stage' => $stage_description
                     ]);
                 }
             }
 
             // Notify the AOP application owner about the status change
+            $current_area_name = $this->getAreaNameFromAssignedArea($current_user_assigned_area);
+            $next_stage_message = '';
+
+            // Add information about next stage
+            if ($nextArea && $nextUser) {
+                $next_area_name = $this->getAreaNameFromAssignedArea($nextArea);
+                $next_stage_message = " It has been forwarded to {$next_area_name} for the next approval step.";
+            } elseif ($stage === 'final' && $status === 'approved') {
+                $next_stage_message = " This is the final approval stage. Your AOP application process is now complete.";
+            }
+
             $this->notificationService->notify($aop_user, [
                 'title' => 'AOP Application Status Update',
-                'description' => "Your AOP application has been {$status}." .
+                'description' => "Your AOP application has been {$status} by {$current_area_name}." .
+                                $next_stage_message .
                                 ($remarks ? " Remarks: {$remarks}" : ""),
                 'module_path' => "/aop-application/{$aop_application->id}",
                 'aop_application_id' => $aop_application->id,
-                'status' => $status
+                'status' => $status,
+                'current_area' => $current_area_name,
+                'next_area' => $next_area_id ? $this->getAreaNameFromAssignedArea($nextArea) : null,
+                'remarks' => $remarks
             ]);
 
             // Log successful creation
@@ -519,5 +559,46 @@ class ApprovalService
                 'details' => $errorDetails,
             ];
         }
+    }
+
+    /**
+     * Helper method to get a descriptive name for an area from an AssignedArea object
+     *
+     * @param AssignedArea $assignedArea The assigned area to get the name for
+     * @return string The descriptive name of the area
+     */
+    private function getAreaNameFromAssignedArea(AssignedArea $assignedArea): string
+    {
+        // Try to get the most specific organizational structure first
+        if ($assignedArea->unit_id) {
+            $unit = $assignedArea->unit()->first();
+            if ($unit && $unit->name) {
+                return $unit->area_id ?? $unit->name;
+            }
+        }
+
+        if ($assignedArea->section_id) {
+            $section = $assignedArea->section()->first();
+            if ($section && $section->name) {
+                return $section->area_id ?? $section->name;
+            }
+        }
+
+        if ($assignedArea->department_id) {
+            $department = $assignedArea->department()->first();
+            if ($department && $department->name) {
+                return $department->area_id ?? $department->name; ;
+            }
+        }
+
+        if ($assignedArea->division_id) {
+            $division = $assignedArea->division()->first();
+            if ($division && $division->name) {
+                return $division->area_id ?? $division->name;
+            }
+        }
+
+        // If no specific area name is found, return the ID as a fallback
+        return "Area ID: {$assignedArea->id}";
     }
 }
