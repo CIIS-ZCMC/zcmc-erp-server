@@ -119,6 +119,13 @@ class PpmpItemController extends Controller
         $year = $request->query('year', now()->year + 1);
         $user = User::find($request->user()->id);
         $sector = $user->assignedArea->findDetails();
+        $user_authorization_pin = $user->authorization_pin;
+
+        if ($user_authorization_pin !== $request->pin) {
+            return response()->json([
+                'message' => 'Invalid Authorization Pin'
+            ], Response::HTTP_BAD_REQUEST);
+        }
 
         $ppmp_application = PpmpApplication::with([
             'ppmpItems' => function ($query) {
