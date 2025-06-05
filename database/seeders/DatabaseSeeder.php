@@ -34,8 +34,6 @@ class DatabaseSeeder extends Seeder
             // PpmpItemSeeder::class,
             PpmpApplicationSeeder::class,
             ApplicationTimelineSeeder::class,
-
-
         ]);
     }
 }
