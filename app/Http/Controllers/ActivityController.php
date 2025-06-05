@@ -6,6 +6,7 @@ use App\Http\Resources\ActivityResource;
 use App\Http\Resources\CommentsPerActivityResource;
 use App\Models\Activity;
 use App\Models\AopApplication;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use User;
@@ -96,11 +97,11 @@ class ActivityController extends Controller
      * Mark the specified activity as reviewed.
      *
      * @param int $activity_id
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      *
      * Last edited by Micah Mustaham
      */
-    public function markAsReviewed($activity_id)
+    public function markAsReviewed(int $activity_id): JsonResponse
     {
         // Find the activity by ID
         $activity = Activity::find($activity_id);
@@ -134,11 +135,11 @@ class ActivityController extends Controller
      * Mark the specified activity as reviewed.
      *
      * @param int $activity_id
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      *
      * Last edited by Micah Mustaham
      */
-    public function markAsUnreviewed($activity_id)
+    public function markAsUnreviewed(int $activity_id): JsonResponse
     {
         // Find the activity by ID
         $activity = Activity::find($activity_id);

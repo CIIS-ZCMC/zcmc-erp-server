@@ -119,6 +119,13 @@ class PpmpItemController extends Controller
         $year = $request->query('year', now()->year + 1);
         $user = User::find($request->user()->id);
         $sector = $user->assignedArea->findDetails();
+        $user_authorization_pin = $user->authorization_pin;
+
+        if ($user_authorization_pin !== $request->pin) {
+            return response()->json([
+                'message' => 'Invalid Authorization Pin'
+            ], Response::HTTP_BAD_REQUEST);
+        }
 
         $ppmp_application = PpmpApplication::with([
             'ppmpItems' => function ($query) {
@@ -154,7 +161,7 @@ class PpmpItemController extends Controller
         } else {
             $draft = false;
 
-            if ($request->is_draft === true) {
+            if ($request->is_draft === 1) {
                 $draft = true;
                 $ppmp_application->update(['status' => 'draft', 'is_draft' => $draft]);
             } else {
@@ -181,7 +188,7 @@ class PpmpItemController extends Controller
 
         foreach ($ppmpItems as $item) {
             $procurement_mode = null;
-            if ($item['procurement_mode'] !== "") {
+            if ($item['procurement_mode'] !== null) {
                 $procurement_mode = ProcurementModes::where('name', $item['procurement_mode']['name'])->first()->id;
 
                 if (!$procurement_mode) {
@@ -189,6 +196,12 @@ class PpmpItemController extends Controller
                         'message' => 'Procurement mode not found.',
                     ], Response::HTTP_NOT_FOUND);
                 }
+            }
+
+            if ($request->is_draft === "0" && $item['procurement_mode'] !== null) {
+                return response()->json([
+                    'message' => 'Procurement mode is required.',
+                ], Response::HTTP_NOT_ACCEPTABLE);
             }
 
             $items = Item::where('code', $item['item_code'])->first();

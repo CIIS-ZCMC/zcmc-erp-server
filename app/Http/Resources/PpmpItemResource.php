@@ -81,7 +81,7 @@ class PpmpItemResource extends JsonResource
                     'unit' => $item->itemUnit->code ?? null,
                     'total_amount' => $first->total_amount ?? 0,
                     'target_by_quarter' => $targetByQuarter ?? null,
-                    'procurement_mode' => $item->procurementMode->name ?? "",
+                    'procurement_mode' => $first->procurementMode->name ?? null,
                     'remarks' => $item->remarks ?? null,
                 ];
             });

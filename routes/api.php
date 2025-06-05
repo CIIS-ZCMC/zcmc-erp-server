@@ -198,6 +198,7 @@ Route::
             Route::apiResource('activity-comments', ActivityCommentController::class);
             Route::get('comments-per-activity', [ActivityController::class, "commentsPerActivity"]);
             Route::post('activities/{id}/mark-reviewed', [ActivityController::class, "markAsReviewed"]);
+            Route::post('activities/{id}/mark-unreviewed', [ActivityController::class, "markAsUnreviewed"]);
 
             // Approver Module
             Route::get('manage-aop-request/{id}', [ApplicationObjectiveController::class, "manageAopRequest"]);
