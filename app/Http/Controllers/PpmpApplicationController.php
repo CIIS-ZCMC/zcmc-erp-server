@@ -205,12 +205,16 @@ class PpmpApplicationController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function receivePpmpApplication(Request $request, PpmpApplication $ppmp_application): JsonResponse
+    public function receivePpmpApplication(Request $request)
     {
         // Validate request
         $request->validate([
-            'authorization_pin' => 'required|string'
+            'authorization_pin' => 'required|string',
+            'ppmp_application_id' => 'required|exists:ppmp_applications,id'
         ]);
+
+        // Get PPMP application
+        $ppmp_application = PpmpApplication::find($request->ppmp_application_id);
 
         // Get current user
         $user = User::find($request->user()->id);
@@ -223,24 +227,24 @@ class PpmpApplicationController extends Controller
         }
 
         // Check if PPMP application can be received (only if not already received)
-        if ($ppmp_application->status === 'received') {
+        if ($ppmp_application->status === 'Received') {
             return response()->json([
                 'message' => 'PPMP Application already received'
             ], Response::HTTP_BAD_REQUEST);
         }
 
         try {
-            // Update PPMP application status to received
-            $ppmp_application->status = 'received';
+            // Update PPMP application status to Received
+            $ppmp_application->status = 'Received';
             $ppmp_application->received_on = now();
             $ppmp_application->save();
 
             // Log the transaction
-            $ppmp_application->logs()->create([
-                'action' => 'PPMP Application Received',
-                'description' => 'PPMP Application #' . $ppmp_application->ppmp_application_uuid . ' was received',
-                'user_id' => $user->id
-            ]);
+//            $ppmp_application->logs()->create([
+//                'action' => 'PPMP Application Received',
+//                'description' => 'PPMP Application #' . $ppmp_application->ppmp_application_uuid . ' was received',
+//                'user_id' => $user->id
+//            ]);
 
             return response()->json([
                 'message' => 'PPMP Application received successfully',

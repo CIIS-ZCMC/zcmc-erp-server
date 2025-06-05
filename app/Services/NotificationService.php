@@ -81,20 +81,34 @@ class NotificationService
                         $emailData['remarks'] = $notif_details['remarks'];
                     }
 
+                    // Add area information to the email data if present
+                    if (isset($notif_details['current_area'])) {
+                        $emailData['current_area'] = $notif_details['current_area'];
+                    }
+
+                    if (isset($notif_details['next_area'])) {
+                        $emailData['next_area'] = $notif_details['next_area'];
+                    }
+
+                    if (isset($notif_details['stage'])) {
+                        $emailData['stage'] = $notif_details['stage'];
+                    }
+
                     // Determine context based on notification purpose
                     $context = 'update_user';
                     if (str_contains($notif_details['title'], 'Requires Your Action')) {
                         $context = 'update_next_approver';
                     } else if ($notif_details['status'] === 'returned') {
                         $context = 'returned_application';
+                    } else if ($notif_details['status'] === 'approved' && isset($notif_details['next_area']) && $notif_details['next_area'] === null) {
+                        $context = 'final_approval';
                     }
 
-                    // Send AOP-specific email notification
-                    // $this->emailService->sendAopStatusUpdate($user->email, $context, $emailData);
-                    $this->emailService->sendNotification('mustahammicah@gmail.com', $emailData);
+                    // Send AOP-specific email notification with context
+                    $this->emailService->sendAopStatusUpdate('micahmustaham@gmail.com', $context, $emailData);
                 } else {
                     // Send general notification email
-                     $this->emailService->sendNotification('micahmustaham@gmail.com', $emailData);
+                    $this->emailService->sendNotification('micahmustaham@gmail.com', $emailData);
                 }
             }
 
@@ -109,7 +123,7 @@ class NotificationService
 
                 // Dispatch job for AOP update
                 EmitNewDataToSocketConnectionJob::dispatch(
-                    RealtimeCommunicationHelper::$AOP_UPDATE_EVENT . '-' . $notif_details['user_id'],
+                    RealtimeCommunicationHelper::$AOP_UPDATE_EVENT . '-' . $user->id,
                     $aopUpdateData
                 );
             }
@@ -191,6 +205,19 @@ class NotificationService
                 // Add AOP application ID if present
                 if (isset($notif_details['aop_application_id'])) {
                     $emailData['aop_application_id'] = $notif_details['aop_application_id'];
+
+                    // Add area information to the email data if present
+                    if (isset($notif_details['current_area'])) {
+                        $emailData['current_area'] = $notif_details['current_area'];
+                    }
+
+                    if (isset($notif_details['next_area'])) {
+                        $emailData['next_area'] = $notif_details['next_area'];
+                    }
+
+                    if (isset($notif_details['stage'])) {
+                        $emailData['stage'] = $notif_details['stage'];
+                    }
 
                     // For bulk notifications, use general update context
                     $context = 'update_all';

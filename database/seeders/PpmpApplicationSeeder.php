@@ -107,8 +107,11 @@ class PpmpApplicationSeeder extends Seeder
                 'planning_officer_id' => $planningOfficer->head_id,
                 'ppmp_application_uuid' => substr(Str::uuid(), 0, 8),
                 'ppmp_total' => 0, // Will calculate after adding items
+                'is_draft' => false,
                 'status' => $data['status'],
-                'remarks' => $data['remarks']
+                'remarks' => $data['remarks'],
+                'year' => now()->year + 1,
+                'received_on' => null
             ]);
 
             // Record to track total budget

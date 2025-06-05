@@ -20,8 +20,11 @@ class PpmpApplication extends Model
         'planning_officer_id',
         'ppmp_application_uuid',
         'ppmp_total',
+        'is_draft',
         'status',
-        'remarks'
+        'remarks',
+        'year',
+        'received_on',
     ];
 
     public $timestamps = true;
