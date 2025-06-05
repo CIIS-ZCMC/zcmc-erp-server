@@ -1270,8 +1270,9 @@ class AopApplicationController extends Controller
         ], Response::HTTP_OK);
     }
 
-    public function edit()
+    public function edit($id)
     {
+
         $aop_application = AopApplication::with([
             'applicationObjectives' => function ($query) {
                 $query->with([
@@ -1298,7 +1299,7 @@ class AopApplicationController extends Controller
                     'otherSuccessIndicator',
                 ]);
             }
-        ])->latest()->first();
+        ])->findOrFail($id);
 
         if (!$aop_application) {
             return response()->json([

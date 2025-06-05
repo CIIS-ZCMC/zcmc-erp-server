@@ -220,7 +220,7 @@ Route::namespace('App\Http\Controllers')->group(function () {
             Route::post('export-aop/{id}', [AopApplicationController::class, "export"]);
             Route::get('preview-aop/{id}', [AopApplicationController::class, "preview"]);
             Route::post('import/items', [ItemImportController::class, "import"]);
-            Route::get('aop-application-edit', [AopApplicationController::class, "edit"]);
+            Route::get('aop-application-edit/{id}', [AopApplicationController::class, "edit"]);
 
             // Deadlines
             Route::get('deadlines', [DeadlineController::class, 'index']);

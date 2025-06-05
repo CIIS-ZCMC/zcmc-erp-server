@@ -44,7 +44,7 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
             ->mapWithKeys(fn($id, $name) => [strtolower($name) => $id]);
 
         $this->refference = ItemReferenceTerminology::pluck('id', 'code')
-            ->mapWithKeys(fn ($id, int|string $name) => [strtolower($name) => $id]);
+            ->mapWithKeys(fn($id, int|string $name) => [strtolower($name) => $id]);
     }
 
     /**
@@ -69,15 +69,15 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
         $unitId = $this->units[strtolower($row['unit'])] ?? null;
         $referrenceId = $this->refference[strtolower($row['terminology'])] ?? null;
 
-        if(!$categoryId){
+        if (!$categoryId) {
             \Log::warning("Failed here category: {$row['category']}");
         }
 
-        if(!$unitId){
+        if (!$unitId) {
             \Log::warning("Failed here unit: {$row['unit']}");
         }
 
-        if(!$referrenceId){
+        if (!$referrenceId) {
             \Log::warning("Failed here referrence: {$row['terminology']}");
         }
 
@@ -87,7 +87,7 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
             return null;
         }
 
-        }
+
 
         $terminology = TerminologyCategory::where('category_id', $categoryId)->where('reference_terminology_id', $referrenceId)->first();
         $terminologyId = $terminology->id;
