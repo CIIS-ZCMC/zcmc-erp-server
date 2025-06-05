@@ -12,7 +12,8 @@ class ShowObjectiveResource extends JsonResource
      *
      * @return array<string, mixed>
      */
-    public function toArray(Request $request): array {
+    public function toArray(Request $request): array
+    {
         $data = [];
 
         // Add essential activity attributes
@@ -78,7 +79,7 @@ class ShowObjectiveResource extends JsonResource
 
                 // Only include designation name
                 if ($responsiblePerson->designation && isset($responsiblePerson->designation->name)) {
-                    $personData['designation'] = $responsiblePerson->designation->name;
+                    $personData['name'] = $responsiblePerson->designation->name;
                 }
 
                 // For areas, include only relevant names and sectors

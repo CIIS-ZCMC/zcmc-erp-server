@@ -26,14 +26,14 @@ class NotificationController extends Controller
         // Filter by seen status if specified
         if ($request->has('seen') && $request->seen !== null) {
             $seen = filter_var($request->seen, FILTER_VALIDATE_BOOLEAN);
-            $query->whereHas('userNotification', function($subquery) use ($seen) {
+            $query->whereHas('userNotification', function ($subquery) use ($seen) {
                 $subquery->where('seen', $seen);
             });
         }
 
         // Order by creation date, the newest first
         $notifications = $query->orderBy('created_at', 'desc')
-                               ->get();
+            ->get();
 
         return response()->json([
             'data' => NotificationResource::collection($notifications)
@@ -58,7 +58,7 @@ class NotificationController extends Controller
 
     public function employeeNotifications(Request $request): JsonResponse
     {
-        $profile_id = $request->input('user_id');
+        $profile_id = $request->profile_id;
         $notifications = Notification::with('userNotification')
             ->whereHas('userNotification', function ($query) use ($profile_id) {
                 $query->where('user_id', $profile_id);
@@ -167,8 +167,8 @@ class NotificationController extends Controller
         $user = Auth::user();
 
         $count = UserNotification::where('user_id', $user->id)
-                                ->where('seen', false)
-                                ->count();
+            ->where('seen', false)
+            ->count();
 
         return response()->json(['unseen_count' => $count]);
     }
