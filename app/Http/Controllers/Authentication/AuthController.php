@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
@@ -21,6 +22,8 @@ class AuthController extends Controller
         $credentials = $request->only('session_id');
 
         $attempt = Auth::attempt($credentials);
+
+        // \Log::info("ATTEMPT: ".json_encode($attempt));
 
         if (!$attempt) {
             return response()->json([
@@ -95,6 +98,7 @@ class AuthController extends Controller
     
     public function logout(Request $request)
     {
+        Log::info("Test Here");
         $user = auth()->user();
 
         if (!$user) {
