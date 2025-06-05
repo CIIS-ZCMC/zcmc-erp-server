@@ -30,10 +30,10 @@ class DatabaseSeeder extends Seeder
             ObjectiveSeeder::class,
             SuccessIndicatorSeeder::class,
             ItemSpecificationSeeder::class,
-            // ItemSeeder::class,
+            ItemSeeder::class,
             // PpmpItemSeeder::class,
-            // PpmpApplicationSeeder::class,
-            // ApplicationTimelineSeeder::class,
+            PpmpApplicationSeeder::class,
+            ApplicationTimelineSeeder::class,
 
 
         ]);

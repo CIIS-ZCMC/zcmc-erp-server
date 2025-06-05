@@ -25,7 +25,7 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
 
     private Collection $categories;
     private Collection $units;
-    private Collection $terminology;
+    private Collection $refference;
     private int $processed = 0;
     private int $skipped = 0;
 
@@ -43,8 +43,8 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
         $this->units = ItemUnit::pluck('id', 'name')
             ->mapWithKeys(fn($id, $name) => [strtolower($name) => $id]);
 
-        $this->terminology = TerminologyCategory::pluck('id', 'name')
-            ->mapWithKeys(fn($id, $name) => [strtolower($name) => $id]);
+        $this->refference = ItemReferenceTerminology::pluck('id', 'code')
+            ->mapWithKeys(fn ($id, int|string $name) => [strtolower($name) => $id]);
     }
 
     /**
@@ -67,13 +67,30 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
 
         $categoryId = $this->categories[strtolower($row['category'])] ?? null;
         $unitId = $this->units[strtolower($row['unit'])] ?? null;
-        $terminologyId = $this->terminology[strtolower($row['terminology'])] ?? null;
+        $referrenceId = $this->refference[strtolower($row['terminology'])] ?? null;
 
-        if (!$categoryId || !$unitId || !$terminologyId) {
+        if(!$categoryId){
+            \Log::warning("Failed here category: {$row['category']}");
+        }
+
+        if(!$unitId){
+            \Log::warning("Failed here unit: {$row['unit']}");
+        }
+
+        if(!$referrenceId){
+            \Log::warning("Failed here referrence: {$row['terminology']}");
+        }
+
+        if (!$categoryId || !$unitId || !$referrenceId) {
             $this->skipped++;
-            \Illuminate\Support\Facades\Log::warning("Skipped row categoryID:{$this->processed} : Invalid data");
+            \Log::warning("Skipped row processed:{$this->processed} category: {$categoryId}  terminology: {$row['terminology']} : Invalid data");
             return null;
         }
+
+        }
+
+        $terminology = TerminologyCategory::where('category_id', $categoryId)->where('reference_terminology_id', $referrenceId)->first();
+        $terminologyId = $terminology->id;
 
         $this->processed++;
         return DB::transaction(function () use ($row, $categoryId, $unitId, $terminologyId) {
