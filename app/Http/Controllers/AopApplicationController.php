@@ -333,24 +333,45 @@ class AopApplicationController extends Controller
             $ppmpApplication = $aopApplication->ppmpApplication;
             $ppmpApplication->ppmpItems()->delete();
 
+            $mergedItems = [];
+
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     foreach ($activity->resources as $resource) {
-                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+                        if (
+                            $resource->purchase_type_id === $procurablePurchaseTypeId &&
+                            $resource->item
+                        ) {
+                            $itemId = $resource->item_id;
                             $estimatedBudget = $resource->item->estimated_budget;
-                            $totalAmount = $resource->quantity * $estimatedBudget;
+                            $quantity = $resource->quantity;
+                            $totalAmount = $quantity * $estimatedBudget;
+                            $expenseClass = $resource->expense_class;
 
-                            $ppmpApplication->ppmpItems()->create([
-                                'item_id' => $resource->item_id,
-                                'total_quantity' => $resource->quantity,
-                                'estimated_budget' => $estimatedBudget,
-                                'total_amount' => $totalAmount,
-                                'expense_class' => $resource->expense_class,
-                                'remarks' => null,
-                            ]);
+                            // Merge by item ID and expense class if needed
+                            $key = $itemId . '-' . $expenseClass;
+
+                            if (isset($mergedItems[$key])) {
+                                $mergedItems[$key]['total_quantity'] += $quantity;
+                                $mergedItems[$key]['total_amount'] += $totalAmount;
+                            } else {
+                                $mergedItems[$key] = [
+                                    'item_id' => $itemId,
+                                    'total_quantity' => $quantity,
+                                    'estimated_budget' => $estimatedBudget,
+                                    'total_amount' => $totalAmount,
+                                    'expense_class' => $expenseClass,
+                                    'remarks' => null,
+                                ];
+                            }
                         }
                     }
                 }
+            }
+
+            // Insert merged items
+            foreach ($mergedItems as $itemData) {
+                $ppmpApplication->ppmpItems()->create($itemData);
             }
 
             Log::create([
@@ -405,6 +426,7 @@ class AopApplicationController extends Controller
         DB::beginTransaction();
 
         try {
+
             $curr_user = User::find($request->user()->id);
             $curr_user_authorization_pin = $curr_user->authorization_pin;
 
@@ -413,6 +435,7 @@ class AopApplicationController extends Controller
                     'message' => 'Invalid Authorization Pin'
                 ], Response::HTTP_BAD_REQUEST);
             }
+
             $user_id = $request->user()->id;
             $assignedArea = AssignedArea::where('user_id', $user_id)->first();
             $area = $assignedArea->findDetails();
@@ -597,6 +620,8 @@ class AopApplicationController extends Controller
             ]);
 
 
+            $items = [];
+
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     foreach ($activity->resources as $resource) {
@@ -604,23 +629,36 @@ class AopApplicationController extends Controller
                             $resource->purchase_type_id === $procurablePurchaseTypeId &&
                             $resource->item // Check if item exists
                         ) {
+                            $itemId = $resource->item_id;
                             $estimatedBudget = $resource->item->estimated_budget;
-                            $totalAmount = $resource->quantity * $estimatedBudget;
+                            $quantity = $resource->quantity;
+                            $totalAmount = $quantity * $estimatedBudget;
+                            $expenseClass = $resource->expense_class;
 
-                            PpmpItem::create([
-                                'ppmp_application_id' => $ppmpApplication->id,
-                                'item_id' => $resource->item_id,
-                                'total_quantity' => $resource->quantity,
-                                'estimated_budget' => $estimatedBudget,
-                                'expense_class' => $resource->expense_class, //by ricah
-                                'total_amount' => $totalAmount,
-                                'remarks' => null,
-                            ]);
+                            // If the item already exists, add to its quantity and amount
+                            if (isset($items[$itemId])) {
+                                $items[$itemId]['total_quantity'] += $quantity;
+                                $items[$itemId]['total_amount'] += $totalAmount;
+                            } else {
+                                $items[$itemId] = [
+                                    'ppmp_application_id' => $ppmpApplication->id,
+                                    'item_id' => $itemId,
+                                    'total_quantity' => $quantity,
+                                    'estimated_budget' => $estimatedBudget,
+                                    'expense_class' => $expenseClass,
+                                    'total_amount' => $totalAmount,
+                                    'remarks' => null,
+                                ];
+                            }
                         }
                     }
                 }
             }
 
+            // Now insert the merged items
+            foreach ($items as $itemData) {
+                PpmpItem::create($itemData);
+            }
             Log::create([
                 'aop_application_id' => null,
                 'ppmp_application_id' => $ppmpApplication->id,
