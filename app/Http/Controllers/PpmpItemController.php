@@ -191,7 +191,7 @@ class PpmpItemController extends Controller
                 }
             }
 
-            if ($request->is_draft === 0 && $item['procurement_mode'] !== null) {
+            if ($request->is_draft === "0" && $item['procurement_mode'] !== null) {
                 return response()->json([
                     'message' => 'Procurement mode is required.',
                 ], Response::HTTP_NOT_ACCEPTABLE);
