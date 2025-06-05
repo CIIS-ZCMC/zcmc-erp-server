@@ -46,13 +46,12 @@ Route::middleware('auth.api')->group(function () {
     });
 });
 
-Route::
-        namespace('App\Http\Controllers')->group(function () {
+Route::namespace('App\Http\Controllers')->group(function () {
 
-            Route::namespace('Libraries')->group(function () {
-                // Terminologies routes
-                Route::get('terminologies', [TerminologyController::class, 'index']);
-                Route::post('terminologies', [TerminologyController::class, 'store']);
+    Route::namespace('Libraries')->group(function () {
+        // Terminologies routes
+        Route::get('terminologies', [TerminologyController::class, 'index']);
+        Route::post('terminologies', [TerminologyController::class, 'store']);
 
                 // Item routes
                 Route::get('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'index']);
@@ -62,12 +61,12 @@ Route::
                 Route::put('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'update']);
                 Route::delete('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'destroy']);
 
-                // Item routes
-                Route::post('items/imports', [ItemController::class, "import"]);
-                Route::get('items', [ItemController::class, "index"]);
-                Route::post('items', [ItemController::class, "store"]);
-                Route::put('items', [ItemController::class, "update"]);
-                Route::delete('items', [ItemController::class, "destroy"]);
+        // Item routes
+        Route::post('items/imports', [ItemController::class, "import"]);
+        Route::get('items', [ItemController::class, "index"]);
+        Route::post('items', [ItemController::class, "store"]);
+        Route::put('items', [ItemController::class, "update"]);
+        Route::delete('items', [ItemController::class, "destroy"]);
 
                 // Item Request routes
                 Route::post('item-requests/{id}/update-status', [ItemRequestController::class, 'approve']);
