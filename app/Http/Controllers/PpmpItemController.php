@@ -124,9 +124,16 @@ class PpmpItemController extends Controller
             'ppmpItems' => function ($query) {
                 $query->with([
                     'item',
+                    'item.itemUnit',
+                    'item.itemCategory',
+                    'item.itemClassification',
+                    'item.itemSpecifications',
+                    'item.terminologyCategory',
                     'procurementMode',
                     'itemRequest',
-                    'activities'
+                    'activities',
+                    'comments',
+                    'ppmpSchedule',
                 ]);
             },
             'aopApplication' => function ($query) use ($sector) {

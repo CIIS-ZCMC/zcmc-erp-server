@@ -72,7 +72,7 @@ class PpmpApplicationResource extends JsonResource
                         ];
                     }) ?? null,
                     'expense_class' => 'MOOE',
-                    'item' => new ItemResource($item) ?? null,
+                    'item' => $item ?? null,
                     'classification' => $item->itemClassification->name ?? "",
                     'estimated_budget' => $item->estimated_budget ?? "",
                     'category' => $item->itemCategory->name ?? null,
