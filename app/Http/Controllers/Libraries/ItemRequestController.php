@@ -373,6 +373,100 @@ class ItemRequestController extends Controller
         return $this->pagination($request, $start); 
     }
 
+    public function myItemRequest(Request $request): AnonymousResourceCollection|JsonResponse
+    {
+        $start = microtime(true);
+        $item_unit_id = $request->query(key: 'id');
+        $search = $request->search;
+        $mode = $request->mode;
+
+        if($item_unit_id){
+            return ItemRequestResource::collection(ItemRequest::find($item_unit_id))
+                ->additional([
+                    'meta' => [
+                        'methods' => $this->methods,
+                        'time_ms' => round((microtime(true) - $start) * 1000),
+                    ],
+                    'message' => 'Successfully retrieve item request.'
+                ]);
+        }
+
+        if($mode && $mode === 'selection'){
+            return ItemRequestResource::collection(ItemRequest::where('requested_by', auth()->user()->id)->get())
+                ->additional([
+                    'meta' => [
+                        'methods' => $this->methods,
+                        'time_ms' => round((microtime(true) - $start) * 1000),
+                    ],
+                    'message' => 'Successfully retrieve all records.'
+                ]);
+        }
+        
+        if($search){
+            $validated = $request->validate([
+                'search' => 'required|string|min:2|max:100',
+                'per_page' => 'sometimes|integer|min:1|max:100',
+                'page' => 'sometimes|integer|min:1|max:100'
+            ]);
+
+            $searchTerm = '%'.trim($validated['search']).'%';
+            $perPage = $validated['per_page'] ?? 15;
+            $page = $validated['page'] ?? 1;
+
+            $results = ItemRequest::where('requested_by', auth()->user()->id)
+                ->where('name', 'like', "%{$searchTerm}%")
+                ->orWhere('code', 'like', "%{$searchTerm}%")
+                ->orWhere('variant', 'like', "%{$searchTerm}%")
+                ->paginate(
+                    perPage: $perPage,
+                    page: $page
+                );
+
+            return ItemRequestResource::collection($results)
+                ->additional([
+                    'meta' => [
+                        'methods' => $this->methods,
+                        'search' => [
+                            'term' => $validated['search'],
+                            'time_ms' => round((microtime(true) - $start) * 1000), // in milliseconds
+                        ],
+                        'pagination' => [
+                            'total' => $results->total(),
+                            'per_page' => $results->perPage(),
+                            'current_page' => $results->currentPage(),
+                            'last_page' => $results->lastPage(),
+                        ]
+                    ],
+                    'message' => 'Search completed successfully'
+                ]);
+        }
+
+        $validated = $request->validate([
+            'per_page' => 'sometimes|integer|min:1|max:100',
+            'page' => 'sometimes|integer|min:1|max:100'
+        ]);
+
+        $perPage = $validated['per_page'] ?? 15;
+        $page = $validated['page'] ?? 1;
+        
+        $item_requests = ItemRequest::where('requested_by', auth()->user()->id)->paginate($perPage, ['*'], 'page', $page);
+
+        return ItemRequestResource::collection($item_requests)
+            ->additional([
+                'meta' => [
+                    'methods' => $this->methods,
+                    'time_ms' => round((microtime(true) - $start) * 1000),
+                    'pagination' => [
+                        'total' => $item_requests->total(),
+                        'per_page' => $item_requests->perPage(),
+                        'current_page' => $item_requests->currentPage(),
+                        'last_page' => $item_requests->lastPage(),
+                    ]
+                ],
+                'message' => 'Successfully retrieve all records.'
+            ]);
+    }
+
     public function store(ItemRequestRequest $request): AnonymousResourceCollection|ItemRequestResource|JsonResponse
     {
         $user = null;
