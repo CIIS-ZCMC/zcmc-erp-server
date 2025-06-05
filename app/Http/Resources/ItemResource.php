@@ -40,6 +40,7 @@ class ItemResource extends JsonResource
             "item_category" => $this->item_category_id == null ? null : new ItemCategoryResource($this->itemCategory),
             "item_classification" => $this->item_classification_id !== null ? null : $this->itemClassification,
             "item_specifications" => ItemSpecificationChildResource::collection($this->itemSpecifications),
+            "terminology" => $this->terminology,
             "created_at" => $this->created_at,
             "updated_at" => $this->updated_at
         ];
