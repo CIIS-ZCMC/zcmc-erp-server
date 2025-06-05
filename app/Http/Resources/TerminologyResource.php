@@ -16,6 +16,7 @@ class TerminologyResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'name' => $this->name,
             'category_id' => $this->category_id,
             'reference_terminology_id' => $this->reference_terminology_id,
             'referrence_terminology' => $this->terminology,

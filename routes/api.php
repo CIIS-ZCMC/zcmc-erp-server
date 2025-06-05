@@ -18,6 +18,7 @@ use App\Http\Controllers\Libraries\ItemClassificationController;
 use App\Http\Controllers\Libraries\ItemController;
 use App\Http\Controllers\Libraries\ItemReferenceTerminologyController;
 use App\Http\Controllers\Libraries\ItemRequestController;
+use App\Http\Controllers\Libraries\ItemRequestController;
 use App\Http\Controllers\Libraries\ItemUnitController;
 use App\Http\Controllers\LogDescriptionController;
 use App\Http\Controllers\NotificationController;
@@ -47,13 +48,13 @@ Route::middleware('auth.api')->group(function () {
     });
 });
 
+Route::
+        namespace('App\Http\Controllers')->group(function () {
 
-
-Route::namespace('App\Http\Controllers')->group(function () {
-
-    Route::namespace('Libraries')->group(function () {
-        // Terminologies routes
-        Route::get('terminologies', [TerminologyController::class, 'index']);
+            Route::namespace('Libraries')->group(function () {
+                // Terminologies routes
+                Route::get('terminologies', [TerminologyController::class, 'index']);
+                Route::post('terminologies', [TerminologyController::class, 'store']);
 
         // Item routes
         Route::get('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'index']);
@@ -63,11 +64,12 @@ Route::namespace('App\Http\Controllers')->group(function () {
         Route::put('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'update']);
         Route::delete('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'destroy']);
 
-        // Item routes
-        Route::get('items', [ItemController::class, "index"]);
-        Route::post('items', [ItemController::class, "store"]);
-        Route::put('items', [ItemController::class, "update"]);
-        Route::delete('items', [ItemController::class, "destroy"]);
+                // Item routes
+                Route::post('items/imports', [ItemController::class, "import"]);
+                Route::get('items', [ItemController::class, "index"]);
+                Route::post('items', [ItemController::class, "store"]);
+                Route::put('items', [ItemController::class, "update"]);
+                Route::delete('items', [ItemController::class, "destroy"]);
 
         // Item Request routes
         Route::post('item-requests/{id}/update-status', [ItemRequestController::class, 'approve']);
