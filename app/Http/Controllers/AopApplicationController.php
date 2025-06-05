@@ -1228,13 +1228,13 @@ class AopApplicationController extends Controller
     /**
      * This function is used to get the remarks per AOP application or request
      *
-     * @param Request $request
-     *
+     * @param int $id
      * @return JsonResponse
      *
-     * Last edited by: Micah Mustaham, Updated by: Cascade
+     * Last edited by: Micah Mustaham
+     * Last edited on: 2023-07-31
      */
-    public function aopRemarks($id): JsonResponse
+    public function aopRemarks(int $id): JsonResponse
     {
         if (!$id) {
             return response()->json([
