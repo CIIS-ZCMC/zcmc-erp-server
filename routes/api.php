@@ -38,7 +38,6 @@ Route::post('authenticate', [AuthController::class, 'login'])->name('login');
 Route::middleware('auth.api')->group(function () {
     // User profile/data routes
     Route::get('user', [AuthController::class, 'index']);
-    Route::get('auth/user', [AuthController::class, 'index']);
     Route::delete('logout', [AuthController::class, 'logout']);
 
     // Routes with specific permissions
@@ -64,6 +63,7 @@ Route::
                 Route::delete('item-reference-terminologies', [ItemReferenceTerminologyController::class, 'destroy']);
 
                 // Item routes
+                Route::post('items/imports', [ItemController::class, "import"]);
                 Route::get('items', [ItemController::class, "index"]);
                 Route::post('items', [ItemController::class, "store"]);
                 Route::put('items', [ItemController::class, "update"]);

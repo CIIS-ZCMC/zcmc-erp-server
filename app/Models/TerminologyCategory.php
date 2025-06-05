@@ -30,6 +30,6 @@ class TerminologyCategory extends Model
 
     public function terminology()
     {
-        return $this->belongsTo(ItemReferenceTerminology::class);
+        return $this->belongsTo(ItemReferenceTerminology::class, 'reference_terminology_id');
     }
 }
