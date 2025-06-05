@@ -23,7 +23,7 @@ return new class extends Migration {
             $table->float('total_quantity')->default(0);
             $table->float('estimated_budget')->default(0);
             $table->float('total_amount')->default(0);
-            $table->string('expense_class');
+            $table->string('expense_class')->nullable();
             $table->text('remarks')->nullable();
             $table->softDeletes();
             $table->timestamps();

@@ -24,7 +24,7 @@ class TerminologyCategorySeeder extends Seeder
             ['category' => 'Software and Subscription', 'code' => 'Enterprise'],
             ['category' => 'Office Supply', 'code' => 'Regular'],
             ['category' => 'Office Supply', 'code' => 'High-end'],
-            ['category' => 'Office Supply', 'code' => 'Mid-range'],
+            ['category' => 'Office Supply', 'code' => 'Mid-range']
         ];
 
         $ict = [];
