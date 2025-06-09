@@ -286,7 +286,7 @@ class ApprovalService
                 // Notify the application owner about the returned application
                 $this->notificationService->notify($aop_user, [
                     'title' => 'AOP Application Returned',
-                    'description' => "Your AOP application has been returned from {$current_area_name}." . ($remarks ? " Remarks: $remarks" : ""),
+                    'description' => "Your AOP application has been returned from {$current_area_name} by {$current_user->name}." . ($remarks ? " Remarks: $remarks" : ""),
                     'module_path' => "/aop",
                     'aop_application_id' => $aop_application->id,
                     'status' => $status,
@@ -302,7 +302,7 @@ class ApprovalService
                     $next_area_name = $this->getAreaNameFromAssignedArea($nextArea);
                     $this->notificationService->notify($nextUser, [
                         'title' => 'AOP Application Requires Your Action',
-                        'description' => "An AOP application has been returned to you for revision from {$current_area_name}." . ($remarks ? " Remarks: $remarks" : ""),
+                        'description' => "An AOP application has been returned to you for revision from {$current_area_name} by {$current_user->name}." . ($remarks ? " Remarks: $remarks" : ""),
                         'module_path' => "/aop-approval/objectives/{$aop_application->id}",
                         'aop_application_id' => $aop_application->id,
                         'status' => $status,
@@ -312,6 +312,27 @@ class ApprovalService
                     ]);
                 }
             } else {
+                // Check if this is the final approval by OMCC Chief
+                $is_final_approval = ($stage === 'final' && $status === 'approved' &&
+                    $current_user_assigned_area->division_id == 1 &&
+                    $current_user_assigned_area->user_id == Division::find(1)->head_id);
+
+                if ($is_final_approval) {
+                    // Special notification for final approval
+                    $this->notificationService->notify($aop_user, [
+                        'title' => 'AOP Application FULLY APPROVED',
+                        'description' => "Congratulations! Your AOP application has received final approval from the Medical Center Chief, {$current_user->name}. Your application process is now complete.",
+                        'module_path' => "/aop",
+                        'aop_application_id' => $aop_application->id,
+                        'status' => 'approved',
+                        'current_area' => $this->getAreaNameFromAssignedArea($current_user_assigned_area),
+                        'is_final' => true
+                    ]);
+
+                    // For final approval, we still create the timeline entry but don't need other notifications
+                    return $timeline;
+                }
+
                 // Send notifications to the next area user if there is a next area
                 $nextArea = AssignedArea::find($next_area_id);
                 $nextUser = $nextArea ? User::find($nextArea->user_id) : null;
@@ -333,7 +354,7 @@ class ApprovalService
 
                     $this->notificationService->notify($nextUser, [
                         'title' => 'AOP Application Requires Your Action',
-                        'description' => "An AOP application has been routed to you for review. It was approved by {$current_area_name} and now requires your action.",
+                        'description' => "An AOP application has been routed to you for review. It was approved by {$current_user->name} from {$current_area_name} and now requires your action.",
                         'module_path' => "/aop-approval/objectives/{$aop_application->id}",
                         'aop_application_id' => $aop_application->id,
                         'status' => $status,
@@ -344,31 +365,33 @@ class ApprovalService
                 }
             }
 
-            // Notify the AOP application owner about the status change
-            $current_area_name = $this->getAreaNameFromAssignedArea($current_user_assigned_area);
-            $next_stage_message = '';
+            // Only send general status update notification if not the final approval (as we've already sent a specialized one)
+            if (!($stage === 'final' && $status === 'approved')) {
+                // Notify the AOP application owner about the status change
+                $current_area_name = $this->getAreaNameFromAssignedArea($current_user_assigned_area);
+                $next_stage_message = '';
 
-            // Add information about next stage
-            if ($nextArea && $nextUser) {
-                $next_area_name = $this->getAreaNameFromAssignedArea($nextArea);
-                $next_stage_message = " It has been forwarded to {$next_area_name} for the next approval step.";
-            } elseif ($stage === 'final' && $status === 'approved') {
-                $next_stage_message = " This is the final approval stage. Your AOP application process is now complete.";
+                // Add information about next stage
+                if ($nextArea && $nextUser) {
+                    $next_area_name = $this->getAreaNameFromAssignedArea($nextArea);
+                    $next_stage_message = " It has been forwarded to {$next_area_name} for the next approval step.";
+                } elseif ($stage === 'final' && $status === 'approved') {
+                    $next_stage_message = " This is the final approval stage. Your AOP application process is now complete.";
+                }
+
+                $this->notificationService->notify($aop_user, [
+                    'title' => 'AOP Application Status Update',
+                    'description' => "Your AOP application has been {$status} by {$current_user->name} from {$current_area_name}." .
+                                    $next_stage_message .
+                                    ($remarks ? " Remarks: {$remarks}" : ""),
+                    'module_path' => "/aop",
+                    'aop_application_id' => $aop_application->id,
+                    'status' => $status,
+                    'current_area' => $current_area_name,
+                    'next_area' => $next_area_id ? $this->getAreaNameFromAssignedArea($nextArea) : null,
+                    'remarks' => $remarks
+                ]);
             }
-
-            $this->notificationService->notify($aop_user, [
-                'title' => 'AOP Application Status Update',
-                'description' => "Your AOP application has been {$status} by {$current_area_name}." .
-                                $next_stage_message .
-                                ($remarks ? " Remarks: {$remarks}" : ""),
-                'module_path' => "/aop",
-                'aop_application_id' => $aop_application->id,
-                'status' => $status,
-                'current_area' => $current_area_name,
-                'next_area' => $next_area_id ? $this->getAreaNameFromAssignedArea($nextArea) : null,
-                'remarks' => $remarks
-            ]);
-
             // Log successful creation
             Log::info('Application timeline created successfully', [
                 'timeline_id' => $timeline->id,
@@ -512,7 +535,7 @@ class ApprovalService
                     if ($nextUser) {
                         $this->notificationService->notify($nextUser, [
                             'title' => 'New AOP Application Submitted',
-                            'description' => "A new AOP application has been submitted and requires your review.",
+                            'description' => "A new AOP application has been submitted by {$current_user->name} from {$this->getAreaNameFromAssignedArea($current_user_assigned_area)} and requires your review.",
                             'module_path' => "/aop-application/{$aop_application->id}",
                             'aop_application_id' => $aop_application->id,
                             'status' => 'pending'
