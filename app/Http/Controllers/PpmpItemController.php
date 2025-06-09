@@ -198,10 +198,16 @@ class PpmpItemController extends Controller
                 }
             }
 
-            if ($request->is_draft === "0" && $item['procurement_mode'] !== null) {
+            if ($request->is_draft === "0" && $item['procurement_mode'] === null) {
                 return response()->json([
                     'message' => 'Procurement mode is required.',
                 ], Response::HTTP_NOT_ACCEPTABLE);
+            }
+
+            if ($request->is_draft === "0") {
+                $ppmp_application->update(['status' => 'draft', 'is_draft' => false]);
+            } elseif ($request->is_draft === "1") {
+                $ppmp_application->update(['status' => 'draft', 'is_draft' => true]);
             }
 
             $items = Item::where('code', $item['item_code'])->first();
@@ -315,9 +321,6 @@ class PpmpItemController extends Controller
             $ppmpItem->update(['total_quantity' => $total_quantity]);
         }
 
-        if ($request->is_draft === true) {
-            $ppmp_application->update(['status' => 'draft', 'is_draft' => false]);
-        }
 
         $planning_officer = User::find($ppmp_application->planning_officer_id);
         $status = $ppmp_application->status;
