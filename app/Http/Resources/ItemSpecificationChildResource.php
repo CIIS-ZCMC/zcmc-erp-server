@@ -15,15 +15,15 @@ class ItemSpecificationChildResource extends JsonResource
     public function toArray(Request $request): array
     {
         $label = $this->description;
-        
-        if($this->itemSpecification){
-            $label = $this->itemSpecification->description.":".$label;
+
+        if ($this->itemSpecification) {
+            $label = $this->itemSpecification->description . ":" . $label;
         }
 
         return [
             'id' => $this->id,
             'description' => $this->description,
-            'parent_specification_id' => $this->itemSpecification->id,
+            'parent_specification_id' => $this->itemSpecification->id ?? $this->item_specification_id,
             'meta' => [
                 "created_at" => $this->created_at,
                 "updated_at" => $this->updated_at
