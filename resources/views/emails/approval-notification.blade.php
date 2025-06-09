@@ -133,19 +133,27 @@
                 ];
 
                 $status = $data['status'] ?? 'updated';
-                $bgColor = $statusColors[$status] ?? $statusColors['default'];
+                // Special styling for fully approved applications
+                $isFinalApproval = isset($data['is_final']) && $data['is_final'] === true;
+
+                if ($isFinalApproval) {
+                    $status = 'completed';
+                    $bgColor = '#009688';  // Use the completed color
+                } else {
+                    $bgColor = $statusColors[$status] ?? $statusColors['default'];
+                }
                 $textColor = in_array($status, ['pending', 'approved']) ? '#000' : '#fff';
             @endphp
 
             <div>
                 <span class="status-badge" style="display: inline-block; padding: 6px 12px; border-radius: 20px; font-weight: 600; font-size: 14px; letter-spacing: 0.5px; background-color: {{ $bgColor }}; color: {{ $textColor }};">
-                    Status: {{ ucfirst($status) }}
+                    Status: {{ $isFinalApproval ? 'FULLY APPROVED' : ucfirst($status) }}
                 </span>
             </div>
         </div>
 
         {{-- Application Flow Information --}}
-        @if(isset($data['current_area']) || isset($data['next_area']) || isset($data['stage']))
+        @if(isset($data['current_area']) || isset($data['next_area']) || isset($data['stage']) || isset($data['is_final']))
         <div style="margin: 20px auto; max-width: 600px; padding: 20px; border: 1px solid #e0e0e0; border-radius: 8px; background-color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
             <h3 style="margin-top: 0; color: #0056b3; font-size: 18px; border-bottom: 2px solid #eaeaea; padding-bottom: 10px; margin-bottom: 20px; text-align: center;">Approval Flow Information</h3>
 
@@ -162,7 +170,9 @@
                     </td>
                     <td style="width: 33%; padding: 5px 10px; text-align: left; vertical-align: top;">
                         <p style="color: #666; font-size: 16px; margin: 0 0 5px 0;">Next Area</p>
-                        @if(isset($data['next_area']) && $data['next_area'] !== null)
+                        @if(isset($data['is_final']) && $data['is_final'] === true)
+                        <div style="color: #333; font-weight: 500; font-size: 16px; padding: 8px; background-color: #E8F5E9; border-radius: 4px;">Completed</div>
+                        @elseif(isset($data['next_area']) && $data['next_area'] !== null)
                         <div style="color: #333; font-weight: 500; font-size: 16px; padding: 8px; background-color: #f5f5f5; border-radius: 4px;">{{ $data['next_area'] }}</div>
                         @else
                         <div style="color: #333; font-weight: 500; font-size: 16px; padding: 8px; background-color: #f5f5f5; border-radius: 4px;">-</div>
@@ -170,7 +180,9 @@
                     </td>
                     <td style="width: 33%; padding: 5px 10px; text-align: left; vertical-align: top;">
                         <p style="color: #666; font-size: 16px; margin: 0 0 5px 0;">Current Stage</p>
-                        @if(isset($data['stage']))
+                        @if(isset($data['is_final']) && $data['is_final'] === true)
+                        <div style="color: #333; font-weight: 500; font-size: 16px; padding: 8px; background-color: #E8F5E9; border-radius: 4px;">Final Approval</div>
+                        @elseif(isset($data['stage']))
                         <div style="color: #333; font-weight: 500; font-size: 16px; padding: 8px; background-color: #f5f5f5; border-radius: 4px;">{{ $data['stage'] }}</div>
                         @else
                         <div style="color: #333; font-weight: 500; font-size: 16px; padding: 8px; background-color: #f5f5f5; border-radius: 4px;">-</div>
@@ -191,7 +203,17 @@
 
                 // Determine approval flow stage for visualization
                 $stage = 'init';
-                if (isset($data['context'])) {
+
+                // If it's fully approved, set all stages as active
+                if (isset($data['is_final']) && $data['is_final'] === true) {
+                    $activeStage = [
+                        'planning' => true,
+                        'division' => true,
+                        'omcc' => true,
+                        'final' => true
+                    ];
+                    $stage = 'final';
+                } elseif (isset($data['context'])) {
                     if ($data['context'] === 'final_approval') {
                         $stage = 'final';
                     } elseif (isset($data['current_area']) && stripos($data['current_area'], 'planning') !== false) {
@@ -251,10 +273,10 @@
 
         {{-- Module Link (if available) --}}
         @if(isset($data['module_path']) && !empty($data['module_path']))
-        <div style="margin: 20px 0; text-align: center;">
-            <p style="margin-bottom: 15px; color: #555;">You can view this item in the system by clicking the button below:</p>
-            <a href="{{ config('app.url') . '/' . $data['module_path'] }}" class="button" style="display: inline-block; background-color: #0056b3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: 600; letter-spacing: 0.5px; transition: background-color 0.2s;">
-                View in System
+        <div style="margin: 25px auto; text-align: center;">
+            <a href="{{ env('APP_URL') . $data['module_path'] }}"
+               style="display: inline-block; padding: 10px 20px; background-color: {{ isset($data['is_final']) && $data['is_final'] === true ? '#009688' : '#0056b3' }}; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+               {{ isset($data['is_final']) && $data['is_final'] === true ? 'View Completed Application' : 'View Application' }}
             </a>
         </div>
         @endif

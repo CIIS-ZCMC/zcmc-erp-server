@@ -77,14 +77,33 @@ class NotificationController extends Controller
 
     public function markAsSeen(string $id): JsonResponse
     {
-        $notifications = Notification::with('userNotification')->whereHas('userNotification', function ($query) {
-            $query->where('seen', false);
-        })->where('id', $id)->first();
+        $notification = Notification::with('userNotification')->where('id', $id)->first();
 
-        $notifications->userNotification->seen = true;
-        $notifications->userNotification->save();
+        if (!$notification) {
+            return response()->json([
+                'message' => 'Notification not found',
+            ], Response::HTTP_NOT_FOUND);
+        }
 
-        $data = NotificationResource::make($notifications);
+        // Since userNotification is a HasMany relationship, we need to update each one
+        // Or if we want to update for a specific user, we should filter by user_id
+        $userNotifications = $notification->userNotification()->where('seen', false)->get();
+
+        if ($userNotifications->isEmpty()) {
+            return response()->json([
+                'message' => 'Notification already marked as seen',
+            ]);
+        }
+
+        foreach ($userNotifications as $userNotification) {
+            $userNotification->seen = true;
+            $userNotification->save();
+        }
+
+        // Refresh the model to get updated relations
+        $notification->refresh();
+
+        $data = NotificationResource::make($notification);
 
         return response()->json([
             'message' => 'Notification marked as seen successfully',
@@ -95,12 +114,10 @@ class NotificationController extends Controller
     public function markAllAsSeen($profile_id): JsonResponse
     {
         // Fetch all notifications with unseen user notifications for the given profile
-        $notifications = Notification::with('userNotification')
-            ->whereHas('userNotification', function ($query) use ($profile_id) {
-                $query->where('seen', false)
-                    ->where('user_id', $profile_id);
-            })
-            ->get();
+        $notifications = Notification::whereHas('userNotification', function ($query) use ($profile_id) {
+            $query->where('seen', false)
+                ->where('user_id', $profile_id);
+        })->get();
 
         // Check if there are any notifications to update
         if ($notifications->isEmpty()) {
@@ -109,12 +126,15 @@ class NotificationController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Collect IDs of related userNotification records
-        $userNotificationIds = $notifications->pluck('userNotification.id')->filter();
-
-        // Bulk update userNotifications to mark them as seen
-        UserNotification::whereIn('id', $userNotificationIds)
+        // Update all relevant user notifications
+        UserNotification::where('user_id', $profile_id)
+            ->where('seen', false)
             ->update(['seen' => true]);
+
+        // Reload the notifications with updated userNotification data
+        $notifications = Notification::with(['userNotification' => function ($query) use ($profile_id) {
+            $query->where('user_id', $profile_id);
+        }])->whereIn('id', $notifications->pluck('id'))->get();
 
         // Transform the updated notifications
         $data = NotificationResource::collection($notifications);
