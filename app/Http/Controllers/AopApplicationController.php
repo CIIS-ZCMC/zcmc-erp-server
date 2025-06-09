@@ -939,7 +939,13 @@ class AopApplicationController extends Controller
     public function export($id)
     {
 
-        $user_id = 2;
+        $aopApplication = AopApplication::find($id);
+
+        if (!$aopApplication) {
+            return response()->json(['message' => 'AOP Application not found'], 404);
+        }
+
+        $user_id = $aopApplication->user_id;
         $assignedArea = AssignedArea::where('user_id', $user_id)->first();
         $area = $assignedArea->findDetails();
         $userArea = $area['details']['name'];
@@ -1268,13 +1274,13 @@ class AopApplicationController extends Controller
     /**
      * This function is used to get the remarks per AOP application or request
      *
-     * @param int $id
+     * @param Request $request
+     *
      * @return JsonResponse
      *
-     * Last edited by: Micah Mustaham
-     * Last edited on: 2023-07-31
+     * Last edited by: Micah Mustaham, Updated by: Cascade
      */
-    public function aopRemarks(int $id): JsonResponse
+    public function aopRemarks($id): JsonResponse
     {
         if (!$id) {
             return response()->json([
