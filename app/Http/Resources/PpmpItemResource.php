@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Models\Resource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -61,14 +62,24 @@ class PpmpItemResource extends JsonResource
                         })
                     );
 
+                $total_quantity = 0;
                 return [
                     'id' => $item->id,
                     'item_code' => $item->code,
-                    'activities' => $first->activities->map(function ($activity) {
+                    'activities' => $first->activities->map(function ($activity) use ($item, &$total_quantity) {
+
+                        $resource = Resource::where('activity_id', $activity->id)
+                            ->where('item_id', $item->id)
+                            ->get();
+
+                        $activity_quantity = $resource->sum('quantity');
+                        $total_quantity += $activity_quantity;
+
                         return [
                             'activity_id' => $activity->id,
                             'activity_code' => $activity->activity_code,
                             'activity_name' => $activity->name,
+                            'activity_quantity' => $activity_quantity,
                         ];
                     }) ?? null,
                     'expense_class' => $first->expense_class ?? null,
@@ -76,7 +87,7 @@ class PpmpItemResource extends JsonResource
                     'classification' => $item->itemClassification->name ?? "",
                     'estimated_budget' => $item->estimated_budget ?? "",
                     'category' => $item->itemCategory->name ?? null,
-                    'aop_quantity' => $first->total_quantity * count($first->activities) ?? 0,
+                    'aop_quantity' => $total_quantity ?? 0,
                     'quantity' => $first->total_quantity ?? 0,
                     'unit' => $item->itemUnit->code ?? null,
                     'total_amount' => $first->total_amount ?? 0,

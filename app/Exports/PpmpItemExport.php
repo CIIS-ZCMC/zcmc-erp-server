@@ -142,6 +142,25 @@ class PpmpItemExport implements FromCollection, WithHeadings, WithStyles, WithEv
             'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1B5E20']],
         ]);
 
+        // Apply border to entire header section
+        $sheet->getStyle('A1:U3')->applyFromArray([
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'color' => ['argb' => '000000'],
+                ],
+            ],
+        ]);
+
+        // Format columns F and G as numbers with 2 decimal places
+        $sheet->getStyle('F4:F1000')
+            ->getNumberFormat()
+            ->setFormatCode('#,##0.00');
+
+        $sheet->getStyle('G4:G1000')
+            ->getNumberFormat()
+            ->setFormatCode('#,##0.00');
+
         return [];
     }
 
@@ -163,25 +182,6 @@ class PpmpItemExport implements FromCollection, WithHeadings, WithStyles, WithEv
                 foreach (['A', 'B', 'C', 'D', 'E', 'F', 'G', 'T', 'U', 'V'] as $col) {
                     $sheet->mergeCells("{$col}2:{$col}3");
                 }
-
-                // Apply border to entire header section
-                $sheet->getStyle('A1:U3')->applyFromArray([
-                    'borders' => [
-                        'allBorders' => [
-                            'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
-                            'color' => ['argb' => '000000'],
-                        ],
-                    ],
-                ]);
-
-                // Format columns F and G as numbers with 2 decimal places
-                $sheet->getStyle('F4:F1000')
-                    ->getNumberFormat()
-                    ->setFormatCode('#,##0.00');
-
-                $sheet->getStyle('G4:G1000')
-                    ->getNumberFormat()
-                    ->setFormatCode('#,##0.00');
 
                 // Optional: freeze header rows
                 // $sheet->freezePane('A4');
