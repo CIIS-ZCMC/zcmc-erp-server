@@ -287,7 +287,7 @@ class ApprovalService
                 $this->notificationService->notify($aop_user, [
                     'title' => 'AOP Application Returned',
                     'description' => "Your AOP application has been returned from {$current_area_name}." . ($remarks ? " Remarks: $remarks" : ""),
-                    'module_path' => "/aop-application/{$aop_application->id}",
+                    'module_path' => "/aop",
                     'aop_application_id' => $aop_application->id,
                     'status' => $status,
                     'remarks' => $remarks,
@@ -303,7 +303,7 @@ class ApprovalService
                     $this->notificationService->notify($nextUser, [
                         'title' => 'AOP Application Requires Your Action',
                         'description' => "An AOP application has been returned to you for revision from {$current_area_name}." . ($remarks ? " Remarks: $remarks" : ""),
-                        'module_path' => "/aop-application/{$aop_application->id}",
+                        'module_path' => "/aop-approval/objectives/{$aop_application->id}",
                         'aop_application_id' => $aop_application->id,
                         'status' => $status,
                         'remarks' => $remarks,
@@ -334,7 +334,7 @@ class ApprovalService
                     $this->notificationService->notify($nextUser, [
                         'title' => 'AOP Application Requires Your Action',
                         'description' => "An AOP application has been routed to you for review. It was approved by {$current_area_name} and now requires your action.",
-                        'module_path' => "/aop-application/{$aop_application->id}",
+                        'module_path' => "/aop-approval/objectives/{$aop_application->id}",
                         'aop_application_id' => $aop_application->id,
                         'status' => $status,
                         'current_area' => $current_area_name,
@@ -361,7 +361,7 @@ class ApprovalService
                 'description' => "Your AOP application has been {$status} by {$current_area_name}." .
                                 $next_stage_message .
                                 ($remarks ? " Remarks: {$remarks}" : ""),
-                'module_path' => "/aop-application/{$aop_application->id}",
+                'module_path' => "/aop",
                 'aop_application_id' => $aop_application->id,
                 'status' => $status,
                 'current_area' => $current_area_name,
