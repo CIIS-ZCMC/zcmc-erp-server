@@ -88,14 +88,21 @@ class Unit extends Model
      */
     public function getDivisionChief(): ?\App\Models\User
     {
-        // Get the division this section belongs to - use the method explicitly
-        $division = $this->division()->where('id', $this->getDivisionId())->first();
+        // Get the section this unit belongs to
+        $section = $this->section()->first();
+
+        if (!$section) {
+            return null;
+        }
+
+        // Get the division from the section
+        $division = $section->division()->first();
 
         if (!$division) {
             return null;
         }
 
-        // The division chief is the head of the division - use method explicitly
+        // The division chief is the head of the division
         return $division->head()->first();
     }
 }
