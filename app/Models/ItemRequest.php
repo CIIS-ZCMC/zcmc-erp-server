@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class ItemRequest extends Model
 {
     use SoftDeletes;
-    
+
     protected $table = 'item_requests';
 
     public $fillable = [
@@ -48,8 +48,9 @@ class ItemRequest extends Model
 
     public function terminologyCategory()
     {
-        return $this->belongsTo(TerminologyCategory::class);
+        return $this->belongsTo(TerminologyCategory::class, "terminologies_category_id", "id");
     }
+
 
     public function itemSpecifications()
     {

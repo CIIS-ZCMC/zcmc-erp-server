@@ -97,7 +97,7 @@ class ItemRequestController extends Controller
             "code" => $itemRequest->code,
             "estimated_budget" => $itemRequest->estimated_budget,
             "item_unit_id" => $itemRequest->item_unit_id,
-            "terminology_category_id" => $itemRequest->terminology_category_id,
+            "terminologies_category_id" => $itemRequest->terminology_category_id,
             "item_category_id" => $itemRequest->item_category_id,
             "item_classification_id" => $itemRequest->item_classification_id,
             "image" => $itemRequest->image,
@@ -186,7 +186,6 @@ class ItemRequestController extends Controller
         $page = $validated['page'] ?? 1;
 
         $item_requests = ItemRequest::paginate($perPage, ['*'], 'page', $page);
-
         return ItemRequestResource::collection($item_requests)
             ->additional([
                 'meta' => [
@@ -249,7 +248,7 @@ class ItemRequestController extends Controller
                     "item_unit_id" => $item['item_unit_id'] !== null ?  strip_tags($item['item_unit_id']) : null,
                     "item_category_id" => $item['item_category_id'] !== null ? strip_tags($item['item_category_id']) : null,
                     "item_classification_id" => $item['item_classification_id'] !== null ? strip_tags($item['item_classification_id']) : null,
-                    "terminology_category_id" => strip_tags($item['terminology_category_id']),
+                    "terminologies_category_id" => strip_tags($item['terminology_category_id']),
                     "requested_by" => $user,
                     'reason' => strip_tags($item['reason']),
                     "created_at" => now(),
@@ -525,7 +524,7 @@ class ItemRequestController extends Controller
             "item_unit_id" => !$is_valid_unit_id ? null :  strip_tags($request->input('item_unit_id')),
             "item_category_id" => !$is_valid_category_id ? null :  strip_tags($request->input('item_category_id')),
             "item_classification_id" => !$is_valid_classification_id ? null : strip_tags($request->input('item_classification_id')),
-            "terminology_category_id" => strip_tags($request->input('terminology_category_id')),
+            "terminologies_category_id" => strip_tags($request->input('terminology_category_id')),
             "requested_by" => $user,
             "reason" => strip_tags($request->input('reason'))
         ];
