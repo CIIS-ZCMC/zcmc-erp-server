@@ -28,7 +28,7 @@ class ItemRequestController extends Controller
     private $is_development;
 
     private $module = 'item-requests';
-    
+
     private $methods = '[GET, POST, PUT, DELETE]';
 
     public function __construct()
@@ -60,7 +60,7 @@ class ItemRequestController extends Controller
         if (isset($data['reason'])) {
             $cleanData['reason'] = strip_tags($data['reason']);
         }
-        
+
         if (isset($data['estimated_budget'])) {
             $cleanData['estimated_budget'] = filter_var(
                 $data['estimated_budget'],
@@ -79,17 +79,17 @@ class ItemRequestController extends Controller
 
         if (isset($data['item_classification_id'])) {
             $item_classification = ItemClassification::find($data['item_classification_id']);
-            
-            $cleanData['item_classification_id'] = $item_classification? (int) $data['item_classification_id']: null;
+
+            $cleanData['item_classification_id'] = $item_classification ? (int) $data['item_classification_id'] : null;
         }
 
         return $cleanData;
     }
-    
+
     public function approve(ItemRequest $itemRequest, Request $request)
     {
         // Check if user is consolidator
-    
+
         DB::beginTransaction();
 
         $cleanData = [
@@ -107,12 +107,12 @@ class ItemRequestController extends Controller
 
         $specifications = $itemRequest->itemSpecifications;
 
-        foreach($specifications as $specification){
+        foreach ($specifications as $specification) {
             $specification->update(['item_id' => $new_item->id, 'item_request_id' => null]);
         }
 
         DB::commit();
-    
+
         return (new ItemResource($new_item))
             ->additional([
                 'meta' => [
@@ -123,14 +123,14 @@ class ItemRequestController extends Controller
     }
 
     protected function search(Request $request, $start): AnonymousResourceCollection
-    {   
+    {
         $validated = $request->validate([
             'search' => 'required|string|min:2|max:100',
             'per_page' => 'sometimes|integer|min:1|max:100',
             'page' => 'sometimes|integer|min:1|max:100'
         ]);
-        
-        $searchTerm = '%'.trim($validated['search']).'%';
+
+        $searchTerm = '%' . trim($validated['search']) . '%';
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
 
@@ -160,7 +160,7 @@ class ItemRequestController extends Controller
                 'message' => 'Search completed successfully'
             ]);
     }
-    
+
     protected function all($start): AnonymousResourceCollection
     {
         $objective_success_indicator = ItemRequest::all();
@@ -174,9 +174,9 @@ class ItemRequestController extends Controller
                 'message' => 'Successfully retrieve all records.'
             ]);
     }
-    
+
     protected function pagination(Request $request, $start)
-    {   
+    {
         $validated = $request->validate([
             'per_page' => 'sometimes|integer|min:1|max:100',
             'page' => 'sometimes|integer|min:1|max:100'
@@ -184,7 +184,7 @@ class ItemRequestController extends Controller
 
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
-        
+
         $item_requests = ItemRequest::paginate($perPage, ['*'], 'page', $page);
 
         return ItemRequestResource::collection($item_requests)
@@ -201,16 +201,16 @@ class ItemRequestController extends Controller
                 ],
                 'message' => 'Successfully retrieve all records.'
             ]);
-    }     
+    }
 
-    protected function singleRecord($item_category_id, $start):JsonResponse
+    protected function singleRecord($item_category_id, $start): JsonResponse
     {
         $itemUnit = ItemRequest::find($item_category_id);
-            
+
         if (!$itemUnit) {
             return response()->json(["message" => "ItemRequest category not found."], Response::HTTP_NOT_FOUND);
         }
-    
+
         return (new ItemRequestResource($itemUnit))
             ->additional([
                 "meta" => [
@@ -221,7 +221,7 @@ class ItemRequestController extends Controller
             ])->response();
     }
 
-    protected function bulkStore(Request $request, $start):ItemRequestResource|AnonymousResourceCollection|JsonResponse  
+    protected function bulkStore(Request $request, $start): ItemRequestResource|AnonymousResourceCollection|JsonResponse
     {
         $user = null;
         $existing_items = [];
@@ -246,8 +246,8 @@ class ItemRequestController extends Controller
                     "code" => strip_tags($item['code']),
                     "variant" => strip_tags($item['variant']),
                     "estimated_budget" => strip_tags($item['estimated_budget']),
-                    "item_unit_id" => $item['item_unit_id'] !== null ?  strip_tags($item['item_unit_id']): null,
-                    "item_category_id" => $item['item_category_id'] !== null ? strip_tags($item['item_category_id']): null,
+                    "item_unit_id" => $item['item_unit_id'] !== null ?  strip_tags($item['item_unit_id']) : null,
+                    "item_category_id" => $item['item_category_id'] !== null ? strip_tags($item['item_category_id']) : null,
                     "item_classification_id" => $item['item_classification_id'] !== null ? strip_tags($item['item_classification_id']) : null,
                     "terminology_category_id" => strip_tags($item['terminology_category_id']),
                     "requested_by" => $user,
@@ -276,18 +276,16 @@ class ItemRequestController extends Controller
 
         ItemRequest::insert($cleanData);
 
-        foreach($request->item_requests as $item_request)
-        {
+        foreach ($request->item_requests as $item_request) {
             $itemRequest = ItemRequest::where('name', $item_request['name'])->first();
             $item_specifications = $item_request['specifications'];
 
-            foreach($item_specifications as $specification){
+            foreach ($item_specifications as $specification) {
                 ItemSpecification::create([
                     "item_request_id" => $itemRequest->id,
-                    "description" => $specification['description'] 
+                    "description" => $specification['description']
                 ]);
             }
-
         }
         $latest_item_units = ItemRequest::orderBy('id', 'desc')
             ->limit(count($cleanData))->get()
@@ -303,8 +301,8 @@ class ItemRequestController extends Controller
                 "message" => "Successfully store data."
             ]);
     }
-    
-    protected function bulkUpdate(Request $request, $start):AnonymousResourceCollection|JsonResponse
+
+    protected function bulkUpdate(Request $request, $start): AnonymousResourceCollection|JsonResponse
     {
         $item_request_ids = $request->query('id') ?? null;
 
@@ -314,23 +312,23 @@ class ItemRequestController extends Controller
                 "meta" => MetadataComposerHelper::compose('put', $this->methods, $this->is_development)
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
-    
+
         $updated_item_units = [];
         $errors = [];
-    
+
         foreach ($item_request_ids as $index => $id) {
             $item_unit = ItemRequest::find($id);
-            
+
             if (!$item_unit) {
                 $errors[] = "ItemRequest with ID {$id} not found.";
                 continue;
             }
-    
+
             $cleanData = $this->cleanData($request->input('item_requests')[$index]);
             $item_unit->update($cleanData);
             $updated_item_units[] = $item_unit;
         }
-    
+
         if (!empty($errors)) {
             return ItemRequestResource::collection($updated_item_units)
                 ->additional([
@@ -345,7 +343,7 @@ class ItemRequestController extends Controller
                 ->response()
                 ->setStatusCode(Response::HTTP_MULTI_STATUS);
         }
-        
+
         return ItemRequestResource::collection($updated_item_units)
             ->additional([
                 "meta" => [
@@ -357,19 +355,18 @@ class ItemRequestController extends Controller
             ]);
     }
 
-    protected function singleRecordUpdate(Request $request, $start): JsonResource|ItemRequestResource|JsonResponse
+    protected function singleRecordUpdate(Request $request, $start, $id): JsonResource|ItemRequestResource|JsonResponse
     {
-        $item_request_ids = $request->query('id') ?? null;
-    
+
         // Handle single update
-        $item = ItemRequest::find($item_request_ids[0]);
-        
+        $item = ItemRequest::find($id);
+
         if (!$item) {
             return response()->json([
                 "message" => "ItemRequest not found."
             ], Response::HTTP_NOT_FOUND);
         }
-    
+
         $cleanData = $this->cleanData($request->all());
         $item->update($cleanData);
 
@@ -397,19 +394,19 @@ class ItemRequestController extends Controller
         $search = $request->search;
         $mode = $request->mode;
 
-        if($item_unit_id){
+        if ($item_unit_id) {
             return $this->singleRecord($item_unit_id, $start);
         }
 
-        if($mode && $mode === 'selection'){
+        if ($mode && $mode === 'selection') {
             return $this->all($start);
         }
-        
-        if($search){
+
+        if ($search) {
             return $this->search($request, $start);
         }
 
-        return $this->pagination($request, $start); 
+        return $this->pagination($request, $start);
     }
 
     public function myItemRequest(Request $request): AnonymousResourceCollection|JsonResponse
@@ -419,7 +416,7 @@ class ItemRequestController extends Controller
         $search = $request->search;
         $mode = $request->mode;
 
-        if($item_unit_id){
+        if ($item_unit_id) {
             return ItemRequestResource::collection(ItemRequest::find($item_unit_id))
                 ->additional([
                     'meta' => [
@@ -430,7 +427,7 @@ class ItemRequestController extends Controller
                 ]);
         }
 
-        if($mode && $mode === 'selection'){
+        if ($mode && $mode === 'selection') {
             return ItemRequestResource::collection(ItemRequest::where('requested_by', auth()->user()->id)->get())
                 ->additional([
                     'meta' => [
@@ -440,15 +437,15 @@ class ItemRequestController extends Controller
                     'message' => 'Successfully retrieve all records.'
                 ]);
         }
-        
-        if($search){
+
+        if ($search) {
             $validated = $request->validate([
                 'search' => 'required|string|min:2|max:100',
                 'per_page' => 'sometimes|integer|min:1|max:100',
                 'page' => 'sometimes|integer|min:1|max:100'
             ]);
 
-            $searchTerm = '%'.trim($validated['search']).'%';
+            $searchTerm = '%' . trim($validated['search']) . '%';
             $perPage = $validated['per_page'] ?? 15;
             $page = $validated['page'] ?? 1;
 
@@ -487,7 +484,7 @@ class ItemRequestController extends Controller
 
         $perPage = $validated['per_page'] ?? 15;
         $page = $validated['page'] ?? 1;
-        
+
         $item_requests = ItemRequest::where('requested_by', auth()->user()->id)->paginate($perPage, ['*'], 'page', $page);
 
         return ItemRequestResource::collection($item_requests)
@@ -523,47 +520,45 @@ class ItemRequestController extends Controller
         $cleanData = [
             "name" => strip_tags($request->input('name')),
             "code" => strip_tags($request->input('code')),
-            "variant_id" => strip_tags($request->input('variant_id')),
+            // "variant_id" => strip_tags($request->input('variant_id')),
             "estimated_budget" => strip_tags($request->input('estimated_budget')),
-            "item_unit_id" => !$is_valid_unit_id? null:  strip_tags($request->input('item_unit_id')),
-            "item_category_id" => !$is_valid_category_id? null:  strip_tags($request->input('item_category_id')),
-            "item_classification_id" => !$is_valid_classification_id? null: strip_tags($request->input('item_classification_id')),
+            "item_unit_id" => !$is_valid_unit_id ? null :  strip_tags($request->input('item_unit_id')),
+            "item_category_id" => !$is_valid_category_id ? null :  strip_tags($request->input('item_category_id')),
+            "item_classification_id" => !$is_valid_classification_id ? null : strip_tags($request->input('item_classification_id')),
             "terminology_category_id" => strip_tags($request->input('terminology_category_id')),
             "requested_by" => $user,
             "reason" => strip_tags($request->input('reason'))
         ];
-
         $new_item = ItemRequest::create($cleanData);
 
         $item_specifications = $request->specifications;
 
-        foreach($item_specifications as $specification){
+        foreach ($item_specifications as $specification) {
             ItemSpecification::create([
                 "item_request_id" => $new_item->id,
                 "description" => $specification['description']
             ]);
         }
 
-        if($request->hasFile('file'))
-        {
-            try{
+        if ($request->hasFile('file')) {
+            try {
                 $fileChecker = new FileUploadCheckForMalwareAttack();
-            
+
                 // Check if file is safe
                 if (!$fileChecker->isFileSafe($request->file('file'))) {
                     return response()->json([
                         "message" => 'File upload failed security checks'
                     ], Response::HTTP_BAD_REQUEST);
                 }
-    
+
                 // File is safe, proceed with saving
                 $file = $request->file('file');
                 $fileExtension = $file->getClientOriginalExtension();
                 $hashedFileName = hash_file('sha256', $file->getRealPath()) . '.' . $fileExtension;
-                
+
                 // Store file with hashed name
                 $filePath = $file->storeAs('uploads/item_requests', $hashedFileName, 'public');
-    
+
                 $file = FileRecord::create([
                     "item_id" => $new_item->id,
                     'file_path' => $filePath,
@@ -574,7 +569,7 @@ class ItemRequestController extends Controller
                 ]);
 
                 $new_item->update(['image' => $filePath]);
-            }catch(\Throwable $th){
+            } catch (\Throwable $th) {
                 $metadata['error'] = "Failed to save item image.";
             }
         }
@@ -589,19 +584,18 @@ class ItemRequestController extends Controller
             ]);
     }
 
-    public function update(Request $request): AnonymousResourceCollection|ItemRequestResource|JsonResource|JsonResponse
+    public function update(Request $request, $id): AnonymousResourceCollection|ItemRequestResource|JsonResource|JsonResponse
     {
         $start = microtime(true);
-        $item_request_ids = $request->query('id') ?? null;
-    
+
         // Validate ID parameter exists
-        if (!$item_request_ids) {
+        if (!$id) {
             $response = ["message" => "ID parameter is required."];
-            
+
             if ($this->is_development) {
                 $response['meta'] = MetadataComposerHelper::compose('put', $this->methods, $this->is_development);
             }
-            
+
             return response()->json($response, Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
@@ -609,8 +603,8 @@ class ItemRequestController extends Controller
         if ($request->item_requests !== null && $request->item_requests > 1) {
             return $this->bulkUpdate($request, $start);
         }
-    
-        return $this->singleRecordUpdate($request, $start);
+
+        return $this->singleRecordUpdate($request, $start, $id);
     }
 
     public function trash(Request $request)
@@ -621,10 +615,10 @@ class ItemRequestController extends Controller
 
         if ($search) {
             $query->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('code', 'like', "%{$search}%")
-                    ->orWhere('variant', 'like', "%{$search}%");
+                ->orWhere('code', 'like', "%{$search}%")
+                ->orWhere('variant', 'like', "%{$search}%");
         }
-        
+
         return ItemRequestResource::collection(ItemRequest::onlyTrashed()->get())
             ->additional([
                 "meta" => [
@@ -646,7 +640,7 @@ class ItemRequestController extends Controller
                 "message" => "Succcessfully restore record."
             ]);
     }
-    
+
     public function destroy(Request $request): Response
     {
         $item_request_ids = $request->query('id') ?? null;
