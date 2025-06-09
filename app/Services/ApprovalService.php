@@ -100,7 +100,10 @@ class ApprovalService
                             $division_chief = $section->getDivisionChief();
                         } elseif ($department) {
                             $division_chief = $department->getDivisionChief();
+                        } elseif ($division) {
+                            $division_chief = $division->getDivisionChief();
                         }
+
                         Log::info('Division chief for the current area', [
                             'division_chief_id' => $division_chief
 
@@ -139,17 +142,26 @@ class ApprovalService
                             ]);
                         }
                     } else {
-                        // Get the division for this area
-                        $division = $aop_user_assigned_area->division()->first();
-
-                        if (!$division) {
-                            Log::warning('No division found for current user assigned area', [
-                                'assigned_area_id' => $aop_user_assigned_area->id
-                            ]);
+                        // Get the section this unit belongs to
+                        // Get the division for the current assigned area
+                        $division = null;
+                        if ($aop_user_assigned_area->unit_id) {
+                            $division = $aop_user_assigned_area->unit->section->division;
+                        } else if ($aop_user_assigned_area->section_id) {
+                            $division = $aop_user_assigned_area->section->division;
+                        } else if ($aop_user_assigned_area->department_id) {
+                            $division = $aop_user_assigned_area->department->division;
+                        } else {
+                            $division = $aop_user_assigned_area->division;
                         }
+                        Log::warning('No division found for current user assigned area', [
+                            'saection_id' => $aop_user_assigned_area->section_id,
+                            'assigned_area_id' => $aop_user_assigned_area->id,
+                            'division_id' => $division ? $division->id : null
+                        ]);
 
                         // Check if current area is Division Chief (but not OMCC)
-                        if ($division && $aop_user->id == $division->head_id && $division->id != 1) {
+                        if ($division && $division->id != 1) {
                             $stage = 'omcc';
 
                             // Next is Medical Center Chief (Office of the Medical Center Chief, division id = 1)
@@ -173,6 +185,9 @@ class ApprovalService
                                 ]);
                             }
                         } elseif ($division && $division->id == 1 && $aop_user_assigned_area->user_id == $division->head_id) {
+                            Log::info('Routing to final approval stage (Medical Center Chief)', [
+                                'medical_center_chief_id' => $division->head_id
+                            ]);
                             // This is the final approval stage
                             $stage = 'final';
                             $next_area_id = null; // No next area as this is the final stage
@@ -233,20 +248,20 @@ class ApprovalService
                     'status' => $status,
                     'application_id' => $aop_application->id
                 ]);
-
-                // Set a fallback if we're in the initial stage and can't find the Planning Unit
+                // Show error if we can't find the next area
                 if ($stage === 'init' || $stage === 'planning_unit') {
-                    // Fallback to any Planning section area as last resort
-                    $planningFallback = AssignedArea::where('section_id', 53)->first();
-                    if ($planningFallback) {
-                        $next_area_id = $planningFallback->id;
-                        Log::info('Using fallback Planning area', ['area_id' => $next_area_id]);
-                    }
+                    Log::error('No next area ID determined for initial or planning unit stage', [
+                        'stage' => $stage,
+                        'status' => $status,
+                        'application_id' => $aop_application->id
+                    ]);
+                    throw new \RuntimeException('No next area ID determined for initial or planning unit stage');
                 }
             }
 
             // Update the AOP application status
             $aop_application->status = $status;
+            $aop_application->remarks = $remarks ?? null;
             $aop_application->save();
 
             // Create the timeline entry
@@ -257,7 +272,7 @@ class ApprovalService
                 'current_area_id' => $current_user_assigned_area->id,
                 'next_area_id' => $next_area_id,
                 'status' => $status,
-                'remarks' => $remarks,
+                'remarks' => $remarks ?? null,
                 'date_approved' => now(),
             ]);
 
@@ -272,7 +287,7 @@ class ApprovalService
                 $this->notificationService->notify($aop_user, [
                     'title' => 'AOP Application Returned',
                     'description' => "Your AOP application has been returned from {$current_area_name}." . ($remarks ? " Remarks: $remarks" : ""),
-                    'module_path' => "/aop-application/{$aop_application->id}",
+                    'module_path' => "/aop",
                     'aop_application_id' => $aop_application->id,
                     'status' => $status,
                     'remarks' => $remarks,
@@ -288,7 +303,7 @@ class ApprovalService
                     $this->notificationService->notify($nextUser, [
                         'title' => 'AOP Application Requires Your Action',
                         'description' => "An AOP application has been returned to you for revision from {$current_area_name}." . ($remarks ? " Remarks: $remarks" : ""),
-                        'module_path' => "/aop-application/{$aop_application->id}",
+                        'module_path' => "/aop-approval/objectives/{$aop_application->id}",
                         'aop_application_id' => $aop_application->id,
                         'status' => $status,
                         'remarks' => $remarks,
@@ -319,7 +334,7 @@ class ApprovalService
                     $this->notificationService->notify($nextUser, [
                         'title' => 'AOP Application Requires Your Action',
                         'description' => "An AOP application has been routed to you for review. It was approved by {$current_area_name} and now requires your action.",
-                        'module_path' => "/aop-application/{$aop_application->id}",
+                        'module_path' => "/aop-approval/objectives/{$aop_application->id}",
                         'aop_application_id' => $aop_application->id,
                         'status' => $status,
                         'current_area' => $current_area_name,
@@ -346,7 +361,7 @@ class ApprovalService
                 'description' => "Your AOP application has been {$status} by {$current_area_name}." .
                                 $next_stage_message .
                                 ($remarks ? " Remarks: {$remarks}" : ""),
-                'module_path' => "/aop-application/{$aop_application->id}",
+                'module_path' => "/aop",
                 'aop_application_id' => $aop_application->id,
                 'status' => $status,
                 'current_area' => $current_area_name,

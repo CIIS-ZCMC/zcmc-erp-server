@@ -721,6 +721,7 @@ class AopApplicationController extends Controller
     public function getUsersWithDesignation()
     {
         $users = User::with('designation')
+            ->where('id', '!=', 1)
             ->get()
             ->map(function ($user) {
                 return [
