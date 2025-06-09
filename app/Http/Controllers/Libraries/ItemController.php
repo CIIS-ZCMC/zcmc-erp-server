@@ -47,8 +47,8 @@ class ItemController extends Controller
             $cleanData['code'] = strip_tags($data['code']);
         }
 
-        if (isset($data['variant'])) {
-            $cleanData['variant'] = strip_tags($data['variant']);
+        if (isset($data['category_terminology_id'])) {
+            $cleanData['category_terminology_id'] = strip_tags($data['category_terminology_id']);
         }
         
         if (isset($data['estimated_budget'])) {
@@ -111,17 +111,6 @@ class ItemController extends Controller
                 $q->where('name', 'like', "%{$searchTerm}%")
                   ->orWhere('code', 'like', "%{$searchTerm}%")
                   ->orWhere('description', 'like', "%{$searchTerm}%");
-            });
-            
-            // Search through variant relationship
-            $query->orWhereHas('variant', function($q) use ($searchTerm) {
-                $q->where('name', 'like', "%{$searchTerm}%")
-                  ->orWhere('code', 'like', "%{$searchTerm}%");
-            });
-            
-            // Search through snomed relationship
-            $query->orWhereHas('snomed', function($q) use ($searchTerm) {
-                $q->where('code', 'like', "%{$searchTerm}%");
             });
         })
         ->paginate($perPage, ['*'], 'page', $page);
