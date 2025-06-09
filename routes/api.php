@@ -23,6 +23,8 @@ use App\Http\Controllers\LogDescriptionController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ObjectiveController;
 use App\Http\Controllers\PpmpApplicationController;
+use App\Http\Controllers\PpmpItemController;
+use App\Http\Controllers\PpmpItemRequestControlller;
 use App\Http\Controllers\ProcurementModesController;
 use App\Http\Controllers\PurchaseTypeController;
 use App\Http\Controllers\SuccessIndicatorController;
@@ -187,11 +189,11 @@ Route::
             Route::post('ppmp-receiving-list-receive', [PpmpApplicationController::class, "receivePpmpApplication"]);
 
             // Ppmp Item Module
-            Route::get('ppmp-item-search', 'PpmpItemController@search');
-            Route::apiResource('ppmp-items', 'PpmpItemController')->only(['index', 'store', 'update']);
-            Route::delete('ppmp-items', 'PpmpItemController@destroy');
-            Route::apiResource('ppmp-item-requests', 'PpmpItemRequestControlller');
-            Route::get('ppmp-item-export', 'PpmpItemController@export');
+            Route::get('ppmp-item-search', [PpmpItemController::class, 'search']);
+            Route::apiResource('ppmp-items', PpmpItemController::class)->only(['index', 'store', 'update']);
+            Route::delete('ppmp-items', [PpmpItemController::class, 'destroy']);
+            Route::apiResource('ppmp-item-requests', PpmpItemRequestControlller::class);
+            Route::get('ppmp-item-export', [PpmpItemController::class, 'export']);
 
             // Activity Module
             Route::apiResource('activities', ActivityController::class);
@@ -223,7 +225,7 @@ Route::
             Route::post('export-aop/{id}', [AopApplicationController::class, "export"]);
             Route::get('preview-aop/{id}', [AopApplicationController::class, "preview"]);
             Route::post('import/items', [ItemImportController::class, "import"]);
-            Route::get('aop-application-edit', [AopApplicationController::class, "edit"]);
+            Route::get('aop-application-edit/{id}', [AopApplicationController::class, "edit"]);
 
             // Deadlines
             Route::get('deadlines', [DeadlineController::class, 'index']);
