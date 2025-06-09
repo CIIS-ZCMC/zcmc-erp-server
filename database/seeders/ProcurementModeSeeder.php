@@ -14,12 +14,17 @@ class ProcurementModeSeeder extends Seeder
     public function run(): void
     {
         $data = [
-            [
-                'name' => 'Procured',
-            ],
-            [
-                'name' => 'Request',
-            ],
+            ['name' => 'Competitive Bidding'],
+            ['name' => 'Limited Source Bidding'],
+            ['name' => 'Competitive Dialogue'],
+            ['name' => 'Unsolicited Offer with Bid Matching'],
+            ['name' => 'Direct Contracting'],
+            ['name' => 'Direct Acquisition'],
+            ['name' => 'Repeat Order'],
+            ['name' => 'Small Value Procurement'],
+            ['name' => 'Negotiated Procurement'],
+            ['name' => 'Direct Sales'],
+            ['name' => 'Direct Procurement for Science, Technology, and Innovation'],
         ];
 
         foreach ($data as $item) {
