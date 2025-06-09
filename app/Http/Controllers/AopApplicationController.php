@@ -39,7 +39,8 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use Illuminate\Support\Facades\File;
 use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\IOFactory;
-
+use PhpOffice\PhpSpreadsheet\RichText\RichText;
+use PhpOffice\PhpSpreadsheet\RichText\Run;
 use App\Services\AopVisibilityService;
 
 class AopApplicationController extends Controller
@@ -987,6 +988,7 @@ class AopApplicationController extends Controller
             'applicationObjectives.activities.resources',
             'applicationObjectives.activities.resources.item',
             'applicationObjectives.activities.responsiblePeople.user',
+            'applicationTimelines',
         ])->findOrFail($id);
 
         $getResponsiblePersonName = function ($responsiblePerson) {
@@ -1009,6 +1011,7 @@ class AopApplicationController extends Controller
 
             return 'Unknown';
         };
+
 
         // Prepare the objectives and activities data
         $objectives = $aopApplication->applicationObjectives->map(function ($objective) use ($getResponsiblePersonName, $aopApplication) {
@@ -1182,6 +1185,93 @@ class AopApplicationController extends Controller
         $sheet->getStyle("L14:L{$lastRow}")
             ->getNumberFormat()
             ->setFormatCode(NumberFormat::FORMAT_NUMBER_00);
+
+        for ($i = 1; $i <= $sheet->getHighestRow(); $i++) {
+            $cellB = $sheet->getCell("B{$i}")->getValue();
+            $cellD = $sheet->getCell("D{$i}")->getValue();
+            $cellK = $sheet->getCell("K{$i}")->getValue();
+            $cellM = $sheet->getCell("M{$i}")->getValue();
+
+            // Prepared by (column B)
+            if (stripos($cellB, 'Prepared by') !== false) {
+                $sheet->setCellValue("B" . ($i + 2), $preparedByName);
+
+                $preparedByTimeline = $aopApplication->applicationTimelines()
+                    ->where('user_id', $user_id)
+                    ->orderByDesc('created_at')
+                    ->first();
+
+                $formattedDate = $preparedByTimeline
+                    ? \Carbon\Carbon::parse($preparedByTimeline->created_at)->format('F j, Y')
+                    : '____________';
+
+                $richText = new RichText();
+                $richText->createText('DATE: ');
+                $richText->createTextRun($formattedDate)->getFont()->setUnderline(true);
+
+                $sheet->setCellValue("B" . ($i + 5), $richText);
+            }
+
+            // Noted by (column D)
+            if (stripos($cellD, 'Noted by') !== false) {
+                $sheet->setCellValue("D" . ($i + 2), $notedBy);
+
+                $notedByTimeline = $aopApplication->applicationTimelines()
+                    ->where('user_id', $divisionChiefId)
+                    ->orderByDesc('created_at')
+                    ->first();
+
+                $formattedDate = $notedByTimeline
+                    ? \Carbon\Carbon::parse($notedByTimeline->created_at)->format('F j, Y')
+                    : '____________';
+
+                $richText = new RichText();
+                $richText->createText('DATE: ');
+                $richText->createTextRun($formattedDate)->getFont()->setUnderline(true);
+
+                $sheet->setCellValue("D" . ($i + 5), $richText);
+            }
+
+            // Reviewed by (column K)
+            if (stripos($cellK, 'Reviewed by') !== false) {
+                $sheet->setCellValue("K" . ($i + 2), $ReviewedBy);
+
+                $reviewedByTimeline = $aopApplication->applicationTimelines()
+                    ->where('user_id', $planningOfficerId)
+                    ->orderByDesc('created_at')
+                    ->first();
+
+                $formattedDate = $reviewedByTimeline
+                    ? \Carbon\Carbon::parse($reviewedByTimeline->created_at)->format('F j, Y')
+                    : '____________';
+
+                $richText = new RichText();
+                $richText->createText('DATE: ');
+                $richText->createTextRun($formattedDate)->getFont()->setUnderline(true);
+
+                $sheet->setCellValue("K" . ($i + 5), $richText);
+            }
+
+            // Approved by (column M)
+            if (stripos($cellM, 'Approved by') !== false) {
+                $sheet->setCellValue("M" . ($i + 2), $ApprovedBy);
+
+                $approvedByTimeline = $aopApplication->applicationTimelines()
+                    ->where('user_id', $mccChiefId)
+                    ->orderByDesc('created_at')
+                    ->first();
+
+                $formattedDate = $approvedByTimeline
+                    ? \Carbon\Carbon::parse($approvedByTimeline->created_at)->format('F j, Y')
+                    : '____________';
+
+                $richText = new RichText();
+                $richText->createText('DATE: ');
+                $richText->createTextRun($formattedDate)->getFont()->setUnderline(true);
+
+                $sheet->setCellValue("M" . ($i + 5), $richText);
+            }
+        }
 
         $tempDirectory = storage_path('app/temp');
         if (!File::exists($tempDirectory)) {
