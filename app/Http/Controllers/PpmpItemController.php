@@ -316,7 +316,7 @@ class PpmpItemController extends Controller
         }
 
         if ($request->is_draft === true) {
-            $ppmp_application->update(['status' => 'draft', 'is_draft' => true]);
+            $ppmp_application->update(['status' => 'draft', 'is_draft' => false]);
         }
 
         $planning_officer = User::find($ppmp_application->planning_officer_id);
@@ -391,9 +391,7 @@ class PpmpItemController extends Controller
 
         return Excel::download(
             new PpmpItemExport($data),
-            'ppmp_' . $area['details']['code'] . '_' . $year . '.xlsx',
-            \Maatwebsite\Excel\Excel::XLSX,
-            ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+            'ppmp_' . $area['details']['code'] . '_' . $year . '.xlsx'
         );
     }
 

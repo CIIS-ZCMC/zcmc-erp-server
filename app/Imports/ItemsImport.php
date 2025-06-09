@@ -90,7 +90,19 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
 
 
         $terminology = TerminologyCategory::where('category_id', $categoryId)->where('reference_terminology_id', $referrenceId)->first();
-        $terminologyId = $terminology->id;
+        $terminologyId = null;
+        if (!$terminology) {
+            $reference_terminology = ItemReferenceTerminology::where('id', $referrenceId)->first();
+            $createTerminologyCategory = TerminologyCategory::create([
+                'name' => $reference_terminology->system . ' - ' . $reference_terminology->code,
+                'category_id' => $categoryId,
+                'reference_terminology_id' => $referrenceId
+            ]);
+
+            $terminologyId = $createTerminologyCategory->id;
+        } else {
+            $terminologyId = $terminology->id;
+        }
 
         $this->processed++;
         return DB::transaction(function () use ($row, $categoryId, $unitId, $terminologyId) {
@@ -100,7 +112,7 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
 
             // Create Item
             $newItem = Item::create([
-                'name'        => $row['name'],
+                'name' => $row['name'],
                 'estimated_budget' => $estimatedBudget,
                 'item_category_id' => $categoryId,
                 'item_unit_id' => $unitId,
