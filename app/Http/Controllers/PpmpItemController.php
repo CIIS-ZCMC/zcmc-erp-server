@@ -211,7 +211,10 @@ class PpmpItemController extends Controller
                     ], Response::HTTP_NOT_FOUND);
                 }
 
-                $find_ppmp_item = PpmpItem::where('item_id', $items->id)->first();
+                $find_ppmp_item = PpmpItem::where('item_id', $items->id)
+                    ->where('expense_class', $item['expense_class'])
+                    ->first();
+
                 $ppmp_data = [
                     'ppmp_application_id' => $ppmp_application->id,
                     'item_id' => $items->id,
@@ -231,7 +234,7 @@ class PpmpItemController extends Controller
                 }
 
                 foreach ($item['activities'] as $activity) {
-                    $activities = Activity::find($activity['activity_id'] ?? $activity['id'] ?? null);
+                    $activities = Activity::find($activity['activity_id']);
 
                     if ($activities) {
                         $activity_ppmp_item = $activities->ppmpItems()
@@ -243,46 +246,27 @@ class PpmpItemController extends Controller
                             $activities->ppmpItems()->attach($ppmpItem->id, [
                                 'remarks' => $ppmpItem['remarks'] ?? null,
                             ]);
-
-                            $resource_request = [
-                                'activity_id' => $activities->id,
-                                'item_id' => $items->id,
-                                'purchase_type_id' => $item['purchase_type_id'] ?? 1,
-                                'quantity' => $item['aop_quantity'] ?? 0,
-                                'expense_class' => $item['expense_class'],
-                            ];
-
-                            $resource = Resource::where('activity_id', $activities->id)
-                                ->where('item_id', $items->id)
-                                ->first();
-
-                            if ($resource) {
-                                $resource->update($resource_request);
-                            } else {
-                                Resource::create($resource_request);
-                            }
-
                         } else {
                             $activity_ppmp_item->pivot->remarks = $item['remarks'];
                             $activity_ppmp_item->pivot->save();
+                        }
 
-                            $resource_request = [
-                                'activity_id' => $activities->id,
-                                'item_id' => $items->id,
-                                'purchase_type_id' => $item['purchase_type_id'] ?? 1,
-                                'quantity' => $item['aop_quantity'] ?? 0,
-                                'expense_class' => $item['expense_class'],
-                            ];
+                        $resource = Resource::where('activity_id', $activities->id)
+                            ->where('item_id', $items->id)
+                            ->first();
 
-                            $resource = Resource::where('activity_id', $activities->id)
-                                ->where('item_id', $items->id)
-                                ->first();
+                        $resource_request = [
+                            'activity_id' => $activities->id,
+                            'item_id' => $items->id,
+                            'purchase_type_id' => $resource->purchase_type_id ?? 1,
+                            'quantity' => $resource->quantity ?? $activity['activity_quantity'],
+                            'expense_class' => $item['expense_class'],
+                        ];
 
-                            if ($resource) {
-                                $resource->update($resource_request);
-                            } else {
-                                Resource::create($resource_request);
-                            }
+                        if ($resource) {
+                            $resource->update($resource_request);
+                        } else {
+                            Resource::create($resource_request);
                         }
                     }
                 }
