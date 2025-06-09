@@ -17,7 +17,9 @@ use App\Models\AssignedArea;
 use App\Models\Department;
 use App\Models\Designation;
 use App\Models\Division;
+use App\Models\Item;
 use App\Models\PpmpItem;
+use App\Models\PpmpSchedule;
 use App\Models\PurchaseType;
 use App\Models\Section;
 use App\Models\SuccessIndicator;
@@ -527,18 +529,17 @@ class AopApplicationController extends Controller
                 'year' => now()->year + 1,
             ]);
 
+            $ppmpApplication = $aopApplication->ppmpApplication()->create([
+                'user_id' => $user_id,
+                'division_chief_id' => $divisionChiefId,
+                'budget_officer_id' => $budgetOfficerId,
+                'planning_officer_id' => $planningOfficerId,
+                'ppmp_application_uuid' => Str::uuid(),
+                'status' => $validatedData['status'],
+            ]);
+
 
             foreach ($validatedData['application_objectives'] as $objectiveData) {
-                // $functionObjective = FunctionObjective::where('objective_id', $objectiveData['objective_id'])
-                //     ->where('function_id', $objectiveData['function'])
-                //     ->first();
-
-                // if (!$functionObjective) {
-
-                //     return response()->json(['error' => 'FunctionObjective not found'], 404);
-                // }
-
-
                 $applicationObjective = $aopApplication->applicationObjectives()->create([
                     'objective_id' => $objectiveData['objective_id'],
                     'success_indicator_id' => $objectiveData['success_indicator_id'],
@@ -581,13 +582,33 @@ class AopApplicationController extends Controller
 
 
                     $activity->responsiblePeople()->createMany($activityData['responsible_people']);
+
+                    $ppmp_item = null;
+                    foreach ($activityData['resources'] as $item) {
+                        $items = Item::find($item['item_id']);
+                        $ppmp_item = PpmpItem::create([
+                            'ppmp_application_id' => $ppmpApplication->id,
+                            'item_id' => $items->id,
+                            'estimated_budget' => $items->estimated_budget,
+                            'expense_class' => $item['expense_class'],
+                        ]);
+
+                        for ($month = 1; $month <= 12; $month++) {
+                            PpmpSchedule::create([
+                                'ppmp_item_id' => $ppmp_item->id,
+                                'month' => $month,
+                                'quantity' => 0
+                            ]);
+                        }
+                    }
+
+                    $activity->ppmpItems()->attach($ppmp_item->id);
                 }
             }
 
             $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
 
             $ppmpTotal = 0;
-
             foreach ($aopApplication->applicationObjectives as $objective) {
                 foreach ($objective->activities as $activity) {
                     foreach ($activity->resources as $resource) {
@@ -601,6 +622,8 @@ class AopApplicationController extends Controller
                 }
             }
 
+            $ppmpApplication->update(['ppmp_total' => $ppmpTotal]);
+
             Log::create([
                 'aop_application_id' => $aopApplication->id,
                 'ppmp_application_id' => null,
@@ -608,57 +631,6 @@ class AopApplicationController extends Controller
                 'action_by' => $user_id,
             ]);
 
-
-            $ppmpApplication = $aopApplication->ppmpApplication()->create([
-                'user_id' => $user_id,
-                'division_chief_id' => $divisionChiefId,
-                'budget_officer_id' => $budgetOfficerId,
-                'planning_officer_id' => $planningOfficerId,
-                'ppmp_application_uuid' => Str::uuid(),
-                'ppmp_total' => $ppmpTotal,
-                'status' => $validatedData['status'],
-            ]);
-
-
-            $items = [];
-
-            foreach ($aopApplication->applicationObjectives as $objective) {
-                foreach ($objective->activities as $activity) {
-                    foreach ($activity->resources as $resource) {
-                        if (
-                            $resource->purchase_type_id === $procurablePurchaseTypeId &&
-                            $resource->item // Check if item exists
-                        ) {
-                            $itemId = $resource->item_id;
-                            $estimatedBudget = $resource->item->estimated_budget;
-                            $quantity = $resource->quantity;
-                            $totalAmount = $quantity * $estimatedBudget;
-                            $expenseClass = $resource->expense_class;
-
-                            // If the item already exists, add to its quantity and amount
-                            if (isset($items[$itemId])) {
-                                $items[$itemId]['total_quantity'] += $quantity;
-                                $items[$itemId]['total_amount'] += $totalAmount;
-                            } else {
-                                $items[$itemId] = [
-                                    'ppmp_application_id' => $ppmpApplication->id,
-                                    'item_id' => $itemId,
-                                    'total_quantity' => $quantity,
-                                    'estimated_budget' => $estimatedBudget,
-                                    'expense_class' => $expenseClass,
-                                    'total_amount' => $totalAmount,
-                                    'remarks' => null,
-                                ];
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Now insert the merged items
-            foreach ($items as $itemData) {
-                PpmpItem::create($itemData);
-            }
             Log::create([
                 'aop_application_id' => null,
                 'ppmp_application_id' => $ppmpApplication->id,
