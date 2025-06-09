@@ -222,7 +222,7 @@ Route::
             Route::get('get-areas', [AopApplicationController::class, "getAllArea"]);
             Route::get('get-designations', [AopApplicationController::class, "getAllDesignations"]);
             Route::get('get-users', [AopApplicationController::class, "getUsersWithDesignation"]);
-            Route::post('export-aop/{id}', [AopApplicationController::class, "export"]);
+            Route::get('export-aop/{id}', [AopApplicationController::class, "export"]);
             Route::get('preview-aop/{id}', [AopApplicationController::class, "preview"]);
             Route::post('import/items', [ItemImportController::class, "import"]);
             Route::get('aop-application-edit/{id}', [AopApplicationController::class, "edit"]);
