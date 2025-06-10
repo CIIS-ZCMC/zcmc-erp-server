@@ -20,7 +20,7 @@ return new class extends Migration {
             $table->foreign('item_unit_id')->references('id')->on('item_units');
             $table->unsignedBigInteger('terminologies_category_id')->nullable();
             $table->foreign('terminologies_category_id')->references('id')->on('terminologies_categories');
-            $table->string('name');
+            $table->string('name', 255);
             $table->string('code')->nullable();
             $table->text('image')->nullable();
             $table->float('estimated_budget')->default(0);
