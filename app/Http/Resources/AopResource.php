@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 class AopResource extends JsonResource
 {
@@ -23,6 +24,8 @@ class AopResource extends JsonResource
             'remarks' => $this->remarks,
             'application_objectives' => $this->applicationObjectives->map(function ($appObj) {
                 $objective = $appObj->objective;
+                $objective_id = $appObj->objective->id;
+                $objective_uuid = (string) Str::uuid();
                 $success_indicator = $appObj->successIndicator;
                 $type_of_function = $appObj->objective->typeOfFunction;
                 $other_objective = $appObj->otherObjective;
@@ -32,6 +35,8 @@ class AopResource extends JsonResource
 
                 return [
                     'id' => $appObj->id,
+                    'objective_id' => $objective_id,
+                    'objective_uuid' => $objective_uuid,
                     'function_type' => $type_of_function === null ? [] : [
                         'id' => $type_of_function->id ?? null,
                         'name' => ucfirst($type_of_function->type) ?? null,
