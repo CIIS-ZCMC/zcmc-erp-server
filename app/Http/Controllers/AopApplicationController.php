@@ -595,6 +595,8 @@ class AopApplicationController extends Controller
                             'expense_class' => $item['expense_class'],
                         ]);
 
+                        $activity->ppmpItems()->attach($ppmp_item->id);
+
                         for ($month = 1; $month <= 12; $month++) {
                             PpmpSchedule::create([
                                 'ppmp_item_id' => $ppmp_item->id,
@@ -604,8 +606,6 @@ class AopApplicationController extends Controller
                             ]);
                         }
                     }
-
-                    $activity->ppmpItems()->attach($ppmp_item->id);
                 }
             }
 
