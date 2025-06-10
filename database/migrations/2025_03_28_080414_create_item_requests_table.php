@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('item_requests', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->text('name');
             $table->string('code')->nullable();
             $table->text('image')->nullable();
             $table->float('estimated_budget')->default(0);
