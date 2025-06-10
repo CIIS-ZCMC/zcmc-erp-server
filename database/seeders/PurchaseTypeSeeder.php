@@ -25,7 +25,7 @@ class PurchaseTypeSeeder extends Seeder
             ],
             [
                 'description' => 'Non-Procurable but needs budget',
-                'code' => 'NONPROC-BUDGET',
+                'code' => 'NONPROC-WITH-BUDGET',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

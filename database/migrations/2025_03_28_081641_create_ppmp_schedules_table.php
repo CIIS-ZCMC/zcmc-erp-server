@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->unsignedBigInteger('ppmp_item_id');
             $table->foreign('ppmp_item_id')->references('id')->on('ppmp_items');
             $table->string('month');
-            $table->string('year');
+            $table->year('year')->default(date('Y') + 1);
             $table->float('quantity')->default(0);
             $table->timestamps();
         });

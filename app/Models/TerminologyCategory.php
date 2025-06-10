@@ -12,6 +12,7 @@ class TerminologyCategory extends Model
     protected $table = 'terminologies_categories';
 
     public $fillable = [
+        'id',
         'name',
         'category_id',
         'reference_terminology_id'
@@ -31,5 +32,15 @@ class TerminologyCategory extends Model
     public function terminology()
     {
         return $this->belongsTo(ItemReferenceTerminology::class, 'reference_terminology_id');
+    }
+
+    public function items()
+    {
+        return $this->hasMany(Item::class);
+    }
+
+    public function itemRequests()
+    {
+        return $this->hasMany(ItemRequest::class);
     }
 }
