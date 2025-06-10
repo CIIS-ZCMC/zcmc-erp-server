@@ -16,12 +16,12 @@ return new class extends Migration {
             $table->foreign('application_objective_id')->references('id')->on('application_objectives');
             $table->uuid('activity_uuid');
             $table->string('activity_code');
-            $table->string('name');
+            $table->string('name')->nullable();;
             $table->boolean('is_gad_related');
             $table->boolean('is_reviewed')->default(false);
             $table->float('cost')->default(0);
-            $table->date('start_month');
-            $table->date('end_month');
+            $table->date('start_month')->nullable();;
+            $table->date('end_month')->nullable();;
             $table->softDeletes();
             $table->timestamps();
         });

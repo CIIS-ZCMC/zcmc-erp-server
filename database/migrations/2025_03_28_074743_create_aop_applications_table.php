@@ -23,7 +23,7 @@ return new class extends Migration {
             $table->uuid('aop_application_uuid');
             $table->integer('sector_id');
             $table->string('sector');
-            $table->text('mission');
+            $table->text('mission')->nullable();
             $table->string('status')->default('pending');
             $table->boolean('has_discussed');
             $table->text('remarks')->nullable();

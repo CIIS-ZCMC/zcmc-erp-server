@@ -14,9 +14,9 @@ return new class extends Migration {
             $table->id();
             $table->unsignedBigInteger('aop_application_id');
             $table->foreign('aop_application_id')->references('id')->on('aop_applications');
-            $table->unsignedBigInteger('objective_id');
+            $table->unsignedBigInteger('objective_id')->nullable();;
             $table->foreign('objective_id')->references('id')->on('objectives');
-            $table->unsignedBigInteger('success_indicator_id');
+            $table->unsignedBigInteger('success_indicator_id')->nullable();;
             $table->foreign('success_indicator_id')->references('id')->on('success_indicators');
             $table->softDeletes();
             $table->timestamps();
