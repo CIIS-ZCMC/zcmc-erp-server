@@ -26,7 +26,7 @@ class AopApplicationRequest extends FormRequest
         ];
 
         // If the status is not draft, enforce full validation
-        if ($this->status !== 'draft') {
+        if ($this->input('status') !== 'draft') {
             $rules = array_merge($rules, [
                 'mission' => 'required|string',
                 'has_discussed' => 'required|boolean',
@@ -58,6 +58,39 @@ class AopApplicationRequest extends FormRequest
                 'application_objectives.*.activities.*.resources.*.expense_class' => 'required|string',
 
                 'application_objectives.*.activities.*.responsible_people' => 'required|array',
+            ]);
+        } else {
+            // Relaxed validation for drafts: only validate if present
+            $rules = array_merge($rules, [
+                'mission' => 'sometimes|string',
+                'has_discussed' => 'sometimes|boolean',
+                'remarks' => 'nullable|string',
+                'application_objectives' => 'sometimes|array',
+                'application_objectives.*.objective_id' => 'sometimes|exists:objectives,id',
+                'application_objectives.*.success_indicator_id' => 'sometimes|exists:success_indicators,id',
+                'application_objectives.*.others_objective' => 'nullable|string',
+                'application_objectives.*.other_success_indicator' => 'nullable|string',
+
+                'application_objectives.*.activities' => 'sometimes|array',
+                'application_objectives.*.activities.*.name' => 'sometimes|string',
+                'application_objectives.*.activities.*.is_gad_related' => 'sometimes|boolean',
+                'application_objectives.*.activities.*.cost' => 'sometimes|numeric|min:0',
+                'application_objectives.*.activities.*.start_month' => 'sometimes|date',
+                'application_objectives.*.activities.*.end_month' => 'sometimes|date',
+
+                'application_objectives.*.activities.*.target' => 'nullable|array',
+                'application_objectives.*.activities.*.target.first_quarter' => 'nullable|string',
+                'application_objectives.*.activities.*.target.second_quarter' => 'nullable|string',
+                'application_objectives.*.activities.*.target.third_quarter' => 'nullable|string',
+                'application_objectives.*.activities.*.target.fourth_quarter' => 'nullable|string',
+
+                'application_objectives.*.activities.*.resources' => 'sometimes|array',
+                'application_objectives.*.activities.*.resources.*.item_id' => 'sometimes|exists:items,id',
+                'application_objectives.*.activities.*.resources.*.purchase_type_id' => 'sometimes|exists:purchase_types,id',
+                'application_objectives.*.activities.*.resources.*.quantity' => 'sometimes|integer|min:1',
+                'application_objectives.*.activities.*.resources.*.expense_class' => 'sometimes|string',
+
+                'application_objectives.*.activities.*.responsible_people' => 'sometimes|array',
             ]);
         }
 
