@@ -307,6 +307,7 @@ class AopVisibilityService
             return $query->where(function ($q) use ($user, $assignedArea, $planningUnitSectionId) {
                 // Their own applications
                 $q->where('user_id', $user->id)
+                    ->where('status', '!=', AopApplication::STATUS_IS_DRAFT)
                   // OR applications where they are the current approver (next_area_id)
                   ->orWhereHas('applicationTimelines', function ($q2) use ($assignedArea) {
                       $q2->where('next_area_id', $assignedArea->id);
@@ -347,6 +348,7 @@ class AopVisibilityService
             return $query->where(function ($q) use ($areasUnderDivision, $user, $assignedArea) {
                 // Requests from users in their division
                 $q->whereIn('user_id', $areasUnderDivision)
+                    ->where('status', '!=', AopApplication::STATUS_IS_DRAFT)
                   // OR requests where they are the current approver (next_area_id)
                   ->orWhereHas('applicationTimelines', function ($q2) use ($assignedArea) {
                       $q2->where('next_area_id', $assignedArea->id);
@@ -369,6 +371,7 @@ class AopVisibilityService
         return $query->where(function ($q) use ($user, $assignedArea) {
             // Their own applications
             $q->where('user_id', $user->id)
+            ->where('status', '!=', AopApplication::STATUS_IS_DRAFT)
               // OR applications where they are the current approver (next_area_id)
               ->orWhereHas('applicationTimelines', function ($q2) use ($assignedArea) {
                   $q2->where('next_area_id', $assignedArea->id);

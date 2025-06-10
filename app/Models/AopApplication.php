@@ -19,6 +19,8 @@ class AopApplication extends Model
     const STATUS_APPROVED = 'Approved';
     const STATUS_RETURNED = 'Returned';
 
+    const STATUS_IS_DRAFT = 'Draft';
+
     protected $fillable = [
         'user_id',
         'division_chief_id',
