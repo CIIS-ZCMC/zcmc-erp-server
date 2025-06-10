@@ -106,6 +106,7 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
 
         $this->processed++;
         return DB::transaction(function () use ($row, $categoryId, $unitId, $terminologyId) {
+            $category_code = ItemCategory::find($categoryId)->code;
 
             // Convert formatted string to float (e.g., "88,288.00" → 88288.00)
             $estimatedBudget = $this->parseNumericValue($row['estimated_budget']);
@@ -116,7 +117,23 @@ class ItemsImport implements ToModel, WithHeadingRow, WithValidation, SkipsOnFai
                 'estimated_budget' => $estimatedBudget,
                 'item_category_id' => $categoryId,
                 'item_unit_id' => $unitId,
-                'terminologies_category_id' => $terminologyId
+                'terminologies_category_id' => $terminologyId,
+                'code' => (function () use ($category_code, $categoryId) {
+                    $prefix = 'ITM-' . $category_code . '-';
+
+                    $lastItem = Item::where('item_category_id', $categoryId)
+                        ->where('code', 'like', $prefix . '%')
+                        ->orderByDesc('code')
+                        ->first();
+
+                    $nextNumber = 1;
+
+                    if ($lastItem && preg_match('/^' . preg_quote($prefix, '/') . '(\d{4})$/', $lastItem->code, $matches)) {
+                        $nextNumber = (int) $matches[1] + 1;
+                    }
+
+                    return $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+                })(),
             ]);
 
             if (!empty($row['specs1'])) {

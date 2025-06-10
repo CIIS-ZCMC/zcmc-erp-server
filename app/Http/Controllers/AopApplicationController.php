@@ -536,6 +536,7 @@ class AopApplicationController extends Controller
                 'budget_officer_id' => $budgetOfficerId,
                 'planning_officer_id' => $planningOfficerId,
                 'ppmp_application_uuid' => Str::uuid(),
+                'year' => now()->addYear()->year,
                 'status' => $validatedData['status'],
             ]);
 
@@ -594,16 +595,32 @@ class AopApplicationController extends Controller
                             'expense_class' => $item['expense_class'],
                         ]);
 
-                        for ($month = 1; $month <= 12; $month++) {
-                            PpmpSchedule::create([
-                                'ppmp_item_id' => $ppmp_item->id,
-                                'month' => $month,
-                                'quantity' => 0
-                            ]);
+                        if ($ppmp_item) {
+                            $activity_ppmp_item = $activity->ppmpItems()
+                                ->where('activity_id', $activity->id)
+                                ->where('ppmp_item_id', $ppmp_item->id)
+                                ->first();
+
+                            if ($activity_ppmp_item === null) {
+                                $activity->ppmpItems()->attach($ppmp_item->id);
+
+                                for ($month = 1; $month <= 12; $month++) {
+                                    PpmpSchedule::create([
+                                        'ppmp_item_id' => $ppmp_item->id,
+                                        'month' => $month,
+                                        'year' => now()->addYear()->year,
+                                        'quantity' => 0
+                                    ]);
+                                }
+                            }
+
+                        } else {
+                            DB::rollBack();
+                            return response()->json([
+                                'message' => 'Failed to create PPMP item for activity.',
+                            ], Response::HTTP_INTERNAL_SERVER_ERROR);
                         }
                     }
-
-                    $activity->ppmpItems()->attach($ppmp_item->id);
                 }
             }
 

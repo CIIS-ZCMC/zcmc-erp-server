@@ -92,13 +92,15 @@ class PpmpApplicationResource extends JsonResource
             'ppmp_total' => $this->ppmp_total ?? 0,
             'status' => $this->status ?? null,
             'remarks' => $this->remarks ?? null,
-            'created_at' => $this->created_at ?? null,
-            'updated_at' => $this->updated_at ?? null,
+            'year' => $this->year ?? null,
+            'is_draft' => $this->status === 'draft' ? 1 : 0,
             'user' => $this->user ? new UserResource($this->user) : null,
             'division_chief' => $this->divisionChief ? new UserResource($this->divisionChief) : null,
             'budget_officer' => $this->budgetOfficer ? new UserResource($this->budgetOfficer) : null,
             'aop_application' => $this->aopApplication ? new AopApplicationResource($this->aopApplication) : null,
             'ppmp_items' => $ppmp_items ?? [],
+            'created_at' => $this->created_at ?? null,
+            'updated_at' => $this->updated_at ?? null,
         ];
     }
 }

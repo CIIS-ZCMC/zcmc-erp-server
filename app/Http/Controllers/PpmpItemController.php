@@ -189,7 +189,8 @@ class PpmpItemController extends Controller
             foreach ($ppmpItems as $item) {
                 $procurement_mode = null;
                 if ($item['procurement_mode'] !== null) {
-                    $procurement_mode = ProcurementModes::where('name', $item['procurement_mode']['name'])->first()->id;
+                    $procurement = $item['procurement_mode']['name'] ?? $item['procurement_mode'];
+                    $procurement_mode = ProcurementModes::where('name', $procurement)->first()->id;
 
                     if (!$procurement_mode) {
                         return response()->json([
@@ -242,9 +243,9 @@ class PpmpItemController extends Controller
                             ->where('ppmp_item_id', $ppmpItem->id)
                             ->first();
 
-                        if (!$activity_ppmp_item) {
+                        if ($activity_ppmp_item === null) {
                             $activities->ppmpItems()->attach($ppmpItem->id, [
-                                'remarks' => $ppmpItem['remarks'] ?? null,
+                                'remarks' => $ppmpItem['remarks'],
                             ]);
                         } else {
                             $activity_ppmp_item->pivot->remarks = $item['remarks'];

@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\TerminologyResource;
 
 class ItemResource extends JsonResource
 {
@@ -21,6 +22,7 @@ class ItemResource extends JsonResource
         $this->activityUuid = $activityUuid;
         $this->quantity = $quantity;
     }
+
     public function toArray(Request $request): array
     {
         return [
@@ -33,7 +35,6 @@ class ItemResource extends JsonResource
             "label" => $this->name,
             "name" => $this->name,
             "code" => $this->code,
-            "terminologyCategory" => $this->terminologyCategory,
             "image" => $this->image !== null ? env("SERVER_DOMAIN") . $this->image : null,
             "estimated_budget" => $this->estimated_budget,
             "unit" => $this->item_unit_id == null ? null : $this->itemUnit->code,
@@ -43,7 +44,7 @@ class ItemResource extends JsonResource
             "item_category" => $this->item_category_id == null ? null : new ItemCategoryResource($this->itemCategory),
             "item_classification" => $this->item_classification_id !== null ? $this->itemClassification : null,
             "item_specifications" => ItemSpecificationChildResource::collection($this->itemSpecifications),
-            "terminology" => $this->terminology,
+            "terminology" => $this->terminologies_category_id !== null ? new TerminologyResource($this->terminologyCategory) : null,
             "created_at" => $this->created_at,
             "updated_at" => $this->updated_at
         ];
