@@ -227,6 +227,12 @@ Route::
             Route::post('import/items', [ItemImportController::class, "import"]);
             Route::get('aop-application-edit/{id}', [AopApplicationController::class, "edit"]);
 
+            //Delete Actions under AOP Module [Objectives, Activities, Resources, AOP]
+            Route::delete('aop-application/objectives/{aopObjective}', [AopApplicationController::class, "destroyObjectives"]);
+            Route::delete('aop-application/activities/{aopActivity}', [AopApplicationController::class, "destroyActivities"]);
+            Route::delete('aop-application/resources/{aopResource}', [AopApplicationController::class, "destroyResources"]);
+            Route::delete('aop-application/{aopApplication}', [AopApplicationController::class, "destroy"]);
+
             // Deadlines
             Route::get('deadlines', [DeadlineController::class, 'index']);
             Route::post('aop-deadline-store', [DeadlineController::class, 'storeAopDeadline']);

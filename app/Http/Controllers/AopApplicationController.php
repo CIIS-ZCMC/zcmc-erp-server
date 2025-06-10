@@ -254,128 +254,128 @@ class AopApplicationController extends Controller
                 'remarks',
             ]));
 
-            foreach ($aopApplication->applicationObjectives as $objective) {
-                foreach ($objective->activities as $activity) {
-                    $activity->target()->delete();
-                    $activity->resources()->delete();
-                    $activity->responsiblePeople()->delete();
-                }
-                $objective->activities()->delete();
-                $objective->otherObjective()->delete();
-                $objective->otherSuccessIndicator()->delete();
-            }
+            // foreach ($aopApplication->applicationObjectives as $objective) {
+            //     foreach ($objective->activities as $activity) {
+            //         $activity->target()->delete();
+            //         $activity->resources()->delete();
+            //         $activity->responsiblePeople()->delete();
+            //     }
+            //     $objective->activities()->delete();
+            //     $objective->otherObjective()->delete();
+            //     $objective->otherSuccessIndicator()->delete();
+            // }
 
-            $aopApplication->applicationObjectives()->delete();
+            // $aopApplication->applicationObjectives()->delete();
 
-            foreach ($request->application_objectives as $objectiveData) {
-                $applicationObjective = $aopApplication->applicationObjectives()->create([
-                    'objective_id' => $objectiveData['objective_id'],
-                    'success_indicator_id' => $objectiveData['success_indicator_id'],
-                    'objective_code' => $objectiveData['objective_code'] ?? null,
-                ]);
+            // foreach ($request->application_objectives as $objectiveData) {
+            //     $applicationObjective = $aopApplication->applicationObjectives()->create([
+            //         'objective_id' => $objectiveData['objective_id'],
+            //         'success_indicator_id' => $objectiveData['success_indicator_id'],
+            //         'objective_code' => $objectiveData['objective_code'] ?? null,
+            //     ]);
 
-                if (($applicationObjective->objective->description ?? null) === 'Others' && isset($objectiveData['others_objective'])) {
-                    $applicationObjective->othersObjective()->create([
-                        'description' => $objectiveData['others_objective'],
-                    ]);
-                }
+            //     if (($applicationObjective->objective->description ?? null) === 'Others' && isset($objectiveData['others_objective'])) {
+            //         $applicationObjective->othersObjective()->create([
+            //             'description' => $objectiveData['others_objective'],
+            //         ]);
+            //     }
 
-                if (($applicationObjective->successIndicator->description ?? null) === 'Others' && isset($objectiveData['other_success_indicator'])) {
-                    $applicationObjective->otherSuccessIndicator()->create([
-                        'description' => $objectiveData['other_success_indicator'],
-                    ]);
-                }
+            //     if (($applicationObjective->successIndicator->description ?? null) === 'Others' && isset($objectiveData['other_success_indicator'])) {
+            //         $applicationObjective->otherSuccessIndicator()->create([
+            //             'description' => $objectiveData['other_success_indicator'],
+            //         ]);
+            //     }
 
-                foreach ($objectiveData['activities'] as $activityData) {
-                    $activity = $applicationObjective->activities()->create([
-                        'activity_code' => $this->generateUniqueActivityCode(),
-                        'name' => $activityData['name'],
-                        'is_gad_related' => $activityData['is_gad_related'],
-                        'cost' => $activityData['cost'],
-                        'start_month' => $activityData['start_month'],
-                        'end_month' => $activityData['end_month'],
-                    ]);
+            //     foreach ($objectiveData['activities'] as $activityData) {
+            //         $activity = $applicationObjective->activities()->create([
+            //             'activity_code' => $this->generateUniqueActivityCode(),
+            //             'name' => $activityData['name'],
+            //             'is_gad_related' => $activityData['is_gad_related'],
+            //             'cost' => $activityData['cost'],
+            //             'start_month' => $activityData['start_month'],
+            //             'end_month' => $activityData['end_month'],
+            //         ]);
 
-                    $activity->target()->create($activityData['target']);
+            //         $activity->target()->create($activityData['target']);
 
-                    foreach ($activityData['resources'] as $resourceData) {
-                        $activity->resources()->create($resourceData);
-                    }
+            //         foreach ($activityData['resources'] as $resourceData) {
+            //             $activity->resources()->create($resourceData);
+            //         }
 
-                    foreach ($activityData['responsible_people'] as $personData) {
-                        $activity->responsiblePeople()->create($personData);
-                    }
-                }
-            }
+            //         foreach ($activityData['responsible_people'] as $personData) {
+            //             $activity->responsiblePeople()->create($personData);
+            //         }
+            //     }
+            // }
 
-            Log::create([
-                'aop_application_id' => $aopApplication->id,
-                'ppmp_application_id' => null,
-                'action' => "Update Aop",
-                'action_by' => $user_id,
-            ]);
+            // Log::create([
+            //     'aop_application_id' => $aopApplication->id,
+            //     'ppmp_application_id' => null,
+            //     'action' => "Update Aop",
+            //     'action_by' => $user_id,
+            // ]);
 
             $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
             $ppmpTotal = 0;
 
-            foreach ($aopApplication->applicationObjectives as $objective) {
-                foreach ($objective->activities as $activity) {
-                    foreach ($activity->resources as $resource) {
-                        if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
-                            $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
-                        }
-                    }
-                }
-            }
+            // foreach ($aopApplication->applicationObjectives as $objective) {
+            //     foreach ($objective->activities as $activity) {
+            //         foreach ($activity->resources as $resource) {
+            //             if ($resource->purchase_type_id === $procurablePurchaseTypeId) {
+            //                 $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
+            //             }
+            //         }
+            //     }
+            // }
 
             $aopApplication->ppmpApplication()->update([
-                'ppmp_total' => $ppmpTotal,
+                // 'ppmp_total' => $ppmpTotal,
                 'remarks' => $request->remarks ?? null,
             ]);
 
-            $ppmpApplication = $aopApplication->ppmpApplication;
-            $ppmpApplication->ppmpItems()->delete();
+            // $ppmpApplication = $aopApplication->ppmpApplication;
+            // $ppmpApplication->ppmpItems()->delete();
 
-            $mergedItems = [];
+            // $mergedItems = [];
 
-            foreach ($aopApplication->applicationObjectives as $objective) {
-                foreach ($objective->activities as $activity) {
-                    foreach ($activity->resources as $resource) {
-                        if (
-                            $resource->purchase_type_id === $procurablePurchaseTypeId &&
-                            $resource->item
-                        ) {
-                            $itemId = $resource->item_id;
-                            $estimatedBudget = $resource->item->estimated_budget;
-                            $quantity = $resource->quantity;
-                            $totalAmount = $quantity * $estimatedBudget;
-                            $expenseClass = $resource->expense_class;
+            // foreach ($aopApplication->applicationObjectives as $objective) {
+            //     foreach ($objective->activities as $activity) {
+            //         foreach ($activity->resources as $resource) {
+            //             if (
+            //                 $resource->purchase_type_id === $procurablePurchaseTypeId &&
+            //                 $resource->item
+            //             ) {
+            //                 $itemId = $resource->item_id;
+            //                 $estimatedBudget = $resource->item->estimated_budget;
+            //                 $quantity = $resource->quantity;
+            //                 $totalAmount = $quantity * $estimatedBudget;
+            //                 $expenseClass = $resource->expense_class;
 
-                            // Merge by item ID and expense class if needed
-                            $key = $itemId . '-' . $expenseClass;
+            //                 // Merge by item ID and expense class if needed
+            //                 $key = $itemId . '-' . $expenseClass;
 
-                            if (isset($mergedItems[$key])) {
-                                $mergedItems[$key]['total_quantity'] += $quantity;
-                                $mergedItems[$key]['total_amount'] += $totalAmount;
-                            } else {
-                                $mergedItems[$key] = [
-                                    'item_id' => $itemId,
-                                    'total_quantity' => $quantity,
-                                    'estimated_budget' => $estimatedBudget,
-                                    'total_amount' => $totalAmount,
-                                    'expense_class' => $expenseClass,
-                                    'remarks' => null,
-                                ];
-                            }
-                        }
-                    }
-                }
-            }
+            //                 if (isset($mergedItems[$key])) {
+            //                     $mergedItems[$key]['total_quantity'] += $quantity;
+            //                     $mergedItems[$key]['total_amount'] += $totalAmount;
+            //                 } else {
+            //                     $mergedItems[$key] = [
+            //                         'item_id' => $itemId,
+            //                         'total_quantity' => $quantity,
+            //                         'estimated_budget' => $estimatedBudget,
+            //                         'total_amount' => $totalAmount,
+            //                         'expense_class' => $expenseClass,
+            //                         'remarks' => null,
+            //                     ];
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }
 
             // Insert merged items
-            foreach ($mergedItems as $itemData) {
-                $ppmpApplication->ppmpItems()->create($itemData);
-            }
+            // foreach ($mergedItems as $itemData) {
+            //     $ppmpApplication->ppmpItems()->create($itemData);
+            // }
 
             Log::create([
                 'aop_application_id' => null,
@@ -778,9 +778,44 @@ class AopApplicationController extends Controller
         return response()->json($all);
     }
 
+    // Delete Objectives
+    public function destroyObjectives(AopObjective $aopObjective, Request $request)
+    {
+        $aopObjective->delete();
+
+        // Handle Additional process here if needed
+
+        return response()->json([], Response::HTTP_NO_CONTENT);
+    }
+
+    // Delete Activities
+    public function destroyActivities(AopActivities $aopActivity, Request $request)
+    {
+        $aopActivity->delete();
+
+        // Handle Additional process here if needed
+
+        return response()->json([], Response::HTTP_NO_CONTENT);
+    }
+    
+    // Delete Resources
+    public function destroyResources(AopResource $aopResource, Request $request)
+    {
+        $aopResource->delete();
+
+        // Handle Additional process here if needed
+
+        return response()->json([], Response::HTTP_NO_CONTENT);
+    }
+
+    // Delete AOP
     public function destroy(AopApplication $aopApplication)
     {
-        //
+        $aop_application->delete();
+
+        // Handle Additional process here if needed
+
+        return response()->json([], Response::HTTP_NO_CONTENT);
     }
 
     public function aopRequests(Request $request): JsonResponse
