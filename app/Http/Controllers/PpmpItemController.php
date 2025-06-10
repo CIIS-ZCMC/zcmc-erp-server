@@ -242,7 +242,7 @@ class PpmpItemController extends Controller
                             ->where('ppmp_item_id', $ppmpItem->id)
                             ->first();
 
-                        if (!$activity_ppmp_item) {
+                        if ($activity_ppmp_item === null) {
                             $activities->ppmpItems()->attach($ppmpItem->id, [
                                 'remarks' => $ppmpItem['remarks'] ?? null,
                             ]);
