@@ -189,7 +189,8 @@ class PpmpItemController extends Controller
             foreach ($ppmpItems as $item) {
                 $procurement_mode = null;
                 if ($item['procurement_mode'] !== null) {
-                    $procurement_mode = ProcurementModes::where('name', $item['procurement_mode']['name'])->first()->id;
+                    $procurement = $item['procurement_mode']['name'] ?? $item['procurement_mode'];
+                    $procurement_mode = ProcurementModes::where('name', $procurement)->first()->id;
 
                     if (!$procurement_mode) {
                         return response()->json([
