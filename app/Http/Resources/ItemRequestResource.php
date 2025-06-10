@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\TerminologyResource;
 
 class ItemRequestResource extends JsonResource
 {
@@ -28,6 +29,7 @@ class ItemRequestResource extends JsonResource
             "item_category" => $this->item_category_id !== null ? new ItemCategoryResource($this->itemCategory) : null,
             "item_classification" => $this->item_classification_id !== null? null: new ItemClassificationResource($this->itemClassification),
             "item_specifications" => $this->itemSpecifications, 
+            "terminology" => $this->terminologies_category_id !== null ? new TerminologyResource($this->terminologyCategory) : null,
             // "request_by" => $this->requestedBy,
             "action_by" => $this->action_by !== null? $this->actionBy: null,
             "status" => $this->status,
