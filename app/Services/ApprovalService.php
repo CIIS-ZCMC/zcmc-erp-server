@@ -536,7 +536,7 @@ class ApprovalService
                         $this->notificationService->notify($nextUser, [
                             'title' => 'New AOP Application Submitted',
                             'description' => "A new AOP application has been submitted by {$current_user->name} from {$this->getAreaNameFromAssignedArea($current_user_assigned_area)} and requires your review.",
-                            'module_path' => "/aop-application/{$aop_application->id}",
+                            'module_path' => "/aop-approval/objectives/{$aop_application->id}",
                             'aop_application_id' => $aop_application->id,
                             'status' => 'pending'
                         ]);
