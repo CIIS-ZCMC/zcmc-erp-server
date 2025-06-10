@@ -244,7 +244,7 @@ class PpmpItemController extends Controller
 
                         if ($activity_ppmp_item === null) {
                             $activities->ppmpItems()->attach($ppmpItem->id, [
-                                'remarks' => $ppmpItem['remarks'] ?? null,
+                                'remarks' => $ppmpItem['remarks'],
                             ]);
                         } else {
                             $activity_ppmp_item->pivot->remarks = $item['remarks'];

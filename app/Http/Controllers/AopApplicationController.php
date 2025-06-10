@@ -596,16 +596,24 @@ class AopApplicationController extends Controller
                         ]);
 
                         if ($ppmp_item) {
-                            $activity->ppmpItems()->attach($ppmp_item->id);
+                            $activity_ppmp_item = $activity->ppmpItems()
+                                ->where('activity_id', $activity->id)
+                                ->where('ppmp_item_id', $ppmp_item->id)
+                                ->first();
 
-                            for ($month = 1; $month <= 12; $month++) {
-                                PpmpSchedule::create([
-                                    'ppmp_item_id' => $ppmp_item->id,
-                                    'month' => $month,
-                                    'year' => now()->addYear()->year,
-                                    'quantity' => 0
-                                ]);
+                            if ($activity_ppmp_item === null) {
+                                $activity->ppmpItems()->attach($ppmp_item->id);
+
+                                for ($month = 1; $month <= 12; $month++) {
+                                    PpmpSchedule::create([
+                                        'ppmp_item_id' => $ppmp_item->id,
+                                        'month' => $month,
+                                        'year' => now()->addYear()->year,
+                                        'quantity' => 0
+                                    ]);
+                                }
                             }
+
                         } else {
                             DB::rollBack();
                             return response()->json([
@@ -613,8 +621,6 @@ class AopApplicationController extends Controller
                             ], Response::HTTP_INTERNAL_SERVER_ERROR);
                         }
                     }
-
-                    $activity->ppmpItems()->attach($ppmp_item->id);
                 }
             }
 
