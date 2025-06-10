@@ -25,7 +25,7 @@ return new class extends Migration {
             $table->string('sector');
             $table->text('mission')->nullable();
             $table->string('status')->default('pending');
-            $table->boolean('has_discussed');
+            $table->boolean('has_discussed')->nullable();
             $table->text('remarks')->nullable();
             $table->integer('year');
             $table->softDeletes();
