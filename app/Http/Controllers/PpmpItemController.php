@@ -102,8 +102,9 @@ class PpmpItemController extends Controller
 
         $ppmp_item = $this->getPpmpItems($request);
 
-        if (!$ppmp_item) {
+        if (!$ppmp_item || empty($ppmp_item['ppmp_items'])) {
             return response()->json([
+                'data' => [],
                 'message' => "No record found.",
             ], Response::HTTP_NOT_FOUND);
         }
