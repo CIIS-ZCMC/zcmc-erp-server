@@ -93,7 +93,7 @@ class PpmpApplicationResource extends JsonResource
             'status' => $this->status ?? null,
             'remarks' => $this->remarks ?? null,
             'year' => $this->year ?? null,
-            'is_draft' => $this->is_draft,
+            'is_draft' => $this->is_draft === 1 ? true : false,
             'user' => $this->user ? new UserResource($this->user) : null,
             'division_chief' => $this->divisionChief ? new UserResource($this->divisionChief) : null,
             'budget_officer' => $this->budgetOfficer ? new UserResource($this->budgetOfficer) : null,
