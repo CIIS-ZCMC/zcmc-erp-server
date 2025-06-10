@@ -7,6 +7,7 @@ use App\Http\Requests\PpmpItemRequest;
 use App\Http\Resources\PpmpApplicationResource;
 use App\Http\Resources\PpmpItemResource;
 use App\Models\Activity;
+use App\Models\AopApplication;
 use App\Models\Item;
 use App\Models\PpmpApplication;
 use App\Models\PpmpItem;
@@ -41,51 +42,52 @@ class PpmpItemController extends Controller
         $sector = $user->assignedArea->findDetails();
         $ppmp_application_id = $request->ppmp_application_id;
 
-        $ppmp_item = PpmpItem::with([
-            'ppmpApplication.user',
-            'ppmpApplication.divisionChief',
-            'ppmpApplication.budgetOfficer',
-            'ppmpApplication.aopApplication',
-            'item.itemUnit',
-            'item.itemCategory',
-            'item.itemClassification',
-            'item.itemSpecifications',
-            'item.terminologyCategory',
-            'procurementMode',
-            'itemRequest',
-            'activities',
-            'comments',
-            'ppmpSchedule',
-        ]);
-        if ($ppmp_application_id !== null) {
-            $ppmp_item->where('ppmp_application_id', $ppmp_application_id);
-        } else {
-            $ppmp_item->whereHas('ppmpApplication', function ($query) use ($year, $sector) {
-                $query->where('year', $year)
-                    ->with([
-                        'aopApplication' => function ($query) use ($sector) {
-                            $query->where('sector_id', $sector['details']['id'])
-                                ->where('sector', $sector['details']['name']);
-                        }
-                    ]);
-            });
+        $aop_application = AopApplication::where('year', $year)
+            ->where('sector_id', $sector['details']['id'])
+            ->where('sector', $sector['sector'])
+            ->first();
+
+        if ($aop_application) {
+            $ppmp_item = PpmpItem::with([
+                'ppmpApplication.user',
+                'ppmpApplication.divisionChief',
+                'ppmpApplication.budgetOfficer',
+                'ppmpApplication.aopApplication',
+                'item.itemUnit',
+                'item.itemCategory',
+                'item.itemClassification',
+                'item.itemSpecifications',
+                'item.terminologyCategory',
+                'procurementMode',
+                'itemRequest',
+                'activities',
+                'comments',
+                'ppmpSchedule',
+            ]);
+            if ($ppmp_application_id !== null) {
+                $ppmp_item->where('ppmp_application_id', $ppmp_application_id);
+            } else {
+                $ppmp_item->whereHas('ppmpApplication', function ($query) use ($aop_application) {
+                    $query->where('aop_application_id', $aop_application->id);
+                });
+            }
+
+            $result = $ppmp_item->whereNull('deleted_at')
+                ->orderBy('id')
+                ->get()
+                ->groupBy(function ($item) {
+                    $app = $item->ppmpApplication;
+                    return $app ? "{$app->year}_{$app->aopApplication->sector_id}" : 'undefined';
+                })
+                ->map(function ($items) {
+                    return [
+                        'ppmp_application' => $items->first()->ppmpApplication,
+                        'ppmp_items' => $items
+                    ];
+                })->first();
+
+            return $result;
         }
-
-        $result = $ppmp_item->whereNull('deleted_at')
-            ->orderBy('id')
-            ->get()
-            ->groupBy(function ($item) {
-                $app = $item->ppmpApplication;
-                return $app ? "{$app->year}_{$app->aopApplication->sector_id}" : 'undefined';
-            })
-            ->map(function ($items) {
-                return [
-                    'ppmp_application' => $items->first()->ppmpApplication,
-                    'ppmp_items' => $items
-                ];
-            })->first();
-
-        return $result;
     }
 
     public function index(Request $request)
