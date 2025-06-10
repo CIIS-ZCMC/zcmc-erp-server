@@ -149,12 +149,16 @@ class AopApplicationController extends Controller
         $totalActivityCost = $activities->sum('cost');
 
         // Count distinct area combinations
-        $totalAreas = $totalResponsiblePeople->map(fn($p) => [
-            'unit_id' => $p->unit_id,
-            'department_id' => $p->department_id,
-            'division_id' => $p->division_id,
-            'section_id' => $p->section_id,
-        ])->unique()->count();
+        $totalAreas = $totalResponsiblePeople
+            ->map(fn($p) => [
+                'unit_id' => $p->unit_id,
+                'department_id' => $p->department_id,
+                'division_id' => $p->division_id,
+                'section_id' => $p->section_id,
+            ])
+            ->filter(fn($area) => collect($area)->filter()->isNotEmpty()) // remove all-null combinations
+            ->unique()
+            ->count();
 
         // Count unique designation IDs
         $totalJobPositions = $totalResponsiblePeople->pluck('designation_id')->filter()->unique()->count();
@@ -410,6 +414,8 @@ class AopApplicationController extends Controller
             ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
+
+
 
 
     protected function generateUniqueActivityCode(): string
