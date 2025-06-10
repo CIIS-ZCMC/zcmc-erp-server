@@ -583,15 +583,17 @@ class AopApplicationController extends Controller
                                 'end_month' => $activityData['end_month'],
                             ]);
 
+                            if (!empty($activityData['target']) && is_array($activityData['target'])) {
+                                $activity->target()->create($activityData['target']);
+                            }
 
-                            $activity->target()->create($activityData['target']);
+                            if (!empty($activityData['resources']) && is_array($activityData['resources'])) {
+                                $activity->resources()->createMany($activityData['resources']);
+                            }
 
-
-                            $activity->resources()->createMany($activityData['resources']);
-
-
-                            $activity->responsiblePeople()->createMany($activityData['responsible_people']);
-
+                            if (!empty($activityData['responsible_people']) && is_array($activityData['responsible_people'])) {
+                                $activity->responsiblePeople()->createMany($activityData['responsible_people']);
+                            }
                             $ppmp_item = null;
                             foreach ($activityData['resources'] as $item) {
                                 $items = Item::find($item['item_id']);
