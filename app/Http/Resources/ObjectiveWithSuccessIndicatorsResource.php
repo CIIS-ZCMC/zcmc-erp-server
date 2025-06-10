@@ -20,6 +20,7 @@ class ObjectiveWithSuccessIndicatorsResource extends JsonResource
             'label' =>  Str::ucfirst($this->code),
             'name' =>  $this->code,
             'code' => $this->code,
+            'description' => $this->description,
             'success_indicators' => SuccessIndicatorResource::collection($this->successIndicators),
             "meta" => [
                 'created_at' => $this->created_at,
