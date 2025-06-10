@@ -27,7 +27,7 @@ return new class extends Migration {
             $table->string('status')->default('pending');
             $table->boolean('has_discussed')->nullable();
             $table->text('remarks')->nullable();
-            $table->integer('year');
+            $table->integer('year')->nullable();
             $table->softDeletes();
             $table->timestamps();
         });

@@ -536,15 +536,17 @@ class AopApplicationController extends Controller
                 'year' => now()->year + 1,
             ]);
 
-            $ppmpApplication = $aopApplication->ppmpApplication()->create([
-                'user_id' => $user_id,
-                'division_chief_id' => $divisionChiefId,
-                'budget_officer_id' => $budgetOfficerId,
-                'planning_officer_id' => $planningOfficerId,
-                'ppmp_application_uuid' => Str::uuid(),
-                'year' => now()->addYear()->year,
-                'status' => $validatedData['status'],
-            ]);
+            if ($request->status !== 'draft') {
+                $ppmpApplication = $aopApplication->ppmpApplication()->create([
+                    'user_id' => $user_id,
+                    'division_chief_id' => $divisionChiefId,
+                    'budget_officer_id' => $budgetOfficerId,
+                    'planning_officer_id' => $planningOfficerId,
+                    'ppmp_application_uuid' => Str::uuid(),
+                    'year' => now()->addYear()->year,
+                    'status' => $validatedData['status'],
+                ]);
+            }
 
             if (!empty($validatedData['application_objectives'])) {
                 foreach ($validatedData['application_objectives'] as $objectiveData) {
@@ -593,63 +595,74 @@ class AopApplicationController extends Controller
                             if (!empty($activityData['responsible_people']) && is_array($activityData['responsible_people'])) {
                                 $activity->responsiblePeople()->createMany($activityData['responsible_people']);
                             }
-                            $ppmp_item = null;
-                            foreach ($activityData['resources'] as $item) {
-                                $items = Item::find($item['item_id']);
-                                $ppmp_item = PpmpItem::create([
-                                    'ppmp_application_id' => $ppmpApplication->id,
-                                    'item_id' => $items->id,
-                                    'estimated_budget' => $items->estimated_budget,
-                                    'expense_class' => $item['expense_class'],
-                                ]);
 
-                                if ($ppmp_item) {
-                                    $activity_ppmp_item = $activity->ppmpItems()
-                                        ->where('activity_id', $activity->id)
-                                        ->where('ppmp_item_id', $ppmp_item->id)
-                                        ->first();
+                            if ($request->status !== 'draft') {
+                                $ppmp_item = null;
+                                foreach ($activityData['resources'] as $item) {
+                                    $items = Item::find($item['item_id']);
+                                    $ppmp_item = PpmpItem::create([
+                                        'ppmp_application_id' => $ppmpApplication->id,
+                                        'item_id' => $items->id,
+                                        'estimated_budget' => $items->estimated_budget,
+                                        'expense_class' => $item['expense_class'],
+                                    ]);
 
-                                    if ($activity_ppmp_item === null) {
-                                        $activity->ppmpItems()->attach($ppmp_item->id);
+                                    if ($ppmp_item) {
+                                        $activity_ppmp_item = $activity->ppmpItems()
+                                            ->where('activity_id', $activity->id)
+                                            ->where('ppmp_item_id', $ppmp_item->id)
+                                            ->first();
 
-                                        for ($month = 1; $month <= 12; $month++) {
-                                            PpmpSchedule::create([
-                                                'ppmp_item_id' => $ppmp_item->id,
-                                                'month' => $month,
-                                                'year' => now()->addYear()->year,
-                                                'quantity' => 0
-                                            ]);
+                                        if ($activity_ppmp_item === null) {
+                                            $activity->ppmpItems()->attach($ppmp_item->id);
+
+                                            for ($month = 1; $month <= 12; $month++) {
+                                                PpmpSchedule::create([
+                                                    'ppmp_item_id' => $ppmp_item->id,
+                                                    'month' => $month,
+                                                    'year' => now()->addYear()->year,
+                                                    'quantity' => 0
+                                                ]);
+                                            }
                                         }
+                                    } else {
+                                        DB::rollBack();
+                                        return response()->json([
+                                            'message' => 'Failed to create PPMP item for activity.',
+                                        ], Response::HTTP_INTERNAL_SERVER_ERROR);
                                     }
-                                } else {
-                                    DB::rollBack();
-                                    return response()->json([
-                                        'message' => 'Failed to create PPMP item for activity.',
-                                    ], Response::HTTP_INTERNAL_SERVER_ERROR);
                                 }
                             }
                         }
                     }
                 }
             }
+            if ($request->status !== 'draft') {
+                $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
 
-            $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
-
-            $ppmpTotal = 0;
-            foreach ($aopApplication->applicationObjectives as $objective) {
-                foreach ($objective->activities as $activity) {
-                    foreach ($activity->resources as $resource) {
-                        if (
-                            $resource->purchase_type_id === $procurablePurchaseTypeId &&
-                            $resource->item
-                        ) {
-                            $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
+                $ppmpTotal = 0;
+                foreach ($aopApplication->applicationObjectives as $objective) {
+                    foreach ($objective->activities as $activity) {
+                        foreach ($activity->resources as $resource) {
+                            if (
+                                $resource->purchase_type_id === $procurablePurchaseTypeId &&
+                                $resource->item
+                            ) {
+                                $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
+                            }
                         }
                     }
                 }
-            }
 
-            $ppmpApplication->update(['ppmp_total' => $ppmpTotal]);
+                $ppmpApplication->update(['ppmp_total' => $ppmpTotal]);
+
+                Log::create([
+                    'aop_application_id' => null,
+                    'ppmp_application_id' => $ppmpApplication->id,
+                    'action' => "Create Ppmp",
+                    'action_by' => $user_id,
+                ]);
+            }
 
             Log::create([
                 'aop_application_id' => $aopApplication->id,
@@ -658,12 +671,8 @@ class AopApplicationController extends Controller
                 'action_by' => $user_id,
             ]);
 
-            Log::create([
-                'aop_application_id' => null,
-                'ppmp_application_id' => $ppmpApplication->id,
-                'action' => "Create Ppmp",
-                'action_by' => $user_id,
-            ]);
+
+
 
             if ($request->status !== 'draft') {
 
@@ -701,6 +710,162 @@ class AopApplicationController extends Controller
             ], 500);
         }
     }
+
+    public function updateExisting(AopApplicationRequest $request, $id)
+    {
+        $validatedData = $request->validated();
+
+        DB::beginTransaction();
+        try {
+            $aopApplication = AopApplication::with('applicationObjectives.activities')->findOrFail($id);
+
+            if ($validatedData['status'] !== 'draft') {
+                $curr_user = User::find($request->user()->id);
+                if ($curr_user->authorization_pin !== $request->authorization_pin) {
+                    return response()->json(['message' => 'Invalid Authorization Pin'], 400);
+                }
+            }
+
+            $aopApplication->update([
+                'mission' => $validatedData['mission'] ?? $aopApplication->mission,
+                'status' => $validatedData['status'],
+                'has_discussed' => $validatedData['has_discussed'] ?? $aopApplication->has_discussed,
+                'remarks' => $validatedData['remarks'] ?? $aopApplication->remarks,
+            ]);
+
+            // Delete existing related data
+            foreach ($aopApplication->applicationObjectives as $objective) {
+                foreach ($objective->activities as $activity) {
+                    $activity->ppmpItems()->detach();
+                    $activity->resources()->delete();
+                    $activity->responsiblePeople()->delete();
+                    $activity->target()->delete();
+                    $activity->delete();
+                }
+                $objective->otherObjective()?->delete();
+                $objective->otherSuccessIndicator()?->delete();
+                $objective->delete();
+            }
+
+            // Recreate related data
+            if (!empty($validatedData['application_objectives'])) {
+                foreach ($validatedData['application_objectives'] as $objectiveData) {
+                    $applicationObjective = $aopApplication->applicationObjectives()->create([
+                        'objective_id' => $objectiveData['objective_id'],
+                        'success_indicator_id' => $objectiveData['success_indicator_id'],
+                    ]);
+
+                    if ($applicationObjective->objective->description === 'Others' && isset($objectiveData['others_objective'])) {
+                        $applicationObjective->otherObjective()->create([
+                            'description' => $objectiveData['others_objective'],
+                        ]);
+                    }
+
+                    $successIndicator = SuccessIndicator::find($objectiveData['success_indicator_id']);
+                    if ($successIndicator && $successIndicator->description === 'Others' && isset($objectiveData['other_success_indicator'])) {
+                        $applicationObjective->otherSuccessIndicator()->create([
+                            'description' => $objectiveData['other_success_indicator'],
+                        ]);
+                    }
+
+                    foreach ($objectiveData['activities'] ?? [] as $activityData) {
+                        $activity = $applicationObjective->activities()->create([
+                            'activity_code' => $this->generateUniqueActivityCode(),
+                            'name' => $activityData['name'],
+                            'is_gad_related' => $activityData['is_gad_related'],
+                            'cost' => $activityData['cost'],
+                            'start_month' => $activityData['start_month'],
+                            'end_month' => $activityData['end_month'],
+                        ]);
+
+                        $activity->target()->create($activityData['target'] ?? []);
+
+                        if (!empty($activityData['resources'])) {
+                            $activity->resources()->createMany($activityData['resources']);
+
+                            $ppmpApplication = $aopApplication->ppmpApplication;
+
+                            foreach ($activityData['resources'] as $item) {
+                                $itemModel = Item::find($item['item_id']);
+                                $ppmpItem = PpmpItem::create([
+                                    'ppmp_application_id' => $ppmpApplication->id,
+                                    'item_id' => $itemModel->id,
+                                    'estimated_budget' => $itemModel->estimated_budget,
+                                    'expense_class' => $item['expense_class'],
+                                ]);
+
+                                $activity->ppmpItems()->attach($ppmpItem->id);
+
+                                for ($month = 1; $month <= 12; $month++) {
+                                    PpmpSchedule::create([
+                                        'ppmp_item_id' => $ppmpItem->id,
+                                        'month' => $month,
+                                        'year' => now()->addYear()->year,
+                                        'quantity' => 0,
+                                    ]);
+                                }
+                            }
+                        }
+
+                        if (!empty($activityData['responsible_people'])) {
+                            $activity->responsiblePeople()->createMany($activityData['responsible_people']);
+                        }
+                    }
+                }
+            }
+
+            // Recalculate PPMP total
+            $procurablePurchaseTypeId = PurchaseType::where('description', 'Procurable')->value('id');
+            $ppmpTotal = 0;
+            foreach ($aopApplication->applicationObjectives as $objective) {
+                foreach ($objective->activities as $activity) {
+                    foreach ($activity->resources as $resource) {
+                        if (
+                            $resource->purchase_type_id === $procurablePurchaseTypeId &&
+                            $resource->item
+                        ) {
+                            $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
+                        }
+                    }
+                }
+            }
+
+            $aopApplication->ppmpApplication->update(['ppmp_total' => $ppmpTotal]);
+
+            Log::create([
+                'aop_application_id' => $aopApplication->id,
+                'action' => 'Update Aop',
+                'action_by' => $request->user()->id,
+            ]);
+
+            if ($validatedData['status'] !== 'draft') {
+                $approvalService = new ApprovalService($this->notificationService);
+                $timelineResult = $approvalService->createInitialApplicationTimeline(
+                    $aopApplication,
+                    $request->user(),
+                    $request->remarks
+                );
+
+                if (!$timelineResult || (is_array($timelineResult) && !($timelineResult['success'] ?? true))) {
+                    DB::rollBack();
+                    return response()->json([
+                        'message' => 'Failed to create AOP application timeline',
+                        'details' => is_array($timelineResult) ? ($timelineResult['error'] ?? 'Unknown error') : 'Unknown error'
+                    ], Response::HTTP_INTERNAL_SERVER_ERROR);
+                }
+            }
+
+            DB::commit();
+            return response()->json(['message' => 'AOP Application updated successfully'], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'error' => $e->getMessage(),
+                'trace' => $e->getTrace(), // Optional for debugging
+            ], 500);
+        }
+    }
+
 
     public function show($id)
     {
