@@ -29,7 +29,7 @@ class ItemRequestResource extends JsonResource
             "item_category" => $this->item_category_id !== null ? new ItemCategoryResource($this->itemCategory) : null,
             "item_classification" => $this->item_classification_id !== null ? new ItemClassificationResource($this->itemClassification) : null,
             "item_specifications" => $this->itemSpecifications,
-            "item_terminology" => $this->terminologyCategory !== null ? new TerminologyResource($this->terminologyCategory) : null,
+            "item_terminology" => $this->terminologies_category_id !== null ? new TerminologyResource($this->terminologyCategory) : null,
             // "request_by" => $this->requestedBy,
             "action_by" => $this->action_by !== null ? $this->actionBy : null,
             "status" => $this->status,

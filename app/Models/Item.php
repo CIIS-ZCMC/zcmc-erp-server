@@ -37,7 +37,7 @@ class Item extends Model
 
     public function terminologyCategory()
     {
-        return $this->belongsTo(TerminologyCategory::class);
+        return $this->belongsTo(TerminologyCategory::class, 'terminologies_category_id');
     }
 
     public function itemUnit()
