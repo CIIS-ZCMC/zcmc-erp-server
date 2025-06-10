@@ -431,7 +431,16 @@ class AopApplicationController extends Controller
     {
 
         $validatedData = $request->validated();
+        if ($request->status !== 'draft') {
+            $curr_user = User::find($request->user()->id);
+            $curr_user_authorization_pin = $curr_user->authorization_pin;
 
+            if ($curr_user_authorization_pin !== $request->authorization_pin) {
+                return response()->json([
+                    'message' => 'Invalid Authorization Pin'
+                ], Response::HTTP_BAD_REQUEST);
+            }
+        }
         DB::beginTransaction();
 
         try {
@@ -657,14 +666,7 @@ class AopApplicationController extends Controller
             ]);
 
             if ($request->status !== 'draft') {
-                $curr_user = User::find($request->user()->id);
-                $curr_user_authorization_pin = $curr_user->authorization_pin;
 
-                if ($curr_user_authorization_pin !== $request->authorization_pin) {
-                    return response()->json([
-                        'message' => 'Invalid Authorization Pin'
-                    ], Response::HTTP_BAD_REQUEST);
-                }
                 // Get the aop user and its area
                 $aop_user = User::find($aopApplication->user_id);
                 $aop_user_assigned_area = $aop_user->assignedArea;
