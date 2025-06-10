@@ -19,13 +19,14 @@ class PpmpApplicationReceivingViewResource extends JsonResource
             'id' => $this->id,
             'uuid' => $this->ppmp_application_uuid,
             'requester' => $this->user->name,
+            'requester_area' => $this->user?->assignedArea->findDetails()['details']['code'] ?? '-',
             'created_at' => $this->created_at,
             'received_on' => $this->received_on,
             'status' => $this->status,
+            'year' => $this->year,
             'total_budget' => $this->ppmpItems->sum('estimated_budget'),
             'total_items' => $this->ppmpItems->count(),
         ];
-
         // Format the items for display in a table
         $items = [];
         foreach ($this->ppmpItems as $index => $item) {
