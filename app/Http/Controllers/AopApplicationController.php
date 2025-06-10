@@ -377,12 +377,12 @@ class AopApplicationController extends Controller
             //     $ppmpApplication->ppmpItems()->create($itemData);
             // }
 
-            Log::create([
-                'aop_application_id' => null,
-                'ppmp_application_id' => $ppmpApplication->id,
-                'action' => "Update Ppmp",
-                'action_by' => $user_id,
-            ]);
+            // Log::create([
+            //     'aop_application_id' => null,
+            //     'ppmp_application_id' => $ppmpApplication->id,
+            //     'action' => "Update Ppmp",
+            //     'action_by' => $user_id,
+            // ]);
 
             // Approval flow
             $aop_user = User::find($aopApplication->user_id);
@@ -613,7 +613,6 @@ class AopApplicationController extends Controller
                                     ]);
                                 }
                             }
-
                         } else {
                             DB::rollBack();
                             return response()->json([
@@ -814,7 +813,7 @@ class AopApplicationController extends Controller
 
         return response()->json([], Response::HTTP_NO_CONTENT);
     }
-    
+
     // Delete Resources
     public function destroyResources(AopResource $aopResource, Request $request)
     {
