@@ -536,6 +536,7 @@ class AopApplicationController extends Controller
                 'budget_officer_id' => $budgetOfficerId,
                 'planning_officer_id' => $planningOfficerId,
                 'ppmp_application_uuid' => Str::uuid(),
+                'year' => now()->addYear()->year,
                 'status' => $validatedData['status'],
             ]);
 
@@ -598,6 +599,7 @@ class AopApplicationController extends Controller
                             PpmpSchedule::create([
                                 'ppmp_item_id' => $ppmp_item->id,
                                 'month' => $month,
+                                'year' => now()->addYear()->year,
                                 'quantity' => 0
                             ]);
                         }
