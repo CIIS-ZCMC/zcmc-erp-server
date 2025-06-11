@@ -68,7 +68,7 @@ class PpmpApplicationController extends Controller
             }
         ])->where('year', $year)->first();
 
-        if (!$ppmp_application) {
+        if (!$ppmp_application || $ppmp_application->ppmpItems === null) {
             return response()->json([
                 'data' => (object) [],
                 'message' => 'No PPMP Application found.'
