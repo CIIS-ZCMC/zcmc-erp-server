@@ -41,6 +41,18 @@ class PpmpApplicationController extends Controller
             $query->where('status', $status);
         }
 
+        $aop_application = AopApplication::where('year', $year)
+            ->where('sector_id', $sector['details']['id'])
+            ->where('sector', $sector['sector'])
+            ->first();
+
+        if ($aop_application) {
+            return response()->json([
+                'data' => (object) [],
+                'message' => 'No PPMP Application found.'
+            ], Response::HTTP_OK);
+        }
+
         $ppmp_application = $query->with([
             'ppmpItems' => function ($query) {
                 $query->with([

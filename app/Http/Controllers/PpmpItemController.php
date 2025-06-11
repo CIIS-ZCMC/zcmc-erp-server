@@ -87,6 +87,8 @@ class PpmpItemController extends Controller
                 })->first();
 
             return $result;
+        } else {
+            return null;
         }
     }
 
@@ -104,7 +106,7 @@ class PpmpItemController extends Controller
 
         if (!$ppmp_item || empty($ppmp_item['ppmp_items'])) {
             return response()->json([
-                'data' => [],
+                'data' => (object) [],
                 'message' => "No record found.",
             ], Response::HTTP_NOT_FOUND);
         }

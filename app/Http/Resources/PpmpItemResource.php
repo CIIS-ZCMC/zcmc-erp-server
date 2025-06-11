@@ -67,7 +67,6 @@ class PpmpItemResource extends JsonResource
                     'id' => $item->id,
                     'item_code' => $item->code,
                     'activities' => $first->activities->map(function ($activity) use ($item, &$total_quantity) {
-
                         $resource = Resource::where('activity_id', $activity->id)
                             ->where('item_id', $item->id)
                             ->get();
@@ -104,7 +103,7 @@ class PpmpItemResource extends JsonResource
             'status' => $ppmp_application->status ?? null,
             'remarks' => $ppmp_application->remarks ?? null,
             'year' => $ppmp_application->year ?? null,
-            'is_draft' => $ppmp_application->status === 'draft' ? 1 : 0,
+            'is_draft' => $ppmp_application->status !== 'submitted' ? 1 : 0,
             'user' => $ppmp_application->user ? new UserResource($ppmp_application->user) : null,
             'division_chief' => $ppmp_application->divisionChief ? new UserResource($ppmp_application->divisionChief) : null,
             'budget_officer' => $ppmp_application->budgetOfficer ? new UserResource($ppmp_application->budgetOfficer) : null,
