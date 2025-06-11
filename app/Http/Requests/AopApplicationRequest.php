@@ -33,12 +33,14 @@ class AopApplicationRequest extends FormRequest
 
                 'remarks' => 'nullable|string',
                 'application_objectives' => 'required|array',
+                'application_objectives.*.id' => 'sometimes|integer|exists:application_objectives,id',
                 'application_objectives.*.objective_id' => 'required|exists:objectives,id',
                 'application_objectives.*.success_indicator_id' => 'required|exists:success_indicators,id',
                 'application_objectives.*.others_objective' => 'nullable|string',
                 'application_objectives.*.other_success_indicator' => 'nullable|string',
 
                 'application_objectives.*.activities' => 'required|array',
+                'application_objectives.*.activities.*.id' => 'sometimes|integer|exists:activities,id',
                 'application_objectives.*.activities.*.name' => 'required|string',
                 'application_objectives.*.activities.*.is_gad_related' => 'required|boolean',
                 'application_objectives.*.activities.*.cost' => 'required|numeric|min:0',
@@ -46,18 +48,28 @@ class AopApplicationRequest extends FormRequest
                 'application_objectives.*.activities.*.end_month' => 'required|date|after_or_equal:application_objectives.*.activities.*.start_month',
 
                 'application_objectives.*.activities.*.target' => 'nullable|array',
+                'application_objectives.*.activities.*.target.id' => 'sometimes|integer|exists:targets,id',
                 'application_objectives.*.activities.*.target.first_quarter' => 'nullable|string',
                 'application_objectives.*.activities.*.target.second_quarter' => 'nullable|string',
                 'application_objectives.*.activities.*.target.third_quarter' => 'nullable|string',
                 'application_objectives.*.activities.*.target.fourth_quarter' => 'nullable|string',
 
                 'application_objectives.*.activities.*.resources' => 'required|array',
+                'application_objectives.*.activities.*.resources.*.id' => 'sometimes|integer|exists:resources,id',
                 'application_objectives.*.activities.*.resources.*.item_id' => 'required|exists:items,id',
                 'application_objectives.*.activities.*.resources.*.purchase_type_id' => 'required|exists:purchase_types,id',
                 'application_objectives.*.activities.*.resources.*.quantity' => 'required|integer|min:1',
                 'application_objectives.*.activities.*.resources.*.expense_class' => 'required|string',
 
                 'application_objectives.*.activities.*.responsible_people' => 'required|array',
+                'application_objectives.*.activities.*.responsible_people' => 'sometimes|array',
+                'application_objectives.*.activities.*.responsible_people.*.id' => 'sometimes|integer|exists:responsible_people,id',
+                'application_objectives.*.activities.*.responsible_people.*.user_id' => 'nullable|integer|exists:users,id',
+                'application_objectives.*.activities.*.responsible_people.*.division_id' => 'nullable|integer|exists:divisions,id',
+                'application_objectives.*.activities.*.responsible_people.*.department_id' => 'nullable|integer|exists:departments,id',
+                'application_objectives.*.activities.*.responsible_people.*.section_id' => 'nullable|integer|exists:sections,id',
+                'application_objectives.*.activities.*.responsible_people.*.unit_id' => 'nullable|integer|exists:units,id',
+                'application_objectives.*.activities.*.responsible_people.*.designation_id' => 'nullable|integer|exists:designations,id',
             ]);
         } else {
             // Relaxed validation for drafts: only validate if present
@@ -66,12 +78,14 @@ class AopApplicationRequest extends FormRequest
                 'has_discussed' => 'sometimes|boolean',
                 'remarks' => 'nullable|string',
                 'application_objectives' => 'sometimes|array',
+                'application_objectives.*.id' => 'sometimes|integer|exists:application_objectives,id',
                 'application_objectives.*.objective_id' => 'sometimes|exists:objectives,id',
                 'application_objectives.*.success_indicator_id' => 'sometimes|exists:success_indicators,id',
                 'application_objectives.*.others_objective' => 'nullable|string',
                 'application_objectives.*.other_success_indicator' => 'nullable|string',
 
                 'application_objectives.*.activities' => 'sometimes|array',
+                'application_objectives.*.activities.*.id' => 'sometimes|integer|exists:activities,id',
                 'application_objectives.*.activities.*.name' => 'sometimes|string',
                 'application_objectives.*.activities.*.is_gad_related' => 'sometimes|boolean',
                 'application_objectives.*.activities.*.cost' => 'sometimes|numeric|min:0',
@@ -79,18 +93,27 @@ class AopApplicationRequest extends FormRequest
                 'application_objectives.*.activities.*.end_month' => 'sometimes|date',
 
                 'application_objectives.*.activities.*.target' => 'nullable|array',
+                'application_objectives.*.activities.*.target.id' => 'sometimes|integer|exists:targets,id',
                 'application_objectives.*.activities.*.target.first_quarter' => 'nullable|string',
                 'application_objectives.*.activities.*.target.second_quarter' => 'nullable|string',
                 'application_objectives.*.activities.*.target.third_quarter' => 'nullable|string',
                 'application_objectives.*.activities.*.target.fourth_quarter' => 'nullable|string',
 
                 'application_objectives.*.activities.*.resources' => 'sometimes|array',
+                'application_objectives.*.activities.*.resources.*.id' => 'sometimes|integer|exists:resources,id',
                 'application_objectives.*.activities.*.resources.*.item_id' => 'sometimes|exists:items,id',
                 'application_objectives.*.activities.*.resources.*.purchase_type_id' => 'sometimes|exists:purchase_types,id',
                 'application_objectives.*.activities.*.resources.*.quantity' => 'sometimes|integer|min:1',
                 'application_objectives.*.activities.*.resources.*.expense_class' => 'sometimes|string',
 
-                'application_objectives.*.activities.*.responsible_people' => 'sometimes|array',
+                'application_objectives.*.activities.*.responsible_people' => 'required|array',
+                'application_objectives.*.activities.*.responsible_people.*.id' => 'sometimes|integer|exists:responsible_people,id',
+                'application_objectives.*.activities.*.responsible_people.*.user_id' => 'nullable|integer|exists:users,id',
+                'application_objectives.*.activities.*.responsible_people.*.division_id' => 'nullable|integer|exists:divisions,id',
+                'application_objectives.*.activities.*.responsible_people.*.department_id' => 'nullable|integer|exists:departments,id',
+                'application_objectives.*.activities.*.responsible_people.*.section_id' => 'nullable|integer|exists:sections,id',
+                'application_objectives.*.activities.*.responsible_people.*.unit_id' => 'nullable|integer|exists:units,id',
+                'application_objectives.*.activities.*.responsible_people.*.designation_id' => 'nullable|integer|exists:designations,id',
             ]);
         }
 
