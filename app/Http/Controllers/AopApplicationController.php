@@ -976,45 +976,6 @@ class AopApplicationController extends Controller
         return response()->json($all);
     }
 
-    // Delete Objectives
-    public function destroyObjectives(AopObjective $aopObjective, Request $request)
-    {
-        $aopObjective->delete();
-
-        // Handle Additional process here if needed
-
-        return response()->json([], Response::HTTP_NO_CONTENT);
-    }
-
-    // Delete Activities
-    public function destroyActivities(AopActivities $aopActivity, Request $request)
-    {
-        $aopActivity->delete();
-
-        // Handle Additional process here if needed
-
-        return response()->json([], Response::HTTP_NO_CONTENT);
-    }
-
-    // Delete Resources
-    public function destroyResources(AopResource $aopResource, Request $request)
-    {
-        $aopResource->delete();
-
-        // Handle Additional process here if needed
-
-        return response()->json([], Response::HTTP_NO_CONTENT);
-    }
-
-    // Delete AOP
-    public function destroy(AopApplication $aopApplication)
-    {
-        $aop_application->delete();
-
-        // Handle Additional process here if needed
-
-        return response()->json([], Response::HTTP_NO_CONTENT);
-    }
 
     public function aopRequests(Request $request): JsonResponse
     {
@@ -1715,7 +1676,7 @@ class AopApplicationController extends Controller
                 \Log::debug('Validated Data:', $validatedData);
                 // ✅ Optionally add new objectives & activities
                 if (!empty($validatedData['application_objectives'])) {
-                    $this->syncObjectivesAndActivities($validatedData['application_objectives'] ?? [], $existingAop);
+                    $this->syncObjectivesAndActivities($validatedData['application_objectives'], $existingAop);
                 }
 
                 Log::create([
@@ -1773,23 +1734,66 @@ class AopApplicationController extends Controller
 
         DB::beginTransaction();
         try {
-            $user_id = $curr_user->id;
-            $area = $this->getUserArea($user_id);
+            $validatedData = $request->validated();
+            \Log::debug('Validated data:', $validatedData);
+            $user_id = 2;
+            // $user_id = $request->user()->id;
 
-            $existingAop = $this->getExistingAop($area);
+            $assignedArea = AssignedArea::where('user_id', $user_id)->first();
+            $area = $assignedArea->findDetails();
+
+            $existingAop = AopApplication::where('sector', $area['sector'])
+                ->where('sector_id', $area['details']['id'])
+                ->first();
+
+            $divisionChiefId = $this->getDivisionChiefIdFromArea($area);
+
+            $mccChiefId = optional(Division::where('name', 'Office of Medical Center Chief')->first())->head_id;
+            if (!$mccChiefId) {
+                return response()->json(['message' => 'Medical Center Chief not found.'], 404);
+            }
+
+            $planningOfficerId = optional(Section::where('name', 'Planning Unit')->first())->head_id;
+            if (!$planningOfficerId) {
+                return response()->json(['message' => 'Planning Officer not found.'], 404);
+            }
+
+            $budgetOfficerId = optional(Section::where('name', 'FS: Budget Section')->first())->head_id;
+            if (!$budgetOfficerId) {
+                return response()->json(['message' => 'Budget Officer not found.'], 404);
+            }
+
             if ($existingAop) {
-                return response()->json(['message' => 'You already have an AOP application in your area.'], 200);
+                // ✅ Update existing AOP
+                $existingAop->update([
+                    'user_id' => $user_id,
+                    'division_chief_id' => $divisionChiefId,
+                    'mcc_chief_id' => $mccChiefId,
+                    'planning_officer_id' => $planningOfficerId,
+                    'mission' => $validatedData['mission'] ?? $existingAop->mission,
+                    'status' => $validatedData['status'] ?? $existingAop->status,
+                    'has_discussed' => $validatedData['has_discussed'] ?? $existingAop->has_discussed,
+                    'remarks' => $validatedData['remarks'] ?? $existingAop->remarks,
+                ]);
+                \Log::debug('Validated Data:', $validatedData);
+                // ✅ Optionally add new objectives & activities
+                if (!empty($validatedData['application_objectives'])) {
+                    $this->syncObjectivesAndActivities($validatedData['application_objectives'] ?? [], $existingAop);
+                }
+
+                $this->updatePpmpTotal($existingAop, $ppmpApplication);
+
+                Log::create([
+                    'aop_application_id' => $existingAop->id,
+                    'action' => "Update Aop Draft",
+                    'action_by' => $user_id,
+                ]);
+
+                DB::commit();
+                return response()->json(['message' => 'AOP draft updated successfully'], 200);
             }
 
-            $divisionChiefId = $this->getDivisionChiefId($area);
-            $mccChiefId = Division::where('name', 'Office of Medical Center Chief')->value('head_id');
-            $planningOfficerId = Section::where('name', 'Planning Unit')->value('head_id');
-            $budgetOfficerId = Section::where('name', 'FS: Budget Section')->value('head_id');
-
-            if (!$mccChiefId || !$planningOfficerId || !$budgetOfficerId) {
-                return response()->json(['message' => 'One of the required officers not found.'], 404);
-            }
-
+            // ✅ Create new AOP application
             $aopApplication = AopApplication::create([
                 'user_id' => $user_id,
                 'division_chief_id' => $divisionChiefId,
@@ -1797,7 +1801,7 @@ class AopApplicationController extends Controller
                 'planning_officer_id' => $planningOfficerId,
                 'aop_application_uuid' => Str::uuid(),
                 'mission' => $validatedData['mission'] ?? null,
-                'status' => 'pending',
+                'status' => $validatedData['status'],
                 'sector' => $area['sector'],
                 'sector_id' => $area['details']['id'],
                 'has_discussed' => $validatedData['has_discussed'] ?? null,
@@ -1815,21 +1819,16 @@ class AopApplicationController extends Controller
                 'status' => 'pending',
             ]);
 
-            $this->storeObjectivesAndActivities($validatedData['application_objectives'] ?? [], $aopApplication, $ppmpApplication);
-
-            $this->updatePpmpTotal($aopApplication, $ppmpApplication);
-
-            Log::create([
-                'ppmp_application_id' => $ppmpApplication->id,
-                'action' => "Create Ppmp",
-                'action_by' => $user_id,
-            ]);
+            if (!empty($validatedData['application_objectives'])) {
+                $this->syncObjectivesAndActivities($validatedData['application_objectives'] ?? [], $aopApplication);
+            }
 
             Log::create([
                 'aop_application_id' => $aopApplication->id,
                 'action' => "Create Aop",
                 'action_by' => $user_id,
             ]);
+
 
             $approvalService = new ApprovalService($this->notificationService);
             $timelineResult = $approvalService->createInitialApplicationTimeline(
@@ -2025,6 +2024,49 @@ class AopApplicationController extends Controller
     }
 
 
+    private function deleteActivityWithRelations(Activity $activity)
+    {
+        $activity->ppmpItems()->detach();               // Many-to-many
+        $activity->resources()->delete();               // One-to-many
+        $activity->responsiblePeople()->delete();       // One-to-many
+        $activity->target()?->delete();                 // One-to-one (optional)
+        $activity->delete();                            // Activity itself
+    }
+
+    private function deleteObjectiveWithRelations(ApplicationObjective $objective)
+    {
+        foreach ($objective->activities as $activity) {
+            $this->deleteActivityWithRelations($activity);
+        }
+
+        $objective->otherObjective()?->delete();             // 'Others' text
+        $objective->otherSuccessIndicator()?->delete();      // 'Others' indicator
+        $objective->delete();                                // Objective itself
+    }
+
+    public function destroyActivities(Activity $aopActivity)
+    {
+        $this->deleteActivityWithRelations($aopActivity);
+        return response()->json([], Response::HTTP_NO_CONTENT);
+    }
+
+    public function destroyObjectives(ApplicationObjective $aopObjective)
+    {
+        $this->deleteObjectiveWithRelations($aopObjective);
+        return response()->json([], Response::HTTP_NO_CONTENT);
+    }
+
+    public function destroyResource(Resource $aopResource)
+    {
+        $aopResource->delete();
+        return response()->json([], Response::HTTP_NO_CONTENT);
+    }
+
+    public function destroyResponsiblePerson(ResponsiblePerson $responsiblePerson)
+    {
+        $responsiblePerson->delete();
+        return response()->json([], Response::HTTP_NO_CONTENT);
+    }
 
 
     private function getDivisionChiefIdFromArea(array $area): ?int
