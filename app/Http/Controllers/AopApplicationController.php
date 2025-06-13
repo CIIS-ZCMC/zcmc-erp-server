@@ -1775,6 +1775,16 @@ class AopApplicationController extends Controller
                     'has_discussed' => $validatedData['has_discussed'] ?? $existingAop->has_discussed,
                     'remarks' => $validatedData['remarks'] ?? $existingAop->remarks,
                 ]);
+
+                $ppmpApplication = $existingAop->ppmpApplication()->create([
+                    'user_id' => $user_id,
+                    'division_chief_id' => $divisionChiefId,
+                    'budget_officer_id' => $budgetOfficerId,
+                    'planning_officer_id' => $planningOfficerId,
+                    'ppmp_application_uuid' => Str::uuid(),
+                    'year' => now()->addYear()->year,
+                    'status' => 'pending',
+                ]);
                 \Log::debug('Validated Data:', $validatedData);
                 // ✅ Optionally add new objectives & activities
                 if (!empty($validatedData['application_objectives'])) {
@@ -2026,11 +2036,22 @@ class AopApplicationController extends Controller
 
     private function deleteActivityWithRelations(Activity $activity)
     {
-        $activity->ppmpItems()->detach();               // Many-to-many
-        $activity->resources()->delete();               // One-to-many
-        $activity->responsiblePeople()->delete();       // One-to-many
-        $activity->target()?->delete();                 // One-to-one (optional)
-        $activity->delete();                            // Activity itself
+        $aopApplication = $activity->objective->aopApplication;
+        $ppmpApplication = $aopApplication?->ppmpApplication;
+
+        if ($ppmpApplication) {
+            foreach ($activity->resources as $resource) {
+                \App\Models\PpmpItem::where('ppmp_application_id', $ppmpApplication->id)
+                    ->where('item_id', $resource->item_id)
+                    ->delete();
+            }
+        }
+
+        // Now delete related data
+        $activity->resources()->delete();
+        $activity->responsiblePeople()->delete();
+        $activity->target()?->delete();
+        $activity->delete();
     }
 
     private function deleteObjectiveWithRelations(ApplicationObjective $objective)
@@ -2039,9 +2060,9 @@ class AopApplicationController extends Controller
             $this->deleteActivityWithRelations($activity);
         }
 
-        $objective->otherObjective()?->delete();             // 'Others' text
-        $objective->otherSuccessIndicator()?->delete();      // 'Others' indicator
-        $objective->delete();                                // Objective itself
+        $objective->otherObjective()?->delete();
+        $objective->otherSuccessIndicator()?->delete();
+        $objective->delete();
     }
 
     public function destroyActivities(Activity $aopActivity)
@@ -2058,8 +2079,25 @@ class AopApplicationController extends Controller
 
     public function destroyResource(Resource $aopResource)
     {
+
+        $activity = $aopResource->activity;
+        $objective = $activity->objective;
+        $aopApplication = $objective->aopApplication;
+
+
+        $ppmpApplication = $aopApplication->ppmpApplication;
+
+
+        if ($ppmpApplication) {
+            \App\Models\PpmpItem::where('ppmp_application_id', $ppmpApplication->id)
+                ->where('item_id', $aopResource->item_id)
+                ->delete();
+        }
+
+
         $aopResource->delete();
-        return response()->json([], Response::HTTP_NO_CONTENT);
+
+        return response()->json([], \Illuminate\Http\Response::HTTP_NO_CONTENT);
     }
 
     public function destroyResponsiblePerson(ResponsiblePerson $responsiblePerson)
