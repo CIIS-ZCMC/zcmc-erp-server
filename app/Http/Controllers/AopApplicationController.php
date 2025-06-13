@@ -1776,26 +1776,27 @@ class AopApplicationController extends Controller
                     'remarks' => $validatedData['remarks'] ?? $existingAop->remarks,
                 ]);
 
-                $ppmpApplication = $existingAop->ppmpApplication()->create([
+                $ppmpApplication = $existingAop->ppmpApplication->update([
                     'user_id' => $user_id,
                     'division_chief_id' => $divisionChiefId,
                     'budget_officer_id' => $budgetOfficerId,
                     'planning_officer_id' => $planningOfficerId,
-                    'ppmp_application_uuid' => Str::uuid(),
                     'year' => now()->addYear()->year,
                     'status' => 'pending',
                 ]);
+
                 \Log::debug('Validated Data:', $validatedData);
                 // ✅ Optionally add new objectives & activities
                 if (!empty($validatedData['application_objectives'])) {
                     $this->syncObjectivesAndActivities($validatedData['application_objectives'] ?? [], $existingAop);
                 }
 
+                $this->syncPpmpItemsFromResources($existingAop, $ppmpApplication);
                 $this->updatePpmpTotal($existingAop, $ppmpApplication);
 
                 Log::create([
                     'aop_application_id' => $existingAop->id,
-                    'action' => "Update Aop Draft",
+                    'action' => "Update Aop",
                     'action_by' => $user_id,
                 ]);
 
@@ -1833,6 +1834,8 @@ class AopApplicationController extends Controller
                 $this->syncObjectivesAndActivities($validatedData['application_objectives'] ?? [], $aopApplication);
             }
 
+            $this->createPpmpItemsFromActivities($aopApplication, $ppmpApplication);
+
             Log::create([
                 'aop_application_id' => $aopApplication->id,
                 'action' => "Create Aop",
@@ -1857,6 +1860,86 @@ class AopApplicationController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    private function createPpmpItemsFromActivities(AopApplication $aopApplication, PpmpApplication $ppmpApplication)
+    {
+        foreach ($aopApplication->applicationObjectives as $objective) {
+            foreach ($objective->activities as $activity) {
+                foreach ($activity->resources as $resource) {
+                    $item = $resource->item;
+
+                    $ppmp_item = PpmpItem::create([
+                        'ppmp_application_id' => $ppmpApplication->id,
+                        'item_id' => $item->id,
+                        'estimated_budget' => $item->estimated_budget,
+                        'expense_class' => $resource->expense_class,
+                    ]);
+
+                    // Attach to activity
+                    $activity->ppmpItems()->attach($ppmp_item->id);
+
+                    // Create monthly schedule
+                    for ($month = 1; $month <= 12; $month++) {
+                        PpmpSchedule::create([
+                            'ppmp_item_id' => $ppmp_item->id,
+                            'month' => $month,
+                            'year' => now()->addYear()->year,
+                            'quantity' => 0,
+                        ]);
+                    }
+                }
+            }
+        }
+    }
+
+    private function syncPpmpItemsFromResources(AopApplication $aopApplication, PpmpApplication $ppmpApplication)
+    {
+        // Get all current resource item IDs from AOP
+        $resourceItems = AopResource::whereHas('activity.objective', function ($q) use ($aopApplication) {
+            $q->where('aop_application_id', $aopApplication->id);
+        })->get();
+
+        $currentResourceItemIds = $resourceItems->pluck('item_id')->unique()->toArray();
+
+        // Existing PPMP items for this PPMP application
+        $existingPpmpItems = $ppmpApplication->ppmpItems()->get();
+        $existingItemIds = $existingPpmpItems->pluck('item_id')->toArray();
+
+        // Remove PPMP items that are no longer in AOP resources
+        foreach ($existingPpmpItems as $ppmpItem) {
+            if (!in_array($ppmpItem->item_id, $currentResourceItemIds)) {
+                $ppmpItem->schedules()->delete();
+                $ppmpItem->activities()->detach();
+                $ppmpItem->delete();
+            }
+        }
+
+        // Add PPMP items for new resource items
+        foreach ($resourceItems as $resource) {
+            $item = $resource->item;
+            if (!$ppmpApplication->ppmpItems()->where('item_id', $item->id)->exists()) {
+                $ppmpItem = PpmpItem::create([
+                    'ppmp_application_id' => $ppmpApplication->id,
+                    'item_id' => $item->id,
+                    'estimated_budget' => $item->estimated_budget,
+                    'expense_class' => $resource->expense_class,
+                ]);
+
+                // Link to activity
+                $resource->activity->ppmpItems()->attach($ppmpItem->id);
+
+                // Create 12-month schedule (optional default)
+                for ($month = 1; $month <= 12; $month++) {
+                    PpmpSchedule::create([
+                        'ppmp_item_id' => $ppmpItem->id,
+                        'month' => $month,
+                        'year' => now()->addYear()->year,
+                        'quantity' => 0
+                    ]);
+                }
+            }
         }
     }
 
