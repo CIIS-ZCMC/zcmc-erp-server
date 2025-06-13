@@ -25,7 +25,7 @@ class RealtimeCommunicationHelper
     {
         // Use environment variables with fallbacks
         self::$SOCKET_PRODUCTION_URL = env('SOCKET_PRODUCTION_URL', 'https://socket.zcmc.online/');
-        self::$SOCKET_DEVELOPMENT_URL = env('SOCKET_DEVELOPMENT_URL', 'http://localhost:3025/');
+        self::$SOCKET_DEVELOPMENT_URL = env('SOCKET_DEVELOPMENT_URL', 'http://192.168.3.121:3025/');
     }
 
     /**
