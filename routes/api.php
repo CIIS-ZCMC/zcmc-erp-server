@@ -227,10 +227,10 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::get('aop-application-edit/{id}', [AopApplicationController::class, "edit"]);
 
     //Delete Actions under AOP Module [Objectives, Activities, Resources, AOP]
-    Route::delete('aop-application/objectives/{aopObjective}', [AopApplicationController::class, "destroyObjectives"]);
-    Route::delete('aop-application/activities/{aopActivity}', [AopApplicationController::class, "destroyActivities"]);
-    Route::delete('aop-application/resources/{aopResource}', [AopApplicationController::class, "destroyResources"]);
-    Route::delete('aop-application/{aopApplication}', [AopApplicationController::class, "destroy"]);
+    Route::delete('/resources/{id}', [AopApplicationController::class, 'destroyResource']);
+    Route::delete('/activities/{id}', [AopApplicationController::class, 'destroyActivity']);
+    Route::delete('/objectives/{id}', [AopApplicationController::class, 'destroyObjective']);
+    Route::delete('/responsible-people/{id}', [AopApplicationController::class, 'destroyResponsiblePerson']);
 
     // Deadlines
     Route::get('deadlines', [DeadlineController::class, 'index']);
