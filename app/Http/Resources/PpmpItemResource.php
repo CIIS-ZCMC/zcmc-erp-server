@@ -83,7 +83,7 @@ class PpmpItemResource extends JsonResource
                 'unit' => $ppmpItem->item->itemUnit->code ?? null,
                 'total_amount' => $ppmpItem->total_amount ?? 0,
                 'target_by_quarter' => $target_by_quarter,
-                'procurement_mode' => $ppmpItem->procurementMode->name ?? null,
+                'procurement_mode' => $ppmpItem->procurementMode ?? null,
                 'remarks' => $ppmpItem->item->remarks ?? null,
             ];
         });
@@ -154,6 +154,7 @@ class PpmpItemResource extends JsonResource
         //     });
 
 
+
         return [
             'id' => $ppmp_application->id,
             'ppmp_application_uuid' => $ppmp_application->ppmp_application_uuid ?? null,
@@ -161,7 +162,7 @@ class PpmpItemResource extends JsonResource
             'status' => $ppmp_application->status ?? null,
             'remarks' => $ppmp_application->remarks ?? null,
             'year' => $ppmp_application->year ?? null,
-            'is_draft' => $ppmp_application->status !== 'submitted' ? 1 : 0,
+            'is_draft' => $ppmp_application->status === 'draft' ? 1 : 0,
             'user' => $ppmp_application->user ? new UserResource($ppmp_application->user) : null,
             'division_chief' => $ppmp_application->divisionChief ? new UserResource($ppmp_application->divisionChief) : null,
             'budget_officer' => $ppmp_application->budgetOfficer ? new UserResource($ppmp_application->budgetOfficer) : null,
