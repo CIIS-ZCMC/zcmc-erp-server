@@ -105,10 +105,10 @@ class NotificationService
                     }
 
                     // Send AOP-specific email notification with context
-                    $this->emailService->sendAopStatusUpdate('micahmustaham@gmail.com', $context, $emailData);
+                    $this->emailService->sendAopStatusUpdate('dev.artlouises@gmail.com', $context, $emailData);
                 } else {
                     // Send general notification email
-                    $this->emailService->sendNotification('micahmustaham@gmail.com', $emailData);
+                    $this->emailService->sendNotification('dev.artlouises@gmail.com', $emailData);
                 }
             }
 
