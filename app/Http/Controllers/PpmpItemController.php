@@ -48,48 +48,45 @@ class PpmpItemController extends Controller
             ->first();
 
         if ($aop_application) {
-            $ppmp_item = PpmpItem::with([
-                'ppmpApplication.user',
-                'ppmpApplication.divisionChief',
-                'ppmpApplication.budgetOfficer',
-                'ppmpApplication.aopApplication',
-                'item.itemUnit',
-                'item.itemCategory',
-                'item.itemClassification',
-                'item.itemSpecifications',
-                'item.terminologyCategory',
-                'procurementMode',
-                'itemRequest',
-                'activities',
-                'comments',
-                'ppmpSchedule',
-            ]);
-            if ($ppmp_application_id !== null) {
-                $ppmp_item->where('ppmp_application_id', $ppmp_application_id);
-            } else {
-                $ppmp_item->whereHas('ppmpApplication', function ($query) use ($aop_application) {
-                    $query->where('aop_application_id', $aop_application->id);
-                });
+            $ppmp_application = PpmpApplication::where('aop_application_id', $aop_application->id)->first();
+
+            if ($ppmp_application) {
+                $ppmp_item = PpmpItem::with([
+                    'ppmpApplication.user',
+                    'ppmpApplication.divisionChief',
+                    'ppmpApplication.budgetOfficer',
+                    'ppmpApplication.planningOfficer',
+                    'ppmpApplication.aopApplication',
+                    'item.itemUnit',
+                    'item.itemCategory',
+                    'item.itemClassification',
+                    'item.itemSpecifications',
+                    'item.terminologyCategory',
+                    'procurementMode',
+                    'itemRequest',
+                    'activities',
+                    'comments',
+                    'ppmpSchedule',
+                ]);
+
+                if ($ppmp_application_id !== null) {
+                    $ppmp_item->where('ppmp_application_id', $ppmp_application_id);
+                } else {
+                    $ppmp_item->whereHas('ppmpApplication', function ($query) use ($ppmp_application, $aop_application) {
+                        $query->where('id', $ppmp_application->id)->where('aop_application_id', $aop_application->id);
+                    });
+                }
+
+                $ppmp_items = $ppmp_item->whereNull('deleted_at')->get();
+
+                return [
+                    'ppmp_application' => $ppmp_application,
+                    'ppmp_items' => $ppmp_items
+                ];
             }
-
-            $result = $ppmp_item->whereNull('deleted_at')
-                ->orderBy('id')
-                ->get()
-                ->groupBy(function ($item) {
-                    $app = $item->ppmpApplication;
-                    return $app ? "{$app->year}_{$app->aopApplication->sector_id}" : 'undefined';
-                })
-                ->map(function ($items) {
-                    return [
-                        'ppmp_application' => $items->first()->ppmpApplication,
-                        'ppmp_items' => $items
-                    ];
-                })->first();
-
-            return $result;
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     public function index(Request $request)

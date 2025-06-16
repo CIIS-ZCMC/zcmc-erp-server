@@ -48,7 +48,6 @@ class PpmpItem extends Model
 
     public function activities()
     {
-        // return $this->belongsToMany(Activity::class);
         return $this->belongsToMany(Activity::class, 'activity_ppmp_item')
             ->using(ActivityPpmpItem::class)
             ->withPivot('remarks', 'deleted_at')
