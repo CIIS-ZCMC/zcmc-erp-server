@@ -976,45 +976,6 @@ class AopApplicationController extends Controller
         return response()->json($all);
     }
 
-    // Delete Objectives
-    public function destroyObjectives(AopObjective $aopObjective, Request $request)
-    {
-        $aopObjective->delete();
-
-        // Handle Additional process here if needed
-
-        return response()->json([], Response::HTTP_NO_CONTENT);
-    }
-
-    // Delete Activities
-    public function destroyActivities(AopActivities $aopActivity, Request $request)
-    {
-        $aopActivity->delete();
-
-        // Handle Additional process here if needed
-
-        return response()->json([], Response::HTTP_NO_CONTENT);
-    }
-
-    // Delete Resources
-    public function destroyResources(AopResource $aopResource, Request $request)
-    {
-        $aopResource->delete();
-
-        // Handle Additional process here if needed
-
-        return response()->json([], Response::HTTP_NO_CONTENT);
-    }
-
-    // Delete AOP
-    public function destroy(AopApplication $aopApplication)
-    {
-        $aop_application->delete();
-
-        // Handle Additional process here if needed
-
-        return response()->json([], Response::HTTP_NO_CONTENT);
-    }
 
     public function aopRequests(Request $request): JsonResponse
     {
@@ -1715,7 +1676,7 @@ class AopApplicationController extends Controller
                 \Log::debug('Validated Data:', $validatedData);
                 // ✅ Optionally add new objectives & activities
                 if (!empty($validatedData['application_objectives'])) {
-                    $this->syncObjectivesAndActivities($validatedData['application_objectives'] ?? [], $existingAop);
+                    $this->syncObjectivesAndActivities($validatedData['application_objectives'], $existingAop);
                 }
 
                 Log::create([
@@ -1773,23 +1734,77 @@ class AopApplicationController extends Controller
 
         DB::beginTransaction();
         try {
-            $user_id = $curr_user->id;
-            $area = $this->getUserArea($user_id);
+            $validatedData = $request->validated();
+            \Log::debug('Validated data:', $validatedData);
+            $user_id = 2;
+            // $user_id = $request->user()->id;
 
-            $existingAop = $this->getExistingAop($area);
+            $assignedArea = AssignedArea::where('user_id', $user_id)->first();
+            $area = $assignedArea->findDetails();
+
+            $existingAop = AopApplication::where('sector', $area['sector'])
+                ->where('sector_id', $area['details']['id'])
+                ->first();
+
+            $divisionChiefId = $this->getDivisionChiefIdFromArea($area);
+
+            $mccChiefId = optional(Division::where('name', 'Office of Medical Center Chief')->first())->head_id;
+            if (!$mccChiefId) {
+                return response()->json(['message' => 'Medical Center Chief not found.'], 404);
+            }
+
+            $planningOfficerId = optional(Section::where('name', 'Planning Unit')->first())->head_id;
+            if (!$planningOfficerId) {
+                return response()->json(['message' => 'Planning Officer not found.'], 404);
+            }
+
+            $budgetOfficerId = optional(Section::where('name', 'FS: Budget Section')->first())->head_id;
+            if (!$budgetOfficerId) {
+                return response()->json(['message' => 'Budget Officer not found.'], 404);
+            }
+
             if ($existingAop) {
-                return response()->json(['message' => 'You already have an AOP application in your area.'], 200);
+                // ✅ Update existing AOP
+                $existingAop->update([
+                    'user_id' => $user_id,
+                    'division_chief_id' => $divisionChiefId,
+                    'mcc_chief_id' => $mccChiefId,
+                    'planning_officer_id' => $planningOfficerId,
+                    'mission' => $validatedData['mission'] ?? $existingAop->mission,
+                    'status' => $validatedData['status'] ?? $existingAop->status,
+                    'has_discussed' => $validatedData['has_discussed'] ?? $existingAop->has_discussed,
+                    'remarks' => $validatedData['remarks'] ?? $existingAop->remarks,
+                ]);
+
+                $ppmpApplication = $existingAop->ppmpApplication->update([
+                    'user_id' => $user_id,
+                    'division_chief_id' => $divisionChiefId,
+                    'budget_officer_id' => $budgetOfficerId,
+                    'planning_officer_id' => $planningOfficerId,
+                    'year' => now()->addYear()->year,
+                    'status' => 'pending',
+                ]);
+
+                \Log::debug('Validated Data:', $validatedData);
+                // ✅ Optionally add new objectives & activities
+                if (!empty($validatedData['application_objectives'])) {
+                    $this->syncObjectivesAndActivities($validatedData['application_objectives'] ?? [], $existingAop);
+                }
+
+                $this->syncPpmpItemsFromResources($existingAop, $ppmpApplication);
+                $this->updatePpmpTotal($existingAop, $ppmpApplication);
+
+                Log::create([
+                    'aop_application_id' => $existingAop->id,
+                    'action' => "Update Aop",
+                    'action_by' => $user_id,
+                ]);
+
+                DB::commit();
+                return response()->json(['message' => 'AOP draft updated successfully'], 200);
             }
 
-            $divisionChiefId = $this->getDivisionChiefId($area);
-            $mccChiefId = Division::where('name', 'Office of Medical Center Chief')->value('head_id');
-            $planningOfficerId = Section::where('name', 'Planning Unit')->value('head_id');
-            $budgetOfficerId = Section::where('name', 'FS: Budget Section')->value('head_id');
-
-            if (!$mccChiefId || !$planningOfficerId || !$budgetOfficerId) {
-                return response()->json(['message' => 'One of the required officers not found.'], 404);
-            }
-
+            // ✅ Create new AOP application
             $aopApplication = AopApplication::create([
                 'user_id' => $user_id,
                 'division_chief_id' => $divisionChiefId,
@@ -1797,7 +1812,7 @@ class AopApplicationController extends Controller
                 'planning_officer_id' => $planningOfficerId,
                 'aop_application_uuid' => Str::uuid(),
                 'mission' => $validatedData['mission'] ?? null,
-                'status' => 'pending',
+                'status' => $validatedData['status'],
                 'sector' => $area['sector'],
                 'sector_id' => $area['details']['id'],
                 'has_discussed' => $validatedData['has_discussed'] ?? null,
@@ -1815,21 +1830,18 @@ class AopApplicationController extends Controller
                 'status' => 'pending',
             ]);
 
-            $this->storeObjectivesAndActivities($validatedData['application_objectives'] ?? [], $aopApplication, $ppmpApplication);
+            if (!empty($validatedData['application_objectives'])) {
+                $this->syncObjectivesAndActivities($validatedData['application_objectives'] ?? [], $aopApplication);
+            }
 
-            $this->updatePpmpTotal($aopApplication, $ppmpApplication);
-
-            Log::create([
-                'ppmp_application_id' => $ppmpApplication->id,
-                'action' => "Create Ppmp",
-                'action_by' => $user_id,
-            ]);
+            $this->createPpmpItemsFromActivities($aopApplication, $ppmpApplication);
 
             Log::create([
                 'aop_application_id' => $aopApplication->id,
                 'action' => "Create Aop",
                 'action_by' => $user_id,
             ]);
+
 
             $approvalService = new ApprovalService($this->notificationService);
             $timelineResult = $approvalService->createInitialApplicationTimeline(
@@ -1848,6 +1860,86 @@ class AopApplicationController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    private function createPpmpItemsFromActivities(AopApplication $aopApplication, PpmpApplication $ppmpApplication)
+    {
+        foreach ($aopApplication->applicationObjectives as $objective) {
+            foreach ($objective->activities as $activity) {
+                foreach ($activity->resources as $resource) {
+                    $item = $resource->item;
+
+                    $ppmp_item = PpmpItem::create([
+                        'ppmp_application_id' => $ppmpApplication->id,
+                        'item_id' => $item->id,
+                        'estimated_budget' => $item->estimated_budget,
+                        'expense_class' => $resource->expense_class,
+                    ]);
+
+                    // Attach to activity
+                    $activity->ppmpItems()->attach($ppmp_item->id);
+
+                    // Create monthly schedule
+                    for ($month = 1; $month <= 12; $month++) {
+                        PpmpSchedule::create([
+                            'ppmp_item_id' => $ppmp_item->id,
+                            'month' => $month,
+                            'year' => now()->addYear()->year,
+                            'quantity' => 0,
+                        ]);
+                    }
+                }
+            }
+        }
+    }
+
+    private function syncPpmpItemsFromResources(AopApplication $aopApplication, PpmpApplication $ppmpApplication)
+    {
+        // Get all current resource item IDs from AOP
+        $resourceItems = AopResource::whereHas('activity.objective', function ($q) use ($aopApplication) {
+            $q->where('aop_application_id', $aopApplication->id);
+        })->get();
+
+        $currentResourceItemIds = $resourceItems->pluck('item_id')->unique()->toArray();
+
+        // Existing PPMP items for this PPMP application
+        $existingPpmpItems = $ppmpApplication->ppmpItems()->get();
+        $existingItemIds = $existingPpmpItems->pluck('item_id')->toArray();
+
+        // Remove PPMP items that are no longer in AOP resources
+        foreach ($existingPpmpItems as $ppmpItem) {
+            if (!in_array($ppmpItem->item_id, $currentResourceItemIds)) {
+                $ppmpItem->schedules()->delete();
+                $ppmpItem->activities()->detach();
+                $ppmpItem->delete();
+            }
+        }
+
+        // Add PPMP items for new resource items
+        foreach ($resourceItems as $resource) {
+            $item = $resource->item;
+            if (!$ppmpApplication->ppmpItems()->where('item_id', $item->id)->exists()) {
+                $ppmpItem = PpmpItem::create([
+                    'ppmp_application_id' => $ppmpApplication->id,
+                    'item_id' => $item->id,
+                    'estimated_budget' => $item->estimated_budget,
+                    'expense_class' => $resource->expense_class,
+                ]);
+
+                // Link to activity
+                $resource->activity->ppmpItems()->attach($ppmpItem->id);
+
+                // Create 12-month schedule (optional default)
+                for ($month = 1; $month <= 12; $month++) {
+                    PpmpSchedule::create([
+                        'ppmp_item_id' => $ppmpItem->id,
+                        'month' => $month,
+                        'year' => now()->addYear()->year,
+                        'quantity' => 0
+                    ]);
+                }
+            }
         }
     }
 
@@ -2025,6 +2117,77 @@ class AopApplicationController extends Controller
     }
 
 
+    private function deleteActivityWithRelations(Activity $activity)
+    {
+        $aopApplication = $activity->objective->aopApplication;
+        $ppmpApplication = $aopApplication?->ppmpApplication;
+
+        if ($ppmpApplication) {
+            foreach ($activity->resources as $resource) {
+                \App\Models\PpmpItem::where('ppmp_application_id', $ppmpApplication->id)
+                    ->where('item_id', $resource->item_id)
+                    ->delete();
+            }
+        }
+
+        // Now delete related data
+        $activity->resources()->delete();
+        $activity->responsiblePeople()->delete();
+        $activity->target()?->delete();
+        $activity->delete();
+    }
+
+    private function deleteObjectiveWithRelations(ApplicationObjective $objective)
+    {
+        foreach ($objective->activities as $activity) {
+            $this->deleteActivityWithRelations($activity);
+        }
+
+        $objective->otherObjective()?->delete();
+        $objective->otherSuccessIndicator()?->delete();
+        $objective->delete();
+    }
+
+    public function destroyActivities(Activity $aopActivity)
+    {
+        $this->deleteActivityWithRelations($aopActivity);
+        return response()->json([], Response::HTTP_NO_CONTENT);
+    }
+
+    public function destroyObjectives(ApplicationObjective $aopObjective)
+    {
+        $this->deleteObjectiveWithRelations($aopObjective);
+        return response()->json([], Response::HTTP_NO_CONTENT);
+    }
+
+    public function destroyResource(Resource $aopResource)
+    {
+
+        $activity = $aopResource->activity;
+        $objective = $activity->objective;
+        $aopApplication = $objective->aopApplication;
+
+
+        $ppmpApplication = $aopApplication->ppmpApplication;
+
+
+        if ($ppmpApplication) {
+            \App\Models\PpmpItem::where('ppmp_application_id', $ppmpApplication->id)
+                ->where('item_id', $aopResource->item_id)
+                ->delete();
+        }
+
+
+        $aopResource->delete();
+
+        return response()->json([], \Illuminate\Http\Response::HTTP_NO_CONTENT);
+    }
+
+    public function destroyResponsiblePerson(ResponsiblePerson $responsiblePerson)
+    {
+        $responsiblePerson->delete();
+        return response()->json([], Response::HTTP_NO_CONTENT);
+    }
 
 
     private function getDivisionChiefIdFromArea(array $area): ?int
