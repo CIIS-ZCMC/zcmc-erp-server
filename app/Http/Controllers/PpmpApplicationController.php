@@ -46,7 +46,7 @@ class PpmpApplicationController extends Controller
             ->where('sector', $sector['sector'])
             ->first();
 
-        if ($aop_application) {
+        if (!$aop_application) {
             return response()->json([
                 'data' => (object) [],
                 'message' => 'No PPMP Application found.'
@@ -62,7 +62,7 @@ class PpmpApplicationController extends Controller
                     'activities'
                 ]);
             },
-            'aopApplication' => function ($query) use ($sector) {
+            'aopApplication' => function ($query) use ($sector): void {
                 $query->where('sector_id', $sector['details']['id'])
                     ->where('sector', $sector['details']['name']);
             }
