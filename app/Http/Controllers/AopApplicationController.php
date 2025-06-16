@@ -1776,7 +1776,7 @@ class AopApplicationController extends Controller
                     'remarks' => $validatedData['remarks'] ?? $existingAop->remarks,
                 ]);
 
-                $ppmpApplication = $existingAop->ppmpApplication->update([
+                $existingAop->ppmpApplication->update([
                     'user_id' => $user_id,
                     'division_chief_id' => $divisionChiefId,
                     'budget_officer_id' => $budgetOfficerId,
@@ -1790,7 +1790,7 @@ class AopApplicationController extends Controller
                 if (!empty($validatedData['application_objectives'])) {
                     $this->syncObjectivesAndActivities($validatedData['application_objectives'] ?? [], $existingAop);
                 }
-
+                $ppmpApplication = $existingAop->ppmpApplication;
                 $this->syncPpmpItemsFromResources($existingAop, $ppmpApplication);
                 $this->updatePpmpTotal($existingAop, $ppmpApplication);
 
@@ -1820,7 +1820,7 @@ class AopApplicationController extends Controller
                 'year' => now()->year + 1,
             ]);
 
-            $ppmpApplication = $aopApplication->ppmpApplication()->create([
+            $aopApplication->ppmpApplication()->create([
                 'user_id' => $user_id,
                 'division_chief_id' => $divisionChiefId,
                 'budget_officer_id' => $budgetOfficerId,
@@ -1833,6 +1833,7 @@ class AopApplicationController extends Controller
             if (!empty($validatedData['application_objectives'])) {
                 $this->syncObjectivesAndActivities($validatedData['application_objectives'] ?? [], $aopApplication);
             }
+            $ppmpApplication = $aopApplication->ppmpApplication;
 
             $this->createPpmpItemsFromActivities($aopApplication, $ppmpApplication);
 
