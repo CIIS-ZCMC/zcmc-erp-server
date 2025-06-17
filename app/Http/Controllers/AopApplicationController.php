@@ -917,17 +917,39 @@ class AopApplicationController extends Controller
         return new AopApplicationResource($aopApplication);
     }
 
-    public function getUsersWithDesignation()
+    public function getUsersWithDesignation(Request $request)
     {
-        $users = User::with('designation')
+        // $userId = $request->user()->id;
+        $userId = 2;
+        $assignedArea = AssignedArea::where('user_id', $userId)->first();
+
+        if (!$assignedArea) {
+            return response()->json(['message' => 'User has no assigned area.'], 404);
+        }
+
+        $areaDetails = $assignedArea->findDetails();
+
+        $sector = $areaDetails['sector'];
+        $sectorId = $areaDetails['details']->resource->id;
+
+        // Get users in the same assigned sector/area
+        $users = User::with(['assignedArea.designation'])
             ->where('id', '!=', 1)
+            ->whereHas('assignedArea', function ($query) use ($sector, $sectorId) {
+                $column = strtolower($sector) . '_id'; // e.g., division_id, section_id
+                $query->where($column, $sectorId);
+            })
             ->get()
             ->map(function ($user) {
+                $assignedArea = $user->assignedArea;
+                $area = $user->assignedArea?->findDetails();
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'label' => $user->name,
-                    'designation' => $user->designation?->name
+                    'designation' => $assignedArea?->designation?->name ?? 'No Designation',
+                    'sector' => $area['sector'] ?? 'Unassigned',
+                    'sector_id' => $area['details']['id'] ?? null,
                 ];
             });
 
