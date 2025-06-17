@@ -55,6 +55,10 @@ class PpmpApplication extends Model
         return $this->belongsTo(User::class, 'budget_officer_id');
     }
 
+    public function planningOfficer()
+    {
+        return $this->belongsTo(User::class, 'planning_officer_id');
+    }
     public function ppmpItems()
     {
         return $this->hasMany(PpmpItem::class);

@@ -48,48 +48,45 @@ class PpmpItemController extends Controller
             ->first();
 
         if ($aop_application) {
-            $ppmp_item = PpmpItem::with([
-                'ppmpApplication.user',
-                'ppmpApplication.divisionChief',
-                'ppmpApplication.budgetOfficer',
-                'ppmpApplication.aopApplication',
-                'item.itemUnit',
-                'item.itemCategory',
-                'item.itemClassification',
-                'item.itemSpecifications',
-                'item.terminologyCategory',
-                'procurementMode',
-                'itemRequest',
-                'activities',
-                'comments',
-                'ppmpSchedule',
-            ]);
-            if ($ppmp_application_id !== null) {
-                $ppmp_item->where('ppmp_application_id', $ppmp_application_id);
-            } else {
-                $ppmp_item->whereHas('ppmpApplication', function ($query) use ($aop_application) {
-                    $query->where('aop_application_id', $aop_application->id);
-                });
+            $ppmp_application = PpmpApplication::where('aop_application_id', $aop_application->id)->first();
+
+            if ($ppmp_application) {
+                $ppmp_item = PpmpItem::with([
+                    'ppmpApplication.user',
+                    'ppmpApplication.divisionChief',
+                    'ppmpApplication.budgetOfficer',
+                    'ppmpApplication.planningOfficer',
+                    'ppmpApplication.aopApplication',
+                    'item.itemUnit',
+                    'item.itemCategory',
+                    'item.itemClassification',
+                    'item.itemSpecifications',
+                    'item.terminologyCategory',
+                    'procurementMode',
+                    'itemRequest',
+                    'activities',
+                    'comments',
+                    'ppmpSchedule',
+                ]);
+
+                if ($ppmp_application_id !== null) {
+                    $ppmp_item->where('ppmp_application_id', $ppmp_application_id);
+                } else {
+                    $ppmp_item->whereHas('ppmpApplication', function ($query) use ($ppmp_application, $aop_application) {
+                        $query->where('id', $ppmp_application->id)->where('aop_application_id', $aop_application->id);
+                    });
+                }
+
+                $ppmp_items = $ppmp_item->whereNull('deleted_at')->get();
+
+                return [
+                    'ppmp_application' => $ppmp_application,
+                    'ppmp_items' => $ppmp_items
+                ];
             }
-
-            $result = $ppmp_item->whereNull('deleted_at')
-                ->orderBy('id')
-                ->get()
-                ->groupBy(function ($item) {
-                    $app = $item->ppmpApplication;
-                    return $app ? "{$app->year}_{$app->aopApplication->sector_id}" : 'undefined';
-                })
-                ->map(function ($items) {
-                    return [
-                        'ppmp_application' => $items->first()->ppmpApplication,
-                        'ppmp_items' => $items
-                    ];
-                })->first();
-
-            return $result;
-        } else {
-            return null;
         }
+
+        return null;
     }
 
     public function index(Request $request)
@@ -134,33 +131,27 @@ class PpmpItemController extends Controller
             }
         }
 
-        $ppmp_application = PpmpApplication::with([
-            'ppmpItems' => function ($query) {
-                $query->with([
-                    'item',
-                    'item.itemUnit',
-                    'item.itemCategory',
-                    'item.itemClassification',
-                    'item.itemSpecifications',
-                    'item.terminologyCategory',
-                    'procurementMode',
-                    'itemRequest',
-                    'activities',
-                    'comments',
-                    'ppmpSchedule',
-                ]);
-            },
-            'aopApplication' => function ($query) use ($sector) {
-                $query->where('sector_id', $sector['details']['id'])
-                    ->where('sector', $sector['details']['name']);
-            }
-        ])->where('year', $year)->first();
+        $aop_application = AopApplication::where('year', $year)
+            ->where('sector_id', $sector['details']['id'])
+            ->where('sector', $sector['sector'])
+            ->first();
+
+        if (!$aop_application) {
+            return response()->json([
+                'message' => "No AOP application found for the specified year and sector.",
+            ], Response::HTTP_NOT_FOUND);
+        }
+
+        $ppmp_application = PpmpApplication::where('aop_application_id', $aop_application->id)
+            ->where('user_id', $user->id)
+            ->where('year', $year)
+            ->first();
 
         if (!$ppmp_application) {
             return response()->json([
                 'message' => "No record found.",
             ], Response::HTTP_NOT_FOUND);
-        } elseif ($ppmp_application->status === 'submitted') {
+        } elseif ($ppmp_application->status === 'pending') {
             return response()->json(
                 ['message' => "Looks like you've already submitted this application. You can't submit it again."],
                 Response::HTTP_FOUND
@@ -188,13 +179,13 @@ class PpmpItemController extends Controller
             'dec' => 12,
         ];
 
-        $ppmpItems = json_decode($request['PPMP_Items'], true);
+        $ppmp_items = json_decode($request['PPMP_Items'], true);
 
-        if ($ppmpItems !== null) {
-            foreach ($ppmpItems as $item) {
+        if ($ppmp_items !== null) {
+            foreach ($ppmp_items as $i) {
                 $procurement_mode = null;
-                if ($item['procurement_mode'] !== null) {
-                    $procurement = $item['procurement_mode']['name'] ?? $item['procurement_mode'];
+                if ($i['procurement_mode'] !== null) {
+                    $procurement = isset($i['procurement_mode']['name']) ? $i['procurement_mode']['name'] : $i['procurement_mode'];
                     $procurement_mode = ProcurementModes::where('name', $procurement)->first()->id;
 
                     if (!$procurement_mode) {
@@ -204,32 +195,30 @@ class PpmpItemController extends Controller
                     }
                 }
 
-                if ($request->is_draft === "0" && $item['procurement_mode'] === null) {
+                if ($request->is_draft === "0" && $i['procurement_mode'] === null) {
                     return response()->json([
                         'message' => 'Procurement mode is required.',
                     ], Response::HTTP_NOT_ACCEPTABLE);
                 }
 
-                $items = Item::where('code', $item['item_code'])->first();
+                $items = Item::where('code', $i['item_code'])->first();
                 if (!$items) {
                     return response()->json([
                         'message' => 'Item not found.',
                     ], Response::HTTP_NOT_FOUND);
                 }
 
-                $find_ppmp_item = PpmpItem::where('item_id', $items->id)
-                    ->where('expense_class', $item['expense_class'])
-                    ->first();
+                $find_ppmp_item = PpmpItem::where('id', $i['id'])->first();
 
                 $ppmp_data = [
                     'ppmp_application_id' => $ppmp_application->id,
                     'item_id' => $items->id,
                     'procurement_mode_id' => $procurement_mode,
-                    'item_request_id' => $item['item_request_id'] ?? null,
-                    'remarks' => $item['remarks'] ?? null,
-                    'estimated_budget' => $item['estimated_budget'] ?? 0,
-                    'total_quantity' => $item['quantity'] ?? 0,
-                    'total_amount' => $item['total_amount'] ?? 0,
+                    'item_request_id' => $i['item_request_id'] ?? null,
+                    'remarks' => $i['remarks'] ?? null,
+                    'estimated_budget' => $i['estimated_budget'] ?? 0,
+                    'total_quantity' => $i['quantity'] ?? 0,
+                    'total_amount' => $i['total_amount'] ?? 0,
                 ];
 
                 if (!$find_ppmp_item) {
@@ -239,22 +228,24 @@ class PpmpItemController extends Controller
                     $ppmpItem->update($ppmp_data); // Update PPMP item
                 }
 
-                foreach ($item['activities'] as $activity) {
-                    $activities = Activity::find($activity['activity_id']);
+                foreach ($i['activities'] as $activity) {
+                    $activity_id = isset($activity['activity_id']) ? $activity['activity_id'] : $activity['id'];
+                    $activities = Activity::find($activity_id);
 
                     if ($activities) {
-                        $activity_ppmp_item = $activities->ppmpItems()
-                            ->where('activity_id', $activities->id)
+                        $exists = $activities->ppmpItems()
                             ->where('ppmp_item_id', $ppmpItem->id)
-                            ->first();
+                            ->wherePivot('activity_id', $activities->id) // optional, usually redundant in this direction
+                            ->exists();
 
-                        if ($activity_ppmp_item === null) {
+                        if (!$exists) {
                             $activities->ppmpItems()->attach($ppmpItem->id, [
                                 'remarks' => $ppmpItem['remarks'],
                             ]);
                         } else {
-                            $activity_ppmp_item->pivot->remarks = $item['remarks'];
-                            $activity_ppmp_item->pivot->save();
+                            $activities->ppmpItems()->updateExistingPivot($ppmpItem->id, [
+                                'remarks' => $ppmpItem['remarks'],
+                            ]);
                         }
 
                         $resource = Resource::where('activity_id', $activities->id)
@@ -266,7 +257,7 @@ class PpmpItemController extends Controller
                             'item_id' => $items->id,
                             'purchase_type_id' => $resource->purchase_type_id ?? 1,
                             'quantity' => $resource->quantity ?? $activity['activity_quantity'],
-                            'expense_class' => $item['expense_class'],
+                            'expense_class' => $ppmpItem['expense_class'],
                         ];
 
                         if ($resource) {
@@ -278,7 +269,7 @@ class PpmpItemController extends Controller
                 }
 
                 $total_quantity = 0;
-                foreach ($item['target_by_quarter'] as $monthly => $quantity) {
+                foreach ($i['target_by_quarter'] as $monthly => $quantity) {
                     if ($quantity >= 0 && isset($monthMap[$monthly])) {
                         $total_quantity += $quantity;
 
@@ -305,7 +296,6 @@ class PpmpItemController extends Controller
                 $ppmpItem->update(['total_quantity' => $total_quantity]);
             }
 
-
             $planning_officer = User::find($ppmp_application->planning_officer_id);
             $status = $ppmp_application->status;
             $description = [
@@ -321,27 +311,33 @@ class PpmpItemController extends Controller
         }
         DB::commit();
 
-        $ppmp_application->load([
-            'ppmpItems' => function ($query) {
-                $query->with([
-                    'item',
-                    'item.itemUnit',
-                    'item.itemCategory',
-                    'item.itemClassification',
-                    'item.itemSpecifications',
-                    'item.terminologyCategory',
-                    'procurementMode',
-                    'itemRequest',
-                    'activities',
-                    'comments',
-                    'ppmpSchedule',
-                ]);
-            },
-            'aopApplication'
-        ]);
+        $ppmp_item = PpmpItem::with([
+            'ppmpApplication.user',
+            'ppmpApplication.divisionChief',
+            'ppmpApplication.budgetOfficer',
+            'ppmpApplication.planningOfficer',
+            'ppmpApplication.aopApplication',
+            'item.itemUnit',
+            'item.itemCategory',
+            'item.itemClassification',
+            'item.itemSpecifications',
+            'item.terminologyCategory',
+            'procurementMode',
+            'itemRequest',
+            'activities',
+            'comments',
+            'ppmpSchedule',
+        ])->where('ppmp_application_id', $ppmp_application->id)
+            ->whereNull('deleted_at')
+            ->get();
+
+        $data = [
+            'ppmp_application' => $ppmp_application,
+            'ppmp_items' => $ppmp_item
+        ];
 
         return response()->json([
-            'data' => new PpmpApplicationResource($ppmp_application),
+            'data' => new PpmpItemResource($data),
             'message' => 'PPMP Items created successfully.',
         ], Response::HTTP_CREATED);
     }

@@ -54,6 +54,7 @@ class PpmpApplicationController extends Controller
         }
 
         $ppmp_application = $query->with([
+            'aopApplication',
             'ppmpItems' => function ($query) {
                 $query->with([
                     'item',
@@ -61,12 +62,10 @@ class PpmpApplicationController extends Controller
                     'itemRequest',
                     'activities'
                 ]);
-            },
-            'aopApplication' => function ($query) use ($sector): void {
-                $query->where('sector_id', $sector['details']['id'])
-                    ->where('sector', $sector['details']['name']);
             }
-        ])->where('year', $year)->first();
+        ])->where('aop_application_id', $aop_application->id)
+            ->where('year', $year)
+            ->first();
 
         if (!$ppmp_application || $ppmp_application->ppmpItems === null) {
             return response()->json([
