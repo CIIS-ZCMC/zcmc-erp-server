@@ -201,42 +201,50 @@ class ApprovalService
                 }
             } else {
                 // If this is the first timeline entry (no existing timeline)
-                // Initial submission - route to Planning Unit (section id = 53)
-                $stage = 'planning_unit';
+                // Initial submission - route to Division Chief of user's area
+                $stage = 'division_chief';
 
-                // Get the Planning section (id = 53)
-                $planningSection = Section::find(53);
+                // Get the division that the current user belongs to
+                $division = Division::where('id', $current_user_assigned_area->division_id)->first();
 
-                if ($planningSection) {
-                    Log::info('Found Planning section', ['section_id' => $planningSection->id, 'name' => $planningSection->name]);
-
-                    // Get the head of the Planning section if available
-                    if ($planningSection->head_id) {
-                        $planning_unit_area = AssignedArea::where('section_id', 53)
-                            ->where('user_id', $planningSection->head_id)
-                            ->first();
-
-                        Log::info('Looking for Planning head area', [
-                            'head_id' => $planningSection->head_id,
-                            'found' => $planning_unit_area ? 'yes' : 'no'
-                        ]);
-                    }
-
-                    // If no specific head found, get any assigned area in this section
-                    if (!$planning_unit_area) {
-                        $planning_unit_area = AssignedArea::where('section_id', 53)->first();
-                        Log::info('Using any Planning section area', ['found' => $planning_unit_area ? 'yes' : 'no']);
-                    }
-                } else {
-                    Log::error('Planning section not found', ['section_id' => 53]);
-                    throw new \RuntimeException('Planning section (ID: 53) not found in the system');
+                if (!$division) {
+                    Log::error('Division not found', ['division_id' => $current_user_assigned_area->division_id]);
+                    throw new \RuntimeException('Division not found for the current user');
                 }
 
-                if ($planning_unit_area) {
-                    $next_area_id = $planning_unit_area->id;
+                Log::info('Found Division', ['division_id' => $division->id, 'name' => $division->name]);
+
+                // Get the division chief area
+                if ($division->head_id) {
+                    $division_chief_area = AssignedArea::where('user_id', $division->head_id)
+                        ->where('division_id', $division->id)
+                        ->first();
+
+                    Log::info('Looking for Division Chief area', [
+                        'head_id' => $division->head_id,
+                        'found' => $division_chief_area ? 'yes' : 'no'
+                    ]);
+                }
+
+                // If no division chief found, try to find any division chief
+                if (!isset($division_chief_area) || !$division_chief_area) {
+                    $division_chief_area = AssignedArea::where('division_id', $division->id)
+                        ->where('is_division_head', true)
+                        ->first();
+
+                    if ($division_chief_area) {
+                        Log::info('Found Division Chief by role flag', [
+                            'assigned_area_id' => $division_chief_area->id,
+                            'user_id' => $division_chief_area->user_id
+                        ]);
+                    }
+                }
+
+                if ($division_chief_area) {
+                    $next_area_id = $division_chief_area->id;
                 } else {
-                    Log::error('No planning unit area found', ['section_id' => 53]);
-                    throw new \RuntimeException('No planning unit area found for routing');
+                    Log::error('No division chief area found', ['division_id' => $division->id]);
+                    throw new \RuntimeException('No division chief area found for routing');
                 }
             }
 
@@ -249,13 +257,13 @@ class ApprovalService
                     'application_id' => $aop_application->id
                 ]);
                 // Show error if we can't find the next area
-                if ($stage === 'init' || $stage === 'planning_unit') {
-                    Log::error('No next area ID determined for initial or planning unit stage', [
+                if ($stage === 'init' || $stage === 'division_chief') {
+                    Log::error('No next area ID determined for initial or division chief stage', [
                         'stage' => $stage,
                         'status' => $status,
                         'application_id' => $aop_application->id
                     ]);
-                    throw new \RuntimeException('No next area ID determined for initial or planning unit stage');
+                    throw new \RuntimeException('No next area ID determined for initial or division chief stage');
                 }
             }
 
@@ -342,9 +350,7 @@ class ApprovalService
 
                     // Determine the stage name for better status clarity
                     $stage_description = '';
-                    if ($stage === 'planning_unit') {
-                        $stage_description = 'Planning Unit';
-                    } elseif ($stage === 'division_chief') {
+                    if ($stage === 'division_chief') {
                         $stage_description = 'Division Chief';
                     } elseif ($stage === 'omcc') {
                         $stage_description = 'Office of the Medical Center Chief';
@@ -475,43 +481,50 @@ class ApprovalService
             $aop_user = $current_user;
             $current_user_assigned_area = $current_user->assignedArea;
 
-            // Initial submission - route to Planning Unit (section id = 53)
+            // Initial submission - route to Division Chief of user's area
             $next_area_id = null;
-            $planning_unit_area = null;
 
-            // Get the Planning section (id = 53)
-            $planningSection = Section::find(53);
+            // Get the division that the current user belongs to
+            $division = Division::where('id', $current_user_assigned_area->division_id)->first();
 
-            if ($planningSection) {
-                Log::info('Found Planning section', ['section_id' => $planningSection->id, 'name' => $planningSection->name]);
-
-                // Get the head of the Planning section if available
-                if ($planningSection->head_id) {
-                    $planning_unit_area = AssignedArea::where('section_id', 53)
-                        ->where('user_id', $planningSection->head_id)
-                        ->first();
-
-                    Log::info('Looking for Planning head area', [
-                        'head_id' => $planningSection->head_id,
-                        'found' => $planning_unit_area ? 'yes' : 'no'
-                    ]);
-                }
-
-                // If no specific head found, get any assigned area in this section
-                if (!$planning_unit_area) {
-                    $planning_unit_area = AssignedArea::where('section_id', 53)->first();
-                    Log::info('Using any Planning section area', ['found' => $planning_unit_area ? 'yes' : 'no']);
-                }
-            } else {
-                Log::error('Planning section not found', ['section_id' => 53]);
-                throw new \RuntimeException('Planning section (ID: 53) not found in the system');
+            if (!$division) {
+                Log::error('Division not found', ['division_id' => $current_user_assigned_area->division_id]);
+                throw new \RuntimeException('Division not found for the current user');
             }
 
-            if ($planning_unit_area) {
-                $next_area_id = $planning_unit_area->id;
+            Log::info('Found Division', ['division_id' => $division->id, 'name' => $division->name]);
+
+            // Get the division chief area
+            if ($division->head_id) {
+                $division_chief_area = AssignedArea::where('user_id', $division->head_id)
+                    ->where('division_id', $division->id)
+                    ->first();
+
+                Log::info('Looking for Division Chief area', [
+                    'head_id' => $division->head_id,
+                    'found' => $division_chief_area ? 'yes' : 'no'
+                ]);
+            }
+
+            // If no division chief found, try to find any division chief
+            if (!isset($division_chief_area) || !$division_chief_area) {
+                $division_chief_area = AssignedArea::where('division_id', $division->id)
+                    ->where('is_division_head', true)
+                    ->first();
+
+                if ($division_chief_area) {
+                    Log::info('Found Division Chief by role flag', [
+                        'assigned_area_id' => $division_chief_area->id,
+                        'user_id' => $division_chief_area->user_id
+                    ]);
+                }
+            }
+
+            if ($division_chief_area) {
+                $next_area_id = $division_chief_area->id;
             } else {
-                Log::error('No planning unit area found', ['section_id' => 53]);
-                throw new \RuntimeException('No planning unit area found for routing');
+                Log::error('No division chief area found', ['division_id' => $division->id]);
+                throw new \RuntimeException('No division chief area found for routing');
             }
 
             // Create the timeline entry
@@ -527,7 +540,7 @@ class ApprovalService
 
             $timeline->save();
 
-            // Send notification to the Planning Unit user
+            // Send notification to the Division Chief
             if ($next_area_id) {
                 $nextArea = AssignedArea::find($next_area_id);
                 if ($nextArea && $nextArea->user_id) {

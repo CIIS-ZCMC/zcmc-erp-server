@@ -48,6 +48,7 @@ use PhpOffice\PhpSpreadsheet\RichText\RichText;
 use PhpOffice\PhpSpreadsheet\RichText\Run;
 use App\Services\AopVisibilityService;
 
+
 class AopApplicationController extends Controller
 {
 
@@ -932,28 +933,58 @@ class AopApplicationController extends Controller
         $sector = $areaDetails['sector'];
         $sectorId = $areaDetails['details']->resource->id;
 
-        // Get users in the same assigned sector/area
+        $sectorColumn = strtolower($sector) . '_id';
+
+        // Get the sector model and head
+        $sectorModel = match ($sector) {
+            'Division' => Division::find($sectorId),
+            'Department' => Department::find($sectorId),
+            'Section' => Section::find($sectorId),
+            'Unit' => Unit::find($sectorId),
+            default => null
+        };
+
+        $sectorHead = $sectorModel?->head;
+
+        // Get users in same area
         $users = User::with(['assignedArea.designation'])
             ->where('id', '!=', 1)
-            ->whereHas('assignedArea', function ($query) use ($sector, $sectorId) {
-                $column = strtolower($sector) . '_id'; // e.g., division_id, section_id
-                $query->where($column, $sectorId);
-            })
+            ->whereHas('assignedArea', fn($q) => $q->where($sectorColumn, $sectorId))
             ->get()
             ->map(function ($user) {
                 $assignedArea = $user->assignedArea;
-                $area = $user->assignedArea?->findDetails();
+                $area = $assignedArea?->findDetails();
+
                 return [
                     'id' => $user->id,
                     'name' => $user->name,
                     'label' => $user->name,
-                    'designation' => $assignedArea?->designation?->name ?? 'No Designation',
+                    'designation' => optional($assignedArea?->designation)->name ?? 'No Designation',
                     'sector' => $area['sector'] ?? 'Unassigned',
                     'sector_id' => $area['details']['id'] ?? null,
+                    'sector_name' => $area['details']['name'] ?? null,
+                    'is_head' => false,
                 ];
             });
 
-        return response()->json($users);
+        // Add the sector head if not already included
+        if ($sectorHead && !$users->contains('id', $sectorHead->id)) {
+            $headArea = $sectorHead->assignedArea;
+            $headDetails = $headArea?->findDetails();
+
+            $users->prepend([
+                'id' => $sectorHead->id,
+                'name' => $sectorHead->name,
+                'label' => $sectorHead->name,
+                'designation' => optional($headArea?->designation)->name ?? 'No Designation',
+                'sector' => $headDetails['sector'] ?? 'Unassigned',
+                'sector_id' => $headDetails['details']['id'] ?? null,
+                'sector_name' => $headDetails['details']['name'] ?? null,
+                'is_head' => true,
+            ]);
+        }
+
+        return response()->json($users->values());
     }
 
     public function getAllDesignations()
