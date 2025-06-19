@@ -18,7 +18,8 @@ return new class extends Migration {
             $table->foreign('item_id')->references('id')->on('items');
             $table->unsignedBigInteger('purchase_type_id');
             $table->foreign('purchase_type_id')->references('id')->on('purchase_types');
-            $table->integer('quantity')->nullable();;
+            $table->integer('quantity')->nullable();
+            $table->float('item_cost');
             $table->string('expense_class')->nullable();
             $table->timestamps();
         });

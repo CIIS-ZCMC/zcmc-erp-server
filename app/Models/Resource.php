@@ -16,7 +16,9 @@ class Resource extends Model
         'purchase_type_id',
         // 'object_category',
         'quantity',
-        'expense_class'
+        'expense_class',
+        'item_cost'
+
     ];
 
     public function activity(): BelongsTo

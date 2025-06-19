@@ -1667,7 +1667,7 @@ class AopApplicationController extends Controller
         ], Response::HTTP_OK);
     }
 
-
+    //In updating it should pass the exisitng application_objectives,activties,resources,and responsible person id
     public function storeAop(AopApplicationRequest $request)
     {
         if ($request->status === 'draft') {
@@ -2151,10 +2151,14 @@ class AopApplicationController extends Controller
 
                     foreach ($activityData['resources'] as $resourceData) {
                         $resource = isset($resourceData['id']) ? Resource::find($resourceData['id']) : null;
+
                         if ($resource) {
                             $resource->update($resourceData);
                         } else {
-                            $activity->resources()->create($resourceData);
+                            $item = Item::find($resourceData['item_id']);
+                            $activity->resources()->create(array_merge($resourceData, [
+                                'item_cost' => $item?->estimated_budget ?? 0
+                            ]));
                         }
                     }
                 }
@@ -2362,7 +2366,7 @@ class AopApplicationController extends Controller
                         $resource->purchase_type_id === $procurablePurchaseTypeId &&
                         $resource->item
                     ) {
-                        $ppmpTotal += $resource->quantity * $resource->item->estimated_budget;
+                        $ppmpTotal += $resource->quantity * $resource->item_cost;
                     }
                 }
             }
