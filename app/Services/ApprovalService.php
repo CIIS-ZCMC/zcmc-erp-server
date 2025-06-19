@@ -72,131 +72,144 @@ class ApprovalService
             if ($latest_timeline) {
                 // If there's an existing timeline, determine the current stage
                 if ($status === 'approved') {
-                    // Determine the next stage based on the current area
+                    // REFACTORED WORKFLOW:
+                    // 1. User submits AOP -> Division Chief
+                    // 2. Division Chief approves -> Planning Unit
+                    // 3. Planning Unit approves -> OMCC Chief
+                    // 4. OMCC Chief approves -> Final approval
 
-                    // Check if current area is Planning Unit (section id = 53)
-                    if ($current_user_assigned_area->section_id == 53) {
+                    // Get the details of the current user's assigned area
+                    $current_unit = $current_user_assigned_area->unit()->first();
+                    $current_section = $current_user_assigned_area->section()->first();
+                    $current_department = $current_user_assigned_area->department()->first();
+                    $current_division = $current_user_assigned_area->division()->first();
+
+                    Log::info('Current user assigned area details', [
+                        'user_id' => $current_user->id,
+                        'unit_id' => $current_unit ? $current_unit->id : null,
+                        'section_id' => $current_section ? $current_section->id : null,
+                        'department_id' => $current_department ? $current_department->id : null,
+                        'division_id' => $current_division ? $current_division->id : null
+                    ]);
+
+                    // Check if current user is a Division Chief
+                    $is_division_chief = false;
+                    if ($current_division && $current_division->head_id === $current_user->id) {
+                        $is_division_chief = true;
+                    }
+
+                    // Check if current user is from Planning Unit (section_id = 53)
+                    $is_planning_unit = false;
+                    if ($current_section && $current_section->id == 53) {
+                        $is_planning_unit = true;
+                    }
+
+                    // Check if current user is the OMCC Chief (division_id = 1 and is division head)
+                    $is_omcc_chief = false;
+                    if ($current_division && $current_division->id == 1 && $current_division->head_id === $current_user->id) {
+                        $is_omcc_chief = true;
+                    }
+
+                    Log::info('User role identification', [
+                        'user_id' => $current_user->id,
+                        'is_division_chief' => $is_division_chief,
+                        'is_planning_unit' => $is_planning_unit,
+                        'is_omcc_chief' => $is_omcc_chief
+                    ]);
+
+                    // STAGE 1: If user is Division Chief, route to Planning Unit
+                    if ($is_division_chief) {
+                        $stage = 'planning_unit';
+
+                        // Find the Planning Unit (section_id = 53)
+                        $planning_section = Section::find(53);
+
+                        if (!$planning_section) {
+                            Log::error('Planning section not found', ['expected_section_id' => 53]);
+                            throw new \RuntimeException('Planning section not found for routing');
+                        }
+
+                        // Find a user in the planning section to route to
+                        $planning_unit_area = AssignedArea::where('section_id', $planning_section->id)
+                            ->first();
+
+                        if (!$planning_unit_area) {
+                            Log::error('No assigned area found for Planning Unit', ['section_id' => $planning_section->id]);
+                            throw new \RuntimeException('No assigned area found for Planning Unit');
+                        }
+
+                        $next_area_id = $planning_unit_area->id;
+                        Log::info('Routing to Planning Unit', ['next_area_id' => $next_area_id]);
+                    }
+                    // STAGE 2: If user is from Planning Unit, route to OMCC Chief
+                    else if ($is_planning_unit) {
+                        $stage = 'omcc';
+
+                        // Find the OMCC Division (id = 1)
+                        $omcc_division = Division::find(1);
+
+                        if (!$omcc_division || !$omcc_division->head_id) {
+                            Log::error('OMCC division or head not found', [
+                                'omcc_division_exists' => (bool)$omcc_division,
+                                'has_head_id' => $omcc_division ? (bool)$omcc_division->head_id : false
+                            ]);
+                            throw new \RuntimeException('OMCC division or head not found for routing');
+                        }
+
+                        // Get the assigned area for the OMCC Chief
+                        $omcc_area = AssignedArea::where('user_id', $omcc_division->head_id)->first();
+
+                        if (!$omcc_area) {
+                            Log::error('No assigned area found for OMCC Chief', ['head_id' => $omcc_division->head_id]);
+                            throw new \RuntimeException('No assigned area found for OMCC Chief');
+                        }
+
+                        $next_area_id = $omcc_area->id;
+                        Log::info('Routing to OMCC Chief', ['next_area_id' => $next_area_id]);
+                    }
+                    // STAGE 3: If user is OMCC Chief, this is the final approval
+                    else if ($is_omcc_chief) {
+                        $stage = 'final';
+                        $next_area_id = null; // No next area as this is the final stage
+                        Log::info('Final approval by OMCC Chief', ['user_id' => $current_user->id]);
+                    }
+                    // If none of the above, this might be an edge case or unexpected scenario
+                    else {
+                        Log::warning('Unexpected approval scenario', [
+                            'user_id' => $current_user->id,
+                            'assigned_area_id' => $current_user_assigned_area->id,
+                            'division_id' => $current_division ? $current_division->id : null
+                        ]);
+
+                        // Default to routing to the Division Chief as a fallback
                         $stage = 'division_chief';
 
-                        // Get the Division Chief for the current area
-                        $division_chief = null;
-
-                        // Use explicit relationship method calls
-                        $unit = $aop_user_assigned_area->unit()->first();
-                        $section = $aop_user_assigned_area->section()->first();
-                        $department = $aop_user_assigned_area->department()->first();
-                        $division = $aop_user_assigned_area->division()->first();
-
-                        Log::info('Relationship method calls', [
-                            'unit' => $unit,
-                            'section' => $section,
-                            'department' => $department,
-                            'division' => $division
-                        ]);
-
-                        if ($unit) {
-                            $division_chief = $unit->getDivisionChief();
-                        } elseif ($section) {
-                            $division_chief = $section->getDivisionChief();
-                        } elseif ($department) {
-                            $division_chief = $department->getDivisionChief();
-                        } elseif ($division) {
-                            $division_chief = $division->getDivisionChief();
-                        }
-
-                        Log::info('Division chief for the current area', [
-                            'division_chief_id' => $division_chief
-
-                        ]);
-
-                        // Get the assigned area for the division chief
-                        if ($division_chief) {
-                            $division_chief_area = AssignedArea::where('user_id', $division_chief->id)->first();
-                            if ($division_chief_area) {
-                                $next_area_id = $division_chief_area->id;
-
-                            } else {
-                                Log::warning('No assigned area found for division chief', [
-                                    'division_chief_id' => $division_chief->id
-                                ]);
-                                // Fallback: Use the AOP user's assigned area as the next area
-                                $next_area_id = $aop_user_assigned_area->id;
-                                Log::info('Fallback: Routing to AOP user area', [
-                                    'aop_user_id' => $aop_user->id,
-                                    'area_id' => $aop_user_assigned_area->id
-                                ]);
-                            }
-                        } else {
-                            Log::warning('No division chief found for area', [
-                                'unit_id' => $unit ? $unit->id : null,
-                                'section_id' => $section ? $section->id : null,
-                                'department_id' => $department ? $department->id : null,
-                                'division_id' => $division ? $division->id : null
-                            ]);
-
-                            // If no division chief is found, use the AOP user's assigned area as the next area
-                            $next_area_id = $aop_user_assigned_area->id;
-                            Log::info('Fallback: No division chief found, routing to AOP user area', [
-                                'aop_user_id' => $aop_user->id,
-                                'area_id' => $aop_user_assigned_area->id
-                            ]);
-                        }
-                    } else {
-                        // Get the section this unit belongs to
-                        // Get the division for the current assigned area
+                        // Get the division that the current user belongs to
                         $division = null;
-                        if ($aop_user_assigned_area->unit_id) {
-                            $division = $aop_user_assigned_area->unit->section->division;
-                        } else if ($aop_user_assigned_area->section_id) {
-                            $division = $aop_user_assigned_area->section->division;
-                        } else if ($aop_user_assigned_area->department_id) {
-                            $division = $aop_user_assigned_area->department->division;
-                        } else {
-                            $division = $aop_user_assigned_area->division;
+                        if ($current_user_assigned_area->division_id) {
+                            $division = Division::find($current_user_assigned_area->division_id);
                         }
-                        Log::warning('No division found for current user assigned area', [
-                            'saection_id' => $aop_user_assigned_area->section_id,
-                            'assigned_area_id' => $aop_user_assigned_area->id,
-                            'division_id' => $division ? $division->id : null
-                        ]);
 
-                        // Check if current area is Division Chief (but not OMCC)
-                        if ($division && $division->id != 1) {
-                            $stage = 'omcc';
-
-                            // Next is Medical Center Chief (Office of the Medical Center Chief, division id = 1)
-                            $omcc_division = Division::find(1); // OMCC Division (id = 1)
-
-                            if ($omcc_division && $omcc_division->head_id) {
-                                // Get the assigned area for the Medical Center Chief
-                                $omcc_area = AssignedArea::where('user_id', $omcc_division->head_id)->first();
-                            } else {
-                                Log::warning('OMCC division or head not found', [
-                                    'omcc_division_exists' => (bool)$omcc_division,
-                                    'has_head_id' => $omcc_division ? (bool)$omcc_division->head_id : false
-                                ]);
-                            }
-
-                            if ($omcc_area) {
-                                $next_area_id = $omcc_area->id;
-                            } else {
-                                Log::warning('No assigned area found for OMCC head', [
-                                    'omcc_head_id' => $omcc_division ? $omcc_division->head_id : null
-                                ]);
-                            }
-                        } elseif ($division && $division->id == 1 && $aop_user_assigned_area->user_id == $division->head_id) {
-                            Log::info('Routing to final approval stage (Medical Center Chief)', [
-                                'medical_center_chief_id' => $division->head_id
+                        if (!$division || !$division->head_id) {
+                            Log::error('Division or head not found for current user', [
+                                'division_id' => $current_user_assigned_area->division_id
                             ]);
-                            // This is the final approval stage
-                            $stage = 'final';
-                            $next_area_id = null; // No next area as this is the final stage
+                            throw new \RuntimeException('Division or head not found for routing');
                         }
+
+                        $division_chief_area = AssignedArea::where('user_id', $division->head_id)->first();
+
+                        if (!$division_chief_area) {
+                            Log::error('No assigned area found for Division Chief', ['head_id' => $division->head_id]);
+                            throw new \RuntimeException('No assigned area found for Division Chief');
+                        }
+
+                        $next_area_id = $division_chief_area->id;
+                        Log::info('Fallback: Routing to Division Chief', ['next_area_id' => $next_area_id]);
                     }
                 } elseif ($status === 'returned') {
-
-                    $applicationTimeline = $aop_application->applicationTimelines()->where('aop_application_id', $aop_application->id)->first();
                     // If returned, send back to the original requestor
+                    $applicationTimeline = $aop_application->applicationTimelines()->where('aop_application_id', $aop_application->id)->first();
                     $next_area_id = $applicationTimeline->current_area_id;
                 }
             } else {
@@ -272,6 +285,12 @@ class ApprovalService
             $aop_application->remarks = $remarks ?? null;
             $aop_application->save();
 
+            // For final approval by OMCC Chief, explicitly ensure next_area_id is null
+            if ( $status === 'approved' && $is_omcc_chief) {
+                $next_area_id = null;
+                Log::info('Final approval - explicitly setting next_area_id to null');
+            }
+
             // Create the timeline entry
             $timeline = new ApplicationTimeline([
                 'aop_application_id' => $aop_application->id,
@@ -321,12 +340,10 @@ class ApprovalService
                 }
             } else {
                 // Check if this is the final approval by OMCC Chief
-                $is_final_approval = ($stage === 'final' && $status === 'approved' &&
-                    $current_user_assigned_area->division_id == 1 &&
-                    $current_user_assigned_area->user_id == Division::find(1)->head_id);
+                $is_final_approval = ($stage === 'final' && $status === 'approved' && $is_omcc_chief);
 
                 if ($is_final_approval) {
-                    // Special notification for final approval
+                    // Special notification for final approval - only notify the application owner
                     $this->notificationService->notify($aop_user, [
                         'title' => 'AOP Application FULLY APPROVED',
                         'description' => "Congratulations! Your AOP application has received final approval from the Medical Center Chief, {$current_user->name}. Your application process is now complete.",
@@ -337,12 +354,21 @@ class ApprovalService
                         'is_final' => true
                     ]);
 
-                    // For final approval, we still create the timeline entry but don't need other notifications
+                    // Log successful final approval
+                    Log::info('Final application approval processed successfully', [
+                        'timeline_id' => $timeline->id,
+                        'application_id' => $aop_application->id,
+                        'approved_by' => $current_user->id,
+                        'approved_by_name' => $current_user->name
+                    ]);
+
+                    // For final approval, we don't need to send notifications to any next area
                     return $timeline;
                 }
 
+                // Only proceed with next area notification if this is NOT the final approval
                 // Send notifications to the next area user if there is a next area
-                $nextArea = AssignedArea::find($next_area_id);
+                $nextArea = $next_area_id ? AssignedArea::find($next_area_id) : null;
                 $nextUser = $nextArea ? User::find($nextArea->user_id) : null;
                 if ($nextUser) {
                     $current_area_name = $this->getAreaNameFromAssignedArea($current_user_assigned_area);
@@ -479,53 +505,30 @@ class ApprovalService
 
             // For new applications, the current user is also the AOP user
             $aop_user = $current_user;
-            $current_user_assigned_area = $current_user->assignedArea;
+            $current_user_assigned_area = $aop_user->assignedArea;
 
-            // Initial submission - route to Division Chief of user's area
-            $next_area_id = null;
+            $unit = $current_user_assigned_area->unit()->first();
+            $section = $current_user_assigned_area->section()->first();
+            $department =  $current_user_assigned_area->department()->first();
+            $division = $current_user_assigned_area->division()->first();
 
-            // Get the division that the current user belongs to
-            $division = Division::where('id', $current_user_assigned_area->division_id)->first();
-
-            if (!$division) {
-                Log::error('Division not found', ['division_id' => $current_user_assigned_area->division_id]);
-                throw new \RuntimeException('Division not found for the current user');
+            $division_chief = null;
+            if ($unit) {
+                $division_chief = $unit->getDivisionChief();
+            } elseif ($section) {
+                $division_chief = $section->getDivisionChief();
+            } elseif ($department) {
+                $division_chief = $department->getDivisionChief();
+            } elseif ($division) {
+                $division_chief = $division->getDivisionChief();
             }
 
-            Log::info('Found Division', ['division_id' => $division->id, 'name' => $division->name]);
-
-            // Get the division chief area
-            if ($division->head_id) {
-                $division_chief_area = AssignedArea::where('user_id', $division->head_id)
-                    ->where('division_id', $division->id)
-                    ->first();
-
-                Log::info('Looking for Division Chief area', [
-                    'head_id' => $division->head_id,
-                    'found' => $division_chief_area ? 'yes' : 'no'
-                ]);
+            if (!$division_chief) {
+                throw new \InvalidArgumentException('Invalid division chief');
             }
 
-            // If no division chief found, try to find any division chief
-            if (!isset($division_chief_area) || !$division_chief_area) {
-                $division_chief_area = AssignedArea::where('division_id', $division->id)
-                    ->where('is_division_head', true)
-                    ->first();
-
-                if ($division_chief_area) {
-                    Log::info('Found Division Chief by role flag', [
-                        'assigned_area_id' => $division_chief_area->id,
-                        'user_id' => $division_chief_area->user_id
-                    ]);
-                }
-            }
-
-            if ($division_chief_area) {
-                $next_area_id = $division_chief_area->id;
-            } else {
-                Log::error('No division chief area found', ['division_id' => $division->id]);
-                throw new \RuntimeException('No division chief area found for routing');
-            }
+            $division_chief_assigned_area = AssignedArea::where('user_id', $division_chief->id)->first();
+            $next_area_id = $division_chief_assigned_area->id;
 
             // Create the timeline entry
             $timeline = new ApplicationTimeline([
