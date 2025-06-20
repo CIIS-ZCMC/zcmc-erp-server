@@ -123,8 +123,124 @@ class AopApplicationController extends Controller
             return response()->json(['data' => []]);
         }
 
-        return $this->getAopApplicationSummary($userAopApplication->id);
+        $summary = $this->getAopApplicationSummaryV2($userAopApplication->id);
+        $aop = $this->getAOPV2($summary['aop_application_id']);
+
+        $response = [
+            'summary'=> $summary,
+            'aop' => $aop
+        ];
+
+        return response()->json([
+            'data' => $response,
+            'message' => 'AOP Application retrieved successfully'
+        ], Response::HTTP_OK);
     }
+    
+    // SSR function not for API
+    public function getAOPV2($id)
+    {
+        $aop_application = AopApplication::with([
+            'applicationObjectives' => function ($query) {
+                $query->with([
+                    'activities',
+                    'activities.target',
+                    'activities.resources',
+                    'activities.resources.item',
+                    'activities.resources.purchaseType',
+                    'activities.responsiblePeople',
+                    'activities.responsiblePeople.user',
+                    'activities.responsiblePeople.division',
+                    'activities.responsiblePeople.department',
+                    'activities.responsiblePeople.section',
+                    'activities.responsiblePeople.unit',
+                    'activities.responsiblePeople.designation',
+                    'activities.comments',
+                    'objective',
+                    'otherObjective',
+                    'objective.successIndicators',
+                    'objective.typeOfFunction',
+                    'objective.typeOfFunction.objectives',
+                    'objective.typeOfFunction.objectives.successIndicators',
+                    'successIndicator',
+                    'otherSuccessIndicator',
+                ]);
+            }
+        ])->findOrFail($id);
+
+        if (!$aop_application) {
+            return null;
+        }
+
+        return new AopResource($aop_application);
+    }
+
+        
+    public function getAopApplicationSummaryV2($aopApplicationId)
+    {
+        $aopApplication = AopApplication::with([
+            'applicationObjectives.successIndicator',
+            'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.responsiblePeople',
+            'applicationObjectives.activities.comments',
+        ])->findOrFail($aopApplicationId);
+
+        $objectives = $aopApplication->applicationObjectives;
+        $activities = $objectives->flatMap->activities;
+
+        $totalObjectives = $objectives->count();
+        $totalActivities = $activities->count();
+        $totalResources = $activities->flatMap->resources->count();
+        $totalResponsiblePeople = $activities->flatMap->responsiblePeople;
+
+        $totalComments = $activities->flatMap->comments->count();
+        $totalSuccessIndicators = $objectives->pluck('successIndicator')->filter()->unique('id')->count();
+
+        $gadRelatedActivities = $activities->filter(fn($act) => $act->is_gad_related);
+        $notGadRelatedActivities = $activities->filter(fn($act) => !$act->is_gad_related);
+
+        $totalGadRelated = $gadRelatedActivities->count();
+        $totalNotGadRelated = $notGadRelatedActivities->count();
+
+        $totalActivityCost = $activities->sum('cost');
+
+        // Count distinct area combinations
+        $totalAreas = $totalResponsiblePeople
+            ->map(fn($p) => [
+                'unit_id' => $p->unit_id,
+                'department_id' => $p->department_id,
+                'division_id' => $p->division_id,
+                'section_id' => $p->section_id,
+            ])
+            ->filter(fn($area) => collect($area)->filter()->isNotEmpty()) // remove all-null combinations
+            ->unique()
+            ->count();
+
+        // Count unique designation IDs
+        $totalJobPositions = $totalResponsiblePeople->pluck('designation_id')->filter()->unique()->count();
+
+        // Count unique user IDs
+        $totalUsers = $totalResponsiblePeople->pluck('user_id')->filter()->unique()->count();
+
+        return [
+            'aop_application_id' => $aopApplication->id,
+            'mission' => $aopApplication->mission,
+            'year' => $aopApplication->year,
+            'total_objectives' => $totalObjectives,
+            'total_success_indicators' => $totalSuccessIndicators,
+            'total_activities' => $totalActivities,
+            'total_gad_related' => $totalGadRelated,
+            'total_not_gad_related' => $totalNotGadRelated,
+            'total_cost' => $totalActivityCost,
+            'total_resources' => $totalResources,
+            'total_comments' => $totalComments,
+            'total_responsible_people' => $totalResponsiblePeople->count(),
+            'total_areas' => $totalAreas,
+            'total_job_positions' => $totalJobPositions,
+            'total_users' => $totalUsers,
+        ];
+    }
+
     public function getAopApplicationSummary($aopApplicationId)
     {
         $aopApplication = AopApplication::with([
@@ -1571,6 +1687,7 @@ class AopApplicationController extends Controller
         ], Response::HTTP_OK);
     }
 
+    // SSR function not for API
     public function edit($id)
     {
 
