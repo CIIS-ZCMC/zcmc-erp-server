@@ -1986,7 +1986,7 @@ class AopApplicationController extends Controller
         // Remove PPMP items that are no longer in AOP resources
         foreach ($existingPpmpItems as $ppmpItem) {
             if (!in_array($ppmpItem->item_id, $currentResourceItemIds)) {
-                $ppmpItem->schedules()->delete();
+                $ppmpItem->ppmpSchedule()->delete();
                 $ppmpItem->activities()->detach();
                 $ppmpItem->delete();
             }
@@ -2057,7 +2057,7 @@ class AopApplicationController extends Controller
             $objective->save();
 
             // Handle 'Others' objective/indicator
-            if ($objective->objective && $objective->objective->description === 'Others' && isset($objectiveData['others_objective'])) {
+            if ($objective->objective && $objective->objective->description === 'Others, please insert note/remarks' && isset($objectiveData['others_objective'])) {
                 $objective->otherObjective()->updateOrCreate([], [
                     'description' => $objectiveData['others_objective'],
                 ]);
@@ -2065,7 +2065,7 @@ class AopApplicationController extends Controller
 
             if (
                 $objective->successIndicator &&
-                $objective->successIndicator->description === 'Others' &&
+                $objective->successIndicator->description === 'Others, please insert note/remarks' &&
                 isset($objectiveData['other_success_indicator'])
             ) {
                 $objective->otherSuccessIndicator()->updateOrCreate([], [
