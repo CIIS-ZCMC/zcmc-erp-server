@@ -1858,7 +1858,7 @@ class AopApplicationController extends Controller
                 ]);
 
                 DB::commit();
-                return response()->json(['message' => 'AOP draft updated successfully'], 200);
+                return response()->json(['message' => 'AOP draft updated successfully'], Response::HTTP_OK);
             }
 
             // ✅ Create new AOP application
@@ -1888,7 +1888,7 @@ class AopApplicationController extends Controller
             ]);
 
             DB::commit();
-            return response()->json(['message' => 'AOP draft saved successfully'], 200);
+            return response()->json(['message' => 'AOP draft saved successfully'], Response::HTTP_OK);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
@@ -1994,7 +1994,7 @@ class AopApplicationController extends Controller
                 ]);
 
                 DB::commit();
-                return response()->json(['message' => 'AOP updated successfully'], 200);
+                return response()->json(['message' => 'AOP Application updated successfully'], Response::HTTP_OK);
             }
 
 
