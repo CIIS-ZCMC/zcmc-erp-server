@@ -128,8 +128,11 @@ class AopApplicationController extends Controller
         $aop = $this->getAOPV2($summary['aop_application_id']);
 
         $response = [
-            'summary'=> $summary,
-            'aop' => $aop
+            'summary' => $summary,
+            'aop' => $aop,
+
+
+
         ];
 
         return response()->json([
@@ -137,7 +140,7 @@ class AopApplicationController extends Controller
             'message' => 'AOP Application retrieved successfully'
         ], Response::HTTP_OK);
     }
-    
+
     // SSR function not for API
     public function getAOPV2($id)
     {
@@ -176,7 +179,7 @@ class AopApplicationController extends Controller
         return new AopResource($aop_application);
     }
 
-        
+
     public function getAopApplicationSummaryV2($aopApplicationId)
     {
         $aopApplication = AopApplication::with([
@@ -1804,8 +1807,7 @@ class AopApplicationController extends Controller
 
             $validatedData = $request->validated();
             \Log::debug('Validated data:', $validatedData);
-            $user_id = 2;
-            // $user_id = $request->user()->id;
+            $user_id = $request->user()->id;
 
             $assignedArea = AssignedArea::where('user_id', $user_id)->first();
             $area = $assignedArea->findDetails();
@@ -1896,18 +1898,18 @@ class AopApplicationController extends Controller
     private function storePending(AopApplicationRequest $request)
     {
         $validatedData = $request->validated();
-        $curr_user = User::find(2);
-        // $curr_user = $request->user();
-        // if ($curr_user->authorization_pin !== $request->authorization_pin) {
-        //     return response()->json(['message' => 'Invalid Authorization Pin'], Response::HTTP_BAD_REQUEST);
-        // }
+        // $curr_user = User::find(2);
+        $curr_user = $request->user();
+        if ($curr_user->authorization_pin !== $request->authorization_pin) {
+            return response()->json(['message' => 'Invalid Authorization Pin'], Response::HTTP_BAD_REQUEST);
+        }
 
         DB::beginTransaction();
         try {
             $validatedData = $request->validated();
             \Log::debug('Validated data:', $validatedData);
-            $user_id = 2;
-            // $user_id = $request->user()->id;
+            // $user_id = 2;
+            $user_id = $request->user()->id;
 
             $assignedArea = AssignedArea::where('user_id', $user_id)->first();
             $area = $assignedArea->findDetails();
@@ -1946,7 +1948,7 @@ class AopApplicationController extends Controller
                     'remarks' => $validatedData['remarks'] ?? $existingAop->remarks,
                 ]);
 
-                \Log::debug('Validated Data:', $validatedData);
+
 
                 // ✅ Optionally add new objectives & activities
                 if (!empty($validatedData['application_objectives'])) {
@@ -2089,53 +2091,41 @@ class AopApplicationController extends Controller
 
     private function syncPpmpItemsFromResources(AopApplication $aopApplication, PpmpApplication $ppmpApplication)
     {
-        // Get all current resource item IDs from AOP
-        $resourceItems = Resource::whereHas('activity.applicationObjective', function ($q) use ($aopApplication) {
-            $q->where('aop_application_id', $aopApplication->id);
-        })->get();
-
-        $currentResourceItemIds = $resourceItems->pluck('item_id')->unique()->toArray();
-
-        // Existing PPMP items for this PPMP application
-        $existingPpmpItems = $ppmpApplication->ppmpItems()->get();
-        $existingItemIds = $existingPpmpItems->pluck('item_id')->toArray();
-
-        // Remove PPMP items that are no longer in AOP resources
-        foreach ($existingPpmpItems as $ppmpItem) {
-            if (!in_array($ppmpItem->item_id, $currentResourceItemIds)) {
-                $ppmpItem->ppmpSchedule()->delete();
-                $ppmpItem->activities()->detach();
-                $ppmpItem->delete();
-            }
+        // 🔥 Delete all existing PPMP items and related schedules & activity links
+        foreach ($ppmpApplication->ppmpItems as $ppmpItem) {
+            $ppmpItem->schedules()->delete();       // delete schedules
+            $ppmpItem->activities()->detach();      // detach activity links
+            $ppmpItem->delete();                    // delete the item
         }
 
-        // Add PPMP items for new resource items
-        foreach ($resourceItems as $resource) {
-            $item = $resource->item;
-            if (!$ppmpApplication->ppmpItems()->where('item_id', $item->id)->exists()) {
-                $ppmpItem = PpmpItem::create([
-                    'ppmp_application_id' => $ppmpApplication->id,
-                    'item_id' => $item->id,
-                    'estimated_budget' => $item->estimated_budget,
-                    'expense_class' => $resource->expense_class,
+        // 🧾 Get all resources from this AOP
+        $resources = Resource::whereHas('activity.applicationObjective', function ($q) use ($aopApplication) {
+            $q->where('aop_application_id', $aopApplication->id);
+        })->with(['item', 'activity'])->get();
+
+        // ♻ Recreate PPMP items based on resources
+        foreach ($resources as $resource) {
+            $ppmpItem = PpmpItem::create([
+                'ppmp_application_id' => $ppmpApplication->id,
+                'item_id' => $resource->item_id,
+                'estimated_budget' => $resource->item->estimated_budget,
+                'expense_class' => $resource->expense_class,
+            ]);
+
+            // 🧩 Link to activity
+            $resource->activity->ppmpItems()->attach($ppmpItem->id);
+
+            // 📆 Create 12-month default schedules
+            for ($month = 1; $month <= 12; $month++) {
+                PpmpSchedule::create([
+                    'ppmp_item_id' => $ppmpItem->id,
+                    'month' => $month,
+                    'year' => now()->addYear()->year,
+                    'quantity' => 0
                 ]);
-
-                // Link to activity
-                $resource->activity->ppmpItems()->attach($ppmpItem->id);
-
-                // Create 12-month schedule (optional default)
-                for ($month = 1; $month <= 12; $month++) {
-                    PpmpSchedule::create([
-                        'ppmp_item_id' => $ppmpItem->id,
-                        'month' => $month,
-                        'year' => now()->addYear()->year,
-                        'quantity' => 0
-                    ]);
-                }
             }
         }
     }
-
     private function syncObjectivesAndActivities(array $newObjectives, AopApplication $aopApplication)
     {
         // Get existing application objective IDs for this AOP application
