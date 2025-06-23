@@ -89,16 +89,8 @@ class AopResource extends JsonResource
                         'description' => $success_indicator->description ?? null,
                         'objective_id' => $success_indicator->objective_id ?? null,
                     ],
-                    'other_objective' => $other_objective === null ? [] : [
-                        'id' => $other_objective->id ?? null,
-                        'description' => $other_objective->description ?? null,
-                        'application_objective_id' => $other_objective->application_objective_id ?? null,
-                    ],
-                    'other_success_indicator' => $other_success_indicator === null ? [] : [
-                        'id' => $other_success_indicator->id ?? null,
-                        'description' => $other_success_indicator->description ?? null,
-                        'application_objective_id' => $other_success_indicator->application_objective_id ?? null,
-                    ],
+                    'other_objective' => $other_objective?->description ?? null,
+                    'other_success_indicator' => $other_success_indicator?->description ?? null,
                     'activity' => $appObj->activities === null ? [] : ActivityResource::collection($appObj->activities),
                 ];
             }),

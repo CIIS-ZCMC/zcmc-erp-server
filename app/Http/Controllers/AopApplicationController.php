@@ -1748,31 +1748,25 @@ class AopApplicationController extends Controller
     {
 
         $aop_application = AopApplication::with([
-            'applicationObjectives' => function ($query) {
-                $query->with([
-                    'activities',
-                    'activities.target',
-                    'activities.resources',
-                    'activities.resources.item',
-                    'activities.resources.purchaseType',
-                    'activities.responsiblePeople',
-                    'activities.responsiblePeople.user',
-                    'activities.responsiblePeople.division',
-                    'activities.responsiblePeople.department',
-                    'activities.responsiblePeople.section',
-                    'activities.responsiblePeople.unit',
-                    'activities.responsiblePeople.designation',
-                    'activities.comments',
-                    'objective',
-                    'otherObjective',
-                    'objective.successIndicators',
-                    'objective.typeOfFunction',
-                    'objective.typeOfFunction.objectives',
-                    'objective.typeOfFunction.objectives.successIndicators',
-                    'successIndicator',
-                    'otherSuccessIndicator',
-                ]);
-            }
+            'applicationObjectives.activities.target',
+            'applicationObjectives.activities.resources',
+            'applicationObjectives.activities.resources.item',
+            'applicationObjectives.activities.resources.purchaseType',
+            'applicationObjectives.activities.responsiblePeople',
+            'applicationObjectives.activities.responsiblePeople.user',
+            'applicationObjectives.activities.responsiblePeople.division',
+            'applicationObjectives.activities.responsiblePeople.department',
+            'applicationObjectives.activities.responsiblePeople.section',
+            'applicationObjectives.activities.responsiblePeople.unit',
+            'applicationObjectives.activities.responsiblePeople.designation',
+            'applicationObjectives.activities.comments',
+            'applicationObjectives.objective.successIndicators',
+            'applicationObjectives.objective.typeOfFunction',
+            'applicationObjectives.objective.typeOfFunction.objectives',
+            'applicationObjectives.objective.typeOfFunction.objectives.successIndicators',
+            'applicationObjectives.successIndicator',
+            'applicationObjectives.otherObjective',
+            'applicationObjectives.otherSuccessIndicator',
         ])->findOrFail($id);
 
         if (!$aop_application) {
