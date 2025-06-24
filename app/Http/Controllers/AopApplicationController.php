@@ -112,7 +112,15 @@ class AopApplicationController extends Controller
     }
     private function formatApplicationObjectives($applicationObjectives, $aopApplicationId)
     {
-        return $applicationObjectives->map(function ($appObj) use ($aopApplicationId) {
+        $rowIdPerParent = []; // Track rowId for each unique parentId (here, AOP application ID)
+
+        return $applicationObjectives->map(function ($appObj) use ($aopApplicationId, &$rowIdPerParent) {
+            if (!isset($rowIdPerParent[$aopApplicationId])) {
+                $rowIdPerParent[$aopApplicationId] = 1;
+            }
+
+            $currentRowId = $rowIdPerParent[$aopApplicationId]++;
+
             $objective = $appObj->objective;
             $functionType = $objective?->typeOfFunction;
             $successIndicator = $appObj->successIndicator;
@@ -120,6 +128,7 @@ class AopApplicationController extends Controller
             $otherSuccessIndicator = $appObj->otherSuccessIndicator;
 
             return [
+                'rowId' => $currentRowId,
                 'parentId' => $aopApplicationId,
                 'id' => $appObj->id,
                 'functionType' => $functionType ? [
@@ -150,10 +159,21 @@ class AopApplicationController extends Controller
 
     private function formatAllActivities($objectives)
     {
-        return $objectives->flatMap(function ($appObj) {
-            return $appObj->activities->map(function ($activity) use ($appObj) {
+        $rowIdPerParent = [];
+
+        return $objectives->flatMap(function ($appObj) use (&$rowIdPerParent) {
+            $parentId = $appObj->id;
+
+            if (!isset($rowIdPerParent[$parentId])) {
+                $rowIdPerParent[$parentId] = 1;
+            }
+
+            return $appObj->activities->map(function ($activity) use (&$rowIdPerParent, $parentId) {
+                $currentRowId = $rowIdPerParent[$parentId]++;
+
                 return [
-                    'parentId' => $appObj->id,
+                    'rowId' => $currentRowId,
+                    'parentId' => $parentId,
                     'id' => $activity->id,
                     'name' => $activity->name,
                     'isGadRelated' => $activity->is_gad_related,
@@ -170,15 +190,24 @@ class AopApplicationController extends Controller
             });
         });
     }
-
     private function formatAllResources($objectives)
     {
-        return $objectives->flatMap(function ($appObj) {
-            return $appObj->activities->flatMap(function ($activity) {
-                return $activity->resources->map(function ($resource) use ($activity) {
-                    return [
+        $rowIdPerParent = [];
 
-                        'parentId' => $activity->id,
+        return $objectives->flatMap(function ($appObj) use (&$rowIdPerParent) {
+            return $appObj->activities->flatMap(function ($activity) use (&$rowIdPerParent) {
+                $parentId = $activity->id;
+
+                if (!isset($rowIdPerParent[$parentId])) {
+                    $rowIdPerParent[$parentId] = 1;
+                }
+
+                return $activity->resources->map(function ($resource) use (&$rowIdPerParent, $parentId) {
+                    $currentRowId = $rowIdPerParent[$parentId]++;
+
+                    return [
+                        'rowId' => $currentRowId,
+                        'parentId' => $parentId,
                         'id' => $resource->id,
                         'item_id' => $resource->item_id,
                         'name' => $resource->item?->name ?? 'Unknown Item',
@@ -268,7 +297,7 @@ class AopApplicationController extends Controller
         $header = $this->formatAopApplicationHeader($userAopApplication);
         $formattedObjectives = $this->formatApplicationObjectives(
             $userAopApplication->applicationObjectives,
-            $userAopApplication->id
+            $userAopApplication->id,
         );
 
         $formattedActivities = $this->formatAllActivities($userAopApplication->applicationObjectives);
