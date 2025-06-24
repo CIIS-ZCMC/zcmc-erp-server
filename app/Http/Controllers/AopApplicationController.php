@@ -99,10 +99,49 @@ class AopApplicationController extends Controller
         return AopApplicationResource::collection($aopApplications);
     }
 
+    private function formatApplicationObjectives($applicationObjectives)
+    {
+        return $applicationObjectives->map(function ($appObj) {
+            $objective = $appObj->objective;
+            $functionType = $objective?->typeOfFunction;
+            $successIndicator = $appObj->successIndicator;
+            $otherObjective = $appObj->otherObjective;
+            $otherSuccessIndicator = $appObj->otherSuccessIndicator;
+
+            return [
+                'id' => $appObj->id,
+                'objectiveUuid' => $appObj->uuid,
+                'functionType' => $functionType ? [
+                    'id' => $functionType->id,
+                    'name' => ucfirst($functionType->type),
+                    'label' => ucfirst($functionType->type),
+                    'code' => $functionType->code,
+                ] : null,
+                'objective' => $objective ? [
+                    'id' => $objective->id,
+                    'name' => $objective->code,
+                    'label' => $objective->code,
+                    'code' => $objective->code,
+                    'description' => $objective->description,
+                ] : null,
+                'othersObjective' => $otherObjective?->description ?? null,
+                'successIndicator' => $successIndicator ? [
+                    'id' => $successIndicator->id,
+                    'name' => $successIndicator->code,
+                    'label' => $successIndicator->code,
+                    'code' => $successIndicator->code,
+                    'description' => $successIndicator->description,
+                ] : null,
+                'othersSuccessIndicator' => $otherSuccessIndicator?->description ?? null,
+            ];
+        });
+    }
+
     public function getUserAopSummary(Request $request)
     {
 
-        $user_id = $request->user()->id;
+        // $user_id = $request->user()->id;
+        $user_id = 2;
         $assignedArea = AssignedArea::where('user_id', $user_id)->first();
         if (!$assignedArea) {
             return response()->json(['message' => 'User has no assigned area.'], 404);
@@ -126,12 +165,12 @@ class AopApplicationController extends Controller
 
         $summary = $this->getAopApplicationSummaryV2($userAopApplication->id);
         $aop = $this->getAOPV2($summary['aop_application_id']);
+        $formattedObjectives = $this->formatApplicationObjectives($userAopApplication->applicationObjectives);
 
         $response = [
             'summary' => $summary,
             'aop' => $aop,
-
-
+            'formattedObjectives' => $formattedObjectives,
 
         ];
 
