@@ -238,7 +238,7 @@ class AopApplicationController extends Controller
                 $responsiblePeople = $activity->responsiblePeople;
 
                 return [
-                    'parentId' => $activity->id,
+                    'activityId' => $activity->id,
                     'users' => $responsiblePeople
                         ->filter(fn($person) => $person->user_id !== null && $person->user !== null)
                         ->map(function ($person) {
@@ -2071,8 +2071,8 @@ class AopApplicationController extends Controller
     private function storePending(AopApplicationRequest $request)
     {
         $validatedData = $request->validated();
-        // $curr_user = User::find(2);
-        $curr_user = $request->user();
+        $curr_user = User::find(2);
+        // $curr_user = $request->user();
         if ($curr_user->authorization_pin !== $request->authorization_pin) {
             return response()->json(['message' => 'Invalid Authorization Pin'], Response::HTTP_BAD_REQUEST);
         }
