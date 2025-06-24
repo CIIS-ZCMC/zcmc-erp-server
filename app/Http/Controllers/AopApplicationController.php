@@ -99,9 +99,20 @@ class AopApplicationController extends Controller
         return AopApplicationResource::collection($aopApplications);
     }
 
-    private function formatApplicationObjectives($applicationObjectives)
+    private function formatAopApplicationHeader(AopApplication $aopApplication)
     {
-        return $applicationObjectives->map(function ($appObj) {
+        return [
+            'aop_application_id' => $aopApplication->id,
+            'aop_application_uuid' => $aopApplication->aop_application_uuid,
+            'mission' => $aopApplication->mission,
+            'status' => $aopApplication->status,
+            'has_discussed' => $aopApplication->has_discussed,
+            'remarks' => $aopApplication->remarks,
+        ];
+    }
+    private function formatApplicationObjectives($applicationObjectives, $aopApplicationId)
+    {
+        return $applicationObjectives->map(function ($appObj) use ($aopApplicationId) {
             $objective = $appObj->objective;
             $functionType = $objective?->typeOfFunction;
             $successIndicator = $appObj->successIndicator;
@@ -109,8 +120,8 @@ class AopApplicationController extends Controller
             $otherSuccessIndicator = $appObj->otherSuccessIndicator;
 
             return [
+                'parentId' => $aopApplicationId,
                 'id' => $appObj->id,
-                'objectiveUuid' => $appObj->uuid,
                 'functionType' => $functionType ? [
                     'id' => $functionType->id,
                     'name' => ucfirst($functionType->type),
@@ -137,11 +148,100 @@ class AopApplicationController extends Controller
         });
     }
 
+    private function formatAllActivities($objectives)
+    {
+        return $objectives->flatMap(function ($appObj) {
+            return $appObj->activities->map(function ($activity) use ($appObj) {
+                return [
+                    'parentId' => $appObj->id,
+                    'id' => $activity->id,
+                    'name' => $activity->name,
+                    'isGadRelated' => $activity->is_gad_related,
+                    'cost' => $activity->cost,
+                    'startMonth' => $activity->start_month,
+                    'endMonth' => $activity->end_month,
+                    'target' => [
+                        'firstQuarter' => $activity->target->first_quarter ?? null,
+                        'secondQuarter' => $activity->target->second_quarter ?? null,
+                        'thirdQuarter' => $activity->target->third_quarter ?? null,
+                        'fourthQuarter' => $activity->target->fourth_quarter ?? null,
+                    ]
+                ];
+            });
+        });
+    }
+
+    private function formatAllResources($objectives)
+    {
+        return $objectives->flatMap(function ($appObj) {
+            return $appObj->activities->flatMap(function ($activity) {
+                return $activity->resources->map(function ($resource) use ($activity) {
+                    return [
+
+                        'parentId' => $activity->id,
+                        'id' => $resource->id,
+                        'item_id' => $resource->item_id,
+                        'name' => $resource->item?->name ?? 'Unknown Item',
+                        'quantity' => $resource->quantity,
+                        'individualPrice' => $resource->item_cost,
+                        'totalCost' => $resource->quantity * $resource->item_cost,
+                        'expenseClass' => $resource->expense_class,
+                        'purchaseTypeId' => $resource->purchaseType ? [
+                            'id' => $resource->purchaseType->id,
+                            'code' => $resource->purchaseType->code,
+                            'description' => $resource->purchaseType->description,
+                            'label' => $resource->purchaseType->description,
+                            'meta' => [
+                                'created_at' => $resource->purchaseType->created_at,
+                                'updated_at' => $resource->purchaseType->updated_at,
+                            ]
+                        ] : null
+                    ];
+                });
+            });
+        });
+    }
+
+    private function formatResponsiblePersons($objectives)
+    {
+        return $objectives->flatMap(function ($appObj) {
+            return $appObj->activities->map(function ($activity) {
+                $responsiblePeople = $activity->responsiblePeople;
+
+                return [
+                    'parentId' => $activity->id,
+                    'users' => $responsiblePeople
+                        ->filter(fn($person) => $person->user_id !== null && $person->user !== null)
+                        ->map(function ($person) {
+                            return [
+                                'id' => $person->user_id,
+                                'name' => $person->user->name,
+                            ];
+                        })->values(),
+                    'designations' => $responsiblePeople->pluck('designation')->filter()->unique('id')->map(function ($designation) {
+                        return [
+                            'id' => $designation->id,
+                            'umis_designation_id' => $designation->umis_designation_id,
+                            'name' => $designation->name,
+                            'label' => $designation->name,
+                            'code' => $designation->code,
+                            'probation' => $designation->probation,
+                        ];
+                    })->values(),
+
+                ];
+            });
+        });
+    }
+
+
+
+
     public function getUserAopSummary(Request $request)
     {
 
-        // $user_id = $request->user()->id;
-        $user_id = 2;
+        $user_id = $request->user()->id;
+        // $user_id = 2;
         $assignedArea = AssignedArea::where('user_id', $user_id)->first();
         if (!$assignedArea) {
             return response()->json(['message' => 'User has no assigned area.'], 404);
@@ -165,13 +265,24 @@ class AopApplicationController extends Controller
 
         $summary = $this->getAopApplicationSummaryV2($userAopApplication->id);
         $aop = $this->getAOPV2($summary['aop_application_id']);
-        $formattedObjectives = $this->formatApplicationObjectives($userAopApplication->applicationObjectives);
+        $header = $this->formatAopApplicationHeader($userAopApplication);
+        $formattedObjectives = $this->formatApplicationObjectives(
+            $userAopApplication->applicationObjectives,
+            $userAopApplication->id
+        );
+
+        $formattedActivities = $this->formatAllActivities($userAopApplication->applicationObjectives);
+        $formattedResources = $this->formatAllResources($userAopApplication->applicationObjectives);
+        $formattedResponsiblePersons = $this->formatResponsiblePersons($userAopApplication->applicationObjectives);
 
         $response = [
             'summary' => $summary,
             'aop' => $aop,
+            'header' => $header,
             'formattedObjectives' => $formattedObjectives,
-
+            'formattedActivities' => $formattedActivities,
+            'formattedResources' => $formattedResources,
+            'formattedResponsiblePersons' => $formattedResponsiblePersons,
         ];
 
         return response()->json([
