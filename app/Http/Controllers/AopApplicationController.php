@@ -2071,8 +2071,8 @@ class AopApplicationController extends Controller
     private function storePending(AopApplicationRequest $request)
     {
         $validatedData = $request->validated();
-        $curr_user = User::find(2);
-        // $curr_user = $request->user();
+        // $curr_user = User::find(2);
+        $curr_user = $request->user();
         if ($curr_user->authorization_pin !== $request->authorization_pin) {
             return response()->json(['message' => 'Invalid Authorization Pin'], Response::HTTP_BAD_REQUEST);
         }
@@ -2081,8 +2081,8 @@ class AopApplicationController extends Controller
         try {
             $validatedData = $request->validated();
             \Log::debug('Validated data:', $validatedData);
-            $user_id = 2;
-            // $user_id = $request->user()->id;
+            // $user_id = 2;
+            $user_id = $request->user()->id;
 
             $assignedArea = AssignedArea::where('user_id', $user_id)->first();
             $area = $assignedArea->findDetails();
