@@ -2304,14 +2304,13 @@ class AopApplicationController extends Controller
         // Get existing application objective IDs for this AOP application
         $existingObjectiveIds = $aopApplication->applicationObjectives()
             ->pluck('id')
-            ->filter(fn($id) => is_numeric($id) && (int)$id == $id)
             ->map(fn($id) => (int) $id)
             ->toArray();
 
         // IDs sent from frontend
         $submittedObjectiveIds = collect($newObjectives)
             ->pluck('id')
-            ->filter(fn($id) => is_numeric($id) && (int)$id == $id)
+            ->filter(fn($id) => !is_null($id))
             ->map(fn($id) => (int) $id)
             ->toArray();
 
@@ -2322,11 +2321,13 @@ class AopApplicationController extends Controller
         }
 
         foreach ($newObjectives as $objectiveData) {
-            // Skip invalid objective ID
-            $objectiveIdValid = isset($objectiveData['id']) && is_numeric($objectiveData['id']);
-            $objective = $objectiveIdValid ? ApplicationObjective::find((int) $objectiveData['id']) : new ApplicationObjective();
+            // Determine if we're updating or creating
+            $objective = isset($objectiveData['id'])
+                ? ApplicationObjective::find($objectiveData['id'])
+                : new ApplicationObjective();
 
             if (!$objective) {
+                // In case the passed ID doesn't match any record (e.g. deleted on backend)
                 $objective = new ApplicationObjective();
             }
 
@@ -2355,17 +2356,19 @@ class AopApplicationController extends Controller
             // Sync Activities
             $existingActivityIds = $objective->activities()
                 ->pluck('id')
-                ->filter(fn($id) => is_numeric($id) && (int)$id == $id)
                 ->map(fn($id) => (int) $id)
                 ->toArray();
 
-            $submittedActivityIds = collect($objectiveData['activities'] ?? [])
+            // IDs sent from frontend
+            $submittedActivityIds = collect($objectiveData['activities'])
                 ->pluck('id')
-                ->filter(fn($id) => is_numeric($id) && (int)$id == $id)
+                ->filter(fn($id) => !is_null($id))
                 ->map(fn($id) => (int) $id)
                 ->toArray();
 
+            // Determine which activities to delete
             $activitiesToDelete = array_diff($existingActivityIds, $submittedActivityIds);
+
             if (!empty($activitiesToDelete)) {
                 Activity::whereIn('id', $activitiesToDelete)->delete();
             }
@@ -2376,8 +2379,8 @@ class AopApplicationController extends Controller
                     continue;
                 }
 
-                $activity = (isset($activityData['id']) && is_numeric($activityData['id']))
-                    ? Activity::find((int)$activityData['id'])
+                $activity = isset($activityData['id'])
+                    ? Activity::find($activityData['id'])
                     : null;
 
                 if (!$activity) {
@@ -2399,7 +2402,7 @@ class AopApplicationController extends Controller
                     ]);
                 }
 
-                // Sync target
+                // Sync target (1:1)
                 if (isset($activityData['target'])) {
                     if ($activity->target) {
                         $activity->target->update($activityData['target']);
@@ -2408,17 +2411,16 @@ class AopApplicationController extends Controller
                     }
                 }
 
-                // Sync resources
+                // Sync resources (1:N)
                 if (isset($activityData['resources'])) {
                     $existingResourceIds = $activity->resources()
                         ->pluck('id')
-                        ->filter(fn($id) => is_numeric($id) && (int)$id == $id)
                         ->map(fn($id) => (int) $id)
                         ->toArray();
 
-                    $submittedResourceIds = collect($activityData['resources'])
+                    $submittedResourceIds = collect($activityData['resources'] ?? [])
                         ->pluck('id')
-                        ->filter(fn($id) => is_numeric($id) && (int)$id == $id)
+                        ->filter(fn($id) => !is_null($id))
                         ->map(fn($id) => (int) $id)
                         ->toArray();
 
@@ -2428,9 +2430,7 @@ class AopApplicationController extends Controller
                     }
 
                     foreach ($activityData['resources'] as $resourceData) {
-                        $resource = (isset($resourceData['id']) && is_numeric($resourceData['id']))
-                            ? Resource::find((int)$resourceData['id'])
-                            : null;
+                        $resource = isset($resourceData['id']) ? Resource::find($resourceData['id']) : null;
 
                         if ($resource) {
                             $resource->update($resourceData);
@@ -2443,17 +2443,17 @@ class AopApplicationController extends Controller
                     }
                 }
 
-                // Sync responsible people
+                // Sync responsible people (1:N)
                 if (isset($activityData['responsible_people'])) {
+                    // Sync Responsible People
                     $existingPersonIds = $activity->responsiblePeople()
                         ->pluck('id')
-                        ->filter(fn($id) => is_numeric($id) && (int)$id == $id)
                         ->map(fn($id) => (int) $id)
                         ->toArray();
 
-                    $submittedPersonIds = collect($activityData['responsible_people'])
+                    $submittedPersonIds = collect($activityData['responsible_people'] ?? [])
                         ->pluck('id')
-                        ->filter(fn($id) => is_numeric($id) && (int)$id == $id)
+                        ->filter(fn($id) => !is_null($id))
                         ->map(fn($id) => (int) $id)
                         ->toArray();
 
@@ -2463,10 +2463,8 @@ class AopApplicationController extends Controller
                     }
 
                     foreach ($activityData['responsible_people'] as $personData) {
-                        $person = (isset($personData['id']) && is_numeric($personData['id']))
-                            ? ResponsiblePerson::find((int)$personData['id'])
-                            : null;
-
+                        \Log::info('Processing Responsible Person', ['personData' => $personData]);
+                        $person = isset($personData['id']) ? ResponsiblePerson::find($personData['id']) : null;
                         if ($person) {
                             $person->update($personData);
                         } else {
@@ -2477,6 +2475,7 @@ class AopApplicationController extends Controller
             }
         }
     }
+
 
     private function deleteActivityWithRelations(Activity $activity)
     {
