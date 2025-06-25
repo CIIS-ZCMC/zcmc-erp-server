@@ -2194,7 +2194,7 @@ class AopApplicationController extends Controller
                 'planning_officer_id' => $planningOfficerId,
                 'ppmp_application_uuid' => Str::uuid(),
                 'year' => now()->addYear()->year,
-                'status' => 'pending',
+                'status' => 'draft',
             ]);
 
             if (!empty($validatedData['application_objectives'])) {
