@@ -2071,8 +2071,8 @@ class AopApplicationController extends Controller
     private function storePending(AopApplicationRequest $request)
     {
         $validatedData = $request->validated();
-        $curr_user = User::find(2);
-        // $curr_user = $request->user();
+        // $curr_user = User::find(2);
+        $curr_user = $request->user();
         if ($curr_user->authorization_pin !== $request->authorization_pin) {
             return response()->json(['message' => 'Invalid Authorization Pin'], Response::HTTP_BAD_REQUEST);
         }
@@ -2153,7 +2153,7 @@ class AopApplicationController extends Controller
                         'budget_officer_id' => $budgetOfficerId,
                         'planning_officer_id' => $planningOfficerId,
                         'year' => now()->addYear()->year,
-                        'status' => 'pending',
+                        'status' => 'draft',
                     ]);
 
                     $this->syncPpmpItemsFromResources($existingAop, $ppmpApplication);
