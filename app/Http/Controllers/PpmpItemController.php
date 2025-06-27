@@ -200,6 +200,24 @@ class PpmpItemController extends Controller
 
                 $incomingPpmpItemIds[] = $ppmpItem->id;
 
+                // 🔄 DELETE old schedules before adding new ones
+                PpmpSchedule::where('ppmp_item_id', $ppmpItem->id)
+                    ->where('year', $year)
+                    ->delete();
+
+                // 🗓 Add updated monthly targets
+                foreach ($i['target_by_quarter'] ?? [] as $monthKey => $qty) {
+                    $month = $monthMap[$monthKey] ?? null;
+                    if (!$month || $qty < 0) continue;
+
+                    PpmpSchedule::create([
+                        'ppmp_item_id' => $ppmpItem->id,
+                        'month' => $month,
+                        'year' => $year,
+                        'quantity' => $qty,
+                    ]);
+                }
+
                 foreach ($i['activities'] as $activity) {
                     $activity_id = $activity['activity_id'] ?? $activity['id'];
                     $activityModel = Activity::find($activity_id);
@@ -228,20 +246,6 @@ class PpmpItemController extends Controller
                         return $r->quantity * $r->item_cost;
                     });
                     $activityModel->update(['cost' => $totalActivityCost]);
-                }
-
-                foreach ($i['target_by_quarter'] ?? [] as $monthKey => $qty) {
-                    $month = $monthMap[$monthKey] ?? null;
-                    if (!$month || $qty < 0) continue;
-
-                    PpmpSchedule::updateOrCreate(
-                        [
-                            'ppmp_item_id' => $ppmpItem->id,
-                            'month' => $month,
-                            'year' => $year,
-                        ],
-                        ['quantity' => $qty]
-                    );
                 }
             }
 
