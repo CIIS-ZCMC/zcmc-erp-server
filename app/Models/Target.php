@@ -11,7 +11,7 @@ use Illuminate\Support\Str;
 
 class Target extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'activity_id',

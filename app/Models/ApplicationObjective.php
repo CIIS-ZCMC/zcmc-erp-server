@@ -53,9 +53,7 @@ class ApplicationObjective extends Model
     {
         static::deleting(function ($objective) {
             if (!$objective->isForceDeleting()) {
-                foreach ($objective->activities as $activity) {
-                    $activity->delete();
-                }
+                $objective->activities()->each(fn($activity) => $activity->delete());
             }
         });
     }

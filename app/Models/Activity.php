@@ -51,15 +51,9 @@ class Activity extends Model
     {
         static::deleting(function ($activity) {
             if (!$activity->isForceDeleting()) {
-                $activity->resources()->each(function ($resource) {
-                    $resource->delete();
-                });
-
-                $activity->responsiblePeople()->each(function ($person) {
-                    $person->delete();
-                });
-
-                $activity->target()?->delete(); // if target is a hasOne or morphOne relationship
+                $activity->resources()->each(fn($r) => $r->delete());
+                $activity->responsiblePeople()->each(fn($p) => $p->delete());
+                $activity->target()?->delete();
             }
         });
     }

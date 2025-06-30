@@ -2402,7 +2402,9 @@ class AopApplicationController extends Controller
                 ->toArray();
 
             if (!empty($validObjectivesToDelete)) {
-                ApplicationObjective::whereIn('id', $validObjectivesToDelete)->delete();
+                ApplicationObjective::whereIn('id', $validObjectivesToDelete)
+                    ->get()
+                    ->each(fn($obj) => $obj->delete());
             }
         }
 
@@ -2449,7 +2451,7 @@ class AopApplicationController extends Controller
             $activitiesToDelete = array_diff($existingActivityIds, $submittedActivityIds);
             $activitiesToDelete = Activity::whereIn('id', $activitiesToDelete)->pluck('id')->toArray();
             if (!empty($activitiesToDelete)) {
-                Activity::whereIn('id', $activitiesToDelete)->delete();
+                Activity::whereIn('id', $activitiesToDelete)->each(fn($activity) => $activity->delete());
             }
 
             foreach ($objectiveData['activities'] ?? [] as $activityData) {
@@ -2483,16 +2485,32 @@ class AopApplicationController extends Controller
                 }
 
                 if (isset($activityData['target'])) {
-                    $activity->target()?->updateOrCreate([], $activityData['target']);
-                }
+                    $newTargetData = $activityData['target'];
 
+                    // Always get existing target, including soft-deleted
+                    $existingTarget = $activity->target()->withTrashed()->first();
+
+                    if ($existingTarget) {
+                        if ($existingTarget->trashed()) {
+                            // Force delete the soft-deleted target
+                            $existingTarget->forceDelete();
+                        } else {
+                            // Update if it's not soft-deleted
+                            $existingTarget->update($newTargetData);
+                            return; // Skip to avoid duplicate insert
+                        }
+                    }
+
+                    // No existing valid target: just create a new one
+                    $activity->target()->create($newTargetData);
+                }
                 if (isset($activityData['resources'])) {
                     $existingResourceIds = $activity->resources()->pluck('id')->map(fn($id) => (int)$id)->toArray();
                     $submittedResourceIds = collect($activityData['resources'])->pluck('id')->filter(fn($id) => is_numeric($id))->map(fn($id) => (int)$id)->toArray();
                     $resourcesToDelete = array_diff($existingResourceIds, $submittedResourceIds);
                     $resourcesToDelete = Resource::whereIn('id', $resourcesToDelete)->pluck('id')->toArray();
                     if (!empty($resourcesToDelete)) {
-                        Resource::whereIn('id', $resourcesToDelete)->delete();
+                        Resource::whereIn('id', $resourcesToDelete)->each(fn($res) => $res->delete());
                     }
 
                     foreach ($activityData['resources'] as $resourceData) {
@@ -2518,7 +2536,7 @@ class AopApplicationController extends Controller
                     $peopleToDelete = array_diff($existingPersonIds, $submittedPersonIds);
                     $peopleToDelete = ResponsiblePerson::whereIn('id', $peopleToDelete)->pluck('id')->toArray();
                     if (!empty($peopleToDelete)) {
-                        ResponsiblePerson::whereIn('id', $peopleToDelete)->delete();
+                        ResponsiblePerson::whereIn('id', $peopleToDelete)->each(fn($rp) => $rp->delete());
                     }
 
                     foreach ($activityData['responsible_people'] as $personData) {

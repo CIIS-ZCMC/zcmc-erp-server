@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->string('second_quarter')->nullable();
             $table->string('third_quarter')->nullable();
             $table->string('fourth_quarter')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
