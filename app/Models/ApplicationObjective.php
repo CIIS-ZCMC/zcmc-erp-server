@@ -48,4 +48,15 @@ class ApplicationObjective extends Model
     {
         return $this->belongsTo(SuccessIndicator::class, 'success_indicator_id', 'id');
     }
+
+    protected static function booted()
+    {
+        static::deleting(function ($objective) {
+            if (!$objective->isForceDeleting()) {
+                foreach ($objective->activities as $activity) {
+                    $activity->delete();
+                }
+            }
+        });
+    }
 }

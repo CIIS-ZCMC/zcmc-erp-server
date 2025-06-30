@@ -47,6 +47,22 @@ class Activity extends Model
         });
     }
 
+    protected static function booted()
+    {
+        static::deleting(function ($activity) {
+            if (!$activity->isForceDeleting()) {
+                $activity->resources()->each(function ($resource) {
+                    $resource->delete();
+                });
+
+                $activity->responsiblePeople()->each(function ($person) {
+                    $person->delete();
+                });
+
+                $activity->target()?->delete(); // if target is a hasOne or morphOne relationship
+            }
+        });
+    }
     public function applicationObjective(): BelongsTo
     {
         return $this->belongsTo(ApplicationObjective::class);
