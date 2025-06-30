@@ -2126,7 +2126,7 @@ class AopApplicationController extends Controller
                 ->where('sector_id', $area['details']['id'])
                 ->first();
 
-            $divisionChiefId = $this->getDivisionChiefIdFromArea($area);
+             $divisionChiefId = $this->getDivisionChiefIdFromArea($area);
 
             $mccChiefId = optional(Division::where('name', 'Office of Medical Center Chief')->first())->head_id;
             if (!$mccChiefId) {
