@@ -178,8 +178,8 @@ class AopApplicationController extends Controller
                     'name' => $activity->name,
                     'isGadRelated' => $activity->is_gad_related,
                     'cost' => $activity->cost,
-                    'startMonth' => $activity->start_month,
-                    'endMonth' => $activity->end_month,
+                    'startMonth' => optional($activity->start_month)->format('Y-m'),
+                    'endMonth' => optional($activity->end_month)->format('Y-m'),
                     'target' => [
                         'firstQuarter' => $activity->target->first_quarter ?? null,
                         'secondQuarter' => $activity->target->second_quarter ?? null,
