@@ -21,6 +21,7 @@ return new class extends Migration {
             $table->integer('quantity')->nullable();
             $table->float('item_cost');
             $table->string('expense_class')->nullable();
+            $table->softDeletes();
             $table->timestamps();
         });
     }
