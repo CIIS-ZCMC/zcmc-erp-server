@@ -31,6 +31,7 @@ return new class extends Migration {
 
             $table->unsignedBigInteger('designation_id')->nullable();
             $table->foreign('designation_id')->references('id')->on('designations')->onDelete('set null');
+            $table->softDeletes();
             $table->timestamps();
         });
     }

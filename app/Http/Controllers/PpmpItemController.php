@@ -200,23 +200,43 @@ class PpmpItemController extends Controller
 
                 $incomingPpmpItemIds[] = $ppmpItem->id;
 
-                // 🔄 DELETE old schedules before adding new ones
-                PpmpSchedule::where('ppmp_item_id', $ppmpItem->id)
-                    ->where('year', $year)
-                    ->delete();
+                $scheduleMonths = [];
 
-                // 🗓 Add updated monthly targets
                 foreach ($i['target_by_quarter'] ?? [] as $monthKey => $qty) {
                     $month = $monthMap[$monthKey] ?? null;
                     if (!$month || $qty < 0) continue;
 
-                    PpmpSchedule::create([
-                        'ppmp_item_id' => $ppmpItem->id,
-                        'month' => $month,
-                        'year' => $year,
-                        'quantity' => $qty,
-                    ]);
+                    $scheduleMonths[] = $month;
+
+                    PpmpSchedule::updateOrCreate(
+                        [
+                            'ppmp_item_id' => $ppmpItem->id,
+                            'month' => $month,
+                            'year' => $year,
+                        ],
+                        ['quantity' => $qty]
+                    );
                 }
+
+                // Get soft-deleted ppmp_item IDs under this application
+                $softDeletedItemIds = PpmpItem::onlyTrashed()
+                    ->where('ppmp_application_id', $ppmp_application->id)
+                    ->pluck('id')
+                    ->toArray();
+
+                // Delete related schedules
+                if (!empty($softDeletedItemIds)) {
+                    PpmpSchedule::whereIn('ppmp_item_id', $softDeletedItemIds)->delete();
+                }
+
+                $existingScheduleItemIds = PpmpItem::where('ppmp_application_id', $ppmp_application->id)
+                    ->whereNull('deleted_at')
+                    ->pluck('id')
+                    ->toArray();
+
+                PpmpSchedule::where('ppmp_item_id', '!=', null)
+                    ->whereNotIn('ppmp_item_id', $existingScheduleItemIds)
+                    ->delete();
 
                 foreach ($i['activities'] as $activity) {
                     $activity_id = $activity['activity_id'] ?? $activity['id'];

@@ -2079,6 +2079,41 @@ class AopApplicationController extends Controller
 
         DB::beginTransaction();
         try {
+            $input = $request->all();
+
+            $input['application_objectives'] = collect($input['application_objectives'] ?? [])
+                ->map(function ($objective) {
+                    if (!is_numeric($objective['id'] ?? null)) {
+                        unset($objective['id']); // remove invalid or UUID id
+                    }
+
+                    // Clean nested activities
+                    $objective['activities'] = collect($objective['activities'] ?? [])->map(function ($act) {
+                        if (!is_numeric($act['id'] ?? null)) {
+                            unset($act['id']);
+                        }
+
+                        $act['resources'] = collect($act['resources'] ?? [])->map(function ($res) {
+                            if (!is_numeric($res['id'] ?? null)) {
+                                unset($res['id']);
+                            }
+                            return $res;
+                        })->toArray();
+
+                        $act['responsible_people'] = collect($act['responsible_people'] ?? [])->map(function ($p) {
+                            if (!is_numeric($p['id'] ?? null)) {
+                                unset($p['id']);
+                            }
+                            return $p;
+                        })->toArray();
+
+                        return $act;
+                    })->toArray();
+
+                    return $objective;
+                })->toArray();
+
+            $request->replace($input);
             $validatedData = $request->validated();
             \Log::debug('Validated data:', $validatedData);
             // $user_id = 2;
@@ -2126,6 +2161,7 @@ class AopApplicationController extends Controller
                 // ✅ Optionally add new objectives & activities
                 if (!empty($validatedData['application_objectives'])) {
                     $this->syncObjectivesAndActivities($validatedData['application_objectives'] ?? [], $existingAop);
+                    \Log::debug('Incoming application objectives:', $validatedData['application_objectives'] ?? []);
                 }
 
                 // ✅ Handle PPMP Application creation or update
@@ -2226,6 +2262,11 @@ class AopApplicationController extends Controller
             DB::commit();
             return response()->json(['message' => 'AOP Application submitted successfully'], Response::HTTP_OK);
         } catch (\Exception $e) {
+            \Log::error('AOP STORE ERROR: ' . $e->getMessage(), [
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             DB::rollBack();
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -2301,12 +2342,213 @@ class AopApplicationController extends Controller
     }
     private function syncObjectivesAndActivities(array $newObjectives, AopApplication $aopApplication)
     {
+        $newObjectives = collect($newObjectives)->map(function ($obj) {
+            // Remove string IDs (new records)
+            if (!empty($obj['id']) && !is_numeric($obj['id'])) {
+                unset($obj['id']);
+            }
+
+            $obj['activities'] = collect($obj['activities'] ?? [])->map(function ($act) {
+                if (!empty($act['id']) && !is_numeric($act['id'])) {
+                    unset($act['id']);
+                }
+
+                $act['resources'] = collect($act['resources'] ?? [])->map(function ($res) {
+                    if (!empty($res['id']) && !is_numeric($res['id'])) {
+                        unset($res['id']);
+                    }
+                    return $res;
+                })->toArray();
+
+                $act['responsible_people'] = collect($act['responsible_people'] ?? [])->map(function ($p) {
+                    if (!empty($p['id']) && !is_numeric($p['id'])) {
+                        unset($p['id']);
+                    }
+                    return $p;
+                })->toArray();
+
+                return $act;
+            })->toArray();
+
+            return $obj;
+        })->toArray();
+
+        \Log::info('Cleaned objectives', $newObjectives);
+
+        $numericIds = collect($newObjectives)
+            ->pluck('id')
+            ->filter(fn($id) => is_numeric($id))
+            ->map(fn($id) => (int) $id)
+            ->toArray();
+
+        // Query all valid IDs from the DB
+        $validDbIds = ApplicationObjective::whereIn('id', $numericIds)->pluck('id')->toArray();
+
+        // Keep only IDs that exist in DB
+        $submittedObjectiveIds = array_values(array_intersect($numericIds, $validDbIds));
+
+        $existingObjectiveIds = $aopApplication->applicationObjectives()
+            ->pluck('id')
+            ->map(fn($id) => (int) $id)
+            ->toArray();
+
+        $objectivesToDelete = array_diff($existingObjectiveIds, $submittedObjectiveIds);
+
+        // Only delete valid IDs that actually exist in the database for this AOP application
+        if (!empty($objectivesToDelete)) {
+            $validObjectivesToDelete = ApplicationObjective::whereIn('id', $objectivesToDelete)
+                ->where('aop_application_id', $aopApplication->id) // extra safety
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($validObjectivesToDelete)) {
+                ApplicationObjective::whereIn('id', $validObjectivesToDelete)->delete();
+            }
+        }
+
+
+        foreach ($newObjectives as $objectiveData) {
+            $objective = null;
+            if (!empty($objectiveData['id']) && is_numeric($objectiveData['id'])) {
+                $existing = ApplicationObjective::find((int) $objectiveData['id']);
+                if ($existing && $existing->aop_application_id === $aopApplication->id) {
+                    $objective = $existing;
+                }
+            }
+            if (!$objective) {
+                $objective = new ApplicationObjective();
+            }
+
+            $objective->aop_application_id = $aopApplication->id;
+            $objective->objective_id = $objectiveData['objective_id'];
+            $objective->success_indicator_id = $objectiveData['success_indicator_id'] ?? null;
+            $objective->save();
+
+            if (
+                $objective->objective &&
+                $objective->objective->description === 'Others, please insert note/remarks' &&
+                isset($objectiveData['others_objective'])
+            ) {
+                $objective->otherObjective()->updateOrCreate([], [
+                    'description' => $objectiveData['others_objective'],
+                ]);
+            }
+
+            if (
+                $objective->successIndicator &&
+                $objective->successIndicator->description === 'Others, please insert note/remarks' &&
+                isset($objectiveData['other_success_indicator'])
+            ) {
+                $objective->otherSuccessIndicator()->updateOrCreate([], [
+                    'description' => $objectiveData['other_success_indicator'],
+                ]);
+            }
+
+            $existingActivityIds = $objective->activities()->pluck('id')->map(fn($id) => (int)$id)->toArray();
+            $submittedActivityIds = collect($objectiveData['activities'] ?? [])->pluck('id')->filter(fn($id) => is_numeric($id))->map(fn($id) => (int)$id)->toArray();
+            $activitiesToDelete = array_diff($existingActivityIds, $submittedActivityIds);
+            $activitiesToDelete = Activity::whereIn('id', $activitiesToDelete)->pluck('id')->toArray();
+            if (!empty($activitiesToDelete)) {
+                Activity::whereIn('id', $activitiesToDelete)->delete();
+            }
+
+            foreach ($objectiveData['activities'] ?? [] as $activityData) {
+                if (empty($activityData['name'])) {
+                    \Log::warning('Skipping activity due to missing name.', ['activityData' => $activityData]);
+                    continue;
+                }
+
+                $activity = null;
+                if (!empty($activityData['id']) && is_numeric($activityData['id'])) {
+                    $activity = Activity::find((int)$activityData['id']);
+                }
+
+                if (!$activity) {
+                    $activity = $objective->activities()->create([
+                        'activity_code' => $this->generateUniqueActivityCode(),
+                        'name' => $activityData['name'],
+                        'is_gad_related' => $activityData['is_gad_related'],
+                        'cost' => $activityData['cost'],
+                        'start_month' => $activityData['start_month'],
+                        'end_month' => $activityData['end_month'],
+                    ]);
+                } else {
+                    $activity->update([
+                        'name' => $activityData['name'],
+                        'is_gad_related' => $activityData['is_gad_related'],
+                        'cost' => $activityData['cost'],
+                        'start_month' => $activityData['start_month'],
+                        'end_month' => $activityData['end_month'],
+                    ]);
+                }
+
+                if (isset($activityData['target'])) {
+                    $activity->target()?->updateOrCreate([], $activityData['target']);
+                }
+
+                if (isset($activityData['resources'])) {
+                    $existingResourceIds = $activity->resources()->pluck('id')->map(fn($id) => (int)$id)->toArray();
+                    $submittedResourceIds = collect($activityData['resources'])->pluck('id')->filter(fn($id) => is_numeric($id))->map(fn($id) => (int)$id)->toArray();
+                    $resourcesToDelete = array_diff($existingResourceIds, $submittedResourceIds);
+                    $resourcesToDelete = Resource::whereIn('id', $resourcesToDelete)->pluck('id')->toArray();
+                    if (!empty($resourcesToDelete)) {
+                        Resource::whereIn('id', $resourcesToDelete)->delete();
+                    }
+
+                    foreach ($activityData['resources'] as $resourceData) {
+                        $resource = null;
+                        if (!empty($resourceData['id']) && is_numeric($resourceData['id'])) {
+                            $resource = Resource::find((int)$resourceData['id']);
+                        }
+
+                        if ($resource) {
+                            $resource->update($resourceData);
+                        } else {
+                            $item = Item::find($resourceData['item_id']);
+                            $activity->resources()->create(array_merge($resourceData, [
+                                'item_cost' => $item?->estimated_budget ?? 0,
+                            ]));
+                        }
+                    }
+                }
+
+                if (isset($activityData['responsible_people'])) {
+                    $existingPersonIds = $activity->responsiblePeople()->pluck('id')->map(fn($id) => (int)$id)->toArray();
+                    $submittedPersonIds = collect($activityData['responsible_people'])->pluck('id')->filter(fn($id) => is_numeric($id))->map(fn($id) => (int)$id)->toArray();
+                    $peopleToDelete = array_diff($existingPersonIds, $submittedPersonIds);
+                    $peopleToDelete = ResponsiblePerson::whereIn('id', $peopleToDelete)->pluck('id')->toArray();
+                    if (!empty($peopleToDelete)) {
+                        ResponsiblePerson::whereIn('id', $peopleToDelete)->delete();
+                    }
+
+                    foreach ($activityData['responsible_people'] as $personData) {
+                        \Log::info('Processing Responsible Person', ['personData' => $personData]);
+
+                        $person = null;
+                        if (!empty($personData['id']) && is_numeric($personData['id'])) {
+                            $person = ResponsiblePerson::find((int)$personData['id']);
+                        }
+
+                        if ($person) {
+                            $person->update($personData);
+                        } else {
+                            $activity->responsiblePeople()->create($personData);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private function syncObjectivesAndActivitiesq(array $newObjectives, AopApplication $aopApplication)
+    {
         // Get existing application objective IDs for this AOP application
         $existingObjectiveIds = $aopApplication->applicationObjectives()
             ->pluck('id')
             ->map(fn($id) => (int) $id)
             ->toArray();
 
+        \Log::debug('Existing Application Objective IDs:', $existingObjectiveIds);
         // IDs sent from frontend
         $submittedObjectiveIds = collect($newObjectives)
             ->pluck('id')
