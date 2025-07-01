@@ -162,7 +162,7 @@ class PpmpItemResource extends JsonResource
             'status' => $ppmp_application->status ?? null,
             'remarks' => $ppmp_application->remarks ?? null,
             'year' => $ppmp_application->year ?? null,
-            'is_draft' => (bool) $ppmp_application->is_draft,
+            'is_draft' => $ppmp_application->is_draft,
             'user' => $ppmp_application->user ? new UserResource($ppmp_application->user) : null,
             'division_chief' => $ppmp_application->divisionChief ? new UserResource($ppmp_application->divisionChief) : null,
             'budget_officer' => $ppmp_application->budgetOfficer ? new UserResource($ppmp_application->budgetOfficer) : null,
