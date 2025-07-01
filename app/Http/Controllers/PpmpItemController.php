@@ -247,8 +247,6 @@ class PpmpItemController extends Controller
                         $ppmpItem->id => ['remarks' => $ppmpItem->remarks],
                     ]);
 
-
-
                     Resource::updateOrCreate(
                         [
                             'activity_id' => $activityModel->id,
@@ -262,9 +260,11 @@ class PpmpItemController extends Controller
                         ]
                     );
 
-                    $totalActivityCost = $activityModel->resources->sum(function ($r) {
+                    // ✅ FIXED: Recompute using fresh query, not stale relationship
+                    $totalActivityCost = $activityModel->resources()->get()->sum(function ($r) {
                         return $r->quantity * $r->item_cost;
                     });
+
                     $activityModel->update(['cost' => $totalActivityCost]);
                 }
             }
