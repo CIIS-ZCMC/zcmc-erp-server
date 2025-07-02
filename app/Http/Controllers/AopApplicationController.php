@@ -2126,7 +2126,7 @@ class AopApplicationController extends Controller
                 ->where('sector_id', $area['details']['id'])
                 ->first();
 
-             $divisionChiefId = $this->getDivisionChiefIdFromArea($area);
+            $divisionChiefId = $this->getDivisionChiefIdFromArea($area);
 
             $mccChiefId = optional(Division::where('name', 'Office of Medical Center Chief')->first())->head_id;
             if (!$mccChiefId) {
@@ -2739,75 +2739,106 @@ class AopApplicationController extends Controller
 
     private function deleteActivityWithRelations(Activity $activity)
     {
-        $aopApplication = $activity->objective->aopApplication;
+        $aopApplication = $activity->applicationObjective->aopApplication;
         $ppmpApplication = $aopApplication?->ppmpApplication;
 
         if ($ppmpApplication) {
             foreach ($activity->resources as $resource) {
-                \App\Models\PpmpItem::where('ppmp_application_id', $ppmpApplication->id)
-                    ->where('item_id', $resource->item_id)
-                    ->delete();
+                // Check if resource is the only one using this item
+                $stillUsed = Resource::where('item_id', $resource->item_id)
+                    ->whereHas('activity.applicationObjective.aopApplication.ppmpApplication', function ($q) use ($ppmpApplication) {
+                        $q->where('id', $ppmpApplication->id);
+                    })
+                    ->where('id', '!=', $resource->id)
+                    ->exists();
+
+                if (!$stillUsed) {
+                    // Soft delete related PPMP Item
+                    $ppmpItem = \App\Models\PpmpItem::where('ppmp_application_id', $ppmpApplication->id)
+                        ->where('item_id', $resource->item_id)
+                        ->first();
+
+                    if ($ppmpItem) {
+                        $ppmpItem->delete(); // soft delete
+                    }
+                }
             }
         }
 
-        // Now delete related data
+        // Soft delete related records
         $activity->resources()->delete();
         $activity->responsiblePeople()->delete();
         $activity->target()?->delete();
-        $activity->delete();
+        $activity->delete(); // soft delete
     }
 
-    private function deleteObjectiveWithRelations(ApplicationObjective $objective)
+    private function deleteObjectiveWithRelations(ApplicationObjective $applicationObjective)
     {
-        foreach ($objective->activities as $activity) {
+        foreach ($applicationObjective->activities as $activity) {
             $this->deleteActivityWithRelations($activity);
         }
 
-        $objective->otherObjective()?->delete();
-        $objective->otherSuccessIndicator()?->delete();
-        $objective->delete();
+        $applicationObjective->otherObjective()?->delete();
+        $applicationObjective->otherSuccessIndicator()?->delete();
+        $applicationObjective->delete(); // soft delete
     }
 
-    public function destroyActivities(Activity $aopActivity)
+    public function destroyResource(Request $request, Resource $resource)
     {
-        $this->deleteActivityWithRelations($aopActivity);
-        return response()->json([], Response::HTTP_NO_CONTENT);
-    }
+        $user = $request->user();
+        if ($user->authorization_pin !== $request->authorization_pin) {
+            return response()->json(['message' => 'Invalid Authorization Pin'], 403);
+        }
 
-    public function destroyObjectives(ApplicationObjective $aopObjective)
-    {
-        $this->deleteObjectiveWithRelations($aopObjective);
-        return response()->json([], Response::HTTP_NO_CONTENT);
-    }
-
-    public function destroyResource(Resource $aopResource)
-    {
-
-        $activity = $aopResource->activity;
-        $objective = $activity->objective;
-        $aopApplication = $objective->aopApplication;
-
-
-        $ppmpApplication = $aopApplication->ppmpApplication;
-
+        $activity = $resource->activity;
+        $objective = $activity->applicationObjective;
+        $aopApplication = $objective->aopApplication ?? null;
+        $ppmpApplication = $aopApplication?->ppmpApplication;
 
         if ($ppmpApplication) {
             \App\Models\PpmpItem::where('ppmp_application_id', $ppmpApplication->id)
-                ->where('item_id', $aopResource->item_id)
-                ->delete();
+                ->where('item_id', $resource->item_id)
+                ->delete(); // If your model uses SoftDeletes, this will soft-delete
         }
 
+        $resource->delete(); // This assumes Resource model uses SoftDeletes
 
-        $aopResource->delete();
-
-        return response()->json([], \Illuminate\Http\Response::HTTP_NO_CONTENT);
+        return response()->json(['message' => 'Resource successfully deleted.'], 200);
     }
 
-    public function destroyResponsiblePerson(ResponsiblePerson $responsiblePerson)
+    public function destroyActivities(Request $request, Activity $activity)
     {
-        $responsiblePerson->delete();
-        return response()->json([], Response::HTTP_NO_CONTENT);
+        if ($request->user()->authorization_pin !== $request->authorization_pin) {
+            return response()->json(['message' => 'Invalid Authorization Pin'], 403);
+        }
+
+        $this->deleteActivityWithRelations($activity);
+
+        return response()->json(['message' => 'Activity successfully deleted.'], 200);
     }
+
+    public function destroyObjectives(Request $request, ApplicationObjective $applicationObjective)
+    {
+        if ($request->user()->authorization_pin !== $request->authorization_pin) {
+            return response()->json(['message' => 'Invalid Authorization Pin'], 403);
+        }
+
+        $this->deleteObjectiveWithRelations($applicationObjective);
+
+        return response()->json(['message' => 'Objective successfully deleted.'], 200);
+    }
+
+    public function destroyResponsiblePerson(Request $request, ResponsiblePerson $responsiblePerson)
+    {
+        if ($request->user()->authorization_pin !== $request->authorization_pin) {
+            return response()->json(['message' => 'Invalid Authorization Pin'], 403);
+        }
+
+        $responsiblePerson->delete();
+
+        return response()->json(['message' => 'Responsible person successfully deleted.'], 200);
+    }
+
 
 
     private function getDivisionChiefIdFromArea(array $area): ?int
