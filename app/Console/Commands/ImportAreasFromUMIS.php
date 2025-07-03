@@ -118,7 +118,7 @@ class ImportAreasFromUMIS extends Command
                         ['id' => $division['id']],
                         [
                             'id' => $division['id'],
-                            'area_id' => $division['area_id'],
+                            'area_id' => $unit['area_id'] ?? null,
                             'name' => $division['name'],
                             'code' => $division['code'],
                             'head_id' => $user!== null? $user->id: null,
@@ -143,7 +143,7 @@ class ImportAreasFromUMIS extends Command
                         ['id' => $department['id']],
                         [
                             'id' => $department['id'],
-                            'area_id' => $department['area_id'],
+                            'area_id' => $unit['area_id'] ?? null,
                             'name' => $department['name'],
                             'code' => $department['code'],
                             'division_id' => $division !== null? $division->id: null,
@@ -169,7 +169,7 @@ class ImportAreasFromUMIS extends Command
                         ['id' => $section['id']],
                         [
                             'id' => $section['id'],
-                            'area_id' => $section['area_id'],
+                            'area_id' => $unit['area_id'] ?? null,
                             'name' => $section['name'],
                             'code' => $section['code'],
                             'division_id' => $division !== null? $division->id: null,
@@ -195,7 +195,7 @@ class ImportAreasFromUMIS extends Command
                         ['id' => $unit['id']],
                         [
                             'id' => $unit['id'],
-                            'area_id' => $unit['area_id'],
+                          'area_id' => $unit['area_id'] ?? null,
                             'name' => $unit['name'],
                             'code' => $unit['code'],
                             'section_id' => $section !== null? $section->id : null,

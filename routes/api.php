@@ -34,6 +34,8 @@ use Illuminate\Support\Facades\Route;
 
 // Public routes - no authentication required
 Route::post('authenticate', [AuthController::class, 'login'])->name('login');
+
+Route::post('/trigger-imports', [\App\Http\Controllers\ImportTriggerController::class, 'triggerImport']);
 // Route::get('authenticate', [AuthController::class, 'login']); // Added GET support for authentication
 
 // Protected routes - require API authentication
