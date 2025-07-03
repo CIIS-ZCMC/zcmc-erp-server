@@ -2841,11 +2841,18 @@ class AopApplicationController extends Controller
 
     public function checkPin(Request $request)
     {
-        $user = $request->user();
-        if ($user->authorization_pin !== $request->authorization_pin) {
-            return response()->json(['message' => 'Invalid Authorization Pin'], 403);
+        $curr_user = User::find($request->user()->id);
+        $curr_user_authorization_pin = $curr_user->authorization_pin;
+
+        if ($curr_user_authorization_pin !== $request->authorization_pin) {
+            return response()->json([
+                'message' => 'Invalid Authorization Pin'
+            ], Response::HTTP_BAD_REQUEST);
         }
-        return response()->json(['message' => 'Successfully Deleted.'], 200);
+
+        return response()->json([
+            'message' => "Successfully Deleted."
+        ], Response::HTTP_OK);
     }
 
 
@@ -2886,7 +2893,7 @@ class AopApplicationController extends Controller
                 return null;
         }
     }
-    
+
     private function getExistingAop($area)
     {
         return AopApplication::where('sector', $area['sector'])
