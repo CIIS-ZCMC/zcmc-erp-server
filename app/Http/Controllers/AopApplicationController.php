@@ -2844,7 +2844,7 @@ class AopApplicationController extends Controller
         $curr_user = User::find($request->user()->id);
         $curr_user_authorization_pin = $curr_user->authorization_pin;
 
-        if ($curr_user_authorization_pin !== $request->authorization_pin) {
+        if ($curr_user_authorization_pin !== $request->pin) {
             return response()->json([
                 'message' => 'Invalid Authorization Pin'
             ], Response::HTTP_BAD_REQUEST);
