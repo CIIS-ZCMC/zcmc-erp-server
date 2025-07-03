@@ -231,6 +231,7 @@ Route::namespace('App\Http\Controllers')->group(function () {
     Route::delete('/activities/{activity}', [AopApplicationController::class, 'destroyActivities']);
     Route::delete('/objectives/{applicationObjective}', [AopApplicationController::class, 'destroyObjectives']);
     Route::delete('/responsible-people/{responsiblePerson}', [AopApplicationController::class, 'destroyResponsiblePerson']);
+    Route::post('/check-pin', [AopApplicationController::class, 'checkPin']);
 
     // Deadlines
     Route::get('deadlines', [DeadlineController::class, 'index']);

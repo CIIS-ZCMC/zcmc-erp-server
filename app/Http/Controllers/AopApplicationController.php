@@ -2790,20 +2790,20 @@ class AopApplicationController extends Controller
             return response()->json(['message' => 'Invalid Authorization Pin'], 403);
         }
 
-        $activity = $resource->activity;
-        $objective = $activity->applicationObjective;
-        $aopApplication = $objective->aopApplication ?? null;
-        $ppmpApplication = $aopApplication?->ppmpApplication;
+        // // $activity = $resource->activity;
+        // // $objective = $activity->applicationObjective;
+        // // $aopApplication = $objective->aopApplication ?? null;
+        // // $ppmpApplication = $aopApplication?->ppmpApplication;
 
-        if ($ppmpApplication) {
-            \App\Models\PpmpItem::where('ppmp_application_id', $ppmpApplication->id)
-                ->where('item_id', $resource->item_id)
-                ->delete(); // If your model uses SoftDeletes, this will soft-delete
-        }
+        // // if ($ppmpApplication) {
+        // //     \App\Models\PpmpItem::where('ppmp_application_id', $ppmpApplication->id)
+        // //         ->where('item_id', $resource->item_id)
+        // //         ->delete(); // If your model uses SoftDeletes, this will soft-delete
+        // // }
 
-        $resource->delete(); // This assumes Resource model uses SoftDeletes
+        // // $resource->delete(); // This assumes Resource model uses SoftDeletes
 
-        return response()->json(['message' => 'Resource successfully deleted.'], 200);
+        // return response()->json(['message' => 'Resource successfully deleted.'], 200);
     }
 
     public function destroyActivities(Request $request, Activity $activity)
@@ -2839,6 +2839,14 @@ class AopApplicationController extends Controller
         return response()->json(['message' => 'Responsible person successfully deleted.'], 200);
     }
 
+    public function checkPin(Request $request)
+    {
+        $user = $request->user();
+        if ($user->authorization_pin !== $request->authorization_pin) {
+            return response()->json(['message' => 'Invalid Authorization Pin'], 403);
+        }
+        return response()->json(['message' => 'Authorization Pin is valid.'], 200);
+    }
 
 
     private function getDivisionChiefIdFromArea(array $area): ?int
